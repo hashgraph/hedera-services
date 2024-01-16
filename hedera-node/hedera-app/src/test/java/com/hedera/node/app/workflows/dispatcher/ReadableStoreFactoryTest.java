@@ -67,7 +67,7 @@ class ReadableStoreFactoryTest {
     void returnCorrectStoreClass(final Class<?> storeClass) {
         // given
         given(readableStates.get(anyString())).willReturn(readableKVState);
-        given(state.createReadableStates(anyString())).willReturn(readableStates);
+        given(state.getReadableStates(anyString())).willReturn(readableStates);
         final ReadableStoreFactory subject = new ReadableStoreFactory(state);
 
         // when

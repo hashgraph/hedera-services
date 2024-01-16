@@ -85,7 +85,8 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
-        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have nothing
+        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have
+        // nothing
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
         if (contract != null) {

@@ -196,7 +196,12 @@ public class ActionStack {
                     builder.output(tuweniToPbjBytes(frame.getOutputData()));
                     if (action.targetedAddress() != null) {
                         final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
-                        builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
+                        try {
+                            builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
+                        } catch (final IllegalArgumentException | NullPointerException | ArithmeticException e) {
+                            // handle non-existing to/receiver address
+                            builder.recipientAccount((AccountID) null);
+                        }
                     }
                 }
                 yield builder.build();
@@ -278,7 +283,11 @@ public class ActionStack {
         } else if (CodeV0.EMPTY_CODE.equals(frame.getCode())) {
             builder.recipientAccount(accountIdWith(hederaIdNumOfContractIn(frame)));
         } else {
-            builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
+            try {
+                builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
+            } catch (NullPointerException e) {
+                builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
+            }
         }
         final var wrappedAction = new ActionWrapper(builder.build());
         allActions.add(wrappedAction);

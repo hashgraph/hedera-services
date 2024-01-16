@@ -87,7 +87,7 @@ class FreezeServiceImplTest {
         subject.registerSchemas(registry, RELEASE_045_VERSION);
         registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
-                state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
+                state.getReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
         assertNotNull(upgradeFileHashKeyState.get());
     }
 }

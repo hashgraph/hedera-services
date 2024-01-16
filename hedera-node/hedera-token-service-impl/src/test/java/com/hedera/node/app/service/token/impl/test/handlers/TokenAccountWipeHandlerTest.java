@@ -77,6 +77,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -85,6 +86,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,6 +115,18 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .getOrCreateConfig();
         recordBuilder = new TokenAccountWipeRecordBuilder() {
             private long newTotalSupply;
+            private TokenType tokenType;
+
+            @NotNull
+            @Override
+            public TransactionBody transactionBody() {
+                return TransactionBody.DEFAULT;
+            }
+
+            @Override
+            public long transactionFee() {
+                return 0;
+            }
 
             @Override
             public long getNewTotalSupply() {
@@ -128,6 +142,13 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             @Override
             public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
                 newTotalSupply = supply;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
+                this.tokenType = tokenType;
                 return this;
             }
 

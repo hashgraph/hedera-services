@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -49,7 +50,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenDeleteSpecs extends HapiSuite {
 
@@ -127,7 +128,7 @@ public class TokenDeleteSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec deletionWorksAsExpected() {
-        return defaultHapiSpec("DeletionWorksAsExpected")
+        return defaultHapiSpec("DeletionWorksAsExpected", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),

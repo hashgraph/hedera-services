@@ -43,6 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -70,6 +72,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -79,7 +82,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenManagementSpecs extends HapiSuite {
 
@@ -99,22 +102,21 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            freezeMgmtSuccessCasesWork(),
-            kycMgmtFailureCasesWork(),
-            kycMgmtSuccessCasesWork(),
-            supplyMgmtSuccessCasesWork(),
-            wipeAccountFailureCasesWork(),
-            wipeAccountSuccessCasesWork(),
-            supplyMgmtFailureCasesWork(),
-            burnTokenFailsDueToInsufficientTreasuryBalance(),
-            frozenTreasuryCannotBeMintedOrBurned(),
-            revokedKYCTreasuryCannotBeMintedOrBurned(),
-            fungibleCommonMaxSupplyReachWork(),
-            mintingMaxLongValueWorks(),
-            nftMintProvidesMintedNftsAndNewTotalSupply(),
-            zeroUnitTokenOperationsWorkAsExpected()
-        });
+        return List.of(
+                freezeMgmtSuccessCasesWork(),
+                kycMgmtFailureCasesWork(),
+                kycMgmtSuccessCasesWork(),
+                supplyMgmtSuccessCasesWork(),
+                wipeAccountFailureCasesWork(),
+                wipeAccountSuccessCasesWork(),
+                supplyMgmtFailureCasesWork(),
+                burnTokenFailsDueToInsufficientTreasuryBalance(),
+                frozenTreasuryCannotBeMintedOrBurned(),
+                revokedKYCTreasuryCannotBeMintedOrBurned(),
+                fungibleCommonMaxSupplyReachWork(),
+                mintingMaxLongValueWorks(),
+                nftMintProvidesMintedNftsAndNewTotalSupply(),
+                zeroUnitTokenOperationsWorkAsExpected());
     }
 
     @Override
@@ -122,13 +124,15 @@ public class TokenManagementSpecs extends HapiSuite {
         return true;
     }
 
+    // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
+    // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
     final HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
         final var nft = "non-fungible";
-        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected")
+        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected", SnapshotMatchMode.FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(adminKey),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -182,7 +186,7 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
-        return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
+        return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("freezeKey"),
@@ -203,7 +207,8 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
-        return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
+        return defaultHapiSpec(
+                        "RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("kycKey"),
@@ -229,7 +234,7 @@ public class TokenManagementSpecs extends HapiSuite {
         final int TRANSFER_AMOUNT = 50;
         final int BURN_AMOUNT = 60;
 
-        return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance")
+        return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed("burnKey"),
                         cryptoCreate("misc").balance(0L),
@@ -295,7 +300,7 @@ public class TokenManagementSpecs extends HapiSuite {
         var multiKey = "wipeAndSupplyKey";
         var someMeta = ByteString.copyFromUtf8("HEY");
 
-        return defaultHapiSpec("WipeAccountFailureCasesWork")
+        return defaultHapiSpec("WipeAccountFailureCasesWork", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiKey),
                         newKeyNamed("alias").type(KeyFactory.KeyType.SIMPLE),
@@ -347,7 +352,7 @@ public class TokenManagementSpecs extends HapiSuite {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";
 
-        return defaultHapiSpec("KycMgmtFailureCasesWork")
+        return defaultHapiSpec("KycMgmtFailureCasesWork", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ONE_KYC),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),

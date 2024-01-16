@@ -36,7 +36,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ class PlatformWiringTests {
                 mock(PcesSequencer.class),
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
-                mock(SignedStateManager.class));
+                mock(StateSignatureCollector.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

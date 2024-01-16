@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -92,6 +93,12 @@ public class KeyPackingUtils {
         }
     }
 
+    static void serializePackedBytesToPbj(final int[] packed, final byte numNonZero, final WritableSequentialData out) {
+        for (int b = numNonZero - 1; b >= 0; b--) {
+            out.writeByte(extractByte(packed, b));
+        }
+    }
+
     static byte extractByte(final int[] packed, final int i) {
         final var j = i / Integer.BYTES;
         return (byte) (packed[packed.length - 1 - j] >> ((i - (j * Integer.BYTES)) * 8));
@@ -121,11 +128,10 @@ public class KeyPackingUtils {
      * @param reader function to read a byte from the data source
      * @param <D> type for data source, e.g. ByteBuffer or InputStream
      * @return unit256 read as an int[8]
-     * @throws IOException If there was a problem reading
+     * @throws E If there was a problem reading
      */
-    public static <D> int[] deserializeUint256Key(
-            final byte uint256KeyNonZeroBytes, final D dataSource, final ByteReaderFunction<D> reader)
-            throws IOException {
+    public static <D, E extends Exception> int[] deserializeUint256Key(
+            final byte uint256KeyNonZeroBytes, final D dataSource, final ByteReaderFunction<D, E> reader) throws E {
         final int[] uint256 = new int[8];
         for (int i = 7; i >= 0; i--) {
             int integer = 0;
@@ -165,13 +171,13 @@ public class KeyPackingUtils {
 
     /** Simple interface for a function that takes a object and returns a byte */
     @FunctionalInterface
-    public interface ByteReaderFunction<T> {
+    public interface ByteReaderFunction<T, E extends Exception> {
         /**
          * Applies this function to the given argument.
          *
          * @param dataSource the function argument
          * @return the function result
          */
-        byte read(T dataSource) throws IOException;
+        byte read(T dataSource) throws E;
     }
 }

@@ -97,7 +97,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     @Override
     public void resetFrom(@NonNull final HederaState state) {
         final var activeThrottles = backendThrottle.allActiveThrottles();
-        final var states = state.createReadableStates(CongestionThrottleService.NAME);
+        final var states = state.getReadableStates(CongestionThrottleService.NAME);
         final var throttleSnapshots = states.<ThrottleUsageSnapshots>getSingleton(
                         CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)
                 .get();
@@ -158,7 +158,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public void saveTo(@NonNull final HederaState state) {
-        final var states = state.createWritableStates(CongestionThrottleService.NAME);
+        final var states = state.getWritableStates(CongestionThrottleService.NAME);
         final var throttleSnapshotsState = states.<ThrottleUsageSnapshots>getSingleton(
                 CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
         final var tpsThrottleUsageSnapshots = backendThrottle.allActiveThrottles().stream()

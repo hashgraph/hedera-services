@@ -398,7 +398,7 @@ class ThrottleAccumulatorTest {
                 .build();
         given(transactionInfo.txBody()).willReturn(txn);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
         given(autoCreationConfig.enabled()).willReturn(true);
@@ -436,7 +436,7 @@ class ThrottleAccumulatorTest {
                 .build();
         given(transactionInfo.txBody()).willReturn(txn);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
         given(autoCreationConfig.enabled()).willReturn(false);
@@ -472,7 +472,7 @@ class ThrottleAccumulatorTest {
         final int numImplicitCreations = 0;
         givenTransferWithImplicitCreations(numImplicitCreations);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
         given(autoCreationConfig.enabled()).willReturn(false);
@@ -507,7 +507,7 @@ class ThrottleAccumulatorTest {
         given(transactionInfo.functionality()).willReturn(CRYPTO_TRANSFER);
         final int numImplicitCreations = 1;
         givenTransferWithImplicitCreations(numImplicitCreations);
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -542,7 +542,7 @@ class ThrottleAccumulatorTest {
 
         given(transactionInfo.functionality()).willReturn(CRYPTO_TRANSFER);
         givenTransferWithImplicitCreations(10);
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -577,7 +577,7 @@ class ThrottleAccumulatorTest {
 
         given(transactionInfo.functionality()).willReturn(CRYPTO_TRANSFER);
         givenTransferWithImplicitCreations(1);
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -618,7 +618,7 @@ class ThrottleAccumulatorTest {
                         .ethereumTransaction(ethTxnBody)
                         .build());
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -659,7 +659,7 @@ class ThrottleAccumulatorTest {
                         .ethereumTransaction(ethTxnBody)
                         .build());
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -700,7 +700,7 @@ class ThrottleAccumulatorTest {
                         .ethereumTransaction(ethTxnBody)
                         .build());
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -742,7 +742,7 @@ class ThrottleAccumulatorTest {
                         .ethereumTransaction(ethTxnBody)
                         .build());
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
@@ -1252,7 +1252,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
 
         final var scheduledTransferNoAliases = SchedulableTransactionBody.newBuilder()
                 .cryptoTransfer(cryptoTransferWithImplicitCreations(0))
@@ -1299,7 +1299,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(ALIASES_KEY)).willReturn(aliases);
         ;
 
@@ -1370,7 +1370,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(!autoOrLazyCreationEnabled);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
 
         var accountAmounts = new ArrayList<AccountAmount>();
         accountAmounts.add(AccountAmount.newBuilder()
@@ -1479,7 +1479,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(ALIASES_KEY)).willReturn(aliases);
 
         final var alias = keyToBytes(A_PRIMITIVE_KEY);
@@ -1554,7 +1554,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(ALIASES_KEY)).willReturn(aliases);
 
         final var alias = keyToBytes(A_PRIMITIVE_KEY);
@@ -1682,7 +1682,7 @@ class ThrottleAccumulatorTest {
                     .scheduledTransaction(scheduledSubmit)
                     .build();
 
-            given(state.createReadableStates(any())).willReturn(readableStates);
+            given(state.getReadableStates(any())).willReturn(readableStates);
             given(readableStates.get(any())).willReturn(schedules);
             given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
         }
@@ -1754,7 +1754,7 @@ class ThrottleAccumulatorTest {
                     .scheduledTransaction(scheduledSubmit)
                     .build();
 
-            given(state.createReadableStates(any())).willReturn(readableStates);
+            given(state.getReadableStates(any())).willReturn(readableStates);
             given(readableStates.get(any())).willReturn(schedules);
             given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
         }
@@ -1806,7 +1806,7 @@ class ThrottleAccumulatorTest {
                 .scheduledTransaction(SchedulableTransactionBody.DEFAULT)
                 .build();
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(schedules);
         given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
 
@@ -1843,7 +1843,7 @@ class ThrottleAccumulatorTest {
         final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(schedules);
 
         // when
@@ -1889,7 +1889,7 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
-        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(state.getReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(ALIASES_KEY)).willReturn(aliases);
 
         final var alias = keyToBytes(A_PRIMITIVE_KEY);

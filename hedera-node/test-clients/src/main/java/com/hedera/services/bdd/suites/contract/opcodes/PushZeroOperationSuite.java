@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -79,7 +80,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     final HapiSpec pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return defaultHapiSpec("prngPrecompileHappyPathWorks")
+        return defaultHapiSpec("prngPrecompileHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
@@ -105,7 +106,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     final HapiSpec pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return propertyPreservingHapiSpec("pushZeroDisabledInV034")
+        return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),

@@ -34,24 +34,32 @@ import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is used to "finalize" hbar and token transfers for the parent transaction record.
  */
 @Singleton
 public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
+    private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
+
     private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
@@ -71,7 +79,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
+        final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to
@@ -85,13 +94,25 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
 
         // Hbar changes from transaction including staking rewards
-        final var hbarChanges = hbarChangesFrom(writableAccountStore);
-        final var tokenChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
-        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+        final Map<AccountID, Long> hbarChanges;
+        try {
+            hbarChanges = hbarChangesFrom(writableAccountStore);
+        } catch (HandleException e) {
+            if (e.getStatus() == FAIL_INVALID) {
+                logHbarFinalizationFailInvalid(
+                        payer,
+                        context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class),
+                        writableAccountStore);
+            }
+            throw e;
+        }
+        final var tokenChanges =
+                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
 
         if (nftChanges.isEmpty()) {
             final var nonFungibleTokenChanges =
-                    tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+                    tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
             nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
         }
 
@@ -117,6 +138,29 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
+    }
+
+    // invoke logger parameters conditionally
+    @SuppressWarnings("java:S2629")
+    private void logHbarFinalizationFailInvalid(
+            @NonNull final AccountID payerId,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final WritableAccountStore accountStore) {
+        logger.error(
+                """
+                        Non-zero net hbar change when handling body
+                        {}
+                        with payer {} and fee {}; original/modified accounts claimed to be:
+                        {}
+                        """,
+                recordBuilder.transactionBody(),
+                payerId,
+                recordBuilder.transactionFee(),
+                accountStore.modifiedAccountsInState().stream()
+                        .map(accountId -> String.format(
+                                "\tOriginal : %s%n\tModified : %s",
+                                accountStore.getOriginalValue(accountId), accountStore.get(accountId)))
+                        .collect(Collectors.joining("%n")));
     }
 
     private void deductChangesFromChildRecords(

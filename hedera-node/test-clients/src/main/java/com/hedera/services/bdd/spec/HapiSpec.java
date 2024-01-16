@@ -877,8 +877,9 @@ public class HapiSpec implements Runnable {
         return internalDefaultHapiSpec(name, false, emptyList(), snapshotMatchModes);
     }
 
-    public static Def.PropertyPreserving propertyPreservingHapiSpec(final String name) {
-        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props));
+    public static Def.PropertyPreserving propertyPreservingHapiSpec(
+            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props), snapshotMatchModes);
     }
 
     public static Def.PropertyPreserving onlyPropertyPreservingHapiSpec(final String name) {

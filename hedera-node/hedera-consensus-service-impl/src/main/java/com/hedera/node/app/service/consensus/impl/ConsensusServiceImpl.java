@@ -17,14 +17,11 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
@@ -40,12 +37,6 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema(final SemanticVersion version) {
-        return new Schema(version) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
-            }
-        };
+        return new InitialModServiceConsensusSchema(version);
     }
 }

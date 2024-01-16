@@ -77,7 +77,7 @@ class WritableStoreFactoryImplTest {
     @MethodSource("storeParameters")
     void returnCorrectStoreClass(final String serviceName, final Class<?> storeClass) {
         // given
-        given(stack.createWritableStates(serviceName)).willReturn(writableStates);
+        given(stack.getWritableStates(serviceName)).willReturn(writableStates);
         final WritableStoreFactory subject = new WritableStoreFactory(stack, serviceName);
 
         // given
