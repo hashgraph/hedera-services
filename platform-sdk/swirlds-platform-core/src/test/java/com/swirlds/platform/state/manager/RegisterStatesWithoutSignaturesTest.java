@@ -25,17 +25,16 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Register States Without Signatures Test")
-public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateManagerTest {
+public class RegisterStatesWithoutSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -78,15 +77,10 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     @Test
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
-
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = 100;
@@ -100,17 +94,8 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
-
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertNull(lastCompletedState, "no states should be completed in this test");
             }

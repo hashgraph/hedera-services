@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A thread-safe container that also manages reservations for the emergency state.
  */
-public class EmergencyStateNexus extends SignedStateNexus {
+public class EmergencyStateNexus extends LockFreeStateNexus {
     /**
      * Clears the current state when the platform becomes active.
      *
