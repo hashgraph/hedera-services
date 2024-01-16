@@ -160,7 +160,7 @@ public final class SmartContractMapValue implements VirtualValue {
         return Arrays.hashCode(value);
     }
 
-    public static int getSizeInBytes() {
+    static int getSizeInBytes() {
         return 32;
     }
 
