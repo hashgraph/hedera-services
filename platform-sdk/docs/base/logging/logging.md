@@ -88,7 +88,7 @@ logging.level.com.hashgraph = WARN
 
 This configuration demonstrates how to set a global default logging level (`INFO`). It also illustrates how to specify logging levels for packages and classes. For example, everything under `com.swirlds.common.crypto` is set to `DEBUG`, except for `com.swirlds.common.crypto.Signature`, which is explicitly set to `WARN`. Similarly, all loggers within `com.hashgraph` default to `WARN`. This approach ensures that loggers inherit the most specific level defined in the configuration, providing both flexibility and precision in logging management.
 
-To provide developers with more control and flexibility in logging, we propose introducing filters for markers. This feature would allow developers to focus on log messages associated with specific markers, regardless of the logger's log level. If there's demand for such functionality among developers, the configuration for marker filters could be structured as follows:
+To provide developers with more control and flexibility in logging, the configuration supports filters for markers. This feature allows developers to focus on log messages associated with specific markers, regardless of the logger's log level. Here's a sample configuration for marker filters:
 
 ```properties
 # Marker filter configuration
