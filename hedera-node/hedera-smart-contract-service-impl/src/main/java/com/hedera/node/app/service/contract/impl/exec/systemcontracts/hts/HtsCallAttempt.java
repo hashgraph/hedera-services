@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
@@ -305,15 +305,26 @@ public class HtsCallAttempt {
     }
 
     /**
-     * Returns the token at the given address, if it exists.
+     * Returns the token at the given Besu address, if it exists.
      *
-     * @param tokenAddress the address of the token to look up
+     * @param tokenAddress the Besu address of the token to look up
      * @return the token that is the target of this redirect, or null if it didn't exist
      */
     public @Nullable Token linkedToken(@NonNull final Address tokenAddress) {
         requireNonNull(tokenAddress);
-        if (isLongZero(tokenAddress)) {
-            return enhancement.nativeOperations().getToken(numberOfLongZero(tokenAddress));
+        return linkedToken(tokenAddress.toArray());
+    }
+
+    /**
+     * Returns the token at the given EVM address, if it exists.
+     *
+     * @param evmAddress the headlong address of the token to look up
+     * @return the token that is the target of this redirect, or null if it didn't exist
+     */
+    public @Nullable Token linkedToken(@NonNull final byte[] evmAddress) {
+        requireNonNull(evmAddress);
+        if (isLongZeroAddress(evmAddress)) {
+            return enhancement.nativeOperations().getToken(numberOfLongZero(evmAddress));
         } else {
             // No point in looking up a token that can't exist
             return null;
