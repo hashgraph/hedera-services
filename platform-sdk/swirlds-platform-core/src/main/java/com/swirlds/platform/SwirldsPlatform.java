@@ -555,6 +555,7 @@ public class SwirldsPlatform implements Platform {
                 time,
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
+                this::waitUntilTransactionHandlingThreadIsNotBusy,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
         platformWiring.bind(
@@ -829,6 +830,17 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
+    }
+
+    /**
+     * Wait until the consensus round handler is not busy.
+     */
+    private void waitUntilTransactionHandlingThreadIsNotBusy() {
+        try {
+            consensusRoundHandler.waitUntilNotBusy();
+        } catch (final InterruptedException e) {
+            throw new RuntimeException("Interrupted waiting for transaction handling thread to not be busy", e);
+        }
     }
 
     /**
