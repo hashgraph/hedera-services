@@ -1,13 +1,13 @@
 ## Hedera Logging API
 
 ### Introduction
-Our custom logging facade is crafted to meet our unique requirements, ensuring compatibility with various software integrations. It acts as a bridge, redirecting events from our facade to SLF4J, providing flexibility for projects dependent on our modules.
+The Hedera Logging API is a custom logging facade which is crafted to meet our unique requirements, ensuring compatibility with various software integrations. It acts as a bridge, redirecting events from our facade to SLF4J, providing flexibility for projects dependent on our modules.
 
 ### Architecture and Configuration
-Our architecture does not dictate the format of logging output, allowing for a wide range of output options. This flexibility permits various configurations, from console outputs to integrations with systems like Graylog or Kibana.
+The architecture does not dictate the format of logging output, allowing for a wide range of output options. This flexibility permits various configurations, from console outputs to integrations with systems like Graylog or Kibana.
 
-### Features of Our Logging Facade
-Our facade goes beyond mere message logging, encapsulating rich information within each logging event. Key features include:
+### Features of the Logging Facade
+The facade goes beyond mere message logging, encapsulating rich information within each logging event. Key features include:
 
 1. **Support for Message Placeholders**
 2. **Event Origin Tracking**
@@ -21,7 +21,7 @@ Our facade goes beyond mere message logging, encapsulating rich information with
 
 ---
 
-## Implementing the New Logging API
+## Using the Hedera Logging API
 
 ### Setting Up the Logger
 
@@ -86,6 +86,8 @@ logging.level.com.swirlds.common.crypto.Signature = WARN
 logging.level.com.hashgraph = WARN
 ```
 
+### Levels
+
 This configuration demonstrates how to set a global default logging level (`INFO`). It also illustrates how to specify logging levels for packages and classes. For example, everything under `com.swirlds.common.crypto` is set to `DEBUG`, except for `com.swirlds.common.crypto.Signature`, which is explicitly set to `WARN`. Similarly, all loggers within `com.hashgraph` default to `WARN`. This approach ensures that loggers inherit the most specific level defined in the configuration, providing both flexibility and precision in logging management.
 
 To provide developers with more control and flexibility in logging, the configuration supports filters for markers. This feature allows developers to focus on log messages associated with specific markers, regardless of the logger's log level. Here's a sample configuration for marker filters:
@@ -96,6 +98,8 @@ logging.marker.CONFIG = ENABLED
 logging.marker.CRYPTO = DISABLED
 logging.marker.OTHER = DEFAULT
 ```
+
+### Markers
 
 In this configuration, the `logging.marker.NAME` pattern is used, where `NAME` represents the marker's name, and the value can be set to `ENABLED`, `DISABLED`, or `DEFAULT`. For example, `logging.marker.CONFIG = ENABLED` would ensure that all log messages tagged with the `CONFIG` marker are displayed, irrespective of their log level.
 
@@ -110,12 +114,13 @@ logging.level.com.hashgraph = WARN
 
 # Marker-specific logging configuration
 logging.marker.CONFIG = ENABLED
-
-# Additional handler configuration
-logging.handler.NAME.level = WARN
 ```
 
-To further refine our logging system, we have incorporated the concept of handlers. These handlers allow for more granular control over logging behavior. Each handler can be distinctly named and configured using the prefix `logging.handler.NAME`, where `NAME` is a unique identifier for the handler. This structure enables us to apply handler-specific settings. For instance, `logging.handler.NAME.level` can be used to set the logging level for a specific handler. All previously discussed features, such as marker filters and log level settings, are also applicable to these handlers.
+### Handlers
+
+To further refine our logging system, we have incorporated handlers for more granular control over logging behavior. Each handler can be distinctly named and configured using the prefix `logging.handler.NAME`, where `NAME` serves as a unique identifier. This structure allows for the application of handler-specific settings. For instance, `logging.handler.NAME.level` is used to set the logging level for a specific handler, ensuring that all previously discussed features such as marker filters and log level settings are compatible. This setup is instrumental in creating dedicated log files or outputs for specific types of log messages, offering a focused view that is particularly useful in complex systems or during targeted analyses. 
+
+A key aspect of the Logging System design is its performance, emphasizing maximum efficiency with as low an impact as possible on the running system.
 
 A particularly useful feature of handlers is the `inheritLevels` property. This boolean property determines whether the handler should inherit the default level configurations set globally. By default, `inheritLevels` is set to `true`. However, it can be turned off to create a handler that focuses exclusively on a specific aspect of logging, such as a particular marker. For example, if you need a handler that only logs entries marked with the `CRYPTO` marker, your configuration would look like this:
 
@@ -125,7 +130,7 @@ logging.handler.CRYPTO_FILE.level = OFF
 logging.handler.CRYPTO_FILE.marker.CRYPTO = ENABLED
 ```
 
-In this configuration, the `CRYPTO_FILE` handler is set to ignore the global log level settings (`level = OFF`) but is specifically enabled to log messages tagged with the `CRYPTO` marker (`marker.CRYPTO = ENABLED`). This setup allows for the creation of dedicated log files or outputs for specific types of log messages, providing a focused view that can be particularly useful in complex systems or during specific types of analysis.
+In this configuration, the `CRYPTO_FILE` handler is set to ignore the global log level settings (`level = OFF`) but is specifically enabled to log messages tagged with the `CRYPTO` marker (`marker.CRYPTO = ENABLED`). 
 
 ---
 
