@@ -364,7 +364,7 @@ class VirtualMapHashingTest {
 
         // make sure that the elements have hashes
         IntStream.range(1, nEntries)
-                .forEach(index -> assertNotNull(root.getRecords().findHash(index)));
+                .forEach(index -> assertNotNull(root.getRecords().findHash(index), "" + index));
 
         // should not throw any exceptions
         map.getRoot().fullLeafRehashIfNecessary();

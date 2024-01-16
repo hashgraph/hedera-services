@@ -101,7 +101,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onBatchStarted() {
+    public synchronized void onBatchStarted() {
         batchLeaves.clear();
         batchNodes.clear();
     }
@@ -110,7 +110,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onRankStarted() {
+    public synchronized void onRankStarted() {
         rankLeaves = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
         rankNodes = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
     }
@@ -119,7 +119,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onNodeHashed(final long path, final Hash hash) {
+    public synchronized void onNodeHashed(final long path, final Hash hash) {
         rankNodes.add(new VirtualHashRecord(path, hash));
     }
 
@@ -127,7 +127,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
+    public synchronized void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
         rankLeaves.add(leaf);
     }
 
@@ -135,7 +135,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onRankCompleted() {
+    public synchronized void onRankCompleted() {
         batchLeaves.add(rankLeaves);
         batchNodes.add(rankNodes);
     }
@@ -144,7 +144,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public void onBatchCompleted() {
+    public synchronized void onBatchCompleted() {
         long maxPath = -1;
 
         Stream<VirtualHashRecord> sortedDirtyHashes = Stream.of();
