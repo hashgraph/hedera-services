@@ -1553,7 +1553,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     @Order(14)
     final HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller", NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec(
+                        "MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "5"),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
@@ -2342,7 +2345,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @Order(21)
     final HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec(
-                        "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+                        "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
                 .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))

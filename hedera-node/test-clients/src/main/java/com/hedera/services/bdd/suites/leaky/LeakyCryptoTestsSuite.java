@@ -186,7 +186,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite(fuzzyMatch = true)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestMethodOrder(
+        MethodOrderer.OrderAnnotation
+                .class) // define same running order for mod specs as in getSpecsInSuite() definition used in mono
 public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
@@ -995,7 +997,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         "contractCallAfterEthereumTransferLazyCreate",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
@@ -1048,7 +1051,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var lazyCreateTxn = PAY_TXN;
         final var failedLazyCreateTxn = "failedLazyCreateTxn";
         return propertyPreservingHapiSpec(
-                        "lazyCreateViaEthereumCryptoTransfer", ALLOW_SKIPPED_ENTITY_IDS, NONDETERMINISTIC_ETHEREUM_DATA)
+                        "lazyCreateViaEthereumCryptoTransfer",
+                        ALLOW_SKIPPED_ENTITY_IDS,
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
