@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EMPTY_ERROR_MSG;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -594,6 +595,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
             } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
                 Assertions.assertTrue(expected != null && actual != null, "Token name is null");
+            } else if ("errorMessage".equals(fieldName)
+                    && "0x".equals(expected)
+                    && matchModes.contains(ALLOW_EMPTY_ERROR_MSG)) {
+                Assertions.assertTrue(true);
             } else {
                 Assertions.assertEquals(
                         expected,

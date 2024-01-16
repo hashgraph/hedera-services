@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -116,7 +118,13 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         } catch (AbortException e) {
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
-            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
+
+            ContractID recipientId = null;
+            if (!INVALID_CONTRACT_ID.equals(e.getStatus())) {
+                recipientId = hevmTransaction.contractId();
+            }
+
+            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), recipientId, e.getStatus());
             return CallOutcome.fromResultsWithoutSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }

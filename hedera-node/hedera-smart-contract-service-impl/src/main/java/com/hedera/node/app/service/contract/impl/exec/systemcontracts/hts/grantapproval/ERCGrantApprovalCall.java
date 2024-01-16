@@ -106,7 +106,6 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(ownerAddress)
                 .forIndexedArgument(spenderAddress)
-                .forDataItem(amount)
                 .build());
 
         if (status != ResponseCodeEnum.SUCCESS) {

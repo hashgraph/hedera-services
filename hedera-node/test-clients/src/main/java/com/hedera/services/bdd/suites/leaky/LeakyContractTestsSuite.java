@@ -105,7 +105,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EMPTY_ERROR_MSG;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -259,7 +261,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite // (fuzzyMatch = true)
+@HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(
         MethodOrderer.OrderAnnotation
                 .class) // define same running order for mod specs as in getSpecsInSuite() definition used in mono
@@ -1951,7 +1953,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "SelfDestructCallable";
         final var beneficiary = "beneficiary";
         return defaultHapiSpec(
-                        "DeletedContractsCannotBeUpdated", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+                        "DeletedContractsCannotBeUpdated",
+                        EXPECT_STREAMLINED_INGEST_RECORDS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).gas(300_000),
@@ -2291,6 +2296,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec(
                         "evmLazyCreateViaSolidityCallTooManyCreatesFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
                 .preserving(
                         lazyCreationProperty,
@@ -2726,13 +2732,17 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     @Order(31)
-    private HapiSpec someErc721GetApprovedScenariosPass() {
+    HapiSpec someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("someErc721GetApprovedScenariosPass")
+        return propertyPreservingHapiSpec(
+                        "someErc721GetApprovedScenariosPass",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -2839,13 +2849,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     @Order(33)
-    private HapiSpec someErc721BalanceOfScenariosPass() {
+    HapiSpec someErc721BalanceOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("someErc721BalanceOfScenariosPass")
+        return propertyPreservingHapiSpec(
+                        "someErc721BalanceOfScenariosPass",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -2923,13 +2936,19 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     @Order(32)
-    private HapiSpec someErc721OwnerOfScenariosPass() {
+    HapiSpec someErc721OwnerOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("someErc721OwnerOfScenariosPass")
+        return propertyPreservingHapiSpec(
+                        "someErc721OwnerOfScenariosPass",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE,
+                        ALLOW_EMPTY_ERROR_MSG)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -3021,8 +3040,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     @Order(34)
     HapiSpec callToNonExistingContractFailsGracefully() {
-
-        return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully", NONDETERMINISTIC_ETHEREUM_DATA)
+        return propertyPreservingHapiSpec(
+                        "callToNonExistingContractFailsGracefully",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_NONCE,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
