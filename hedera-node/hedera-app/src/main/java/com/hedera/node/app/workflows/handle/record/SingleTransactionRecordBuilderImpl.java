@@ -786,7 +786,8 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl accountID(@Nullable final AccountID accountID) {
+    public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
+        requireNonNull(accountID, "accountID must not be null");
         transactionReceiptBuilder.accountID(accountID);
         return this;
     }
