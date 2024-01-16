@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.A
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SOME_BYTE_CODE;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOPIC;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
@@ -44,6 +46,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Random;
@@ -81,11 +84,12 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec reconnectMixedOps() {
-        AtomicInteger tokenId = new AtomicInteger(0);
-        AtomicInteger scheduleId = new AtomicInteger(0);
+        final AtomicInteger tokenId = new AtomicInteger(0);
+        final AtomicInteger scheduleId = new AtomicInteger(0);
+        final AtomicInteger contractId = new AtomicInteger(0);
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, r);
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, contractId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
@@ -98,6 +102,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
+                        fileCreate(SOME_BYTE_CODE)
+                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
                         // Kill node 2
                         shutDownNode("Carol").logged(),
                         // Wait for it to shut down
@@ -125,6 +131,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
+                        fileCreate(SOME_BYTE_CODE)
+                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
                         inParallel(mixedOpsBurst.get()));
     }
 }
