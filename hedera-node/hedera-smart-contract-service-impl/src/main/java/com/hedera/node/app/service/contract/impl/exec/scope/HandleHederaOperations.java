@@ -417,8 +417,7 @@ public class HandleHederaOperations implements HederaOperations {
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
-                        .build())
-                .accountID(null); // in mono, we don't have accountID set for contract creations
+                        .build());
         // Mark the created account as a contract with the given auto-renew account id
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(number).build();
