@@ -172,10 +172,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
-                .given(
-                        overriding("staking.fees.nodeRewardPercentage", "10"),
-                        cryptoCreate(PAYER)
-                )
+                .given(overriding("staking.fees.nodeRewardPercentage", "10"), cryptoCreate(PAYER))
                 .when()
                 .then(
                         tokenDelete("0.0.0").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID),
