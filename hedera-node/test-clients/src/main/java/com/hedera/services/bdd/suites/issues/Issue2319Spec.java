@@ -38,10 +38,17 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
+
+    private String pemLoc = "src/main/resource/randomCivilianKey.pem";
+    private String passphrase = "passphrase";
 
     public static void main(String... args) {
         new Issue2319Spec().runSuiteSync();
@@ -50,20 +57,19 @@ public class Issue2319Spec extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            sysFileSigReqsWaivedForMasterAndTreasury(),
-            sysAccountSigReqsWaivedForMasterAndTreasury(),
-            propsPermissionsSigReqsWaivedForAddressBookAdmin(),
             sysFileImmutabilityWaivedForMasterAndTreasury(),
+            propsPermissionsSigReqsWaivedForAddressBookAdmin(),
+            sysAccountSigReqsWaivedForMasterAndTreasury(),
+            sysFileSigReqsWaivedForMasterAndTreasury()
         });
     }
 
+    @Order(2)
     @HapiTest
     final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
-        var pemLoc = "randomCivilianKey.pem";
-
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
-                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
+                        keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
@@ -85,6 +91,7 @@ public class Issue2319Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
+    @Order(1)
     @HapiTest
     final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
@@ -109,14 +116,13 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy(GENESIS));
     }
 
+    @Order(3)
     @HapiTest
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "randomCivilianKey.pem";
-
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
+                        keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
                 .when(cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
                 .then(
@@ -135,15 +141,15 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
     }
 
+    @Order(4)
     @HapiTest
     final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "randomCivilianKey.pem";
         var validRates = new AtomicReference<ByteString>();
 
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
+                        keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
                         withOpContext((spec, opLog) -> {
                             var fetch = getFileContents(EXCHANGE_RATES);
                             CustomSpecAssert.allRunFor(spec, fetch);
