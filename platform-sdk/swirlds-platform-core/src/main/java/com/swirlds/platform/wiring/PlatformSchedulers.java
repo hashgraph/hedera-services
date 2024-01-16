@@ -92,8 +92,8 @@ public record PlatformSchedulers(
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
                         .withType(TaskSchedulerType.CONCURRENT)
-                        .withUnhandledTaskCapacity(config.eventHasherUnhandledCapacity())
                         .withOnRamp(hashingObjectCounter)
+                        .withExternalBackPressure(true)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
@@ -103,6 +103,7 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("postHashCollector")
                         .withType(TaskSchedulerType.SEQUENTIAL)
                         .withOffRamp(hashingObjectCounter)
+                        .withExternalBackPressure(true)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()

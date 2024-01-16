@@ -126,6 +126,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         platformCoordinator = new PlatformCoordinator(
                 eventHasherWiring,
+                postHashCollectorWiring,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,

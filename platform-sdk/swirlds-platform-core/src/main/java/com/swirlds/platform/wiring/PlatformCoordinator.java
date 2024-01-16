@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import java.util.Objects;
  */
 public class PlatformCoordinator {
     private final EventHasherWiring eventHasherWiring;
+    private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -42,6 +44,7 @@ public class PlatformCoordinator {
      * Constructor
      *
      * @param eventHasherWiring                      the event hasher wiring
+     * @param postHashCollectorWiring                the post hash collector wiring
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
@@ -54,6 +57,7 @@ public class PlatformCoordinator {
      */
     public PlatformCoordinator(
             @NonNull final EventHasherWiring eventHasherWiring,
+            @NonNull final PostHashCollectorWiring postHashCollectorWiring,
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
             @NonNull final EventDeduplicatorWiring eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
@@ -65,6 +69,7 @@ public class PlatformCoordinator {
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
 
         this.eventHasherWiring = Objects.requireNonNull(eventHasherWiring);
+        this.postHashCollectorWiring = Objects.requireNonNull(postHashCollectorWiring);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
@@ -80,6 +85,8 @@ public class PlatformCoordinator {
      * Flushes the intake pipeline
      */
     public void flushIntakePipeline() {
+        eventHasherWiring.flushRunnable().run();
+        postHashCollectorWiring.flushRunnable().run();
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
