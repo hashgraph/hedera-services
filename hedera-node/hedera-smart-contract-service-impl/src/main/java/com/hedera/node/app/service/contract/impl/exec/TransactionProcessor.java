@@ -297,7 +297,6 @@ public class TransactionProcessor {
             final var alias = transaction.contractIdOrThrow().evmAddress();
             if (transaction.hasValue() && alias != null) {
                 final var senderId = sender.hederaId();
-                final var relayerId = relayer.hederaId();
                 // attempt to send hbar to zero address will result in revert and will charge
                 // gas
                 final var zeroAddress = new byte[20];
