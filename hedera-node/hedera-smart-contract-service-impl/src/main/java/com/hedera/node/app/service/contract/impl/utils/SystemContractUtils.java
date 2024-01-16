@@ -65,9 +65,7 @@ public final class SystemContractUtils {
             final long gasUsed, final Bytes result, long gas, Bytes inputData, AccountID senderId) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
-                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
-                .functionParameters(tuweniToPbjBytes(inputData))
                 .senderId(senderId)
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();
