@@ -43,6 +43,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -66,7 +69,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class DelegatePrecompileSuite extends HapiSuite {
 
@@ -107,7 +110,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForTransfer")
+        return defaultHapiSpec(
+                        "delegateCallForTransfer",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -162,7 +169,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
     final HapiSpec delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForBurn")
+        return defaultHapiSpec(
+                        "delegateCallForBurn",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -211,7 +222,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
     final HapiSpec delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForMint")
+        return defaultHapiSpec(
+                        "delegateCallForMint",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
