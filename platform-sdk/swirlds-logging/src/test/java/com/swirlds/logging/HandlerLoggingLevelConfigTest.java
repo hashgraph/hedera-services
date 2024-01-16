@@ -280,7 +280,7 @@ public class HandlerLoggingLevelConfigTest {
                 new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
 
         // Ask the Orchestrator to run all desired scenarios up to 2 Seconds
-        //Scenarios define a configuration and a set of assertions for that config.
+        // Scenarios define a configuration and a set of assertions for that config.
         HandlerLoggingLevelConfigTestOrchestrator.runScenarios(
                 configUnderTest,
                 MAX_DURATION,
