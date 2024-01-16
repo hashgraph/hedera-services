@@ -115,8 +115,8 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                     contractFunctionResultSuccessFor(
                                             pricedResult.fullResult().gasRequirement(),
                                             output,
-                                            frame.getRemainingGas(),
-                                            frame.getInputData(),
+                                            null,
+                                            null,
                                             attempt.senderId()),
                                     responseCode,
                                     enhancement

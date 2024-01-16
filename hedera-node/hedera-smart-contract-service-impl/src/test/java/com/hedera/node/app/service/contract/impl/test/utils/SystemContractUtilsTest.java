@@ -45,9 +45,11 @@ class SystemContractUtilsTest {
 
         final var expected = ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
+                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .senderId(senderId)
+                .functionParameters(tuweniToPbjBytes(inputData))
                 .build();
         final var actual =
                 SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, gas, inputData, senderId);
