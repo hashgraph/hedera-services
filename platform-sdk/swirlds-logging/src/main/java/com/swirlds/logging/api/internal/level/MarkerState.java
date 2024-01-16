@@ -24,7 +24,7 @@ package com.swirlds.logging.api.internal.level;
  * <p>
  * The {@code ENABLED} option signifies that the marker is explicitly enabled.
  * The {@code DISABLED} option indicates that the marker is explicitly disabled.
- * The {@code DEFAULT} option implies that the marker state should be inherited from the package configuration.
+ * The {@code UNDEFINED} option implies that the marker state should be inherited from the package configuration.
  */
 public enum MarkerState {
     ENABLED,
