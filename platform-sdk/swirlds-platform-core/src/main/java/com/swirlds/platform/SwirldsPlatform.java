@@ -811,6 +811,7 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
+        GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
     }
 
     /**

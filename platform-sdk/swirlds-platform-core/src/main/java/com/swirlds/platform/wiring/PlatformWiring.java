@@ -228,22 +228,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
-     * @param eventHasher            the event hasher to bind
+     * @param eventHasher             the event hasher to bind
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
      * @param eventSignatureValidator the event signature validator to bind
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
-     * @param signedStateFileManager the signed state file manager to bind
-     * @param stateSigner            the state signer to bind
-     * @param pcesReplayer           the PCES replayer to bind
-     * @param pcesWriter             the PCES writer to bind
-     * @param eventDurabilityNexus   the event durability nexus to bind
+     * @param signedStateFileManager  the signed state file manager to bind
+     * @param stateSigner             the state signer to bind
+     * @param pcesReplayer            the PCES replayer to bind
+     * @param pcesWriter              the PCES writer to bind
+     * @param eventDurabilityNexus    the event durability nexus to bind
      * @param pcesSequencer           the PCES sequencer to bind
      * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
-     * @param stateSignatureCollector      the signed state manager to bind
+     * @param stateSignatureCollector the signed state manager to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
