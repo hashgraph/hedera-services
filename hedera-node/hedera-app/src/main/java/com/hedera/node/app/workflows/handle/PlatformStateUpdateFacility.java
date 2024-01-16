@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class PlatformStateUpdateFacility {
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to platform state
-                final ReadableStates states = state.createReadableStates(FreezeService.NAME);
+                final ReadableStates states = state.getReadableStates(FreezeService.NAME);
                 final ReadableSingletonState<Timestamp> freezeTime =
                         states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
                 requireNonNull(freezeTime.get());

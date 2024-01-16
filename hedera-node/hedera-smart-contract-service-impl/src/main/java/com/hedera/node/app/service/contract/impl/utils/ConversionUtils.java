@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,9 +277,12 @@ public class ConversionUtils {
             final List<StorageChange> changes = new ArrayList<>();
             for (final var access : storageAccess.accesses()) {
                 changes.add(new StorageChange(
-                        tuweniToPbjBytes(access.key()),
-                        tuweniToPbjBytes(access.value()),
-                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()))));
+                        tuweniToPbjBytes(access.key().trimLeadingZeros()),
+                        tuweniToPbjBytes(access.value().trimLeadingZeros()),
+                        access.isReadOnly()
+                                ? null
+                                : tuweniToPbjBytes(
+                                        requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
             allStateChanges.add(new ContractStateChange(
                     ContractID.newBuilder()
@@ -733,6 +736,21 @@ public class ConversionUtils {
      */
     public static @NonNull BigInteger fromAToB(@NonNull final BigInteger aAmount, final int bEquiv, final int aEquiv) {
         return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
+    }
+
+    /**
+     * Given a {@link ContractID} return the corresponding Besu {@link Address}
+     * Importantly, this method does NOT check for the existence of the contract in the ledger
+     *
+     * @param contractId
+     * @return the equivalent Besu address
+     */
+    public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
+        if (contractId.hasEvmAddress()) {
+            return pbjToBesuAddress(contractId.evmAddress());
+        } else {
+            return asLongZeroAddress(contractId.contractNumOrThrow());
+        }
     }
 
     /**

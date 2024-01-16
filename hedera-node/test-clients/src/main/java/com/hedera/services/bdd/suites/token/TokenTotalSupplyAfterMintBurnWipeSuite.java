@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -42,7 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
 
@@ -62,7 +63,8 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     @HapiTest
     public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
-        return defaultHapiSpec("checkTokenTotalSupplyAfterMintAndBurn")
+        return defaultHapiSpec(
+                        "checkTokenTotalSupplyAfterMintAndBurn", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate("tokenReceiver").balance(0L),

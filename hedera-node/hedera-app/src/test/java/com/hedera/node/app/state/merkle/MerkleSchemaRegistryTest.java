@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDb;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.Set;
@@ -48,15 +49,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for the {@link MerkleSchemaRegistry}. The only thing not covered here are serialization
  * tests, they are covered in {@link SerializationTest}.
  */
+@ExtendWith(MockitoExtension.class)
 class MerkleSchemaRegistryTest extends MerkleTestBase {
+    @Mock
+    private HederaLifecycles lifecycles;
+
     private MerkleSchemaRegistry schemaRegistry;
     private Configuration config;
     private NetworkInfo networkInfo;
@@ -162,11 +170,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(
-                            (tree, state) -> {},
-                            (e, m, s) -> {},
-                            (state, platform, dualState, trigger, version) -> {},
-                            (s, ab, pc) -> {}),
+                    new MerkleHederaState(lifecycles),
                     version(9, 0, 0),
                     version(10, 0, 0),
                     config,
@@ -184,8 +188,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(
-                    (tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {}, (s, ab, pc) -> {});
+            merkleTree = new MerkleHederaState(lifecycles);
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
@@ -395,7 +398,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Migration State Impact Tests")
         class StateImpactTest {
             @BeforeEach
-            void setUp() {}
+            void setUp() {
+                // Use a fresh database instance for each test
+                MerkleDb.resetDefaultInstancePath();
+            }
 
             Schema createV1Schema() {
                 return new TestSchema(versions[1]) {
@@ -547,7 +553,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // Then we see that the values for A, B, and C are available
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
                 final ReadableKVState<String, String> fruitV1 = readableStates.get(FRUIT_STATE_KEY);
                 assertThat(fruitV1.keys()).toIterable().containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
@@ -573,7 +579,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // We should see the v2 state (the delta from v2 after applied atop v1)
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(3);
 
                 final ReadableKVState<String, String> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
@@ -610,7 +616,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // We should see the v3 state (the delta from v3 after applied atop v2 and v1)
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
                 assertThat(readableStates.stateKeys()).containsExactlyInAnyOrder(ANIMAL_STATE_KEY);
 

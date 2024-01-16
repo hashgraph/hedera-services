@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,18 @@
 
 package com.swirlds.common.merkle.crypto;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Public factory implementation from which all {@link MerkleCryptography} instances should be acquired.
@@ -33,6 +36,8 @@ import com.swirlds.common.threading.locks.locked.Locked;
  */
 @Deprecated(forRemoval = true)
 public class MerkleCryptoFactory {
+
+    private static final Logger logger = LogManager.getLogger(MerkleCryptoFactory.class);
 
     /**
      * Internal lock
@@ -47,21 +52,42 @@ public class MerkleCryptoFactory {
     private MerkleCryptoFactory() {}
 
     /**
+     * Setup cryptography. Only needed to support unit tests that do not go through the proper setup procedures.
+     */
+    private static void init() {
+        // This exception is intended to intentionally fail validators for deployments that do not set up
+        // this class correctly. This won't cause a problem during unit tests, which are the biggest offender
+        // w.r.t. not setting this up correctly.
+        logger.error(EXCEPTION.getMarker(), "MerkleCryptoFactory not initialized, using default config");
+
+        final Configuration defaultConfiguration = ConfigurationBuilder.create()
+                .withConfigDataType(CryptoConfig.class)
+                .build();
+        merkleCryptography = MerkleCryptographyFactory.create(defaultConfiguration, CryptographyHolder.get());
+    }
+
+    /**
+     * Set the {@link MerkleCryptography} singleton.
+     *
+     * @param merkleCryptography the {@link MerkleCryptography} to use
+     */
+    public static void set(@NonNull final MerkleCryptography merkleCryptography) {
+        try (final Locked ignored = lock.lock()) {
+            MerkleCryptoFactory.merkleCryptography = merkleCryptography;
+        }
+    }
+
+    /**
      * Getter for the {@link MerkleCryptography} singleton.
      *
      * @return the {@link MerkleCryptography} singleton
      */
     public static MerkleCryptography getInstance() {
-        if (merkleCryptography == null) {
-            try (final Locked ignored = lock.lock()) {
-                if (merkleCryptography == null) {
-                    merkleCryptography = new MerkleCryptoEngine(
-                            getStaticThreadManager(),
-                            CryptographyHolder.get(),
-                            ConfigurationHolder.getInstance().get().getConfigData(CryptoConfig.class));
-                }
+        try (final Locked ignored = lock.lock()) {
+            if (merkleCryptography == null) {
+                init();
             }
+            return merkleCryptography;
         }
-        return merkleCryptography;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
  * transaction.
  */
-public interface TokenUpdateRecordBuilder {
+public interface TokenUpdateRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Adds the token relations that are created by auto associations.
      * This information is needed while building the transfer list, to set the auto association flag.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,13 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class NonAncientEventWindow {
 
-    /**
-     * The initial NonAncientEventWindow. This constant is used to initialize NonAncientEventWindow variables before
-     * receiving an updated value.
-     */
-    public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
-            ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION);
-
+    private final AncientMode ancientMode;
     private final long latestConsensusRound;
     private final long minRoundNonAncient;
     private final long minGenNonAncient;
@@ -48,11 +45,15 @@ public class NonAncientEventWindow {
      * @param latestConsensusRound the latest round that has come to consensus
      * @param minRoundNonAncient   the minimum round that is non-ancient
      * @param minGenNonAncient     the minimum generation that is non-ancient
+     * @param ancientMode          the ancient mode
      * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
      *                                  minGenNonAncient value is less than the first generation for events.
      */
     public NonAncientEventWindow(
-            final long latestConsensusRound, final long minRoundNonAncient, final long minGenNonAncient) {
+            final long latestConsensusRound,
+            final long minRoundNonAncient,
+            final long minGenNonAncient,
+            @NonNull final AncientMode ancientMode) {
         if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
             throw new IllegalArgumentException(
                     "The latest consensus round cannot be less than the first round of consensus.");
@@ -64,6 +65,39 @@ public class NonAncientEventWindow {
         this.latestConsensusRound = latestConsensusRound;
         this.minRoundNonAncient = Math.max(minRoundNonAncient, ConsensusConstants.ROUND_FIRST);
         this.minGenNonAncient = minGenNonAncient;
+        this.ancientMode = ancientMode;
+    }
+
+    /**
+     * Creates a genesis non-ancient event window for the given ancient mode.
+     *
+     * @param ancientMode the ancient mode to use
+     * @return a genesis non-ancient event window.
+     */
+    @NonNull
+    public static NonAncientEventWindow getGenesisNonAncientEventWindow(@NonNull final AncientMode ancientMode) {
+        return new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST,
+                ConsensusConstants.ROUND_FIRST,
+                EventConstants.FIRST_GENERATION,
+                ancientMode);
+    }
+
+    /**
+     * @return true if this is a genesis non-ancient event window, false otherwise.
+     */
+    public boolean isGenesis() {
+        return this.latestConsensusRound == ConsensusConstants.ROUND_FIRST
+                && this.minRoundNonAncient == ConsensusConstants.ROUND_FIRST
+                && this.minGenNonAncient == EventConstants.FIRST_GENERATION;
+    }
+
+    /**
+     * @return the ancient mode.
+     */
+    @NonNull
+    public AncientMode getAncientMode() {
+        return ancientMode;
     }
 
     /**
@@ -74,11 +108,14 @@ public class NonAncientEventWindow {
     }
 
     /**
-     * @return the lower bound of the non-ancient event window
+     * @return the lower bound of the non-ancient event window.
      */
-    public long getLowerBound() {
-        // FUTURE WORK: return minRoundNonAncient once we switch from minGenNonAncient.
-        return minGenNonAncient;
+    public long getAncientThreshold() {
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            return minRoundNonAncient;
+        } else {
+            return minGenNonAncient;
+        }
     }
 
     /**
@@ -88,8 +125,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final GossipEvent event) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return event.getGeneration() < minGenNonAncient;
+        return event.getAncientIndicator(ancientMode) < getAncientThreshold();
     }
 
     /**
@@ -99,8 +135,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final EventDescriptor event) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return event.getGeneration() < minGenNonAncient;
+        return event.getAncientIndicator(ancientMode) < getAncientThreshold();
     }
 
     /**
@@ -110,8 +145,7 @@ public class NonAncientEventWindow {
      * @return true if the value is ancient, false otherwise.
      */
     public boolean isAncient(final long testValue) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return testValue < minGenNonAncient;
+        return testValue < getAncientThreshold();
     }
 
     /**
@@ -125,9 +159,28 @@ public class NonAncientEventWindow {
      */
     @NonNull
     public static NonAncientEventWindow createUsingRoundsNonAncient(
-            final long latestConsensusRound, final long minGenNonAncient, final long roundsNonAncient) {
+            final long latestConsensusRound,
+            final long minGenNonAncient,
+            final long roundsNonAncient,
+            @NonNull final AncientMode ancientMode) {
         return new NonAncientEventWindow(
-                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient);
+                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient, ancientMode);
+    }
+
+    @NonNull
+    public static NonAncientEventWindow createUsingPlatformContext(
+            final long latestConsensusRound,
+            final long minGenNonAncient,
+            @NonNull final PlatformContext platformContext) {
+        final long roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        return createUsingRoundsNonAncient(latestConsensusRound, minGenNonAncient, roundsNonAncient, ancientMode);
     }
 
     @Override

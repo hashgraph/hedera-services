@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -46,6 +48,7 @@ class HalfDiskVirtualKeySetTest {
         // Bloom filter configuration should give ~1% false positive rate
         // according to https://hur.st/bloomfilter/?n=1000000&p=1.0E-3&m=&k=
         final HalfDiskVirtualKeySet<ExampleLongKeyFixedSize> keySet = new HalfDiskVirtualKeySet<>(
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 new ExampleLongKeyFixedSize.Serializer(),
                 10,
                 2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS,

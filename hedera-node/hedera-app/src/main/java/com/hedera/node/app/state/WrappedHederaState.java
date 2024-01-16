@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,20 @@ public class WrappedHederaState implements HederaState {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * The {@link ReadableStates} instances returned from this method are based on the {@link WritableStates} instances
+     * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
+     * in the {@link ReadableStates} instances returned from this method.
+     * <p>
+     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * must only be used in the handle workflow.
+     */
     @Override
     @NonNull
-    public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return new ReadonlyStatesWrapper(getWritableStates(serviceName));
     }
 
     /**
@@ -71,9 +81,9 @@ public class WrappedHederaState implements HederaState {
      */
     @Override
     @NonNull
-    public WritableStates createWritableStates(@NonNull String serviceName) {
+    public WritableStates getWritableStates(@NonNull String serviceName) {
         return writableStatesMap.computeIfAbsent(
-                serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
+                serviceName, s -> new WrappedWritableStates(delegate.getWritableStates(s)));
     }
 
     /**

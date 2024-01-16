@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -42,6 +43,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf2;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1000,7 +1002,10 @@ public final class MerkleTestUtils {
                             }
                         },
                         reconnectConfig);
+                final PlatformContext platformContext =
+                        TestPlatformContextBuilder.create().build();
                 teacher = new TeachingSynchronizer(
+                        platformContext.getConfiguration(),
                         Time.getCurrent(),
                         getStaticThreadManager(),
                         streams.getTeacherInput(),
@@ -1030,7 +1035,10 @@ public final class MerkleTestUtils {
                             }
                         },
                         reconnectConfig);
+                final PlatformContext platformContext =
+                        TestPlatformContextBuilder.create().build();
                 teacher = new LaggingTeachingSynchronizer(
+                        platformContext,
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
                         desiredTree,

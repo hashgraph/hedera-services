@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -36,7 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractGetInfoSuite extends HapiSuite {
 
@@ -63,7 +64,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     final HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
-        return defaultHapiSpec("GetInfoWorks")
+        return defaultHapiSpec("GetInfoWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed("adminKey"),
                         uploadInitCode(contract),

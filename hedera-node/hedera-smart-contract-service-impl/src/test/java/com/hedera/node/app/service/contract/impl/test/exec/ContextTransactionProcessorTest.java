@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
@@ -79,7 +79,7 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
                 context,
@@ -100,15 +100,15 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
-        final var expectedResult =
-                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
+        final var expectedResult = new CallOutcome(
+                protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
     }
 
     @Test
     void callsComponentInfraAsExpectedForNonEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -129,15 +129,15 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(null, rootProxyWorldUpdater);
-        final var expectedResult =
-                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
+        final var expectedResult = new CallOutcome(
+                protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
     }
 
     @Test
     void stillChargesHapiFeesOnAbort() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -165,7 +165,7 @@ class ContextTransactionProcessorTest {
     @Test
     void failsImmediatelyIfEthTxInvalid() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION),
                 context,

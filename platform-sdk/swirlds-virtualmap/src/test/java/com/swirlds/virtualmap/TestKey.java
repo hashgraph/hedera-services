@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,11 @@ public final class TestKey implements VirtualLongKey {
         return 1;
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
+    void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
         } catch (final Exception e) {
-            log.debug("Failed to create HTS call from input {}", input, e);
+            log.warn("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
         return resultOfExecuting(attempt, call, input, frame);

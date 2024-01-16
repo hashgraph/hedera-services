@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package com.swirlds.common.test.merkle.dummy;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -69,7 +71,9 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      */
     @Override
     public TeacherTreeView<NodeToSend> buildTeacherView() {
-        final DummyTeacherTreeView view = new DummyTeacherTreeView(this);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final DummyTeacherTreeView view = new DummyTeacherTreeView(platformContext.getConfiguration(), this);
         views.add(view);
         return view;
     }

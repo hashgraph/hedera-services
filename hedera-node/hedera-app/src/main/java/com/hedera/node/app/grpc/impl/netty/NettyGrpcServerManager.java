@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.GrpcConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;
+import com.hedera.node.config.types.Profile;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,21 +62,35 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public final class NettyGrpcServerManager implements GrpcServerManager {
-    /** The logger instance for this class. */
+    /**
+     * The logger instance for this class.
+     */
     private static final Logger logger = LogManager.getLogger(NettyGrpcServerManager.class);
-    /** The supported ciphers for TLS */
+    /**
+     * The supported ciphers for TLS
+     */
     private static final List<String> SUPPORTED_CIPHERS = List.of(
             "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", "TLS_AES_256_GCM_SHA384");
-    /** The supported protocols for TLS */
+    /**
+     * The supported protocols for TLS
+     */
     private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
 
-    /** The set of {@link ServiceDescriptor}s for services that the gRPC server will expose */
+    /**
+     * The set of {@link ServiceDescriptor}s for services that the gRPC server will expose
+     */
     private final Set<ServerServiceDefinition> services;
-    /** The configuration provider, so we can figure out ports and other information. */
+    /**
+     * The configuration provider, so we can figure out ports and other information.
+     */
     private final ConfigProvider configProvider;
-    /** The gRPC server listening on the plain (non-tls) port */
+    /**
+     * The gRPC server listening on the plain (non-tls) port
+     */
     private Server plainServer;
-    /** The gRPC server listening on the plain TLS port */
+    /**
+     * The gRPC server listening on the plain TLS port
+     */
     private Server tlsServer;
 
     /**
@@ -144,10 +160,14 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var startRetryIntervalMs = nettyConfig.startRetryIntervalMs();
         final var grpcConfig = configProvider.getConfiguration().getConfigData(GrpcConfig.class);
         final var port = grpcConfig.port();
+        final var profile = configProvider
+                .getConfiguration()
+                .getConfigData(HederaConfig.class)
+                .activeProfile();
 
         // Start the plain-port server
         logger.info("Starting gRPC server on port {}", port);
-        var nettyBuilder = builderFor(port, nettyConfig);
+        var nettyBuilder = builderFor(port, nettyConfig, profile);
         plainServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
         logger.info("gRPC server listening on port {}", plainServer.getPort());
 
@@ -158,7 +178,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         try {
             final var tlsPort = grpcConfig.tlsPort();
             logger.info("Starting TLS gRPC server on port {}", tlsPort);
-            nettyBuilder = builderFor(tlsPort, nettyConfig);
+            nettyBuilder = builderFor(tlsPort, nettyConfig, profile);
             configureTls(nettyBuilder, nettyConfig);
             tlsServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
             logger.info("TLS gRPC server listening on port {}", tlsServer.getPort());
@@ -255,20 +275,14 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         }
     }
 
-    /** Utility for setting up various shared configuration settings between both servers */
-    private NettyServerBuilder builderFor(final int port, NettyConfig config) {
+    /**
+     * Utility for setting up various shared configuration settings between both servers
+     */
+    private NettyServerBuilder builderFor(
+            final int port, @NonNull final NettyConfig config, @NonNull final Profile activeProfile) {
         NettyServerBuilder builder = null;
         try {
-            builder = NettyServerBuilder.forPort(port)
-                    .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
-                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
-                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
-                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
-                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
-                    .flowControlWindow(config.prodFlowControlWindow())
-                    .directExecutor()
+            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile)
                     .channelType(EpollServerSocketChannel.class)
                     .bossEventLoopGroup(new EpollEventLoopGroup())
                     .workerEventLoopGroup(new EpollEventLoopGroup());
@@ -276,23 +290,33 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         } catch (final UnsatisfiedLinkError | NoClassDefFoundError ignored) {
             // If we can't use Epoll, then just use NIO
             logger.info("Epoll not available, using NIO");
-            builder = NettyServerBuilder.forPort(port)
-                    .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
-                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
-                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
-                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
-                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
-                    .flowControlWindow(config.prodFlowControlWindow())
-                    .directExecutor();
+            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile);
         } catch (final Exception unexpected) {
             logger.info("Unexpected exception initializing Netty", unexpected);
         }
         return builder;
     }
 
-    /** Utility for setting up TLS configuration */
+    private NettyServerBuilder withConfigForActiveProfile(
+            @NonNull final NettyServerBuilder builder,
+            @NonNull final NettyConfig config,
+            @NonNull final Profile activeProfile) {
+        if (activeProfile != Profile.DEV) {
+            builder.keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
+                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
+                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
+                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
+                    .flowControlWindow(config.prodFlowControlWindow());
+        }
+        return builder.directExecutor();
+    }
+
+    /**
+     * Utility for setting up TLS configuration
+     */
     private void configureTls(final NettyServerBuilder builder, NettyConfig config)
             throws SSLException, FileNotFoundException {
         final var tlsCrtPath = config.tlsCrtPath();

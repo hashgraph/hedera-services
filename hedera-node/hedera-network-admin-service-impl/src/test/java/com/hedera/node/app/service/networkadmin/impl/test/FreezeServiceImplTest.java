@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ class FreezeServiceImplTest {
         subject.registerSchemas(registry, RELEASE_045_VERSION);
         registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
-                state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
+                state.getReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
         assertNotNull(upgradeFileHashKeyState.get());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,21 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
+    id("com.hedera.hashgraph.benchmark-conventions")
+}
+
+mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
+
+jmhModuleInfo {
+    requires("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
 }
 
 testModuleInfo {
     requires("com.swirlds.test.framework")
     requires("org.apache.logging.log4j.core")
+    requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("com.swirlds.base.test.fixtures")

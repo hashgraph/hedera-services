@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
  * transaction.
  */
-public interface TokenAccountWipeRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenAccountWipeRecordBuilder extends TokenBaseRecordBuilder {
 
     /**
      * Gets the new total supply of a token

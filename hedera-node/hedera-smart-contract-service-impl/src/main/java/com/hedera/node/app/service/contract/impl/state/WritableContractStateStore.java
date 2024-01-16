@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ public class WritableContractStateStore implements ContractStateStore {
 
     public WritableContractStateStore(@NonNull final WritableStates states) {
         requireNonNull(states);
-        this.storage = states.get(ContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(ContractSchema.BYTECODE_KEY);
+        this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
+        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
     }
 
     /**

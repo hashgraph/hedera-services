@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,22 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
-
 public final class EntityIoUtils {
     private EntityIoUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static void writeBytes(
-            final byte[] data, final CheckedConsumer<Integer> writeIntFn, final CheckedConsumer<byte[]> writeBytesFn)
-            throws IOException {
+    public static <E extends Exception> void writeBytes(
+            final byte[] data,
+            final ThrowingConsumer<Integer, E> writeIntFn,
+            final ThrowingConsumer<byte[], E> writeBytesFn)
+            throws E {
         writeIntFn.accept(data.length);
         writeBytesFn.accept(data);
     }
 
-    public static byte[] readBytes(final CheckedSupplier<Integer> readIntFn, final CheckedConsumer<byte[]> readBytesFn)
-            throws IOException {
+    public static <E extends Exception> byte[] readBytes(
+            final ThrowingSupplier<Integer, E> readIntFn, final ThrowingConsumer<byte[], E> readBytesFn) throws E {
         final var len = readIntFn.get();
         final var data = new byte[len];
         readBytesFn.accept(data);

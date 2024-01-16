@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
@@ -46,14 +47,18 @@ public class LatestEventTipsetTracker {
      * @param time        provides wall clock time
      * @param addressBook the current address book
      * @param selfId      the ID of this node
+     * @param ancientMode the {@link AncientMode} to use.
      */
     public LatestEventTipsetTracker(
-            @NonNull final Time time, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+            @NonNull final Time time,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final AncientMode ancientMode) {
 
         Objects.requireNonNull(time);
         Objects.requireNonNull(addressBook);
 
-        this.tipsetTracker = new TipsetTracker(time, addressBook);
+        this.tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
         this.selfId = Objects.requireNonNull(selfId);
         this.addressBook = addressBook;
     }

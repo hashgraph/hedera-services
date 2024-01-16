@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,7 +248,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(tokenAssociate(ANOTHER_USER, NFTdeleted).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
-    @HapiTest
+    @HapiTest // transferList differ
     public HapiSpec cannotUpdateNftWhenDeleted() {
         return defaultHapiSpec("cannotUpdateNftWhenDeleted")
                 .given(

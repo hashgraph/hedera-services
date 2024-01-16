@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
@@ -81,7 +82,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final Key HOLLOW_ACCOUNT_KEY =
+    public static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
@@ -380,7 +381,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull final Address address) {
         if (isLongZero(address)) {
-            throw new IllegalArgumentException("Cannot perform lazy creation at long-zero address " + address);
+            return Optional.of(INVALID_CONTRACT_ID);
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {

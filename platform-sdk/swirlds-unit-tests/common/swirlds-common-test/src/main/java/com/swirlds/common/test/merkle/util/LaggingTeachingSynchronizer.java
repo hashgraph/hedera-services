@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.common.test.merkle.util;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -28,6 +29,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@link TeachingSynchronizer} with simulated latency.
@@ -40,13 +42,22 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
      * Create a new teaching synchronizer with simulated latency.
      */
     public LaggingTeachingSynchronizer(
+            @NonNull final PlatformContext platformContext,
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final int latencyMilliseconds,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
-        super(Time.getCurrent(), getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+        super(
+                platformContext.getConfiguration(),
+                Time.getCurrent(),
+                getStaticThreadManager(),
+                in,
+                out,
+                root,
+                breakConnection,
+                reconnectConfig);
         this.latencyMilliseconds = latencyMilliseconds;
     }
 

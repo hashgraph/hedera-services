@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -41,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class PushZeroOperationSuite extends HapiSuite {
 
@@ -79,7 +80,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     final HapiSpec pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return defaultHapiSpec("prngPrecompileHappyPathWorks")
+        return defaultHapiSpec("prngPrecompileHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
@@ -105,7 +106,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     final HapiSpec pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return propertyPreservingHapiSpec("pushZeroDisabledInV034")
+        return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),

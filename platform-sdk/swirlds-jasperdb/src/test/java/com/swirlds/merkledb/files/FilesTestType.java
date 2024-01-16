@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,23 +64,6 @@ public enum FilesTestType {
                 return new ExampleLongKeyVariableSize(i);
             case variableComplexKey:
                 return new ExampleLongLongKeyVariableSize(i);
-        }
-    }
-
-    /**
-     * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are
-     * measured values from a known good test run.
-     */
-    public long getDataFileLowLevelTestFileSize() {
-        switch (this) {
-            case fixed:
-            default:
-            case fixedComplexKey:
-                return 20480L;
-            case variable:
-                return 98304L;
-            case variableComplexKey:
-                return 28672L;
         }
     }
 }
