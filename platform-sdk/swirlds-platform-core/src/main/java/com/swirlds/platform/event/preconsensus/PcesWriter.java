@@ -31,6 +31,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -119,6 +121,11 @@ public class PcesWriter {
     private long lastWrittenEvent = -1;
 
     /**
+     * The highest event sequence number that has been durably flushed to disk.
+     */
+    private long lastFlushedEvent = -1;
+
+    /**
      * If true then all added events are new and need to be written to the stream. If false then all added events are
      * already durable and do not need to be written to the stream.
      */
@@ -132,20 +139,25 @@ public class PcesWriter {
     private final AncientMode fileType;
 
     /**
+     * A collection of outstanding flush requests
+     * <p>
+     * Each flush request is a sequence number that needs to be flushed to disk as soon as possible.
+     */
+    private final Deque<Long> flushRequests = new ArrayDeque<>();
+
+    /**
      * Constructor
      *
      * @param platformContext the platform context
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public PcesWriter(@NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
-
-        Objects.requireNonNull(platformContext, "platformContext must not be null");
-        Objects.requireNonNull(fileManager, "fileManager must not be null");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(fileManager);
 
         final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
-
         averageSpanUtilization = new LongRunningAverage(config.spanUtilizationRunningAverageLength());
         previousSpan = config.bootstrapSpan();
         bootstrapSpanOverlapFactor = config.bootstrapSpanOverlapFactor();
@@ -177,6 +189,38 @@ public class PcesWriter {
     }
 
     /**
+     * Consider outstanding flush requests and perform a flush if needed.
+     *
+     * @return true if a flush was performed, otherwise false
+     */
+    private boolean processFlushRequests() {
+        boolean flushRequired = false;
+        while (!flushRequests.isEmpty() && flushRequests.peekFirst() <= lastWrittenEvent) {
+            final long flushRequest = flushRequests.removeFirst();
+
+            if (flushRequest > lastFlushedEvent) {
+                flushRequired = true;
+            }
+        }
+
+        if (flushRequired) {
+            if (currentMutableFile == null) {
+                logger.error(EXCEPTION.getMarker(), "Flush required, but no file is open. This should never happen");
+            }
+
+            try {
+                currentMutableFile.flush();
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            lastFlushedEvent = lastWrittenEvent;
+        }
+
+        return flushRequired;
+    }
+
+    /**
      * Write an event to the stream.
      *
      * @param event the event to be written
@@ -185,24 +229,30 @@ public class PcesWriter {
      */
     @Nullable
     public Long writeEvent(@NonNull final GossipEvent event) {
-        validateSequenceNumber(event);
-
-        if (!streamingNewEvents) {
-            lastWrittenEvent = event.getStreamSequenceNumber();
-            return lastWrittenEvent;
+        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event must have a valid stream sequence number");
         }
 
+        // if we aren't streaming new events yet, assume that the given event is already durable
+        if (!streamingNewEvents) {
+            lastWrittenEvent = event.getStreamSequenceNumber();
+            lastFlushedEvent = event.getStreamSequenceNumber();
+            return event.getStreamSequenceNumber();
+        }
+
+        // don't do anything with ancient events
         if (event.getAncientIndicator(fileType) < nonAncientBoundary) {
-            event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
             return null;
         }
 
         try {
-            final Long latestDurableSequenceNumberUpdate = prepareOutputStream(event);
+            final boolean fileClosed = prepareOutputStream(event);
             currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
 
-            return latestDurableSequenceNumberUpdate;
+            final boolean flushPerformed = processFlushRequests();
+
+            return fileClosed || flushPerformed ? lastFlushedEvent : null;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -221,27 +271,31 @@ public class PcesWriter {
             logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
         }
 
-        final Long latestDurableSequenceNumberUpdate;
-        if (currentMutableFile != null) {
-            closeFile();
-            latestDurableSequenceNumberUpdate = lastWrittenEvent;
-        } else {
-            latestDurableSequenceNumberUpdate = null;
+        try {
+            if (currentMutableFile != null) {
+                closeFile();
+                return lastFlushedEvent;
+            } else {
+                return null;
+            }
+        } finally {
+            fileManager.registerDiscontinuity(newOriginRound);
         }
-
-        fileManager.registerDiscontinuity(newOriginRound);
-
-        return latestDurableSequenceNumberUpdate;
     }
 
     /**
-     * Make sure that the event has a valid stream sequence number.
+     * Submit a request to flush a given sequence number to disk as soon as possible. This flush request will be
+     * honored as soon as the event with the given sequence number is received.
+     *
+     * @param sequenceNumber the sequence number to flush
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
-    private static void validateSequenceNumber(@NonNull final GossipEvent event) {
-        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER
-                || event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event must have a valid stream sequence number");
-        }
+    @Nullable
+    public Long submitFlushRequest(final long sequenceNumber) {
+        flushRequests.add(sequenceNumber);
+
+        return processFlushRequests() ? lastFlushedEvent : null;
     }
 
     /**
@@ -249,28 +303,14 @@ public class PcesWriter {
      * event writer.
      *
      * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
-     * @return the sequence number of the last event durably written to the stream if this method call resulted in any
-     * additional events being durably written to the stream, otherwise null
      */
-    @Nullable
-    public Long updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
+    public void updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
         if (nonAncientBoundary.getAncientThreshold() < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
                     + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
         }
 
         this.nonAncientBoundary = nonAncientBoundary.getAncientThreshold();
-
-        if (!streamingNewEvents || currentMutableFile == null) {
-            return null;
-        }
-
-        try {
-            currentMutableFile.flush();
-            return lastWrittenEvent;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to flush", e);
-        }
     }
 
     /**
@@ -313,6 +353,7 @@ public class PcesWriter {
                 averageSpanUtilization.add(previousSpan);
             }
             currentMutableFile.close();
+            lastFlushedEvent = lastWrittenEvent;
 
             fileManager.finishedWritingFile(currentMutableFile);
             currentMutableFile = null;
@@ -350,11 +391,10 @@ public class PcesWriter {
      * Prepare the output stream for a particular event. May create a new file/stream if needed.
      *
      * @param eventToWrite the event that is about to be written
-     * @return the latest sequence number durably written to disk, if preparing the output stream caused a file to be
-     * closed. Otherwise, null.
+     * @return true if this method call resulted in the current file being closed
      */
-    private Long prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
-        Long latestDurableSequenceNumberUpdate = null;
+    private boolean prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+        boolean fileClosed = false;
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent =
                     currentMutableFile.canContain(eventToWrite.getAncientIndicator(fileType));
@@ -363,7 +403,7 @@ public class PcesWriter {
 
             if (!fileCanContainEvent || fileIsFull) {
                 closeFile();
-                latestDurableSequenceNumberUpdate = lastWrittenEvent;
+                fileClosed = true;
             }
 
             if (fileIsFull) {
@@ -371,6 +411,7 @@ public class PcesWriter {
             }
         }
 
+        // if the block above closed the file, then we need to create a new one
         if (currentMutableFile == null) {
             final long upperBound = nonAncientBoundary
                     + computeNewFileSpan(nonAncientBoundary, eventToWrite.getAncientIndicator(fileType));
@@ -380,7 +421,7 @@ public class PcesWriter {
                     .getMutableFile();
         }
 
-        return latestDurableSequenceNumberUpdate;
+        return fileClosed;
     }
 
     /**

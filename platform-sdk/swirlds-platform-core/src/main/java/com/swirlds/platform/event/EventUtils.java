@@ -131,24 +131,6 @@ public abstract class EventUtils {
     }
 
     /**
-     * Creates an event comparator using consensus time. If the event does not have a consensus time, the estimated time
-     * is used instead.
-     *
-     * @return the comparator
-     */
-    public static int consensusPriorityComparator(final EventImpl x, final EventImpl y) {
-        if (x == null || y == null) {
-            return 0;
-        }
-        final Instant xTime = x.getConsensusTimestamp() == null ? x.getEstimatedTime() : x.getConsensusTimestamp();
-        final Instant yTime = y.getConsensusTimestamp() == null ? y.getEstimatedTime() : y.getConsensusTimestamp();
-        if (xTime == null || yTime == null) {
-            return 0;
-        }
-        return xTime.compareTo(yTime);
-    }
-
-    /**
      * Get the creator ID of the event. If null return {@link EventConstants#CREATOR_ID_UNDEFINED}.
      *
      * @param event the event
