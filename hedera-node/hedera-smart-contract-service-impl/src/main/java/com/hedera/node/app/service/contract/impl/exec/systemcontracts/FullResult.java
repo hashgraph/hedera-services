@@ -80,7 +80,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        // todo check if all failed result should return this
+                        // match mono - return status ordinal instead of name
                         Bytes.wrap(UInt256.valueOf(recordBuilder.status().protoOrdinal()))),
                 gasRequirement,
                 recordBuilder);

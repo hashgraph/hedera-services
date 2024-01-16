@@ -48,7 +48,8 @@ public class GrantApprovalLoggingUtils {
                 .forDataItem(amount)
                 .build());
     }
-    // todo add some docs here!
+
+
     public static void logSuccessfulNFTApprove(
             @NonNull final TokenID tokenId,
             @NonNull final AccountID sender,
@@ -78,7 +79,7 @@ public class GrantApprovalLoggingUtils {
         final var spenderAccount = accountStore.getAccountById(spenderId);
         final var spenderAddress = spenderAccount != null
                 ? priorityAddressOf(spenderAccount)
-                : Address.EMPTY; // todo - check how to handle nulls here... what if null?
+                : Address.EMPTY;
         return LogBuilder.logBuilder()
                 .forLogger(tokenAddress)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)

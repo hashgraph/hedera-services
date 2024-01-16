@@ -87,68 +87,6 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             }
         }
 
-        //        if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) && nativeOperations().getNft(token.tokenNum(),
-        // amount.longValue()) == null ) {
-        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-        //            var revertResult = FullResult.revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasRequirement);
-        //            var result = gasOnly(revertResult, INVALID_TOKEN_NFT_SERIAL_NUMBER, false);
-        //
-        //            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-        //            var encodedRc = ReturnTypes.encodedRc(INVALID_TOKEN_NFT_SERIAL_NUMBER).array();
-        //            var contractFunctionResult = contractFunctionResultFailedForProto(
-        //                    gasRequirement, INVALID_TOKEN_NFT_SERIAL_NUMBER.protoName(), contractID,
-        // Bytes.wrap(encodedRc));
-        //
-        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
-        // INVALID_TOKEN_NFT_SERIAL_NUMBER);
-        //
-        //            return result;
-        //        }
-        //
-        //        if (spenderAccount == null && spender.accountNum() != 0) {
-        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-        //            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
-        //            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
-        //
-        //            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-        //            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
-        //            var contractFunctionResult = contractFunctionResultFailedForProto(
-        //                    gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID,
-        // Bytes.wrap(encodedRc));
-        //
-        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
-        // INVALID_ALLOWANCE_SPENDER_ID);
-        //
-        //            return result;
-        //        }
-        //
-        //        if(tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) &&
-        //                !senderId.equals(getOwnerId()) &&
-        //                !senderHasAllowance()
-        //        ) {
-        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-        //            var revertResult = FullResult.revertResult(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, gasRequirement);
-        //            var result = gasOnly(revertResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, false);
-        //
-        //            var encodedRc = ReturnTypes.encodedRc(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO).array();
-        //            var contractFunctionResult = contractFunctionResultSuccessFor(
-        //                    gasRequirement, org.apache.tuweni.bytes.Bytes.wrap(encodedRc), frame.getRemainingGas(),
-        // frame.getInputData(), senderId);
-        //            contractFunctionResult =
-        // contractFunctionResult.copyBuilder().errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName()).build();
-        //            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-        //            final var signedTransaction =
-        //                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-        //            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        //            final var transaction = Transaction.newBuilder()
-        //                    .signedTransactionBytes(signedTransactionBytes)
-        //                    .build();
-        //
-        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
-        // SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
-        //            return result;
-        //        }
-
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
