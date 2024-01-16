@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -131,7 +132,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     final HapiSpec nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";
-        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck")
+        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ownerAccount),
