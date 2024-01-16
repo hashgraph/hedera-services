@@ -88,6 +88,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
+
     /**
      * Constructor.
      *
@@ -188,6 +189,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        linkedEventIntakeWiring.keystoneEventSequenceNumberOutput().solderTo(pcesWriterWiring.flushRequestInputWire());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
@@ -412,6 +414,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
         return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get the output wire that {@link LinkedEventIntake} uses to pass keystone event sequence numbers to the
+     * {@link PcesWriter}, to be flushed.
+     *
+     * @return the output wire for keystone event sequence numbers
+     */
+    public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
+        return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }
 
     /**
