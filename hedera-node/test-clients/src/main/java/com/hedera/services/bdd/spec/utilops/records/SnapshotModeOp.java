@@ -56,6 +56,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -180,6 +181,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     private RecordSnapshot snapshotToMatchAgainst;
 
+    /**
+     *  If node stake update transaction record was found,
+     *  we should normalize following transactions id nonce
+     */
+    private boolean nodeStakeUpdateFound = false;
+
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
         final var snapshotFileMeta =
@@ -288,6 +295,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     .toList();
             // We only want to snapshot or fuzzy-match the records that come after the placeholder creation
             boolean placeholderFound = false;
+            nodeStakeUpdateFound = false;
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 if (parsedItem.isPropertyOverride()) {
@@ -297,6 +305,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
+                    nodeStakeUpdateFound = true;
                     continue;
                 }
                 if (spec.setup()
@@ -626,7 +635,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param placeholderNum the placeholder number to use in normalization
      * @return the original message if not an entity id; or a normalized message if it is
      */
-    private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
+    private GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
             final var normalizedNum = placeholderNum < accountID.getAccountNum()
@@ -657,7 +666,14 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     ? scheduleID.getScheduleNum() - placeholderNum
                     : scheduleID.getScheduleNum();
             return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
-        } else {
+        } else if (message instanceof TransactionID transactionID) {
+            // if node stake update transaction was found, nonce of any following transaction id
+            // should be decreased by one.
+            final var normalizedNonce = nodeStakeUpdateFound
+                    ? transactionID.getNonce() - 1
+                    : transactionID.getNonce();
+            return transactionID.toBuilder().setNonce(normalizedNonce).build();
+        }else {
             return message;
         }
     }
