@@ -2342,7 +2342,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @Order(21)
     final HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec(
-                        "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled", NONDETERMINISTIC_NONCE)
+                        "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
                 .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -2858,7 +2858,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec(
                         "someErc721BalanceOfScenariosPass",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
