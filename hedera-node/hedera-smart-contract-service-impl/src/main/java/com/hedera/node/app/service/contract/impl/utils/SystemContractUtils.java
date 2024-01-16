@@ -54,13 +54,12 @@ public final class SystemContractUtils {
 
     /**
      * Create a successful contract function result.
-     *
-     * @param gasUsed   Report the gas used.
-     * @param result    The result of the contract call.
-     * @param gas       The remaining gas.
-     * @param inputData The input data.
-     * @param senderId  The sender id.
-     * @return The created contract function result for a successful call.
+     * @param gasUsed       Report the gas used.
+     * @param result        The result of the contract call.
+     * @param gas           The remaining gas.
+     * @param inputData     The input data.
+     * @param senderId      The sender id.
+     * @return              The created contract function result for a successful call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultSuccessFor(
@@ -84,11 +83,10 @@ public final class SystemContractUtils {
 
     /**
      * Create an error contract function result.
-     *
-     * @param gasUsed    Report the gas used.
-     * @param errorMsg   The error message to report back to the caller.
-     * @param contractID The contract ID.
-     * @return The created contract function result when for a failed call.
+     * @param gasUsed       Report the gas used.
+     * @param errorMsg      The error message to report back to the caller.
+     * @param contractID    The contract ID.
+     * @return              The created contract function result when for a failed call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultFailedFor(
@@ -103,9 +101,9 @@ public final class SystemContractUtils {
     /**
      * Create an error contract function result.
      *
-     * @param gasUsed            Report the gas used.
-     * @param errorMsg           The error message to report back to the caller.
-     * @param contractID         The contract ID.
+     * @param gasUsed    Report the gas used.
+     * @param errorMsg   The error message to report back to the caller.
+     * @param contractID The contract ID.
      * @param contractCallResult Bytes representation of the contract call result error
      * @return The created contract function result when for a failed call.
      */
