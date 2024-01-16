@@ -59,11 +59,11 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
-        var pemLoc = "devGenesisKeypair.pem";
+        var pemLoc = "randomCivilianKey.pem";
 
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
-                        keyFromPem(pemLoc).name("persistent").simpleWacl().passphrase("passphrase"),
+                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
@@ -111,7 +111,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "devGenesisKeypair.pem";
+        var pemLoc = "randomCivilianKey.pem";
 
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
@@ -137,7 +137,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "devGenesisKeypair.pem";
+        var pemLoc = "randomCivilianKey.pem";
         var validRates = new AtomicReference<ByteString>();
 
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
@@ -145,8 +145,7 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoCreate("civilian"),
                         keyFromPem(pemLoc)
                                 .name("persistent")
-                                .passphrase("passphrase")
-                                .simpleWacl(),
+                                .passphrase("passphrase"),
                         withOpContext((spec, opLog) -> {
                             var fetch = getFileContents(EXCHANGE_RATES);
                             CustomSpecAssert.allRunFor(spec, fetch);
