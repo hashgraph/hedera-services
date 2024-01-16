@@ -74,7 +74,7 @@ Once you have set up the logger, you can proceed to log messages. The new API pr
 The configuration syntax is designed for clarity and ease of use. It allows setting a global default logging level and specific levels for packages or classes, with an option to introduce filters for markers.
 For practicality, the `logging.properties` file should be set to reload every second, ensuring up-to-date logging configurations at all times.
 
-Regarding the format of the logging configuration, it should be user-friendly and self-explanatory. Here's an improved representation of the syntax for setting logging levels:
+The format of the logging configuration is user-friendly and self-explanatory. Here's an example representation of the syntax for setting logging levels:
 
 ```properties
 # Global default logging level
