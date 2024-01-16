@@ -109,7 +109,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
-                    //don't externalize if result state is revert or exceptional halt
+                    // don't externalize if result state is revert or exceptional halt
                     if (pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT)
                             || pricedResult
                                     .fullResult()

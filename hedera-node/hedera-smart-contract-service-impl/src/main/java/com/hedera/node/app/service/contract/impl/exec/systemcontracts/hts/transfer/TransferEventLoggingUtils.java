@@ -73,7 +73,7 @@ public class TransferEventLoggingUtils {
                 .forDataItem(amount)
                 .build());
     }
-    
+
     /**
      * Logs a successful ERC-721 transfer event based on the Hedera-style representation of the NFT ownership change.
      *
