@@ -17,6 +17,8 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -27,12 +29,14 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.List;
 
 /**
  * The {@link TaskScheduler}s used by the platform.
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
+ * @param postHashCollectorScheduler                the scheduler for the post hash collector
  * @param internalEventValidatorScheduler           the scheduler for the internal event validator
  * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
  * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
@@ -51,6 +55,7 @@ import java.util.List;
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
+        @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventDeduplicatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
@@ -78,9 +83,28 @@ public record PlatformSchedulers(
         final PlatformSchedulersConfig config =
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
+        // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
+        // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
+        // This counter is the on-ramp for the event hasher, and the off-ramp for the post hash collector.
+        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
+                "hashingObjectCounter", config.eventHasherUnhandledCapacity(), Duration.ofNanos(100));
+
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
-                        .withType(TaskSchedulerType.DIRECT)
+                        .withType(TaskSchedulerType.CONCURRENT)
+                        .withUnhandledTaskCapacity(config.eventHasherUnhandledCapacity())
+                        .withOnRamp(hashingObjectCounter)
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
+                // backpressure to the hasher
+                model.schedulerBuilder("postHashCollector")
+                        .withType(TaskSchedulerType.SEQUENTIAL)
+                        .withOffRamp(hashingObjectCounter)
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("internalEventValidator")

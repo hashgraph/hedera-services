@@ -61,6 +61,7 @@ import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
+import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -71,6 +72,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final WiringModel model;
 
     private final EventHasherWiring eventHasherWiring;
+    private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -101,6 +103,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
+        postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
@@ -169,7 +172,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        eventHasherWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
+        eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
+        postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
         eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());

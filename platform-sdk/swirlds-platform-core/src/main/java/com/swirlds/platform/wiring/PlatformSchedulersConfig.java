@@ -23,7 +23,6 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param eventHasherSchedulerType                          the event hasher scheduler type
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
  * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
@@ -71,7 +70,6 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
-        @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType eventHasherSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
