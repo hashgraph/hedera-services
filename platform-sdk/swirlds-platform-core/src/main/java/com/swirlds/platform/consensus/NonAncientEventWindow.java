@@ -38,73 +38,6 @@ public class NonAncientEventWindow {
     private final long ancientThreshold;
     private final long expiredThreshold;
 
-    // TODO
-    //    /**
-    //     * Create a NonAncientEventWindow by calculating the minRoundNonAncient value from the latestConsensusRound
-    // and
-    //     * roundsNonAncient.
-    //     *
-    //     * @param latestConsensusRound the latest round that has come to consensus
-    //     * @param minGenNonAncient     the minimum generation that is non-ancient
-    //     * @param minGenNonExpired     the minimum generation that is non-expired
-    //     * @param roundsNonAncient     the number of rounds that are non-ancient
-    //     * @param roundsNonExpired     the number of rounds that are non-expired
-    //     * @return the new NonAncientEventWindow
-    //     */
-    //    @NonNull
-    //    public static NonAncientEventWindow createUsingRoundsNonAncient(
-    //            final long latestConsensusRound,
-    //            final long minGenNonAncient,
-    //            final long minGenNonExpired,
-    //            final long roundsNonAncient,
-    //            final long roundsNonExpired,
-    //            @NonNull final AncientMode ancientMode) {
-    //
-    //        return new NonAncientEventWindow(
-    //                latestConsensusRound,
-    //                latestConsensusRound - roundsNonAncient + 1,
-    //                minGenNonAncient,
-    //                minGenNonExpired,
-    //                latestConsensusRound - roundsNonExpired + 1,
-    //                ancientMode);
-    //    }
-    //
-    //    /**
-    //     * Construct using settings in the provided context.
-    //     *
-    //     * @param latestConsensusRound the latest round that has come to consensus
-    //     * @param minGenNonAncient     the minimum generation that is non-ancient
-    //     * @param minGenNonExpired     the minimum generation that is non-expired
-    //     * @param platformContext      the platform context
-    //     * @return the new NonAncientEventWindow
-    //     */
-    //    @NonNull
-    //    public static NonAncientEventWindow createUsingPlatformContext(
-    //            final long latestConsensusRound,
-    //            final long minGenNonAncient,
-    //            final long minGenNonExpired,
-    //            @NonNull final PlatformContext platformContext) {
-    //
-    //        final ConsensusConfig consensusConfig =
-    //                platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
-    //
-    //        final long roundsNonAncient = consensusConfig.roundsNonAncient();
-    //        final long roundsNonExpired = consensusConfig.roundsExpired();
-    //
-    //        final AncientMode ancientMode = platformContext
-    //                .getConfiguration()
-    //                .getConfigData(EventConfig.class)
-    //                .getAncientMode();
-    //
-    //        return createUsingRoundsNonAncient(
-    //                latestConsensusRound,
-    //                minGenNonAncient,
-    //                minGenNonExpired,
-    //                roundsNonAncient,
-    //                roundsNonExpired,
-    //                ancientMode);
-    //    }
-
     /**
      * Create a new NonAncientEventWindow with the given bounds. The latestConsensusRound must be greater than or equal
      * to the first round of consensus.  If the minimum round non-ancient is set to a number lower than the first round
@@ -151,7 +84,6 @@ public class NonAncientEventWindow {
 
         this.latestConsensusRound = latestConsensusRound;
         this.ancientMode = ancientMode;
-
         this.ancientThreshold = ancientThreshold;
         this.expiredThreshold = expiredThreshold;
     }
@@ -172,13 +104,7 @@ public class NonAncientEventWindow {
      * @return true if this is a genesis non-ancient event window, false otherwise.
      */
     public boolean isGenesis() {
-        final long firstAncientThreshold =
-                switch (ancientMode) {
-                    case GENERATION_THRESHOLD -> FIRST_GENERATION;
-                    case BIRTH_ROUND_THRESHOLD -> ROUND_FIRST;
-                };
-
-        return latestConsensusRound == ROUND_FIRST && ancientThreshold == firstAncientThreshold;
+        return latestConsensusRound == ROUND_FIRST;
     }
 
     /**

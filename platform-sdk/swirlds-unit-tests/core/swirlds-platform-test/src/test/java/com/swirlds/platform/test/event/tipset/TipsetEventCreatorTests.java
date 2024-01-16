@@ -941,11 +941,19 @@ class TipsetEventCreatorTests {
 
                 final long pendingConsensusRound = eventIndex + 2;
                 if (eventIndex > 0) {
+
+                    final long ancientThreshold;
+                    if (useBirthRoundForAncient) {
+                        ancientThreshold = Math.max(1, eventIndex - 26);
+                    } else {
+                        ancientThreshold = Math.max(0, eventIndex - 26);
+                    }
+
                     // Set non-ancientEventWindow after creating genesis event from each node.
                     eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
                             pendingConsensusRound - 1,
-                            eventIndex - 26,
-                            0 /* ignored in this context */,
+                            ancientThreshold,
+                            1 /* ignored in this context */,
                             useBirthRoundForAncient
                                     ? AncientMode.BIRTH_ROUND_THRESHOLD
                                     : AncientMode.GENERATION_THRESHOLD));
