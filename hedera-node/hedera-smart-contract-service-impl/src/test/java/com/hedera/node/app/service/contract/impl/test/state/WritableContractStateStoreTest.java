@@ -19,14 +19,12 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.BYTECODE_KEY;
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
