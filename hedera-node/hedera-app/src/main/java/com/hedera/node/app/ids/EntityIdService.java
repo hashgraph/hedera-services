@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -36,6 +37,12 @@ public class EntityIdService implements Service {
     public static final String NAME = "EntityIdService";
     public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
 
+    private long fs = -1;
+
+    public void setFs(long fs) {
+        this.fs = fs;
+    }
+
     /** {@inheritDoc} */
     @NonNull
     @Override
@@ -46,7 +53,8 @@ public class EntityIdService implements Service {
     /** {@inheritDoc} */
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new Schema(version) {
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
              * perhaps in this version of the schema, you need to create a new state FOO. The set will have
@@ -77,6 +85,21 @@ public class EntityIdService implements Service {
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
                     entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
+                }
+            }
+        });
+
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                if (fs > -1) {
+                    System.out.println("BBM: doing entity id migration");
+
+                    final var toEntityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
+                    toEntityIdState.put(new EntityNumber(fs));
+                    if (toEntityIdState.isModified()) ((WritableSingletonStateBase) toEntityIdState).commit();
+
+                    System.out.println("BBM: finished entity id migration");
                 }
             }
         });

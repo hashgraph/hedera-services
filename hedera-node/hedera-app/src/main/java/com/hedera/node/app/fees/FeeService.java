@@ -20,11 +20,13 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -33,6 +35,7 @@ public class FeeService implements Service {
 
     public static final String NAME = "FeeService";
     static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
+    private ExchangeRates fs;
 
     @NonNull
     @Override
@@ -40,9 +43,15 @@ public class FeeService implements Service {
         return NAME;
     }
 
+    public void setFs(ExchangeRates fs) {
+        this.fs = fs;
+    }
+
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new Schema(version) {
+        // BBM: reducing version just for testing
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -72,6 +81,36 @@ public class FeeService implements Service {
                             .build();
 
                     midnightRatesState.put(exchangeRateSet);
+                }
+            }
+        });
+
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                if (fs != null) {
+                    System.out.println("BBM: migrating fee service");
+
+                    var toState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
+                    final var toRates = ExchangeRateSet.newBuilder()
+                            .currentRate(ExchangeRate.newBuilder()
+                                    .centEquiv(fs.getCurrCentEquiv())
+                                    .hbarEquiv(fs.getCurrHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(fs.getCurrExpiry()))
+                                    .build())
+                            .nextRate(ExchangeRate.newBuilder()
+                                    .centEquiv(fs.getNextCentEquiv())
+                                    .hbarEquiv(fs.getNextHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(fs.getNextExpiry()))
+                                    .build())
+                            .build();
+                    toState.put(toRates);
+
+                    if (toState.isModified()) ((WritableSingletonStateBase) toState).commit();
+
+                    System.out.println("BBM: finished migrating fee service");
                 }
             }
         });
