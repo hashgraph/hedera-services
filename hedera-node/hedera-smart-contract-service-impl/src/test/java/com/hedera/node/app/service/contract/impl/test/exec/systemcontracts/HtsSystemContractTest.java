@@ -93,6 +93,7 @@ class HtsSystemContractTest {
 
     @Test
     void returnsResultFromImpliedCall() {
+        commonMocks();
         givenValidCallAttempt();
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
