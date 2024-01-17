@@ -223,6 +223,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
     }
 
     /**
