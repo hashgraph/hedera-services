@@ -51,7 +51,7 @@ public class FeeService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         // BBM: reducing version just for testing
         // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -81,14 +81,7 @@ public class FeeService implements Service {
                             .build();
 
                     midnightRatesState.put(exchangeRateSet);
-                }
-            }
-        });
-
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {
-                if (fs != null) {
+                } else if (fs != null) {
                     System.out.println("BBM: migrating fee service");
 
                     var toState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);

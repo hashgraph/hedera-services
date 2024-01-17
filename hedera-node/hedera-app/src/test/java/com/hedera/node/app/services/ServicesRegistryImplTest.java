@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.services;
 
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +72,7 @@ final class ServicesRegistryImplTest {
                                 .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
                                 .build())
                         .build(),
-                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
         //noinspection removal
         verify(cr, atLeastOnce()).registerConstructable(any());
     }
@@ -82,13 +82,13 @@ final class ServicesRegistryImplTest {
         final var registry = new ServicesRegistryImpl(cr, genesisRecords);
         registry.register(
                 TestService.newBuilder().name("B").build(),
-                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
         registry.register(
                 TestService.newBuilder().name("C").build(),
-                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
         registry.register(
                 TestService.newBuilder().name("A").build(),
-                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
 
         final var registrations = registry.registrations();
         assertThat(registrations.stream().map(r -> r.service().getServiceName()))

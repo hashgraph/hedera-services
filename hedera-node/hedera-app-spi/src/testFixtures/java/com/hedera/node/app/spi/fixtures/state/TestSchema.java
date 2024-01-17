@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi.fixtures.state;
 
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
@@ -33,6 +31,7 @@ import java.util.Set;
  * like to test with.
  */
 public class TestSchema extends Schema {
+    public static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
     private final Runnable onMigrate;
     private final Runnable onRestart;
     private final Set<StateDefinition> statesToCreate;
@@ -100,7 +99,7 @@ public class TestSchema extends Schema {
     }
 
     public static final class Builder {
-        private SemanticVersion version = RELEASE_045_VERSION;
+        private SemanticVersion version = CURRENT_VERSION;
         private Runnable onMigrate;
         private Runnable onRestart;
         private final Set<StateDefinition> statesToCreate = new HashSet<>();

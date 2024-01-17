@@ -63,6 +63,7 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
+                System.out.println("Migrating congestion throttle state");
                 final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
                 byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
 

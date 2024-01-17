@@ -64,7 +64,7 @@ public class RecordCacheService implements Service {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
         // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public SemanticVersion getVersion() {
@@ -77,9 +77,7 @@ public class RecordCacheService implements Service {
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(StateDefinition.queue(TXN_RECORD_QUEUE, TransactionRecordEntry.PROTOBUF));
             }
-        });
 
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 if (fromRecs != null) {

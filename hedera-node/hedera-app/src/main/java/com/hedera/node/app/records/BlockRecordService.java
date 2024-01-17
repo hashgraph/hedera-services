@@ -67,7 +67,7 @@ public final class BlockRecordService implements Service {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
             @Override
@@ -89,19 +89,7 @@ public final class BlockRecordService implements Service {
                     final var runningHashes =
                             RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
                     runningHashState.put(runningHashes);
-                }
-            }
-
-            @Override
-            public void restart(@NonNull final MigrationContext ctx) {
-                // TODO : seems there should be something done here to match hash of the state after loading on restart
-            }
-        });
-
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {
-                if (mnc != null) {
+                } else if (mnc != null) {
                     System.out.println("BBM: doing block record migration");
 
                     // first migrate the hashes

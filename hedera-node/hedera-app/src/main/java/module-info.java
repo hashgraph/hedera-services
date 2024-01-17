@@ -58,7 +58,8 @@ module com.hedera.node.app {
             com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.services.cli;
     exports com.hedera.node.app.state.merkle.memory to
             com.hedera.node.services.cli,
             com.swirlds.common;

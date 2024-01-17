@@ -65,7 +65,6 @@ import com.hedera.node.app.service.contract.impl.state.InitialModServiceContract
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
@@ -510,6 +509,7 @@ public final class Hedera implements SwirldMain {
 
         // --------------------- NETWORK_CTX (6)
         MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
+        System.out.println("BBM: fromNetworkContext: " + fromNetworkContext);
         // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
         // firstConsTimeOfCurrentBlock – needed in blockInfo
 
@@ -600,6 +600,8 @@ public final class Hedera implements SwirldMain {
 
         // --------------------- Sequence Number (separate service in modular code - entity ID service)
         if (fromNetworkContext != null) {
+            System.out.println("BBM: setting fs to " + fromNetworkContext.seqNo() + ","
+                    + fromNetworkContext.seqNo().current());
             ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
         }
 
@@ -619,14 +621,20 @@ public final class Hedera implements SwirldMain {
                 () -> previousVersion == null ? "<NONE>" : previousVersion);
 
         // We do not support downgrading from one version to an older version.
-        final var deserializedVersion = (HederaSoftwareVersion) previousVersion;
-        if (isDowngrade(version, deserializedVersion)) {
-            logger.fatal(
-                    "Fatal error, state source version {} is higher than node software version {}",
-                    deserializedVersion,
-                    version);
-            System.exit(1);
+        final HederaSoftwareVersion deserializedVersion;
+        if (previousVersion instanceof HederaSoftwareVersion) {
+            deserializedVersion = (HederaSoftwareVersion) previousVersion;
+            if (isDowngrade(version, deserializedVersion)) {
+                logger.fatal(
+                        "Fatal error, state source version {} is higher than node software version {}",
+                        deserializedVersion,
+                        version);
+                System.exit(1);
+            }
+        } else {
+            deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
         }
+        logger.info("Deserialized version is {}, version {}", deserializedVersion, version);
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
         // This instance should never change on us, once it has been set
@@ -690,6 +698,7 @@ public final class Hedera implements SwirldMain {
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
+        logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);

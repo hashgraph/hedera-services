@@ -44,17 +44,24 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.service.file.impl.codec.FileServiceStateTranslator;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -65,8 +72,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,11 +94,22 @@ public class InitialModFileGenesisSchema extends Schema {
     private static final int MAX_FILES_HINT = 50_000_000;
 
     private final ConfigProvider configProvider;
+    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+    private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
+    private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
     /** Create a new instance */
-    public InitialModFileGenesisSchema(final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
+    public InitialModFileGenesisSchema(
+            final SemanticVersion version,
+            final ConfigProvider configProvider,
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss,
+            final Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents,
+            final Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs) {
         super(version);
         this.configProvider = requireNonNull(configProvider);
+        this.fss = fss;
+        this.fileContents = fileContents;
+        this.fileAttrs = fileAttrs;
     }
 
     @NonNull
@@ -121,17 +141,64 @@ public class InitialModFileGenesisSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         logger.debug("Migrating genesis state");
-        final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-        final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
-        final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
-        final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
-        createGenesisAddressBookAndNodeDetails(bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
-        createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
-        createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
+        final var isGenesis = ctx.previousStates().isEmpty();
+        if (isGenesis) {
+            final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+            final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
+            final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
+            final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
+            createGenesisAddressBookAndNodeDetails(
+                    bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
+            createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
+            createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
+            createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
+            createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
+            createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
+            createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
+        } else if (fss != null && fss.get() != null) {
+            var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
+
+            System.out.println("BBM: running file migration...");
+            var allFileIds = extractFileIds(fss.get());
+            var migratedFileIds = new ArrayList<Long>();
+            allFileIds.forEach(fromFileIdRaw -> {
+                var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                        .setFileNum(fromFileIdRaw)
+                        .build();
+                var fromFileMeta = fileAttrs.get(fromFileId);
+                // Note: if the file meta is null, then this file is more specialized
+                // (e.g. contract bytecode) and will be migrated elsewhere
+                if (fromFileMeta != null) {
+                    File toFile = FileServiceStateTranslator.stateToPbj(
+                            fileContents.get(fromFileId), fromFileMeta, fromFileId);
+                    ts.put(FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
+                    migratedFileIds.add(fromFileIdRaw);
+                }
+            });
+
+            if (ts.isModified()) ((WritableKVStateBase) ts).commit();
+
+            fss = null;
+            fileContents = null;
+            fileAttrs = null;
+
+            System.out.println("BBM:finished file migration. Migrated files: " + migratedFileIds);
+        }
+    }
+
+    private List<Long> extractFileIds(VirtualMapLike<VirtualBlobKey, VirtualBlobValue> fileStorage) {
+        final var fileIds = new ArrayList<Long>();
+        try {
+            fileStorage.extractVirtualMapData(
+                    AdHocThreadManager.getStaticThreadManager(),
+                    entry -> {
+                        fileIds.add((long) entry.left().getEntityNumCode());
+                    },
+                    1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return fileIds;
     }
 
     // ================================================================================================================

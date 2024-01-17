@@ -35,7 +35,7 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.TREASURY_ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -268,7 +268,13 @@ final class InitialModServiceTokenSchemaTest {
                 this::allMiscAccts,
                 this::allTreasuryClones,
                 this::allBlocklistAccts,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
 
         // We'll only configure 4 system accounts, half of which will already exist
         config = buildConfig(4, true);
@@ -498,7 +504,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -528,7 +540,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -560,7 +578,13 @@ final class InitialModServiceTokenSchemaTest {
                 this::allTreasuryClones,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -590,7 +614,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 this::allMiscAccts,
                 Collections::emptySortedSet,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -619,7 +649,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allBlocklistAccts,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -744,7 +780,13 @@ final class InitialModServiceTokenSchemaTest {
                 this::allMiscAccts,
                 this::allTreasuryClones,
                 this::allBlocklistAccts,
-                RELEASE_045_VERSION);
+                CURRENT_VERSION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     /**

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -55,8 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
 
-    private static final HederaSoftwareVersion VERSION =
-            new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION);
+    private static final HederaSoftwareVersion VERSION = new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION);
     private static final VersionedConfigImpl VERSIONED_CONFIG =
             new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
     private static final long INITIAL_ENTITY_ID = 5;
@@ -105,7 +104,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void stateRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, VERSIONED_CONFIG, networkInfo))
+                            () -> subject.doMigrations(null, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -121,7 +120,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void versionedConfigRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, null, networkInfo))
+                            () -> subject.doMigrations(merkleTree, CURRENT_VERSION, null, null, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -129,7 +128,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void networkInfoRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, VERSIONED_CONFIG, null))
+                            () -> subject.doMigrations(merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }

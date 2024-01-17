@@ -24,7 +24,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -54,7 +53,7 @@ public class EntityIdService implements Service {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
              * perhaps in this version of the schema, you need to create a new state FOO. The set will have
@@ -85,21 +84,10 @@ public class EntityIdService implements Service {
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
                     entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
-                }
-            }
-        });
-
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {
-                if (fs > -1) {
-                    System.out.println("BBM: doing entity id migration");
-
-                    final var toEntityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
-                    toEntityIdState.put(new EntityNumber(fs));
-                    if (toEntityIdState.isModified()) ((WritableSingletonStateBase) toEntityIdState).commit();
-
-                    System.out.println("BBM: finished entity id migration");
+                    System.out.println("Setting entity id to " + config.firstUserEntity());
+                } else if (fs > -1) {
+                    System.out.println("Setting entity id to " + fs);
+                    entityIdState.put(new EntityNumber(fs));
                 }
             }
         });

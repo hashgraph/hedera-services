@@ -110,8 +110,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
-    private static final long CLASS_ID = 0x2de3ead3caf06392L;
-    private static final int VERSION_1 = 1;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
 
     private long classId;
