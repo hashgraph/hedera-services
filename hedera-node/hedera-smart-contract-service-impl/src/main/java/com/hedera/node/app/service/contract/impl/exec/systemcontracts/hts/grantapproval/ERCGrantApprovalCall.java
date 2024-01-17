@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -128,7 +129,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
         // match mono record structure
         if (response.equals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)) {
-            var contractFunctionResult = contractFunctionResultSuccessFor(
+            var contractFunctionResult = successResultOfZeroValueTraceable(
                     gasRequirement,
                     org.apache.tuweni.bytes.Bytes.wrap(encodedRc),
                     frame.getRemainingGas(),
