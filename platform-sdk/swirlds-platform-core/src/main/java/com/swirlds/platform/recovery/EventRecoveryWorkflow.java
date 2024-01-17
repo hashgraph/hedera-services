@@ -133,8 +133,13 @@ public final class EventRecoveryWorkflow {
                 .getConfigData(PathsConfig.class);
 
         // parameters if the app needs them
-        final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+        System.out.println("Loading configuration from " + configurationFiles);
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(
+                defaultPathsConfig,
+                getAbsolutePath(
+                        configurationFiles.isEmpty()
+                                ? DEFAULT_CONFIG_FILE_NAME
+                                : configurationFiles.get(0).toString()));
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
