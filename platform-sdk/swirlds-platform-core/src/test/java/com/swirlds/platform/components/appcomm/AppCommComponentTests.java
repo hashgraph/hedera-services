@@ -106,7 +106,7 @@ public class AppCommComponentTests {
 
         final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
         component.start();
-        component.newLatestCompleteStateEvent(signedState);
+        component.newLatestCompleteStateEvent(signedState.reserve("test"));
 
         // Allow the notification callback to execute
         senderLatch.countDown();

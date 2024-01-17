@@ -18,27 +18,23 @@ package com.swirlds.platform.state.manager;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Sequential Signatures Test")
-public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
+public class SequentialSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -79,15 +75,10 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     @DisplayName("Sequential Signatures Test")
     void sequentialSignaturesTest() throws InterruptedException {
         this.roundsToKeepAfterSigning = 4;
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
-
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
 
         // Create a series of signed states.
         final int count = 100;
@@ -101,13 +92,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
-
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
+            manager.addReservedState(signedState.reserve("test"));
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
@@ -119,9 +104,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                 addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 if (roundToSign >= 0) {
                     assertSame(
@@ -132,31 +114,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             }
 
             validateCallbackCounts(0, Math.max(0, round - roundAgeToSign + 1));
-        }
-
-        final long lastCompletedRound;
-        try (final ReservedSignedState wrapper = manager.getLatestSignedState("test")) {
-            lastCompletedRound = wrapper.get().getRound();
-        }
-
-        for (int round = 0; round < count; round++) {
-            final long finalRound = round;
-            try (final ReservedSignedState wrapper = manager.find(state -> state.getRound() == finalRound, "test")) {
-
-                final SignedState foundState = wrapper.getNullable();
-
-                if (round < count - roundsToKeepAfterSigning - 1) {
-                    assertNull(foundState);
-                    continue;
-                }
-                assertNotNull(foundState);
-
-                if (foundState.getRound() <= lastCompletedRound) {
-                    assertTrue(foundState.isComplete());
-                } else {
-                    assertFalse(foundState.isComplete());
-                }
-            }
         }
 
         // Check reservation counts.
