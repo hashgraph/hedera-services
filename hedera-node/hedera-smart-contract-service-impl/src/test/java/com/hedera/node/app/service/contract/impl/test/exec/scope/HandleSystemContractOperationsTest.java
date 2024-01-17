@@ -117,8 +117,12 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void externalizeSuccessfulResultTest() {
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, AccountID.newBuilder().build());
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
@@ -143,8 +147,12 @@ class HandleSystemContractOperationsTest {
                         .transactionID(TransactionID.DEFAULT)
                         .build())
                 .build();
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, AccountID.newBuilder().build());
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
@@ -161,8 +169,12 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void externalizeFailedResultTest() {
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, AccountID.newBuilder().build());
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);

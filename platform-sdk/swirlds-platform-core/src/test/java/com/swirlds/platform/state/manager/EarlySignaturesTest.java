@@ -18,8 +18,6 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
@@ -27,12 +25,11 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Early Signatures Test")
-public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
+public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -82,7 +79,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(stateConfig)
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -129,24 +126,13 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
         long lastExpectedCompletedRound = -1;
 
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
-
         for (int round = 0; round < count; round++) {
             final SignedState signedState = states.get(round);
 
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
-
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
+            manager.addReservedState(signedState.reserve("test"));
 
             // Add some signatures to one of the previous states, but only if that round need signatures.
             final long roundToSign = round - roundAgeToSign;
@@ -172,9 +158,6 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
                 lastExpectedCompletedRound = Math.max(lastExpectedCompletedRound, roundToSign);
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test get lastState")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState =
                     manager.getLatestSignedState("test get lastCompletedState")) {
                 assertSame(

@@ -32,6 +32,8 @@ import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
@@ -113,16 +115,14 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
 
-        final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
+        // Assemble the appropriate top-level record for the result
+        context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            // The Ethereum transaction was a top-level MESSAGE_CALL
-            recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());
+            outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
         } else {
-            // The Ethereum transaction was a top-level CONTRACT_CREATION
-            recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
+            outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class));
         }
-        recordBuilder.withCommonFieldsSetFrom(outcome);
 
         throwIfUnsuccessful(outcome.status());
     }

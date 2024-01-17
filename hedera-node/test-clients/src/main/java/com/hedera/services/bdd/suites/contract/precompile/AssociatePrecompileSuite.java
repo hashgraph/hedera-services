@@ -40,6 +40,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -66,7 +70,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class AssociatePrecompileSuite extends HapiSuite {
 
@@ -152,7 +156,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
     final HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
-        return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
+        return defaultHapiSpec(
+                        "nonSupportedAbiCallGracefullyFailsWithinSingleContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
                                 THE_GRACEFULLY_FAILING_CONTRACT,
@@ -170,7 +175,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls")
+        return defaultHapiSpec(
+                        "nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -220,7 +229,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
 
-        return defaultHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls")
+        return defaultHapiSpec(
+                        "invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -279,7 +292,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
         final var txn = "txn";
 
-        return defaultHapiSpec("associateWithMissingEvmAddressHasSaneTxnAndRecord")
+        return defaultHapiSpec(
+                        "associateWithMissingEvmAddressHasSaneTxnAndRecord",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(INNER_CONTRACT),
@@ -300,7 +317,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
     final HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
-        return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
+        return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
                         contractCall(
