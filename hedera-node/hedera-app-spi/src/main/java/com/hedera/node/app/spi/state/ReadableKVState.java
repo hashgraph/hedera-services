@@ -90,4 +90,13 @@ public interface ReadableKVState<K, V> {
      * @return number of keys in the {@link ReadableKVState}.
      */
     long size();
+
+    /**
+     * Warms the system by preloading an entity into memory
+     *
+     * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+     *
+     * @param key the key of the entity
+     */
+    default void warm(@NonNull final K key) {}
 }

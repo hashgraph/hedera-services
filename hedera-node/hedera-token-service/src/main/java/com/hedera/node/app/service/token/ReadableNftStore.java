@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.token;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -57,4 +57,13 @@ public interface ReadableNftStore {
      * @return the number of nfts in the state.
      */
     long sizeOfState();
+
+    /**
+     * Warms the system by preloading an account into memory
+     *
+     * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+     *
+     * @param nftID the {@link NftID}
+     */
+    default void warm(@NonNull final NftID nftID) {}
 }

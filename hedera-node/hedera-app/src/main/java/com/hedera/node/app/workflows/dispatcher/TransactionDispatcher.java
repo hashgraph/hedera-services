@@ -105,7 +105,7 @@ public class TransactionDispatcher {
 
         try {
             final var handler = getHandler(context.body());
-            handler.warmUp(context);
+            handler.warm(context);
         } catch (UnsupportedOperationException ex) {
             // do nothing, the handler should have been used before we reach this point
         }
