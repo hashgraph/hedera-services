@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ class GetAccountInfoResourceUsageTest {
 
     @BeforeEach
     void setup() {
-        subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, rewardCalculator);
+        subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
     }
 
     @Test
@@ -113,7 +113,13 @@ class GetAccountInfoResourceUsageTest {
                 .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
                 .build();
         final var query = accountInfoQuery(a, ANSWER_ONLY);
-        given(view.infoForAccount(queryTarget, aliasManager, rewardCalculator)).willReturn(Optional.of(info));
+        given(view.infoForAccount(
+                        queryTarget,
+                        aliasManager,
+                        dynamicProperties.maxTokensRelsPerInfoQuery(),
+                        rewardCalculator,
+                        dynamicProperties.areTokenBalancesEnabledInQueries()))
+                .willReturn(Optional.of(info));
         given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
         final var usage = subject.usageGiven(query, view);
@@ -135,7 +141,13 @@ class GetAccountInfoResourceUsageTest {
 
     @Test
     void returnsDefaultIfNoSuchAccount() {
-        given(view.infoForAccount(queryTarget, aliasManager, rewardCalculator)).willReturn(Optional.empty());
+        given(view.infoForAccount(
+                        queryTarget,
+                        aliasManager,
+                        dynamicProperties.maxTokensRelsPerInfoQuery(),
+                        rewardCalculator,
+                        dynamicProperties.areTokenBalancesEnabledInQueries()))
+                .willReturn(Optional.empty());
 
         final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 

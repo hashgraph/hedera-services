@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -74,14 +76,14 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
         final var hashOf = "hashOf";
 
         final String account = "account";
-        return defaultHapiSpec("VerifiesExistence")
+        return defaultHapiSpec("VerifiesExistence", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
                 .when()
                 .then(
                         contractCall(contract, hashOf, asHeadlongAddress(invalidAddress))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, hashOf, asHeadlongAddress(invalidAddress))
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                                .hasAnswerOnlyPrecheck(OK),
                         withOpContext((spec, opLog) -> {
                             final var accountID = spec.registry().getAccountID(account);
                             final var contractID = spec.registry().getContractId(contract);

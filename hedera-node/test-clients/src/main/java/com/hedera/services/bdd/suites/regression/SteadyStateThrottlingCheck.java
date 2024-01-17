@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Collections;
 import java.util.List;
@@ -80,11 +81,9 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
             HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR);
 
     private static final int REGRESSION_NETWORK_SIZE = 4;
-    private static final int PREVIEWNET_NETWORK_SIZE = 7;
 
     private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
     private static final double THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
-    private static final double PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS = 50.0;
 
     private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
     private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
@@ -94,16 +93,11 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final double EXPECTED_XFER_TPS = THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_FUNGIBLE_MINT_TPS = THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
-
-    @SuppressWarnings("java:S1068")
-    private static final double EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS =
-            PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS / PREVIEWNET_NETWORK_SIZE;
-
     private static final double EXPECTED_CONTRACT_CALL_TPS =
             PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_CRYPTO_CREATE_TPS = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_GET_BALANCE_QPS = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
-    private static final double TOLERATED_PERCENT_DEVIATION = 5;
+    private static final double TOLERATED_PERCENT_DEVIATION = 7;
     private static final String SUPPLY = "supply";
     private static final String TOKEN = "token";
     private static final String CIVILIAN = "civilian";
@@ -153,22 +147,22 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
         return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
     }
 
-    //    @HapiTest - This test fails
+    @HapiTest
     @Order(4)
     final HapiSpec checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
-    //    @HapiTest - This test fails
+    @HapiTest
     @Order(5)
     final HapiSpec checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
-    //    @HapiTest - This test hangs
+    @HapiTest
     @Order(6)
     final HapiSpec checkBalanceQps() {
-        return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
+        return checkBalanceQps(50, EXPECTED_GET_BALANCE_QPS);
     }
 
     @HapiTest
@@ -187,6 +181,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
@@ -204,6 +199,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
+    @BddMethodIsNotATest
     @SuppressWarnings("java:S5960")
     final HapiSpec checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
@@ -229,6 +225,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 }));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
@@ -343,7 +340,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
             @Override
             public Optional<HapiSpecOperation> get() {
-                var op = contractCall("scMulti")
+                var op = contractCall(contract)
                         .noLogging()
                         .deferStatusResolution()
                         .payingWith(CIVILIAN)

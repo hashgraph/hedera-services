@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
@@ -30,6 +31,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -217,8 +219,11 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesHollowFinalization() {
         given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.hederaContractId())
+                .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
-        subject.finalizeHollowAccount(EIP_1014_ADDRESS);
+        subject.finalizeHollowAccount(EIP_1014_ADDRESS, PERMITTED_ADDRESS_CALLER);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 
@@ -489,9 +494,9 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesDeletionTrackingAttempt() {
         final var haltReason = Optional.<ExceptionalHaltReason>of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
-        given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
+        given(evmFrameState.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame))
                 .willReturn(haltReason);
-        assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
+        assertSame(haltReason, subject.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame));
     }
 
     @Test
@@ -502,8 +507,12 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void externalizeSystemContractResultTest() {
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         subject.externalizeSystemContractResults(contractFunctionResult, ResponseCodeEnum.SUCCESS);
         verify(systemContractOperations).externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
@@ -513,5 +522,12 @@ class ProxyWorldUpdaterTest {
     void currentExchangeRateTest() {
         subject.currentExchangeRate();
         verify(systemContractOperations).currentExchangeRate();
+    }
+
+    @Test
+    void contractMustBePresent() {
+        assertTrue(subject.contractMustBePresent());
+        subject.setContractNotRequired();
+        assertFalse(subject.contractMustBePresent());
     }
 }

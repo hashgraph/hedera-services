@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,10 +67,7 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
 
     @Override
     protected void onSuccess(@NonNull final MessageFrame frame, @NonNull final Address creation) {
-        final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        if (updater.isHollowAccount(creation)) {
-            updater.finalizeHollowAccount(creation);
-        }
+        // No-op, CustomContractCreationProcessor will finalize the creation address if a hollow account
     }
 
     private Address eip1014AddressFor(@NonNull final MessageFrame frame) {

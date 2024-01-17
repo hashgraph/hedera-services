@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,8 +69,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -231,6 +233,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -451,6 +454,7 @@ public final class BootstrapProperties implements PropertySource {
             CACHE_RECORDS_TTL,
             CONTRACTS_DEFAULT_LIFETIME,
             CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+            CONTRACTS_GRANDFATHER_CONTRACTS,
             CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
             CONTRACTS_ENFORCE_CREATION_THROTTLE,
             CONTRACTS_KNOWN_BLOCK_HASH,
@@ -483,6 +487,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
             CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED,
             CONTRACTS_NONCES_EXTERNALIZATION_ENABLED,
+            CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
             EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -569,7 +574,8 @@ public final class BootstrapProperties implements PropertySource {
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
             ACCOUNTS_BLOCKLIST_PATH,
-            CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+            CACHE_CRYPTO_TRANSFER_WARM_THREADS,
+            TOKEN_BALANCES_ENABLED_IN_QUERIES);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -762,6 +768,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(TOPICS_MAX_NUM, AS_LONG),
             entry(CONTRACTS_MAX_NUM, AS_LONG),
             entry(CONTRACTS_PERMITTED_DELEGATE_CALLERS, AS_EVM_ADDRESSES),
+            entry(CONTRACTS_GRANDFATHER_CONTRACTS, AS_EVM_ADDRESSES),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, AS_LEGACY_ACTIVATIONS),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, AS_KNOWN_BLOCK_VALUES),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),
@@ -792,6 +799,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
+            entry(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, AS_BOOLEAN),
             entry(CONTRACTS_EVM_VERSION, AS_STRING),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
             entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, AS_INT),
@@ -826,5 +834,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_PATH, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
-            entry(CONFIG_VERSION, AS_INT));
+            entry(CONFIG_VERSION, AS_INT),
+            entry(TOKEN_BALANCES_ENABLED_IN_QUERIES, AS_BOOLEAN));
 }

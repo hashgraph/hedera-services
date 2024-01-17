@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Converter that ensures a label satisfies Prometheus requirements
@@ -32,10 +32,10 @@ public final class NameConverter {
      * @param label
      * 		The input-{@link String}
      * @return The resulting {@link String}
-     * @throws IllegalArgumentException if {@code label} is {@code null}
+     * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public static String fix(final String label) {
-        CommonUtils.throwArgNull(label, "label");
+        Objects.requireNonNull(label, "label must not be null");
         return label.strip()
                 .replace('.', ':')
                 .replace('-', '_')

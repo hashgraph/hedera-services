@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
  * transaction.
  */
-public interface TokenCreateRecordBuilder {
+public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Tracks creation of a new token by number. Even if someday we support creating multiple
      * tokens within a smart contract call, we will still only need to track one created token
@@ -37,11 +37,13 @@ public interface TokenCreateRecordBuilder {
     @NonNull
     TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID);
 
+    TokenID tokenID();
+
     /**
      * Adds the token relations that are created by auto associations.
      * This information is needed while setting record cache.
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenCreateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }

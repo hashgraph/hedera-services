@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,9 @@ public class GlobalPropertiesSuite extends HapiSuite {
         final var devChainId = BigInteger.valueOf(298L);
         final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
         return defaultHapiSpec("chainIdWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, GET_CHAIN_ID).via("chainId"))
                 .then(
                         getTxnRecord("chainId")
@@ -102,7 +104,9 @@ public class GlobalPropertiesSuite extends HapiSuite {
     final HapiSpec baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
         return defaultHapiSpec("baseFeeWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, GET_BASE_FEE).via("baseFee"))
                 .then(
                         getTxnRecord("baseFee")
@@ -125,7 +129,9 @@ public class GlobalPropertiesSuite extends HapiSuite {
     @HapiTest
     final HapiSpec coinbaseWorks() {
         return defaultHapiSpec("coinbaseWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "getCoinbase").via("coinbase"))
                 .then(withOpContext((spec, opLog) -> {
                     final var expectedCoinbase =
@@ -149,7 +155,9 @@ public class GlobalPropertiesSuite extends HapiSuite {
     final HapiSpec gasLimitWorks() {
         final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, GET_GAS_LIMIT).via("gasLimit").gas(gasLimit))
                 .then(
                         getTxnRecord("gasLimit")

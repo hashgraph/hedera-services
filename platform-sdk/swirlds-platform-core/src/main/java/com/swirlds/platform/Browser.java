@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.StaticPlatformBuilder.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -30,13 +31,12 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
-import com.swirlds.common.config.PathsConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -114,8 +114,7 @@ public class Browser {
             return;
         }
 
-        final Path log4jPath =
-                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
+        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {
@@ -143,9 +142,14 @@ public class Browser {
             throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
+        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
+                .withConfigDataType(PathsConfig.class)
+                .build()
+                .getConfigData(PathsConfig.class);
+
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+                ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
 
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =

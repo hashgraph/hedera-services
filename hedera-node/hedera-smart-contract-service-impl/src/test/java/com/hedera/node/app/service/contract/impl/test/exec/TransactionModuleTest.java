@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideHederaEvmContext;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,13 +37,17 @@ import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -108,6 +114,22 @@ class TransactionModuleTest {
                 ProxyWorldUpdater.class,
                 TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
         verify(hederaOperations).begin();
+    }
+
+    @Test
+    void providesExpectedEvmContext() {
+        final var recordBuilder = mock(ContractOperationRecordBuilder.class);
+        final var gasCalculator = mock(SystemContractGasCalculator.class);
+        final var blocks = mock(HederaEvmBlocks.class);
+        given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
+        given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
+        final var pendingCreationBuilder = new PendingCreationMetadataRef();
+        final var result = provideHederaEvmContext(
+                context, tinybarValues, gasCalculator, hederaOperations, blocks, pendingCreationBuilder);
+        assertSame(blocks, result.blocks());
+        assertSame(123L, result.gasPrice());
+        assertSame(recordBuilder, result.recordBuilder());
+        assertSame(pendingCreationBuilder, result.pendingCreationRecordBuilderReference());
     }
 
     @Test

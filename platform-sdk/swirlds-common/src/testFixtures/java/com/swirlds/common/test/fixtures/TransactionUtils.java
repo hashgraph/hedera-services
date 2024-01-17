@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.SystemTransaction;
-import com.swirlds.platform.system.transaction.SystemTransactionPing;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +40,7 @@ public class TransactionUtils {
     private static final double DEFAULT_SYS_RATIO = 0.1;
     private static final double DEFAULT_TRANS_COUNT_STD_DEV = 10;
     private static final double DEFAULT_TRANS_COUNT_AVG = 50;
+    private static final Random random = new Random();
 
     public static SwirldTransaction[] randomSwirldTransactions(final long seed, final int number) {
         return randomSwirldTransactions(new Random(seed), number);
@@ -153,9 +153,7 @@ public class TransactionUtils {
     }
 
     public static SystemTransaction incrementingSystemTransaction() {
-        final int[] intArr = new int[1];
-        intArr[0] = nextInt.incrementAndGet();
-        return new SystemTransactionPing(intArr);
+        return new StateSignatureTransaction(0, randomSignature(random), randomHash(random));
     }
 
     public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,7 @@ public class PropertyNames {
 
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
+    public static final String CONTRACTS_GRANDFATHER_CONTRACTS = "contracts.grandfatherContracts";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
     public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";
@@ -125,6 +126,8 @@ public class PropertyNames {
     public static final String CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED =
             "contracts.precompile.hrcFacade.associate.enabled";
     public static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
+    public static final String CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
+            "contracts.evm.allowCallsToNonContractAccounts";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";
@@ -215,6 +218,7 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
     public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
+    public static final String TOKEN_BALANCES_ENABLED_IN_QUERIES = "tokens.balancesInQueries.enabled";
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";

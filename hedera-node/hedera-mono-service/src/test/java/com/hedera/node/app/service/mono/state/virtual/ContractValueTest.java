@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,12 +180,10 @@ class ContractValueTest {
 
     @Test
     void serializeUsingByteBufferWorks() throws IOException {
-        final var out = mock(ByteBuffer.class);
-        final var inOrder = inOrder(out);
-
+        final ByteBuffer out = ByteBuffer.allocate(bytesValue.length);
         subject.serialize(out);
-
-        inOrder.verify(out).put(subject.getValue());
+        out.rewind();
+        assertArrayEquals(out.array(), subject.getValue());
     }
 
     @Test
@@ -216,18 +214,12 @@ class ContractValueTest {
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new ContractValue();
-        final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(invocation -> {
-                    subject.setValue(bytesValue);
-                    return null;
-                })
-                .when(byteBuffer)
-                .get(subject.getValue());
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(bytesValue.length);
+        byteBuffer.put(bytesValue).rewind();
 
         subject.deserialize(byteBuffer, MERKLE_VERSION);
 
-        assertEquals(bytesValue, subject.getValue());
-        verify(byteBuffer).get(defaultEmpty);
+        assertArrayEquals(bytesValue, subject.getValue());
     }
 
     @Test
@@ -245,13 +237,7 @@ class ContractValueTest {
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, MERKLE_VERSION));
 
         // and when
-        final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(invocation -> {
-                    subject.setValue(bytesValue);
-                    return null;
-                })
-                .when(byteBuffer)
-                .get(subject.getValue());
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
 
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, MERKLE_VERSION));
     }

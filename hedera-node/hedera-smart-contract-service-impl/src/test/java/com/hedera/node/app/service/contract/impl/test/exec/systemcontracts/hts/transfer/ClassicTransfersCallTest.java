@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,6 +217,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER.selector(),
                 A_NEW_ACCOUNT_ID,
+                null,
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
@@ -234,6 +235,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
+                null,
                 PRETEND_TRANSFER,
                 config,
                 null,
@@ -248,6 +250,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
+                null,
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 null,

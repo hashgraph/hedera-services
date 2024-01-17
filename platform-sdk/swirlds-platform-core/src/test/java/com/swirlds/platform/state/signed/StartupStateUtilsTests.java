@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
@@ -458,13 +458,12 @@ class StartupStateUtilsTests {
 
         assertEquals(targetState.getRound(), loadedState.getRound());
         assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-        assertNull(loadedState.getState().getPlatformState().getPlatformData().getEvents());
 
         // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
         // matches then it's a good signal that the correct state was loaded.
         assertEquals(
-                targetState.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
-                loadedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+                targetState.getState().getPlatformState().getConsensusTimestamp(),
+                loadedState.getState().getPlatformState().getConsensusTimestamp());
 
         assertFalse(emergencyStateLoaded.get());
     }
@@ -701,12 +700,8 @@ class StartupStateUtilsTests {
             // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
             // matches then it's a good signal that the correct state was loaded.
             assertEquals(
-                    latestUncorruptedState
-                            .getState()
-                            .getPlatformState()
-                            .getPlatformData()
-                            .getConsensusTimestamp(),
-                    loadedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+                    latestUncorruptedState.getState().getPlatformState().getConsensusTimestamp(),
+                    loadedState.getState().getPlatformState().getConsensusTimestamp());
         } else {
             assertNull(loadedState);
         }
@@ -747,8 +742,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())
@@ -805,8 +800,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())
@@ -871,8 +866,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will should be deleted
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())

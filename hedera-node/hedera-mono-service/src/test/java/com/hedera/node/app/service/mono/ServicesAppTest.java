@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
@@ -118,7 +118,7 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
-        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4);
 
         given(platform.getContext()).willReturn(platformContext);
         given(platformContext.getConfiguration()).willReturn(configuration);
@@ -157,7 +157,7 @@ class ServicesAppTest {
         assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
         assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
         assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
-        assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
+        assertThat(subject.platformStateAccessor(), instanceOf(PlatformStateAccessor.class));
         assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
         assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
         assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -44,6 +46,7 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -86,12 +89,17 @@ public class RecordCreationSuite extends HapiSuite {
                 submittingNodeStillPaidIfServiceFeesOmitted());
     }
 
+    @HapiTest
     final HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
-        return defaultHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
+        return propertyPreservingHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
+                .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
+                        overridingTwo(
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO_ACCOUNT, ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate(PAYER),
@@ -139,13 +147,18 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
+    @HapiTest
     final HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
-        return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
+        return propertyPreservingHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
+                .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
+                        overridingTwo(
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO_ACCOUNT, ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate(PAYER),
@@ -190,12 +203,17 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
+    @HapiTest
     final HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
-        return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness")
+        return propertyPreservingHapiSpec("SubmittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness")
+                .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
+                        overridingTwo(
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO_ACCOUNT, ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate(PAYER),
@@ -253,8 +271,9 @@ public class RecordCreationSuite extends HapiSuite {
                     final var payerId = spec.registry().getAccountID(PAYER);
                     final var subOp = getAccountRecords(PAYER).logged();
                     allRunFor(spec, subOp);
-                    final var records =
-                            subOp.getResponse().getCryptoGetAccountRecords().getRecordsList();
+                    final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
+                            .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                            .toList();
                     assertEquals(3, records.size());
                     for (var record : records) {
                         assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));

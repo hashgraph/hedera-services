@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,24 @@ public class TransactionDispatcher {
             handler.preHandle(context);
         } catch (UnsupportedOperationException ex) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    /**
+     * Dispatch a warmup request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
+     *
+     * @param context the context of the warmup workflow
+     * @throws NullPointerException if {@code context} is {@code null}
+     */
+    public void dispatchWarmup(@NonNull final PreHandleContext context) {
+        requireNonNull(context, "The supplied argument 'context' cannot be null!");
+
+        try {
+            final var handler = getHandler(context.body());
+            handler.warmUp(context);
+        } catch (UnsupportedOperationException ex) {
+            // do nothing, the handler should have been used before we reach this point
         }
     }
 

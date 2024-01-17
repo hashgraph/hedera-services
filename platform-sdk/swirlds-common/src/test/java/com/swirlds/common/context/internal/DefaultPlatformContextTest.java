@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.swirlds.common.context.internal;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
@@ -38,11 +40,16 @@ class DefaultPlatformContextTest {
         metricsProvider.createGlobalMetrics();
 
         // when
-        final PlatformContext context = new DefaultPlatformContext(nodeId, metricsProvider, configuration);
+        final PlatformContext context = new DefaultPlatformContext(
+                configuration,
+                metricsProvider.createPlatformMetrics(nodeId),
+                CryptographyHolder.get(),
+                Time.getCurrent());
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
         assertNotNull(context.getMetrics(), "Metrics must not be null");
         assertNotNull(context.getCryptography(), "Cryptography must not be null");
+        assertNotNull(context.getTime(), "Time must not be null");
     }
 }

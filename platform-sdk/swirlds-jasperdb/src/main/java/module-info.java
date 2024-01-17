@@ -32,6 +32,7 @@ open module com.swirlds.merkledb {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.virtualmap;
+    requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,17 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.PENDING_CREATION_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -34,6 +38,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,6 +86,7 @@ public class FrameBuilder {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final Configuration config,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final Address from,
             @NonNull final Address to,
             final long intrinsicGas) {
@@ -106,25 +112,27 @@ public class FrameBuilder {
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {
-            return finishedAsCall(to, worldUpdater, builder, transaction);
+            return finishedAsCall(to, worldUpdater, builder, transaction, featureFlags, config);
         }
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> contextVariablesFrom(
             @NonNull final Configuration config, @NonNull final HederaEvmContext context) {
-        final var contractsConfig = config.getConfigData(ContractsConfig.class);
-        final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
-        final var contextEntries = new Map.Entry<?, ?>[needsStorageTracker ? 5 : 4];
-        contextEntries[0] = Map.entry(CONFIG_CONTEXT_VARIABLE, config);
-        contextEntries[1] = Map.entry(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
-        contextEntries[2] =
-                Map.entry(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
-        contextEntries[3] = Map.entry(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE, new PropagatedCallFailureReference());
-        if (needsStorageTracker) {
-            contextEntries[4] = Map.entry(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
+        final Map<String, Object> contextEntries = new HashMap<>();
+        contextEntries.put(CONFIG_CONTEXT_VARIABLE, config);
+        contextEntries.put(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
+        contextEntries.put(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
+        contextEntries.put(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE, new PropagatedCallFailureRef());
+        if (config.getConfigData(ContractsConfig.class).sidecars().contains(CONTRACT_STATE_CHANGE)) {
+            contextEntries.put(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         }
-        return Map.ofEntries((Map.Entry<String, ?>[]) contextEntries);
+        if (context.isTransaction()) {
+            contextEntries.put(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE, context.recordBuilder());
+            contextEntries.put(
+                    PENDING_CREATION_BUILDER_CONTEXT_VARIABLE, context.pendingCreationRecordBuilderReference());
+        }
+        return contextEntries;
     }
 
     private MessageFrame finishedAsCreate(
@@ -143,13 +151,17 @@ public class FrameBuilder {
             @NonNull final Address to,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final MessageFrame.Builder builder,
-            @NonNull final HederaEvmTransaction transaction) {
-        final var account = worldUpdater.getHederaAccount(to);
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final FeatureFlags featureFlags,
+            @NonNull final Configuration config) {
         Code code = CodeV0.EMPTY_CODE;
-        if (account == null) {
-            validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
-        } else {
-            code = account.getEvmCode();
+        if (canLoadCodeFromAccount(transaction, worldUpdater)) {
+            final var account = worldUpdater.getHederaAccount(to);
+            if (account == null && worldUpdater.contractMustBePresent()) {
+                validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            } else {
+                code = account.getEvmCode();
+            }
         }
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
@@ -157,5 +169,24 @@ public class FrameBuilder {
                 .inputData(transaction.evmPayload())
                 .code(code)
                 .build();
+    }
+
+    private boolean canLoadCodeFromAccount(
+            @NonNull final HederaEvmTransaction transaction, @NonNull final HederaWorldUpdater worldUpdater) {
+        requireNonNull(transaction);
+        requireNonNull(worldUpdater);
+        final var contractId = transaction.contractIdOrThrow();
+
+        // If the contract is deleted, never load code from it.
+        final var contract = worldUpdater
+                .enhancement()
+                .nativeOperations()
+                .readableAccountStore()
+                .getContractById(contractId);
+        if (contract != null && contract.deleted()) {
+            return false;
+        }
+
+        return worldUpdater.getHederaAccount(contractId) != null || worldUpdater.contractMustBePresent();
     }
 }

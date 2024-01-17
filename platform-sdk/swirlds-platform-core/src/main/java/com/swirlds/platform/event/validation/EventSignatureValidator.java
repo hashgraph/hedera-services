@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 
 package com.swirlds.platform.event.validation;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -39,10 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Verifies event signatures.
- * <p>
- * This class was written to be compatible with the new intake pipeline. The previous signature validator
- * {@link SignatureValidator} has been left unchanged, to be used by the legacy intake monolith.
+ * Verifies event signatures
  */
 public class EventSignatureValidator {
     private static final Logger logger = LogManager.getLogger(EventSignatureValidator.class);
@@ -73,9 +72,9 @@ public class EventSignatureValidator {
     private final SoftwareVersion currentSoftwareVersion;
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -88,7 +87,7 @@ public class EventSignatureValidator {
     private final RateLimitedLogger rateLimitedLogger;
 
     private static final LongAccumulator.Config VALIDATION_FAILED_CONFIG = new LongAccumulator.Config(
-                    Metrics.PLATFORM_CATEGORY, "eventsFailedSignatureValidation")
+                    PLATFORM_CATEGORY, "eventsFailedSignatureValidation")
             .withDescription("Events for which signature validation failed")
             .withUnit("events");
     private final LongAccumulator validationFailedAccumulator;
@@ -124,10 +123,16 @@ public class EventSignatureValidator {
         this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
+
+        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
-     * Determine whether the previous address book or the current address book should be used to verify an event's signature.
+     * Determine whether the previous address book or the current address book should be used to verify an event's
+     * signature.
      * <p>
      * Logs an error and returns null if an applicable address book cannot be selected
      *
@@ -221,7 +226,7 @@ public class EventSignatureValidator {
      */
     @Nullable
     public GossipEvent validateSignature(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -238,12 +243,12 @@ public class EventSignatureValidator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
     }
 
     /**

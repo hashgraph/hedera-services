@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,15 +112,11 @@ class StringAdapterTest {
                         .withDescription(DESCRIPTION));
 
         // then
-        assertThatThrownBy(() -> new StringAdapter(null, metric, GLOBAL)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(null, metric, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, null, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, null, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, metric, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new StringAdapter(null, metric, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(null, metric, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, null, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, null, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, metric, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -165,7 +161,7 @@ class StringAdapterTest {
         final NodeId nodeId = new NodeId(1L);
 
         // then
-        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
     }
 }

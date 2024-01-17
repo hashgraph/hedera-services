@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,13 +122,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         state = new HederaState() {
             @NonNull
             @Override
-            public ReadableStates createReadableStates(@NonNull String serviceName) {
+            public ReadableStates getReadableStates(@NonNull String serviceName) {
                 return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }
 
             @NonNull
             @Override
-            public WritableStates createWritableStates(@NonNull String serviceName) {
+            public WritableStates getWritableStates(@NonNull String serviceName) {
                 return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }
         };
@@ -400,7 +400,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 @Override
                 public StateMutator stateMutator(@NonNull final String serviceName) {
                     final var fakeHederaState = requireNonNull(workingStateAccessor.getHederaState());
-                    final var writableStates = (MapWritableStates) fakeHederaState.createWritableStates(serviceName);
+                    final var writableStates = (MapWritableStates) fakeHederaState.getWritableStates(serviceName);
                     return new StateMutator(writableStates);
                 }
             };

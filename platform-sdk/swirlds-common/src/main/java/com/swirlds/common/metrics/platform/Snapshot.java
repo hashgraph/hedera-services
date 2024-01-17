@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.metrics.api.Metric;
+import com.swirlds.common.metrics.Metric;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * An instance of {@code Snapshot} contains the data of a single snapshot of a {@link Metric}.
@@ -33,9 +33,10 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      * @param metric
      * 		The source metric
      * @return the {@code Snapshot}
+     * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public static Snapshot of(final DefaultMetric metric) {
-        CommonUtils.throwArgNull(metric, "metric");
+        Objects.requireNonNull(metric, "metric must not be null");
         return new Snapshot(metric, metric.takeSnapshot());
     }
 

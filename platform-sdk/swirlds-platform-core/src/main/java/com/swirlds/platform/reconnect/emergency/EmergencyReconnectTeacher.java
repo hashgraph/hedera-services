@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect.emergency;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -28,6 +29,7 @@ import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.reconnect.ReconnectTeacher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -49,8 +51,10 @@ public class EmergencyReconnectTeacher {
     private final ThreadManager threadManager;
     private final Configuration configuration;
     private final Time time;
+    private final PlatformContext platformContext;
 
     /**
+     * @param platformContext        the platform context
      * @param time                   provides wall clock time
      * @param threadManager          responsible for managing thread lifecycles
      * @param stateSupplier          return the state for emergency reconnect
@@ -59,23 +63,24 @@ public class EmergencyReconnectTeacher {
      * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final Supplier<ReservedSignedState> stateSupplier,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final Configuration configuration) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
-        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
-        this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier must not be null");
-        this.reconnectSocketTimeout =
-                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
-        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.stateSupplier = Objects.requireNonNull(stateSupplier);
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     /**
-     * Builds a predicate used to find a state in a {@link com.swirlds.platform.state.signed.SignedStateManager} that is
+     * Builds a predicate used to find a state in a {@link StateSignatureCollector} that is
      * safe to use for an emergency reconnect. Finds a signed state for the given round number and hash even if it is
      * not fully signed, or a later round that is signed by more than half the network weight.
      *
@@ -113,6 +118,7 @@ public class EmergencyReconnectTeacher {
                             connection.getOtherId());
 
                     new ReconnectTeacher(
+                                    platformContext,
                                     time,
                                     threadManager,
                                     connection,

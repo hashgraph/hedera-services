@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
@@ -64,6 +65,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,6 +76,7 @@ import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -146,7 +149,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         stats = new TxnObs(type());
         fixNodeFor(spec);
         configureTlsFor(spec);
-
         int retryCount = 1;
         while (true) {
             Transaction txn = finalizedTxn(spec, opBodyDef(spec));
@@ -163,9 +165,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 }
                 response = timedCall(spec, txn);
             } catch (StatusRuntimeException e) {
-                var msg = e.toString();
-                if (isRecognizedRecoverable(msg)) {
-                    log.info("Recognized recoverable runtime exception {}, retrying status" + " resolution...", msg);
+                if (respondToSRE(e, "submitting transaction")) {
                     continue;
                 } else {
                     if (spec.setup().suppressUnrecoverableNetworkFailures()) {
@@ -174,7 +174,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     log.error(
                             "{} Status resolution failed due to unrecoverable runtime exception, "
                                     + "possibly network connection lost.",
-                            TxnUtils.toReadableString(txn));
+                            TxnUtils.toReadableString(txn),
+                            e);
                     if (unavailableStatusIsOk) {
                         // If we expect the status to be unavailable (because e.g. the
                         // submitted transaction exceeds 6144 bytes and will have its
@@ -196,7 +197,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     && retryPrechecks.get().contains(actualPrecheck)
                     && isWithInRetryLimit(retryCount)) {
                 retryCount++;
-                sleep(10);
+                try {
+                    sleep(10);
+                } catch (InterruptedException e) {
+                    log.error("Interrupted while sleeping before retry");
+                    throw new RuntimeException(e);
+                }
             } else {
                 break;
             }
@@ -420,9 +426,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             resolveStatus(spec);
             updateStateOf(spec);
         }
-        if (explicitStatSuppression) {
-            return;
-        } else {
+        if (!explicitStatSuppression) {
             if (spec.setup().measureConsensusLatency()) {
                 measureConsensusLatency(spec);
             }
@@ -470,7 +474,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return UNKNOWN;
     }
 
-    private Response statusResponse(HapiSpec spec, Query receiptQuery) throws Throwable {
+    private Response statusResponse(HapiSpec spec, Query receiptQuery) {
         long before = System.currentTimeMillis();
         Response response = null;
         int allowedUnrecognizedExceptions = 10;
@@ -482,19 +486,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 } else {
                     response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
                 }
-            } catch (Exception e) {
-                var msg = e.toString();
-                if (isRecognizedRecoverable(msg)) {
-                    log.info("Recognized recoverable runtime exception {}, retrying status" + " resolution...", msg);
-                    continue;
-                }
-                log.warn(
-                        "({}) Status resolution failed with unrecognized exception",
-                        Thread.currentThread().getName(),
-                        e);
-                allowedUnrecognizedExceptions--;
-                if (allowedUnrecognizedExceptions == 0) {
-                    response = UNKNOWN_RESPONSE;
+            } catch (StatusRuntimeException e) {
+                if (!respondToSRE(e, "resolving status")) {
+                    log.warn(
+                            "({}) Status resolution failed with unrecognized exception",
+                            Thread.currentThread().getName(),
+                            e);
+                    allowedUnrecognizedExceptions--;
+                    if (allowedUnrecognizedExceptions == 0) {
+                        response = UNKNOWN_RESPONSE;
+                    }
                 }
             }
         }
@@ -503,10 +504,36 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return response;
     }
 
+    private boolean respondToSRE(@NonNull final StatusRuntimeException e, @NonNull final String context) {
+        final var msg = e.toString();
+        try {
+            if (isRecognizedRecoverable(msg)) {
+                log.info("Recognized recoverable runtime exception {} when {}", msg, context);
+                Thread.sleep(250L);
+                return true;
+            } else if (isInternalError(e)) {
+                log.warn("Internal HTTP/2 error when {}, rebuilding channels", context);
+                HapiApiClients.rebuildChannels();
+                Thread.sleep(250L);
+                return true;
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted when responding to StatusRuntimeException");
+            throw new RuntimeException(ex);
+        }
+        return false;
+    }
+
+    private boolean isInternalError(@NonNull final StatusRuntimeException e) {
+        return e.toString().contains("INTERNAL: http2 exception");
+    }
+
     private boolean isRecognizedRecoverable(String msg) {
         return msg.contains("NO_ERROR")
                 || msg.contains("Received unexpected EOS on DATA frame from server")
-                || msg.contains("REFUSED_STREAM");
+                || msg.contains("REFUSED_STREAM")
+                || msg.contains("UNAVAILABLE: Channel shutdown invoked");
     }
 
     private void considerRecordingAdHocReceiptQueryStats(HapiSpecRegistry registry, long responseLatency) {
@@ -523,6 +550,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             try {
                 sleep(forMs);
             } catch (InterruptedException ignore) {
+                log.error("Interrupted during {}ms pause", forMs);
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -742,7 +771,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T scrambleTxnBody(Function<Transaction, Transaction> func) {
+    public T withTxnTransform(UnaryOperator<Transaction> func) {
         fiddler = Optional.of(func);
         return self();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,8 +98,10 @@ public class RandomHollowAccount implements OpProvider {
             allRunFor(spec, op, hapiGetTxnRecord);
 
             if (!hapiGetTxnRecord.getChildRecords().isEmpty()) {
-                final AccountID newAccountID =
-                        hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                final var newAccountID = hapiGetTxnRecord
+                        .getFirstNonStakingChildRecord()
+                        .getReceipt()
+                        .getAccountID();
                 spec.registry().saveAccountId(keyName + ACCOUNT_SUFFIX, newAccountID);
             }
         });

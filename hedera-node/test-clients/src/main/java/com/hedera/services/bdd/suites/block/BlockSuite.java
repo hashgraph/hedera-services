@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,19 +28,26 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
@@ -68,7 +75,7 @@ public class BlockSuite extends HapiSuite {
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
 
-        return defaultHapiSpec("returnsTimestampOfTheBlock")
+        return defaultHapiSpec("returnsTimestampOfTheBlock", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -121,7 +128,20 @@ public class BlockSuite extends HapiSuite {
                     final var secondCallTimestamp =
                             Longs.fromByteArray(Arrays.copyOfRange(secondCallTimeLogData, 24, 32));
 
-                    assertEquals(firstCallTimestamp, secondCallTimestamp, "Block timestamps should be equal");
+                    final var firstBlockPeriod = canonicalBlockPeriod(firstCallRecord.getConsensusTimestamp());
+                    final var secondBlockPeriod = canonicalBlockPeriod(secondCallRecord.getConsensusTimestamp());
+
+                    // In general both calls will be handled in the same block period, and should hence have the
+                    // same Ethereum block timestamp; but timing fluctuations in CI _can_ cause them to be handled
+                    // in different block periods, so we allow for that here as well
+                    if (firstBlockPeriod < secondBlockPeriod) {
+                        assertTrue(
+                                firstCallTimestamp < secondCallTimestamp,
+                                "Block timestamps should change from period " + firstBlockPeriod + " to "
+                                        + secondBlockPeriod);
+                    } else {
+                        assertEquals(firstCallTimestamp, secondCallTimestamp, "Block timestamps should be equal");
+                    }
                 }));
     }
 
@@ -131,7 +151,8 @@ public class BlockSuite extends HapiSuite {
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";
 
-        return defaultHapiSpec("returnsCorrectBlockProperties")
+        return defaultHapiSpec(
+                        "returnsCorrectBlockProperties", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -211,5 +232,16 @@ public class BlockSuite extends HapiSuite {
     @Override
     protected Logger getResultsLogger() {
         return LOG;
+    }
+
+    /**
+     * Returns the canonical block period for the given consensus timestamp.
+     *
+     * @param consensusTimestamp the consensus timestamp
+     * @return the canonical block period
+     */
+    private long canonicalBlockPeriod(@NonNull final Timestamp consensusTimestamp) {
+        return Objects.requireNonNull(consensusTimestamp).getSeconds()
+                / Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("hedera.recordStream.logPeriod"));
     }
 }

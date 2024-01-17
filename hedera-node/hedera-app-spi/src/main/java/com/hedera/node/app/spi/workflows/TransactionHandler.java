@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,15 @@ public interface TransactionHandler {
     // NOTE: FUTURE: This method should not be default, but should be implemented by all
     // transaction handlers. This is a temporary measure to avoid merge conflicts.
     default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
+
+    /**
+     * This method can be used to perform any warm up, e.g. loading data into memory that is needed
+     * for the transaction to be handled. Providing an implementation is optional.
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws NullPointerException if {@code context} is {@code null}
+     */
+    default void warmUp(@NonNull final PreHandleContext context) {}
 
     /**
      * Calculates the fees for a transaction

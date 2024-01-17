@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
+import java.util.Objects;
 
 public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
     public enum Type {
@@ -27,8 +29,15 @@ public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
         REMOVED
     }
 
+    /**
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code type}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
+     */
     public MetricsEvent {
-        throwArgNull(type, "type");
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(type, "type must not be null");
+        Objects.requireNonNull(metric, "metric must not be null");
     }
 }

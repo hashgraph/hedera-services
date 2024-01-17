@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
@@ -109,9 +110,11 @@ public interface EvmFrameState {
      *
      * @param deleted the address of the account being deleted
      * @param beneficiary the address of the beneficiary of the deletion
+     * @param frame the frame in which to track the deletion
      * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
      */
-    Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
+    Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull Address deleted, @NonNull Address beneficiary, @NonNull MessageFrame frame);
 
     /**
      * Returns the read-only account with the given address, or {@code null} if the account is missing,
@@ -187,6 +190,14 @@ public interface EvmFrameState {
      */
     @NonNull
     Hash getTokenRedirectCodeHash(@NonNull Address address);
+
+    /**
+     * Returns the native account with the given number.
+     *
+     * @param number the account number
+     * @return the native account
+     */
+    com.hedera.hapi.node.state.token.Account getNativeAccount(long number);
 
     /**
      * Returns the nonce for the account with the given number.

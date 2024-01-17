@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package com.swirlds.virtualmap;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {
@@ -88,28 +86,6 @@ public final class TestValue implements VirtualValue {
     @Override
     public String toString() {
         return "TestValue{ " + s + " }";
-    }
-
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        assertNotReleased("serialize");
-        final byte[] data = CommonUtils.getNormalisedStringBytes(this.s);
-        buffer.putInt(data.length);
-        buffer.put(data);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
-        assertNotReleased("deserialize");
-        assertMutable("deserialize");
-        final int length = buffer.getInt();
-        if (length > 1024) {
-            throw new IOException("Bad data from buffer for string length. Value: " + length);
-        }
-
-        final byte[] data = new byte[length];
-        buffer.get(data, 0, length);
-        this.s = CommonUtils.getNormalisedStringFromBytes(data);
     }
 
     @Override

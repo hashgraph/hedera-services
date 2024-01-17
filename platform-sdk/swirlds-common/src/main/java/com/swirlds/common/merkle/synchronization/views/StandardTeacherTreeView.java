@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -41,14 +44,20 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
 
     private final NodeToSend root;
 
+    private final int maxAckDelayMilliseconds;
+
     /**
      * Create a view for a standard merkle tree.
      *
-     * @param root
-     * 		the root of the tree
+     * @param configuration the configuration
+     * @param root          the root of the tree
      */
-    public StandardTeacherTreeView(final MerkleNode root) {
-        this.root = new NodeToSend(root);
+    public StandardTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
+
+        maxAckDelayMilliseconds = (int)
+                configuration.getConfigData(ReconnectConfig.class).maxAckDelay().toMillis();
+
+        this.root = new NodeToSend(root, maxAckDelayMilliseconds);
 
         nodesToHandle = new LinkedList<>();
         expectedResponses = new LinkedBlockingDeque<>();
@@ -91,7 +100,8 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
      */
     @Override
     public NodeToSend getChildAndPrepareForQueryResponse(final NodeToSend parent, final int childIndex) {
-        final NodeToSend child = new NodeToSend(parent.getNode().asInternal().getChild(childIndex));
+        final NodeToSend child =
+                new NodeToSend(parent.getNode().asInternal().getChild(childIndex), maxAckDelayMilliseconds);
         parent.registerChild(child);
 
         if (!expectedResponses.add(child)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -676,9 +676,6 @@ public class Address implements SelfSerializable {
                         sigPublicKey.getPublicKey().getEncoded(),
                         address.sigPublicKey.getPublicKey().getEncoded())
                 && Arrays.equals(
-                        encPublicKey.getPublicKey().getEncoded(),
-                        address.encPublicKey.getPublicKey().getEncoded())
-                && Arrays.equals(
                         agreePublicKey.getPublicKey().getEncoded(),
                         address.agreePublicKey.getPublicKey().getEncoded())
                 && Objects.equals(memo, address.memo);
@@ -707,7 +704,6 @@ public class Address implements SelfSerializable {
                 .append("hostnameExternal", hostnameExternal)
                 .append("portExternalIpv4", portExternal)
                 .append("sigPublicKey", sigPublicKey)
-                .append("encPublicKey", encPublicKey)
                 .append("agreePublicKey", agreePublicKey)
                 .append("memo", memo)
                 .toString();

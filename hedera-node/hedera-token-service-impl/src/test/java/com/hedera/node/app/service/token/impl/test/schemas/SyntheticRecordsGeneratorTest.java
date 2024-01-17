@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
-import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -124,8 +124,8 @@ final class SyntheticRecordsGeneratorTest {
         Assertions.assertThat(treasuryCloneAcctsResult.stream()
                         .map(Account::accountId)
                         .map(AccountID::accountNum))
-                .allMatch(acctNum ->
-                        Arrays.contains(TokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
+                .allMatch(acctNum -> Arrays.contains(
+                        InitialModServiceTokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
 
         // Verify blocklist records created
         verify(genesisRecordsBuilder).blocklistAccounts(blocklistAcctRcdsCaptor.capture());

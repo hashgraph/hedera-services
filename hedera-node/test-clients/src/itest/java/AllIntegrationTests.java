@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,8 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Order(2)
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
-        return List.of(concurrentSpecsFrom(ConcurrentSuites.all()));
+        return List.of(
+                concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
 
     @Tag("integration")

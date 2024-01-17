@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Initialize the last block info and provisional block info.
         // NOTE: State migration happens BEFORE dagger initialization, and this object is managed by dagger. So we are
         // guaranteed that the state exists PRIOR to this call.
-        final var states = state.createReadableStates(BlockRecordService.NAME);
+        final var states = state.getReadableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
@@ -150,7 +150,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
-    public void startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now
@@ -162,7 +162,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     .build();
             persistLastBlockInfo(state);
             streamFileProducer.switchBlocks(-1, 0, consensusTime);
-            return;
+            return true;
         }
 
         // Check to see if we are at the boundary between blocks and should create a new one. Each block is covered
@@ -196,7 +196,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             }
 
             switchBlocksAt(consensusTime);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -212,7 +214,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     }
 
     private void persistLastBlockInfo(@NonNull final HederaState state) {
-        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var states = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         blockInfoState.put(lastBlockInfo);
     }
@@ -239,7 +241,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // We get the latest running hash from the StreamFileProducer blocking if needed for it to be computed.
         final var currentRunningHash = streamFileProducer.getRunningHash();
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
-        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
@@ -293,6 +295,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
 
+    @Override
+    public @NonNull Timestamp currentBlockTimestamp() {
+        return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -329,7 +336,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var newBlockInfo = builder.build();
 
         // Update the latest block info in state
-        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var states = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         blockInfoState.put(newBlockInfo);
         // Commit the changes. We don't ever want to roll back when advancing the consensus clock

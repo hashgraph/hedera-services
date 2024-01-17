@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package com.hedera.services.bdd.spec.infrastructure;
 
+import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.service.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import java.util.Objects;
 
 public record ChannelStubs(
+        NodeConnectInfo nodeConnectInfo,
+        boolean useTls,
         @NonNull ManagedChannel channel,
         @NonNull ConsensusServiceGrpc.ConsensusServiceBlockingStub consSvcStubs,
         @NonNull FileServiceGrpc.FileServiceBlockingStub fileSvcStubs,
@@ -34,6 +37,7 @@ public record ChannelStubs(
         @NonNull UtilServiceGrpc.UtilServiceBlockingStub utilSvcStubs) {
 
     public ChannelStubs {
+        Objects.requireNonNull(nodeConnectInfo);
         Objects.requireNonNull(channel);
         Objects.requireNonNull(consSvcStubs);
         Objects.requireNonNull(fileSvcStubs);
@@ -50,8 +54,13 @@ public record ChannelStubs(
         channel.shutdown();
     }
 
-    public static ChannelStubs from(final ManagedChannel channel) {
+    public static ChannelStubs from(
+            @NonNull final ManagedChannel channel,
+            @NonNull final NodeConnectInfo nodeConnectInfo,
+            final boolean useTls) {
         return new ChannelStubs(
+                nodeConnectInfo,
+                useTls,
                 channel,
                 ConsensusServiceGrpc.newBlockingStub(channel),
                 FileServiceGrpc.newBlockingStub(channel),

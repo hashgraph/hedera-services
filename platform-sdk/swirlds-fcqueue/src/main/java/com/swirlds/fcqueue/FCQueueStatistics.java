@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.swirlds.fcqueue;
 
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.metrics.api.Metrics;
+import java.util.Objects;
 
 /**
  * Singleton factory for loading and registering {@link FCQueue} statistics. This is the primary entry point for all
@@ -77,9 +77,10 @@ public class FCQueueStatistics {
      *
      * @param metrics
      * 		the metrics-system
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public static void register(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
         fcqAddExecutionMicros = metrics.getOrCreate(FCQ_ADD_EXECUTION_MICROS_CONFIG);
         fcqRemoveExecutionMicros = metrics.getOrCreate(FCQ_REMOVE_EXECUTION_MICROS_CONFIG);
         fcqHashExecutionMicros = metrics.getOrCreate(FCQ_HASH_EXECUTION_MICROS_CONFIG);

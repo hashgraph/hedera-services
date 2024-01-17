@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,6 +251,14 @@ public interface HapiPropertySource {
                 .setShardNum(nativeParts[0])
                 .setRealmNum(nativeParts[1])
                 .setContractNum(nativeParts[2])
+                .build();
+    }
+
+    static ContractID asContractIdWithEvmAddress(ByteString address) {
+        return ContractID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setEvmAddress(address)
                 .build();
     }
 

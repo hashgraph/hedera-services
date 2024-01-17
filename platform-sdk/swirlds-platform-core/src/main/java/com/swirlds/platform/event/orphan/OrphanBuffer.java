@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,10 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.wiring.ClearTrigger;
@@ -53,9 +56,9 @@ public class OrphanBuffer {
     private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * The number of orphans currently in the buffer.
@@ -71,15 +74,13 @@ public class OrphanBuffer {
      * A set containing descriptors of all non-ancient events that have found their parents (or whose parents have
      * become ancient).
      */
-    private final SequenceSet<EventDescriptor> eventsWithParents =
-            new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceSet<EventDescriptor> eventsWithParents;
 
     /**
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
-            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap;
 
     /**
      * Constructor
@@ -99,20 +100,33 @@ public class OrphanBuffer {
                                 PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
+
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+        } else {
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+        }
     }
 
     /**
      * Add a new event to the buffer if it is an orphan.
      * <p>
-     * Events that are ancient are ignored, and events that don't have any missing parents are
-     * immediately passed along down the pipeline.
+     * Events that are ancient are ignored, and events that don't have any missing parents are immediately passed along
+     * down the pipeline.
      *
      * @param event the event to handle
      * @return the list of events that are no longer orphans as a result of this event being handled
      */
     @NonNull
     public List<GossipEvent> handleEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return List.of();
@@ -134,23 +148,23 @@ public class OrphanBuffer {
     }
 
     /**
-     * Set the minimum generation of non-ancient events to keep in the buffer.
+     * Sets the non-ancient event window that defines when an event is considered ancient.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events to keep in the buffer
+     * @param nonAncientEventWindow the non-ancient event window
      * @return the list of events that are no longer orphans as a result of this change
      */
     @NonNull
-    public List<GossipEvent> setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        eventsWithParents.shiftWindow(minimumGenerationNonAncient);
+        eventsWithParents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
 
         // As the map is cleared out, we need to gather the ancient parents and their orphans. We can't
         // modify the data structure as the window is being shifted, so we collect that data and act on
         // it once the window has finished shifting.
         final List<ParentAndOrphans> ancientParents = new ArrayList<>();
         missingParentMap.shiftWindow(
-                minimumGenerationNonAncient,
+                nonAncientEventWindow.getAncientThreshold(),
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
         final List<GossipEvent> unorphanedEvents = new ArrayList<>();
@@ -198,7 +212,7 @@ public class OrphanBuffer {
         final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
         while (parentIterator.hasNext()) {
             final EventDescriptor parent = parentIterator.next();
-            if (!eventsWithParents.contains(parent) && parent.getGeneration() >= minimumGenerationNonAncient) {
+            if (!eventsWithParents.contains(parent) && !nonAncientEventWindow.isAncient(parent)) {
                 missingParents.add(parent);
             }
         }
@@ -230,7 +244,7 @@ public class OrphanBuffer {
             final GossipEvent nonOrphan = nonOrphanStack.pop();
             final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
 
-            if (nonOrphan.getGeneration() < minimumGenerationNonAncient) {
+            if (nonAncientEventWindow.isAncient(nonOrphan)) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.
                 intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
                 continue;

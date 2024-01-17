@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,15 +111,15 @@ class DistributionAdapterTest {
 
         // then
         assertThatThrownBy(() -> new DistributionAdapter(null, metric, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DistributionAdapter(null, metric, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DistributionAdapter(registry, null, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DistributionAdapter(registry, null, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DistributionAdapter(registry, metric, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -178,7 +178,7 @@ class DistributionAdapterTest {
         final NodeId nodeId = new NodeId(1L);
 
         // then
-        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
     }
 }

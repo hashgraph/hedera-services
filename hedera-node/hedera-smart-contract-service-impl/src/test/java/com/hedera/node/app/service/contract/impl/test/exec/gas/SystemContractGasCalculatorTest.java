@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.contract.impl.test.exec.gas;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import java.util.function.ToLongBiFunction;
@@ -39,17 +41,37 @@ class SystemContractGasCalculatorTest {
     private ToLongBiFunction<TransactionBody, AccountID> feeCalculator;
 
     @Mock
-    private CanonicalDispatchPrices canonicalDispatchPrices;
+    private CanonicalDispatchPrices dispatchPrices;
 
     private SystemContractGasCalculator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SystemContractGasCalculator(tinybarValues, canonicalDispatchPrices, feeCalculator);
+        subject = new SystemContractGasCalculator(tinybarValues, dispatchPrices, feeCalculator);
     }
 
     @Test
     void returnsMinimumGasCostForViews() {
         assertEquals(100L, subject.viewGasRequirement());
+    }
+
+    @Test
+    void computesCanonicalDispatchType() {
+        given(dispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE)).willReturn(123L);
+        given(tinybarValues.asTinybars(123L)).willReturn(321L);
+        assertEquals(321L, subject.canonicalPriceInTinybars(DispatchType.APPROVE));
+    }
+
+    @Test
+    void computesCanonicalDispatch() {
+        given(feeCalculator.applyAsLong(TransactionBody.DEFAULT, AccountID.DEFAULT))
+                .willReturn(123L);
+        assertEquals(123L, subject.canonicalPriceInTinybars(TransactionBody.DEFAULT, AccountID.DEFAULT));
+    }
+
+    @Test
+    void computesGasCostInTinybars() {
+        given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);
+        assertEquals(6L, subject.gasCostInTinybars(3L));
     }
 }

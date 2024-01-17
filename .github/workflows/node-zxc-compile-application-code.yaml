@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,6 +58,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-hapi-tests-restart:
+        description: "HAPI Testing (restart) Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hapi-tests-nd-reconnect:
+        description: "HAPI Testing (node death reconnect) Enabled"
+        type: boolean
+        required: false
+        default: false
       enable-sonar-analysis:
         description: "Sonar Analysis Enabled"
         type: boolean
@@ -92,7 +102,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.3"
+        default: "21.0.1"
       node-version:
         description: "NodeJS Version:"
         type: string
@@ -385,6 +395,58 @@ jobs:
           name: HAPI Test (Time Consuming) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
+
+      - name: HAPI Testing (Restart)
+        id: gradle-hapi-restart
+        if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        env:
+          LC_ALL: en.UTF-8
+          LANG: en_US.UTF-8
+        run: ${GRADLE_EXEC} hapiTestRestart -Dfile.encoding=UTF-8 --scan --no-daemon
+
+      - name: Publish HAPI Test (Restart) Report
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test (Restart) Results'
+          check_run_disabled: false
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hapiTestRestart/TEST-*.xml"
+
+      - name: Publish HAPI Test (Restart) Network Logs
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ inputs.enable-hapi-tests-restart && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: HAPI Test (Restart) Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
+            hedera-node/test-clients/build/hapi-test/*.log
+
+      - name: HAPI Testing (Node Death Reconnect)
+        id: gradle-hapi-nd-reconnect
+        if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        env:
+          LC_ALL: en.UTF-8
+          LANG: en_US.UTF-8
+        run: ${GRADLE_EXEC} hapiTestNDReconnect -Dfile.encoding=UTF-8 --scan --no-daemon
+
+      - name: Publish HAPI Test (Node Death Reconnect) Report
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test (Node Death Reconnect) Results'
+          check_run_disabled: false
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hapiTestNDReconnect/TEST-*.xml"
+
+      - name: Publish HAPI Test (Node Death Reconnect) Network Logs
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ inputs.enable-hapi-tests-nd-reconnect && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: HAPI Test (Node Death Reconnect) Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
+            hedera-node/test-clients/build/hapi-test/*.log
 
       - name: E2E Testing
         id: gradle-eet

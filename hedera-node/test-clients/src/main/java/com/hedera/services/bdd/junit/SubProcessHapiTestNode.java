@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,11 +184,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             "-Dhedera.workflows.enabled=true",
                             "-Dprometheus.endpointPortNumber=" + (10000 + nodeId),
                             "com.hedera.node.app.ServicesMain",
-                            "" + nodeId)
+                            "-local",
+                            Long.toString(nodeId))
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
-                    .redirectError(stderr.toFile());
-
+                    .redirectError(stderr.toFile())
+                    .inheritIO();
             handle = builder.start().toHandle();
         } catch (Exception e) {
             throw new RuntimeException("node " + nodeId + ": Unable to start!", e);
@@ -452,7 +453,6 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             }
         } catch (IOException | InterruptedException ignored) {
         }
-
         return statusMap.get(statusKey);
     }
 }

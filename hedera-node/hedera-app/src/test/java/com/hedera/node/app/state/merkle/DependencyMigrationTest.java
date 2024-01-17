@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,9 @@ class DependencyMigrationTest extends MerkleTestBase {
     private ThrottleAccumulator accumulator;
 
     @Mock
+    private HederaLifecycles lifecycles;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     private MerkleHederaState merkleTree;
@@ -72,7 +75,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {});
+        merkleTree = new MerkleHederaState(lifecycles);
     }
 
     @Nested
@@ -166,13 +169,13 @@ class DependencyMigrationTest extends MerkleTestBase {
         // anything except setting the initial entity ID. DependentService's schema #2 should have caused the increments
         // with its new additions to its own state.
         final var postMigrationEntityIdState =
-                merkleTree.createReadableStates(EntityIdService.NAME).getSingleton(EntityIdService.ENTITY_ID_STATE_KEY);
+                merkleTree.getReadableStates(EntityIdService.NAME).getSingleton(EntityIdService.ENTITY_ID_STATE_KEY);
         assertThat(postMigrationEntityIdState.get()).isEqualTo(new EntityNumber(INITIAL_ENTITY_ID + 2));
 
         // Also verify that both of the DependentService's schema migrations took place. First the initial mappings are
         // created, then the new mappings dependent on the incrementing entity ID are added
         final var postMigrationDsState =
-                merkleTree.createReadableStates(DependentService.NAME).get(DependentService.STATE_KEY);
+                merkleTree.getReadableStates(DependentService.NAME).get(DependentService.STATE_KEY);
         assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID - 1)).isEqualTo("previously added");
         assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID)).isEqualTo("last added");
         assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID + 1)).isEqualTo("newly-added 1");

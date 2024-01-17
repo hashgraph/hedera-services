@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
@@ -32,9 +31,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 class VirtualBlobValueTest {
     private VirtualBlobValue subject;
@@ -89,30 +85,33 @@ class VirtualBlobValueTest {
 
     @Test
     void serializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-        final var inOrder = inOrder(buffer);
-        subject.serialize(buffer);
+        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer inOrder = ByteBuffer.allocate(10);
 
-        inOrder.verify(buffer).putInt(data.length);
-        inOrder.verify(buffer).put(data);
+        subject.serialize(buffer);
+        buffer.rewind();
+
+        inOrder.putInt(data.length);
+        inOrder.put(data);
+        inOrder.rewind();
+
+        assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(10);
         final var defaultSubject = new VirtualBlobValue();
-        int len = data.length;
 
-        given(buffer.getInt()).willReturn(len);
-        doAnswer(new Answer() {
-                    @Override
-                    public Object answer(final InvocationOnMock invocationOnMock) {
-                        defaultSubject.setData(data);
-                        return null;
-                    }
-                })
-                .when(buffer)
-                .get(ArgumentMatchers.any());
+        final ByteBuffer inOrder = ByteBuffer.allocate(10);
+
+        subject.serialize(buffer);
+        buffer.rewind();
+
+        inOrder.putInt(data.length);
+        inOrder.put(data);
+        inOrder.limit(inOrder.position());
+        inOrder.rewind();
 
         defaultSubject.deserialize(buffer, VirtualBlobValue.CURRENT_VERSION);
 

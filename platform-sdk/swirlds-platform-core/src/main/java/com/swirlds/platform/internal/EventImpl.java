@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package com.swirlds.platform.internal;
-
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
@@ -58,7 +56,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -111,11 +108,6 @@ public class EventImpl extends EventMetadata
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
-
-    /**
-     * This latch counts down when prehandle has been called on all application transactions contained in this event.
-     */
-    private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
 
     public EventImpl() {}
 
@@ -173,45 +165,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Signal that all transactions have been prehandled for this event.
-     */
-    public void signalPrehandleCompletion() {
-        prehandleCompleted.countDown();
-    }
-
-    /**
-     * Wait until all transactions have been prehandled for this event.
-     */
-    public void awaitPrehandleCompletion() {
-        abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
-    }
-
-    /**
      * initialize RunningHash instance
      */
     private void setDefaultValues() {
         runningHash = new RunningHash();
-    }
-
-    /**
-     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even
-     * if it has already reached consensus. Callers are responsible for checking the consensus
-     * systemIndicesStatus of this event and using the consensus time or estimated time
-     * appropriately.
-     *
-     * <p>Estimated consensus times are predicted only here and in Platform.estimateTime().
-     *
-     * @param selfId the ID of this platform
-     * @param avgSelfCreatedTimestamp self event consensus timestamp minus time created
-     * @param avgOtherReceivedTimestamp other event consensus timestamp minus time received
-     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do
-     *     any estimates
-     */
-    @SuppressWarnings("unused")
-    @Deprecated(forRemoval = true)
-    public synchronized void estimateTime(
-            final NodeId selfId, final double avgSelfCreatedTimestamp, final double avgOtherReceivedTimestamp) {
-        setEstimatedTime(selfId.equals(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
     }
 
     /**
@@ -390,6 +347,7 @@ public class EventImpl extends EventMetadata
      * @return system transaction iterator
      */
     public Iterator<SystemTransaction> systemTransactionIterator() {
+        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
         return new TypedIterator<>(systemTransactions.iterator());
     }
 
@@ -559,18 +517,6 @@ public class EventImpl extends EventMetadata
 
     public void setLastInRoundReceived(final boolean lastInRoundReceived) {
         consensusData.setLastInRoundReceived(lastInRoundReceived);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull Instant getEstimatedTime() {
-        // Return the real thing if we have it
-        if (getConsensusTimestamp() != null) {
-            return getConsensusTimestamp();
-        }
-        return super.getEstimatedTime();
     }
 
     //////////////////////////////////////////

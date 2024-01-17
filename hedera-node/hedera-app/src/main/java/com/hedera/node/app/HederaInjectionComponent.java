@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
-import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
@@ -118,7 +118,7 @@ public interface HederaInjectionComponent {
 
     ThrottleManager throttleManager();
 
-    DualStateUpdateFacility dualStateUpdateFacility();
+    PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 

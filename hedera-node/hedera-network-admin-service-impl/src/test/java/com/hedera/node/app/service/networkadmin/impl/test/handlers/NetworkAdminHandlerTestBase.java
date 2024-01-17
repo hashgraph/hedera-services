@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
@@ -207,7 +208,7 @@ public class NetworkAdminHandlerTestBase {
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
-        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
         lenient().when(versionedConfig.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         lenient().when(ledgerConfig.recordsMaxQueryableByAccount()).thenReturn(MAX_QUERYABLE_PER_ACCOUNT);
         givenRecordCacheState();
@@ -289,7 +290,8 @@ public class NetworkAdminHandlerTestBase {
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
-        return new SingleTransactionRecord(Transaction.DEFAULT, record, List.of());
+        return new SingleTransactionRecord(
+                Transaction.DEFAULT, record, List.of(), new TransactionOutputs(TokenType.FUNGIBLE_COMMON));
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

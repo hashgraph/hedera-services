@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,14 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -40,6 +42,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -47,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -57,6 +61,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -66,6 +72,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddressArray;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -78,23 +85,31 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -115,6 +130,9 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIM
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.ATTACK_CALL;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CALL_TO;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
@@ -139,39 +157,31 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TOTAL_SUPPLY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.APPROVE;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ERC_20_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
-import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.NAME_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
+import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.depositAmount;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
-import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -179,9 +189,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.datatypes.Address.contractAddress;
 import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -202,6 +214,7 @@ import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -211,13 +224,16 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.OptionalLong;
@@ -228,6 +244,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
 @HapiTestSuite
@@ -237,6 +254,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
     public static final String FALSE = "false";
+    private static final long depositAmount = 20_000L;
     public static final int GAS_TO_OFFER = 1_000_000;
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     private static final String PAYER = "payer";
@@ -250,6 +268,44 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
+    private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    private static final String MULTI_KEY = "purpose";
+    private static final String OWNER = "owner";
+    private static final String ACCOUNT = "anybody";
+    public static final String RECIPIENT = "recipient";
+    private static final String FIRST = "FIRST";
+    private static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
+    public static final String TRANSFER_SIG_NAME = "transferSig";
+    public static final String ERC_20_CONTRACT = "ERC20Contract";
+    private static final String TRANSFER_TXN = "transferTxn";
+    public static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
+    public static final String TRANSFER = "transfer";
+    public static final String APPROVE = "approve";
+    private static final String NF_TOKEN = "nfToken";
+    public static final String TRANSFER_FROM = "transferFrom";
+    private static final String MULTI_KEY_NAME = "multiKey";
+    private static final String A_CIVILIAN = "aCivilian";
+    private static final String B_CIVILIAN = "bCivilian";
+    private static final String GET_APPROVED = "outerGetApproved";
+    private static final String GET_BALANCE_OF = "getBalanceOf";
+    private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
+    private static final String GET_OWNER_OF = "getOwnerOf";
+    private static final String MISSING_TOKEN = "MISSING_TOKEN";
+    private static final String WITH_SPENDER = "WITH_SPENDER";
+    private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
+    public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
+    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
+    private static final String EVM_VERSION_038 = "v0.38";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    private static final String CREATION = "creation";
+    private static final String ENTITY_MEMO = "JUST DO IT";
+    private static final String CREATE_2_TXN = "create2Txn";
+    public static final String GET_BYTECODE = "getBytecode";
+    public static final String CONTRACT_REPORTED_LOG_MESSAGE = "Contract reported TestContract initcode is {} bytes";
+    public static final String DEPLOY = "deploy";
+    private static final String CREATE_2_TXN_2 = "create2Txn2";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -294,7 +350,114 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 transferErc20TokenFromErc721TokenFails(),
                 contractCreateNoncesExternalizationHappyPath(),
                 contractCreateFollowedByContractCallNoncesExternalization(),
-                shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled());
+                shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
+                someErc721GetApprovedScenariosPass(),
+                someErc721OwnerOfScenariosPass(),
+                someErc721BalanceOfScenariosPass(),
+                callToNonExistingContractFailsGracefully(),
+                getErc20TokenNameExceedingLimits(),
+                relayerFeeAsExpectedIfSenderCoversGas(),
+                canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
+                getErc20TokenNameExceedingLimits(),
+                invalidContract());
+    }
+
+    @SuppressWarnings("java:S5960")
+    @HapiTest
+    final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2SelfDestructContract";
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr2 = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr2 = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor")
+                .preserving(LAZY_CREATION_ENABLED)
+                .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(MULTI_KEY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(ENTITY_MEMO)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))))
+                .when(
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    log.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
+                        // Now create a hollow account at the desired address
+                        cryptoTransfer((spec, b) -> {
+                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                                    b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(
+                                                    ByteString.copyFrom(
+                                                            CommonUtils.unhex(expectedCreate2Address.get())),
+                                                    +ONE_HBAR))
+                                            .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
+                                })
+                                .signedBy(DEFAULT_PAYER)
+                                .fee(ONE_HBAR)
+                                .via(creation),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))))
+                .then(
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(0L)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN)),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account and self-destructed the contract",
+                                CREATE_2_TXN,
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
+                        sourcing(() -> getContractInfo(mergedMirrorAddr.get())
+                                .has(ContractInfoAsserts.contractWith().isDeleted())),
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(ONE_HBAR + tcValue)),
+                        /* Can repeat CREATE2 with same args because the previous contract was destroyed in the constructor*/
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN_2)),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account and self-destructed the contract",
+                                CREATE_2_TXN_2,
+                                mergedMirrorAddr2,
+                                mergedAliasAddr2),
+                        sourcing(() -> getContractInfo(mergedMirrorAddr2.get())
+                                .has(ContractInfoAsserts.contractWith().isDeleted())),
+                        sourcing(() -> assertionsHold((spec, asertLog) -> {
+                            assertEquals(
+                                    mergedAliasAddr.get(), mergedAliasAddr2.get(), "Alias addresses must be equal!");
+                            assertNotEquals(
+                                    mergedMirrorAddr.get(),
+                                    mergedMirrorAddr2.get(),
+                                    "Mirror addresses must not be equal!");
+                        })));
     }
 
     @HapiTest
@@ -768,6 +931,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
     }
 
+    @HapiTest
     final HapiSpec transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
         final var contract = TOKEN_TRANSFER_CONTRACT;
@@ -820,6 +984,65 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
+    final HapiSpec getErc20TokenNameExceedingLimits() {
+        final var REDUCED_NETWORK_FEE = 1L;
+        final var REDUCED_NODE_FEE = 1L;
+        final var REDUCED_SERVICE_FEE = 1L;
+        final var INIT_ACCOUNT_BALANCE = 100 * ONE_HUNDRED_HBARS;
+        return defaultHapiSpec("getErc20TokenNameExceedingLimits")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(INIT_ACCOUNT_BALANCE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(5)
+                                .name(TOKEN_NAME)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT))
+                .when(
+                        balanceSnapshot("accountSnapshot", ACCOUNT),
+                        reduceFeeFor(
+                                HederaFunctionality.ContractCall,
+                                REDUCED_NODE_FEE,
+                                REDUCED_NETWORK_FEE,
+                                REDUCED_SERVICE_FEE),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCall(
+                                                ERC_20_CONTRACT,
+                                                "nameNTimes",
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                                BigInteger.valueOf(51))
+                                        .payingWith(ACCOUNT)
+                                        .via(NAME_TXN)
+                                        .gas(4_000_000)
+                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED))))
+                .then(
+                        getTxnRecord(NAME_TXN)
+                                .andAllChildRecords()
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .error(Bytes.of(MAX_CHILD_RECORDS_EXCEEDED
+                                                                .name()
+                                                                .getBytes())
+                                                        .toHexString())
+                                                .gasUsed(4_000_000))),
+                        getAccountDetails(ACCOUNT)
+                                .has(accountDetailsWith()
+                                        .balanceLessThan(
+                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)),
+                        uploadDefaultFeeSchedules(GENESIS));
+    }
+
+    @HapiTest
     HapiSpec payerCannotOverSendValue() {
         final var payerBalance = 666 * ONE_HBAR;
         final var overdraftAmount = payerBalance + ONE_HBAR;
@@ -845,10 +1068,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(
                         sleepFor(1_000),
                         getReceipt(uncheckedCC)
-                                .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
+                                // Mod-service and mono-service use these mostly interchangeably
+                                .hasPriorityStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
                                 .logged());
     }
 
+    @HapiTest
     final HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -896,6 +1121,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .error(INVALID_CUSTOM_FEE_COLLECTOR.name()))));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     final HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
@@ -951,6 +1177,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .error(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON.name()))));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     final HapiSpec createTokenWithInvalidRoyaltyFee() {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
@@ -1181,6 +1408,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     final HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return propertyPreservingHapiSpec("etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
@@ -1268,6 +1496,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
+    @HapiTest
     @SuppressWarnings("java:S5960")
     final HapiSpec contractCreationStoragePriceMatchesFinalExpiry() {
         final var toyMaker = "ToyMaker";
@@ -1645,14 +1874,24 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                         .adminKey(THRESHOLD))
                                 .toArray(HapiSpecOperation[]::new)))
                 .when()
-                .then(sourcing(() -> contractCallWithFunctionAbi(
-                                "0.0." + (createdFileNum.get() + createBurstSize),
-                                getABIFor(FUNCTION, "addNthFib", contract),
-                                targets,
-                                12L)
-                        .payingWith(GENESIS)
-                        .gas(300_000L)
-                        .via(callTxn)));
+                .then(
+                        sourcing(() -> ifHapiTest(contractCallWithFunctionAbi(
+                                        "0.0." + (createdFileNum.get() + createBurstSize),
+                                        getABIFor(FUNCTION, "addNthFib", contract),
+                                        targets,
+                                        12L)
+                                .payingWith(GENESIS)
+                                .gas(300_000L)
+                                .via(callTxn))),
+                        ifNotHapiTest(contractCallWithFunctionAbi(
+                                        "0.0." + (createdFileNum.get() + createBurstSize),
+                                        getABIFor(FUNCTION, "addNthFib", contract),
+                                        targets,
+                                        12L)
+                                .payingWith(GENESIS)
+                                .gas(300_000L)
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+                                .via(callTxn)));
     }
 
     @HapiTest
@@ -1778,8 +2017,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                     final var getTxnRecord =
                             getTxnRecord(payTxn).andAllChildRecords().logged();
                     allRunFor(spec, getTxnRecord);
-                    final var lazyAccountId =
-                            getTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var lazyAccountId = getTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     final var name = "lazy";
                     spec.registry().saveAccountId(name, lazyAccountId);
                     allRunFor(spec, getAccountBalance(name).hasTinyBars(depositAmount));
@@ -2322,6 +2563,413 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }))
                 .when()
                 .then();
+    }
+
+    @HapiTest
+    private HapiSpec someErc721GetApprovedScenariosPass() {
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("someErc721GetApprovedScenariosPass")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        newKeyNamed(MULTI_KEY_NAME),
+                        cryptoCreate(A_CIVILIAN)
+                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                        uploadInitCode(SOME_ERC_721_SCENARIOS),
+                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        tokenCreate(NF_TOKEN)
+                                .supplyKey(MULTI_KEY_NAME)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(SOME_ERC_721_SCENARIOS)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                        mintToken(
+                                NF_TOKEN,
+                                List.of(
+                                        // 1
+                                        ByteString.copyFromUtf8("A"),
+                                        // 2
+                                        ByteString.copyFromUtf8("B"))),
+                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
+                                    .setAccountNum(666_666_666L)
+                                    .build()));
+                            zTokenMirrorAddr.set(asHexedSolidityAddress(
+                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
+                        }),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .via(MISSING_TOKEN)
+                                .gas(1_000_000)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        DO_SPECIFIC_APPROVAL,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .gas(1_000_000)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.valueOf(55))
+                                .via("MISSING_SERIAL")
+                                .gas(1_000_000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        getTokenNftInfo(NF_TOKEN, 1L).logged(),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.TWO)
+                                .via("MISSING_SPENDER")
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .via(WITH_SPENDER)
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)),
+                        getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
+                        sourcing(() -> contractCallLocal(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .logged()
+                                .gas(1_000_000)
+                                .has(resultWith().contractCallResult(hexedAddress(aCivilianMirrorAddr.get())))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                "MISSING_SPENDER",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
+                                                        .withSpender(new byte[0])))),
+                        childRecordsCheck(
+                                WITH_SPENDER,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
+                                                        .withSpender(asAddress(
+                                                                spec.registry().getAccountID(A_CIVILIAN)))))))));
+    }
+
+    @HapiTest
+    private HapiSpec someErc721BalanceOfScenariosPass() {
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("someErc721BalanceOfScenariosPass")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        newKeyNamed(MULTI_KEY_NAME),
+                        cryptoCreate(A_CIVILIAN)
+                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(B_CIVILIAN)
+                                .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                        uploadInitCode(SOME_ERC_721_SCENARIOS),
+                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        tokenCreate(NF_TOKEN)
+                                .supplyKey(MULTI_KEY_NAME)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(SOME_ERC_721_SCENARIOS)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                        mintToken(
+                                NF_TOKEN,
+                                List.of(
+                                        // 1
+                                        ByteString.copyFromUtf8("A"),
+                                        // 2
+                                        ByteString.copyFromUtf8("B"))),
+                        tokenAssociate(A_CIVILIAN, NF_TOKEN),
+                        cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)))
+                .when(
+                        withOpContext((spec, opLog) -> zTokenMirrorAddr.set(asHexedSolidityAddress(
+                                TokenID.newBuilder().setTokenNum(666_666L).build()))),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                .via("BALANCE_OF")
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                .via(MISSING_TOKEN)
+                                .gas(1_000_000)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(bCivilianMirrorAddr.get()))
+                                .via("NOT_ASSOCIATED")
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        childRecordsCheck(
+                                "BALANCE_OF",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_BALANCE)
+                                                        .withBalance(2)))),
+                        childRecordsCheck(
+                                "NOT_ASSOCIATED",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_BALANCE)
+                                                        .withBalance(0)))));
+    }
+
+    @HapiTest
+    private HapiSpec someErc721OwnerOfScenariosPass() {
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("someErc721OwnerOfScenariosPass")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        newKeyNamed(MULTI_KEY_NAME),
+                        cryptoCreate(A_CIVILIAN)
+                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                        uploadInitCode(SOME_ERC_721_SCENARIOS),
+                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        tokenCreate(NF_TOKEN)
+                                .supplyKey(MULTI_KEY_NAME)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(SOME_ERC_721_SCENARIOS)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                        mintToken(
+                                NF_TOKEN,
+                                List.of(
+                                        // 1
+                                        ByteString.copyFromUtf8("A"),
+                                        // 2
+                                        ByteString.copyFromUtf8("B"))),
+                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
+                                    .setAccountNum(666_666_666L)
+                                    .build()));
+                            zTokenMirrorAddr.set(asHexedSolidityAddress(
+                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
+                        }),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .via(MISSING_TOKEN)
+                                .gas(1_000_000)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.valueOf(55))
+                                .gas(1_000_000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.TWO)
+                                .via("TREASURY_OWNER")
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)),
+                        cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .via("CIVILIAN_OWNER")
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                "TREASURY_OWNER",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_OWNER)
+                                                        .withOwner(asAddress(spec.registry()
+                                                                .getAccountID(SOME_ERC_721_SCENARIOS)))))),
+                        childRecordsCheck(
+                                "CIVILIAN_OWNER",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
+                                                        .withSpender(asAddress(
+                                                                spec.registry().getAccountID(A_CIVILIAN)))))))));
+    }
+
+    HapiSpec callToNonExistingContractFailsGracefully() {
+
+        return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ethereumCallWithFunctionAbi(
+                                        false,
+                                        "invalid",
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via("invalidContractCallTxn")
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(INVALID_CONTRACT_ID))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("invalidContractCallTxn")
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .error(Bytes.of(INVALID_CONTRACT_ID
+                                                                .name()
+                                                                .getBytes())
+                                                        .toHexString())
+                                                .senderId(spec.registry()
+                                                        .getAccountID(spec.registry()
+                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                .getAlias()
+                                                                .toStringUtf8())))))));
+    }
+
+    @HapiTest
+    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+        final var canonicalTxn = "canonical";
+
+        return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, CHAIN_ID_PROP)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(CHAIN_ID_PROP, "298"),
+                        uploadDefaultFeeSchedules(GENESIS),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(
+                        // The cost to the relayer to transmit a simple call with sufficient gas
+                        // allowance is ≈ $0.0001
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via(canonicalTxn)
+                                .nonce(0)
+                                .gasPrice(100L)
+                                .maxFeePerGas(100L)
+                                .maxPriorityGas(2_000_000L)
+                                .gasLimit(1_000_000L)
+                                .sending(depositAmount))
+                .then(getAccountInfo(RELAYER)
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
+                        .logged());
+    }
+
+    @HapiTest
+    HapiSpec invalidContract() {
+        final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY)
+                .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        withOpContext((spec, ctxLog) ->
+                                spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
+                        ifNotHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
+    }
+
+    private HapiContractCallLocal setExpectedCreate2Address(
+            String contract,
+            BigInteger salt,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<byte[]> testContractInitcode) {
+        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                .exposingTypedResultsTo(results -> {
+                    log.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                    final var expectedAddrBytes = (Address) results[0];
+                    final var hexedAddress = hex(
+                            Bytes.fromHexString(expectedAddrBytes.toString()).toArray());
+                    log.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                    expectedCreate2Address.set(hexedAddress);
+                })
+                .payingWith(GENESIS);
     }
 
     @Override

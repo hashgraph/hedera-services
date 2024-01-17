@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
      * {@inheritDoc}
      *
      * If the {@code reservedSignedState} is matches the request round and hash exactly, this method updates the next epoch hash
-     * via {@link com.swirlds.platform.state.PlatformData#setNextEpochHash(Hash)}. Doing so does not modify the hash,
+     * via {@link com.swirlds.platform.state.PlatformState#setNextEpochHash(Hash)}. Doing so does not modify the hash,
      * but will trigger the epoch hash to update when the next round reaches consensus.
      * Note: the previous state is ignored by this validator.  Emergency round, emergency state hash, and epoch hash
      * are used instead.
@@ -106,7 +106,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
 
         // FUTURE WORK: move this to the calling code (saved state loading and emergency reconnect) when
         // reconnect is refactored such that it no longer needs to be called by sync
-        signedState.getState().getPlatformState().getPlatformData().setNextEpochHash(emergencyRecoveryFile.hash());
+        signedState.getState().getPlatformState().setNextEpochHash(emergencyRecoveryFile.hash());
         signedState.markAsRecoveryState();
 
         logger.info(
@@ -146,8 +146,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
     }
 
     private void checkEpochHash(final SignedState signedState) {
-        final Hash epochHash =
-                signedState.getState().getPlatformState().getPlatformData().getEpochHash();
+        final Hash epochHash = signedState.getState().getPlatformState().getEpochHash();
         if (!emergencyRecoveryFile.hash().equals(epochHash)) {
             logger.error(
                     EXCEPTION.getMarker(),

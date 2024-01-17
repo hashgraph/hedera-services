@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
@@ -32,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
@@ -41,6 +45,7 @@ import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -93,6 +98,31 @@ class FrameUtilsTest {
         stack.push(initialFrame);
         given(initialFrame.getMessageFrameStack()).willReturn(stack);
         assertFalse(FrameUtils.acquiredSenderAuthorizationViaDelegateCall(initialFrame));
+    }
+
+    @Test
+    void singleFrameStackHasNoActiveAddress() {
+        stack.add(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void detectsTargetAddressInTwoFrameStack() {
+        stack.push(initialFrame);
+        stack.add(frame);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertTrue(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void detectsLackOfTargetAddressInTwoFrameStack() {
+        stack.push(initialFrame);
+        stack.add(frame);
+        given(frame.getRecipientAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
     }
 
     @Test
@@ -214,6 +244,16 @@ class FrameUtilsTest {
         final var tracker = new StorageAccessTracker();
         given(initialFrame.getContextVariable(TRACKER_CONTEXT_VARIABLE)).willReturn(tracker);
         assertSame(tracker, accessTrackerFor(frame));
+    }
+
+    @Test
+    void checksForBeneficiaryMapAsExpected() {
+        givenNonInitialFrame();
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        given(initialFrame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE))
+                .willReturn(beneficiaries);
+        assertSame(beneficiaries, selfDestructBeneficiariesFor(frame));
     }
 
     @Test

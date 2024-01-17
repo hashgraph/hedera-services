@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ plugins {
 dependencies {
     implementation("com.adarshr:gradle-test-logger-plugin:4.0.0")
     implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.26.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.22.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.23.3")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation(

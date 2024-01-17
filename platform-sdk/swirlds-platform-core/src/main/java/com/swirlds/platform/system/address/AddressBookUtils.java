@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,10 @@ public class AddressBookUtils {
         boolean nextNodeIdParsed = false;
         for (final String line : addressBookText.split("\\r?\\n")) {
             final String trimmedLine = line.trim();
-            if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {
+            if (trimmedLine.isEmpty()
+                    || trimmedLine.startsWith("#")
+                    || trimmedLine.startsWith("swirld")
+                    || trimmedLine.startsWith("app")) {
                 continue;
             }
             if (trimmedLine.startsWith(ADDRESS_KEYWORD)) {
@@ -112,7 +115,10 @@ public class AddressBookUtils {
             } else {
                 throw new ParseException(
                         "The line [%s] does not start with `%s` or `%s`."
-                                .formatted(line.substring(0, 30), ADDRESS_KEYWORD, NEXT_NODE_ID_KEYWORD),
+                                .formatted(
+                                        line.substring(0, Math.min(line.length(), 30)),
+                                        ADDRESS_KEYWORD,
+                                        NEXT_NODE_ID_KEYWORD),
                         0);
             }
         }
