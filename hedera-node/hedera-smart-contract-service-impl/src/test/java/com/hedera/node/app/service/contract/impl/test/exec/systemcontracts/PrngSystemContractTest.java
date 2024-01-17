@@ -140,7 +140,6 @@ class PrngSystemContractTest {
         // given:
         givenCommon();
         commonMocks();
-        mockInputAndRemainingGas();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
@@ -159,7 +158,6 @@ class PrngSystemContractTest {
     void wrongFunctionSelectorFailedTest() {
         // given:
         commonMocks();
-        mockInputAndRemainingGas();
         givenCommon();
 
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
@@ -190,16 +188,14 @@ class PrngSystemContractTest {
 
     private void commonMocks() {
         final var address = Address.fromHexString("0x100");
+        final var remainingGas = 10000L;
         when(messageFrame.getSenderAddress()).thenReturn(address);
+        when(messageFrame.getRemainingGas()).thenReturn(remainingGas);
+        when(messageFrame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
 
         when(proxyWorldUpdater.getAccount(any())).thenReturn(mutableAccount);
         when(proxyWorldUpdater.enhancement()).thenReturn(enhancement);
         when(enhancement.systemOperations()).thenReturn(systemContractOperations);
         when(mutableAccount.hederaId()).thenReturn(accountID);
-    }
-
-    private void mockInputAndRemainingGas() {
-        when(messageFrame.getRemainingGas()).thenReturn(10000L);
-        when(messageFrame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
     }
 }
