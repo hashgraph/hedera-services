@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -98,8 +100,12 @@ public class TransferContextImpl implements TransferContext {
         try {
             createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         } catch (HandleException e) {
-            final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
-            context.reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
+            if (getHandleContext().getHederaFunctionality() == CRYPTO_TRANSFER
+                    && getHandleContext().getTransactionCategory() == PRECEDING
+                    && getHandleContext().isSelfSubmitted()) {
+                final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
+                getHandleContext().reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
+            }
             // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
             // if there is a failed auto-creation triggered from CryptoTransfer
             // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
