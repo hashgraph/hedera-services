@@ -66,9 +66,7 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -111,6 +109,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -138,16 +137,17 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.InitTrigger;
@@ -181,6 +181,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -233,7 +234,7 @@ public class SwirldsPlatform implements Platform {
      * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
      * new state is created, before it is hashed.
      */
-    private final SignedStateNexus latestImmutableState = new SignedStateNexus();
+    private final SignedStateNexus latestImmutableState = new LockFreeStateNexus();
 
     private final QueueThread<GossipEvent> intakeQueue;
 
@@ -524,6 +525,8 @@ public class SwirldsPlatform implements Platform {
                 swirldName);
 
         transactionPool = new TransactionPool(platformContext);
+        final LatestCompleteStateNexus latestCompleteState =
+                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
@@ -531,25 +534,20 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 
-        final LatestCompleteStateNexus latestCompleteState =
-                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
         savedStateController = new SavedStateController(stateConfig);
-        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
-            // the app comm component will reserve the state, this should be done by the wiring in the future
-            appCommunicationComponent.newLatestCompleteStateEvent(ss);
-            // the nexus expects a state to be reserved for it
-            // in the future, all of these reservations will be done by the wiring
-            latestCompleteState.setState(ss.reserve("setting latest complete state"));
-        };
+
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
+                platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
                 dispatchBuilder,
-                newLatestCompleteStateConsumer,
                 this::handleFatalError,
-                platformWiring.getSaveStateToDiskInput()::put,
-                platformWiring.getSignStateInput()::put);
+                platformWiring.getSignStateInput()::put,
+                platformWiring.getSignatureCollectorStateInput()::put,
+                signedStateMetrics);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
@@ -574,22 +572,16 @@ public class SwirldsPlatform implements Platform {
 
         components.add(stateManagementComponent);
 
-        final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
-
-        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
-                new PreconsensusSystemTransactionManager();
-        preconsensusSystemTransactionManager.addHandler(
-                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
-
         final ConsensusSystemTransactionManager consensusSystemTransactionManager =
                 new ConsensusSystemTransactionManager();
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) ->
                         consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
-        consensusSystemTransactionManager.addHandler(
-                StateSignatureTransaction.class,
-                (ignored, nodeId, txn, v) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+        final BiConsumer<State, ConsensusRound> roundAndStateConsumer = (state, round) -> {
+            consensusSystemTransactionManager.handleRound(state, round);
+            platformWiring.getSignatureCollectorConsensusInput().put(round);
+        };
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -625,8 +617,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 currentAddressBook,
                 selfId,
-                preconsensusSystemTransactionManager,
-                consensusSystemTransactionManager,
+                roundAndStateConsumer,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,
                 initialState.getState(),
@@ -729,7 +720,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 sequencer,
                 swirldStateManager,
-                signedStateManager);
+                stateSignatureCollector);
 
         intakeHandler = platformWiring.getEventInput()::put;
 
@@ -743,7 +734,8 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool);
+        platformWiring.wireExternalComponents(
+                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
@@ -834,9 +826,9 @@ public class SwirldsPlatform implements Platform {
 
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
-        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
+        GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
     }
 
     /**

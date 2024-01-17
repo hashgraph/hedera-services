@@ -19,10 +19,6 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.state.signed.SignedStateInfo;
-import com.swirlds.platform.state.signed.SignedStateManager;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * This component responsible for:
@@ -36,22 +32,4 @@ import java.util.List;
  * </ul>
  */
 public interface StateManagementComponent
-        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {
-
-    /**
-     * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array
-     * will be made.
-     * <p>
-     * This method is NOT thread safe.
-     *
-     * @return a copy of the latest signed states
-     */
-    @Deprecated
-    List<SignedStateInfo> getSignedStateInfo();
-
-    /**
-     * Get the signed state manager.
-     */
-    @NonNull
-    SignedStateManager getSignedStateManager();
-}
+        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {}

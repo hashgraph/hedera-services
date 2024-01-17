@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -55,7 +56,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
 
@@ -93,7 +94,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        return defaultHapiSpec("noTokenIdReverts")
+        return defaultHapiSpec("noTokenIdReverts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
@@ -146,7 +147,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";
 
-        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall")
+        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(accountAlias).shape(SECP_256K1_SHAPE),
