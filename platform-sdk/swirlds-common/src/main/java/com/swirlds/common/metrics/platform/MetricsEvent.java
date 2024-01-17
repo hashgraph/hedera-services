@@ -16,9 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
 import java.util.Objects;
