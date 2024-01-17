@@ -55,6 +55,8 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -64,6 +66,7 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -339,6 +342,45 @@ class HandleHederaOperationsTest {
         assertInternalFinisherAsExpected(captor.getValue(), synthContractCreation);
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void translatesCreateContractHandleException() throws IOException {
+        final var parent = Account.newBuilder()
+                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .stakedNodeId(3)
+                .declineReward(true)
+                .autoRenewSeconds(666L)
+                .maxAutoAssociations(321)
+                .memo("Something")
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthContractCreation = synthContractCreationFromParent(pendingId, parent);
+        final var synthAccountCreation =
+                synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreation)
+                .build();
+        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.dispatchRemovableChildTransaction(
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        captor.capture()))
+                .willThrow(new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED));
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+
+        final var e = Assertions.assertThrows(
+                ResourceExhaustedException.class,
+                () -> subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS));
+        assertEquals(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED, e.getStatus());
     }
 
     @Test

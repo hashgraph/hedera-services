@@ -55,7 +55,7 @@ public class DuplicateManagementTest extends HapiSuite {
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
-    private static final long MS_TO_WAIT_FOR_CONSENSUS = 5_000L;
+    private static final long MS_TO_WAIT_FOR_CONSENSUS = 6_000L;
 
     public static void main(String... args) {
         new DuplicateManagementTest().runSuiteSync();

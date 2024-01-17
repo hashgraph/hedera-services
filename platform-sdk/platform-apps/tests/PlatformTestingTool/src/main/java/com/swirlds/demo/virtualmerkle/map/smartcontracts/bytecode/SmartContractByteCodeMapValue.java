@@ -133,6 +133,10 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         return new SmartContractByteCodeMapValue(this);
     }
 
+    int getSizeInBytes() {
+        return Integer.BYTES + byteCode.length;
+    }
+
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(byteCode);
