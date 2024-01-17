@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -128,12 +129,20 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
             code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
         }
-        /* The ContractCallTransitionLogic would have rejected a missing or deleted
-         * contract, so at this point we should have non-null bytecode available.
-         * If there is no bytecode, it means we have a non-token and non-contract account,
-         * hence the code should be null and there must be a value transfer.
-         */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+
+        // disable calls to non-existing addresses for
+        // older evm versions or disabled FF or grandfather contract
+        if (!dynamicProperties.allowCallsToNonContractAccounts()
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
+                || dynamicProperties.grandfatherContracts().contains(to)) {
+            /* The ContractCallTransitionLogic would have rejected a missing or deleted
+             * contract, so at this point we should have non-null bytecode available.
+             * If there is no bytecode, it means we have a non-token and non-contract account,
+             * hence the code should be null and there must be a value transfer.
+             */
+            validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        }
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

@@ -127,7 +127,7 @@ public class MerkleDbTestUtils {
         if (getDirectMemoryUsedBytes() < limit) {
             return true;
         }
-        for (int i = 0; i < 20 && getDirectMemoryUsedBytes() > limit; i++) {
+        for (int i = 0; i < 5 && getDirectMemoryUsedBytes() > limit; i++) {
             System.gc();
             try {
                 SECONDS.sleep(1);

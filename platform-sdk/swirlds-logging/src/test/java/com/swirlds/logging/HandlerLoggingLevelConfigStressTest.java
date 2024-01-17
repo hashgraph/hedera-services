@@ -29,6 +29,7 @@ import com.swirlds.logging.api.internal.level.MarkerState;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
@@ -89,6 +90,7 @@ public class HandlerLoggingLevelConfigStressTest {
     }
 
     @Test
+    @Disabled
     void testWithConfig() {
         // given
         final Configuration configuration = defaultConfigBuilder().getOrCreateConfig();

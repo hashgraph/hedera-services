@@ -25,8 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.atomic.AtomicDouble;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,10 +176,16 @@ class MemoryIndexDiskKeyValueStoreTest {
         final AtomicLong timeSpent = new AtomicLong(0);
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
         String storeName = "MemoryIndexDiskKeyValueStoreTest";
-        final MemoryIndexDiskKeyValueStore<long[]> store =
-                new MemoryIndexDiskKeyValueStore<>(tempDir, storeName, null, testType.dataItemSerializer, null, index);
-        final DataFileCompactor dataFileCompactor =
-                new DataFileCompactor(
+        final MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                tempDir,
+                storeName,
+                null,
+                testType.dataItemSerializer,
+                null,
+                index);
+        final DataFileCompactor<long[]> dataFileCompactor =
+                new DataFileCompactor<>(
                         storeName,
                         store.fileCollection,
                         index,
@@ -270,7 +279,13 @@ class MemoryIndexDiskKeyValueStoreTest {
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore<long[]> storeFromSnapshot = new MemoryIndexDiskKeyValueStore<>(
-                tempSnapshotDir, storeName, null, testType.dataItemSerializer, null, snapshotIndex);
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                tempSnapshotDir,
+                storeName,
+                null,
+                testType.dataItemSerializer,
+                null,
+                snapshotIndex);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();

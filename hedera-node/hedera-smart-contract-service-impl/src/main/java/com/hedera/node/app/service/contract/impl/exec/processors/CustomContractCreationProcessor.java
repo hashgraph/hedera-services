@@ -52,8 +52,10 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     // By convention, the halt reason should be INSUFFICIENT_GAS when the contract already exists
     private static final Optional<ExceptionalHaltReason> COLLISION_HALT_REASON =
             Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
-    private static final Optional<ExceptionalHaltReason> FAILED_CREATION_HALT_REASON =
+    private static final Optional<ExceptionalHaltReason> ENTITY_LIMIT_HALT_REASON =
             Optional.of(CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED);
+    private static final Optional<ExceptionalHaltReason> CHILD_RECORDS_LIMIT_HALT_REASON =
+            Optional.of(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS);
 
     public CustomContractCreationProcessor(
             @NonNull final EVM evm,
@@ -75,8 +77,8 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         final MutableAccount contract;
         try {
             contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
-        } catch (ResourceExhaustedException ignore) {
-            halt(frame, tracer, FAILED_CREATION_HALT_REASON);
+        } catch (final ResourceExhaustedException e) {
+            haltOnResourceExhaustion(frame, tracer, e);
             return;
         }
 
@@ -99,6 +101,17 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
+        }
+    }
+
+    private void haltOnResourceExhaustion(
+            @NonNull final MessageFrame frame,
+            @NonNull final OperationTracer tracer,
+            @NonNull final ResourceExhaustedException e) {
+        switch (e.getStatus()) {
+            case MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED -> halt(frame, tracer, ENTITY_LIMIT_HALT_REASON);
+            case MAX_CHILD_RECORDS_EXCEEDED -> halt(frame, tracer, CHILD_RECORDS_LIMIT_HALT_REASON);
+            default -> throw new IllegalStateException("Unexpected creation failure reason", e);
         }
     }
 

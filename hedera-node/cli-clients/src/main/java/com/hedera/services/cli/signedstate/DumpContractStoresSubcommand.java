@@ -24,7 +24,7 @@ import static java.util.Map.Entry.comparingByKey;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
@@ -260,10 +260,10 @@ public class DumpContractStoresSubcommand {
 
         // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-        final var contractSchema = new ContractSchema(RELEASE_045_VERSION);
+        final var contractSchema = new InitialModServiceContractSchema(RELEASE_045_VERSION);
         final var contractSchemas = contractSchema.statesToCreate();
         final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
-                .filter(sd -> sd.stateKey().equals(ContractSchema.STORAGE_KEY))
+                .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))
                 .findFirst()
                 .orElseThrow();
         final var contractStoreSchemaMetadata =

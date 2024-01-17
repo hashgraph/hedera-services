@@ -19,6 +19,8 @@ package com.swirlds.platform.eventhandling;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.platform.event.AncientMode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Configuration for event handling inside the platform.
@@ -74,4 +76,17 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {}
+        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {
+
+    /**
+     * @return the {@link AncientMode} based on useBirthRoundAncientThreshold
+     */
+    @NonNull
+    public AncientMode getAncientMode() {
+        if (useBirthRoundAncientThreshold()) {
+            return AncientMode.BIRTH_ROUND_THRESHOLD;
+        } else {
+            return AncientMode.GENERATION_THRESHOLD;
+        }
+    }
+}

@@ -24,6 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -45,9 +46,9 @@ import java.util.function.Function;
  * It is necessary to consider the signature bytes when determining if an event is a duplicate, not just the descriptor
  * or hash. This guards against a malicious node gossiping the same event with different signatures, or a node gossiping
  * another node's event with a modified signature. If we went only off the descriptor or hash, we might discard the
- * correct version of an event as a duplicate, because a malicious version has already been received.
- * Instead, the deduplicator lets all versions of the event through that have a unique descriptor/signature pair, and
- * the signature validator further along the pipeline will handle discarding bad versions.
+ * correct version of an event as a duplicate, because a malicious version has already been received. Instead, the
+ * deduplicator lets all versions of the event through that have a unique descriptor/signature pair, and the signature
+ * validator further along the pipeline will handle discarding bad versions.
  */
 public class EventDeduplicator {
     /**
@@ -63,7 +64,7 @@ public class EventDeduplicator {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -107,12 +108,17 @@ public class EventDeduplicator {
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
      * Handle a potentially duplicate event
      * <p>
-     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is returned.
+     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is
+     * returned.
      *
      * @param event the event to handle
      * @return the event if it is not a duplicate, or null if it is a duplicate
@@ -152,7 +158,7 @@ public class EventDeduplicator {
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
+        observedEvents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
     }
 
     /**

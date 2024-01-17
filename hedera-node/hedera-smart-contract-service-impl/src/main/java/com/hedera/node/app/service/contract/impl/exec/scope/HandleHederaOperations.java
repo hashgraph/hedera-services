@@ -46,6 +46,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.ContractsConfig;
@@ -69,7 +71,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-
     private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
@@ -85,8 +86,8 @@ public class HandleHederaOperations implements HederaOperations {
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
-    private final HederaConfig hederaConfig;
     private final SystemContractGasCalculator gasCalculator;
+    private final HederaConfig hederaConfig;
     private final HandleContext context;
     private final HederaFunctionality functionality;
     private final PendingCreationMetadataRef pendingCreationMetadataRef;
@@ -105,8 +106,8 @@ public class HandleHederaOperations implements HederaOperations {
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
-        this.hederaConfig = requireNonNull(hederaConfig);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.hederaConfig = requireNonNull(hederaConfig);
         this.functionality = requireNonNull(functionality);
         this.pendingCreationMetadataRef = requireNonNull(pendingCreationMetadataRef);
     }
@@ -275,14 +276,18 @@ public class HandleHederaOperations implements HederaOperations {
                 AccountID.newBuilder().accountNum(parentNumber).build());
         final var impliedContractCreation = synthContractCreationFromParent(
                 ContractID.newBuilder().contractNum(number).build(), requireNonNull(parent));
-        dispatchAndMarkCreation(
-                number,
-                synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                impliedContractCreation,
-                parent.autoRenewAccountId(),
-                evmAddress,
-                ExternalizeInitcodeOnSuccess.YES);
+        try {
+            dispatchAndMarkCreation(
+                    number,
+                    synthAccountCreationFromHapi(
+                            ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
+                    impliedContractCreation,
+                    parent.autoRenewAccountId(),
+                    evmAddress,
+                    ExternalizeInitcodeOnSuccess.YES);
+        } catch (final HandleException e) {
+            throw new ResourceExhaustedException(e.getStatus());
+        }
     }
 
     /**

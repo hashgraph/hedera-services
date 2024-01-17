@@ -128,7 +128,7 @@ class VirtualBlobKeyTest {
 
         VirtualBlobKey blobKey = new VirtualBlobKey();
 
-        blobKey.deserialize(buffer, VirtualBlobKey.CURRENT_VERSION);
+        blobKey.deserialize(buffer);
 
         assertEquals(subject.getEntityNumCode(), blobKey.getEntityNumCode());
         assertEquals(subject.getType(), blobKey.getType());

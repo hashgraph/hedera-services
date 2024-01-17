@@ -46,10 +46,12 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -68,6 +70,7 @@ import java.util.Set;
 import java.util.SortedMap;
 
 public class OnDiskAccount implements VirtualValue, HederaAccount {
+
     public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc88e3a5c7b497468L;
 
@@ -184,14 +187,10 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return 256; // estimation based on mainnet state as of 05/2023
     }
 
-    @Override
-    public void serialize(final ByteBuffer to) throws IOException {
-        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer from, final int version) throws IOException {
-        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
+    // Keep it in sync with serialize()
+    public int getSerializedSizeInBytes() {
+        final byte[] variablePart = serializedVariablePart();
+        return 1 + Integer.BYTES * ints.length + Long.BYTES * longs.length + Integer.BYTES + variablePart.length;
     }
 
     @Override
@@ -199,9 +198,27 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         serializeTo(out::writeByte, out::writeInt, out::writeLong, out::write);
     }
 
+    public void serialize(final WritableSequentialData to) {
+        serializeTo(to::writeByte, to::writeInt, to::writeLong, data -> to.writeBytes(data, 0, data.length));
+    }
+
+    @Deprecated
+    public void serialize(final ByteBuffer to) {
+        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
+    }
+
+    @Deprecated
+    public void deserialize(final ByteBuffer from, final int version) {
+        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
     }
 
     @Override
@@ -219,35 +236,29 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return immutable;
     }
 
-    public int serializeTo(
-            final CheckedConsumer<Byte> writeByteFn,
-            final CheckedConsumer<Integer> writeIntFn,
-            final CheckedConsumer<Long> writeLongFn,
-            final CheckedConsumer<byte[]> writeBytesFn)
-            throws IOException {
-        int bytesWritten = 0;
+    private <E extends Exception> void serializeTo(
+            final ThrowingConsumer<Byte, E> writeByteFn,
+            final ThrowingConsumer<Integer, E> writeIntFn,
+            final ThrowingConsumer<Long, E> writeLongFn,
+            final ThrowingConsumer<byte[], E> writeBytesFn)
+            throws E {
         writeByteFn.accept(flags);
-        bytesWritten += 1;
         for (final var v : ints) {
             writeIntFn.accept(v);
         }
-        bytesWritten += Integer.BYTES * ints.length;
         for (final var v : longs) {
             writeLongFn.accept(v);
         }
-        bytesWritten += Long.BYTES * longs.length;
         final byte[] variablePart = serializedVariablePart();
         writeBytes(variablePart, writeIntFn, writeBytesFn);
-        bytesWritten += Integer.BYTES + variablePart.length; // size + data
-        return bytesWritten;
     }
 
-    private void deserializeFrom(
-            final CheckedSupplier<Byte> readByteFn,
-            final CheckedSupplier<Integer> readIntFn,
-            final CheckedSupplier<Long> readLongFn,
-            final CheckedConsumer<byte[]> readBytesFn)
-            throws IOException {
+    private <E extends Exception> void deserializeFrom(
+            final ThrowingSupplier<Byte, E> readByteFn,
+            final ThrowingSupplier<Integer, E> readIntFn,
+            final ThrowingSupplier<Long, E> readLongFn,
+            final ThrowingConsumer<byte[], E> readBytesFn)
+            throws E {
         throwIfImmutable();
         flags = readByteFn.get();
         for (var i = 0; i < IntValues.COUNT; i++) {
@@ -260,7 +271,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         deserializeVariablePart(variableSource);
     }
 
-    private byte[] serializedVariablePart() throws IOException {
+    private byte[] serializedVariablePart() {
         try (final var baos = new ByteArrayOutputStream()) {
             try (final var out = new SerializableDataOutputStream(baos)) {
                 out.write(key.serialize());
@@ -276,10 +287,12 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
             }
             baos.flush();
             return baos.toByteArray();
+        } catch (final IOException e) {
+            throw new RuntimeException("Can't serialize OnDiskAccount variable part", e);
         }
     }
 
-    private void deserializeVariablePart(final byte[] source) throws IOException {
+    private void deserializeVariablePart(final byte[] source) {
         try (final var bais = new ByteArrayInputStream(source)) {
             try (final var in = new SerializableDataInputStream(bais)) {
                 key = JKeySerializer.deserialize(in);
@@ -297,6 +310,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
                     }
                 }
             }
+        } catch (final IOException e) {
+            throw new RuntimeException("Can't deserialize OnDiskAccount variable part", e);
         }
     }
 

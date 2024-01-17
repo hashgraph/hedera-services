@@ -248,7 +248,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(tokenAssociate(ANOTHER_USER, NFTdeleted).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
-    @HapiTest
+    @HapiTest // transferList differ
     public HapiSpec cannotUpdateNftWhenDeleted() {
         return defaultHapiSpec("cannotUpdateNftWhenDeleted")
                 .given(

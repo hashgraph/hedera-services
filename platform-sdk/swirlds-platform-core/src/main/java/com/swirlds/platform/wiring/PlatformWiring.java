@@ -46,11 +46,13 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -86,6 +88,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
+
     /**
      * Constructor.
      *
@@ -114,6 +117,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 ApplicationTransactionPrehandlerWiring.create(schedulers.applicationTransactionPrehandlerScheduler());
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
+        signedStateFileManagerWiring =
+                SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         platformCoordinator = new PlatformCoordinator(
                 eventHasherWiring,
@@ -127,9 +133,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring);
 
-        signedStateFileManagerWiring =
-                SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
-        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
@@ -159,6 +162,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
     }
 
     /**
@@ -178,22 +182,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
+        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
+        stateSignatureCollectorWiring.getAllStatesOutput().solderTo(signedStateFileManagerWiring.saveToDiskFilter());
 
         solderNonAncientEventWindow();
-        linkedEventIntakeWiring
-                .minimumGenerationNonAncientOutput()
-                .solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        linkedEventIntakeWiring.keystoneEventSequenceNumberOutput().solderTo(pcesWriterWiring.flushRequestInputWire());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
+                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
     }
 
     /**
@@ -209,7 +212,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final TransactionPool transactionPool) {
+            @NonNull final TransactionPool transactionPool,
+            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -218,6 +222,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
     }
 
     /**
@@ -235,7 +246,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager    the event creation manager to bind
      * @param pcesSequencer           the PCES sequencer to bind
      * @param swirldStateManager      the swirld state manager to bind
-     * @param signedStateManager      the signed state manager to bind
+     * @param stateSignatureCollector      the signed state manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -247,7 +258,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateManager signedStateManager) {
+            @NonNull final StateSignatureCollector stateSignatureCollector) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -258,7 +269,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.bind(eventCreationManager);
         pcesSequencerWiring.bind(pcesSequencer);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
-        stateSignatureCollectorWiring.bind(signedStateManager);
+        stateSignatureCollectorWiring.bind(stateSignatureCollector);
     }
 
     /**
@@ -341,6 +352,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * @return the input wire for collecting post-consensus signatures
+     */
+    @NonNull
+    public InputWire<ConsensusRound> getSignatureCollectorConsensusInput() {
+        return stateSignatureCollectorWiring.getConsensusRoundInput();
+    }
+
+    /**
+     * @return the input wire for states that need their signatures collected
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSignatureCollectorStateInput() {
+        return stateSignatureCollectorWiring.getReservedStateInput();
+    }
+
+    /**
      * Get the input wire for signing a state
      * <p>
      * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
@@ -377,7 +404,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @return the input wire for the PCES writer minimum generation to store
      */
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
-        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+        return pcesWriterWiring.minimumAncientIdentifierToStoreInputWire();
     }
 
     /**
@@ -387,6 +414,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
         return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get the output wire that {@link LinkedEventIntake} uses to pass keystone event sequence numbers to the
+     * {@link PcesWriter}, to be flushed.
+     *
+     * @return the output wire for keystone event sequence numbers
+     */
+    public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
+        return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }
 
     /**
@@ -403,15 +440,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-    }
-
-    /**
-     * Inject a new minimum generation non-ancient on all components that need it.
-     *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
-     */
-    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**

@@ -64,11 +64,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
 
     /**
-     * The sequence number of an event that will never be written to disk because it is stale.
-     */
-    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
-
-    /**
      * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
      * signal when events have been made durable.
      */
@@ -109,8 +104,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      * @param streamSequenceNumber the sequence number
      */
     public void setStreamSequenceNumber(final long streamSequenceNumber) {
-        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
-                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("sequence number already set");
         }
         this.streamSequenceNumber = streamSequenceNumber;
@@ -202,6 +196,9 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         this.descriptor = hashedData.createEventDescriptor();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getGeneration() {
         return hashedData.getGeneration();
@@ -300,5 +297,18 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public int hashCode() {
         return hashedData.getHash().hashCode();
+    }
+
+    /**
+     * Get the value used to determine if this event is ancient or not. Will be the event's generation prior to
+     * migration, and the event's birth round after migration.
+     *
+     * @return the value used to determine if this event is ancient or not
+     */
+    public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
+        return switch (ancientMode) {
+            case GENERATION_THRESHOLD -> getGeneration();
+            case BIRTH_ROUND_THRESHOLD -> hashedData.getBirthRound();
+        };
     }
 }

@@ -28,6 +28,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -73,7 +75,7 @@ public class BlockSuite extends HapiSuite {
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
 
-        return defaultHapiSpec("returnsTimestampOfTheBlock")
+        return defaultHapiSpec("returnsTimestampOfTheBlock", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -149,7 +151,8 @@ public class BlockSuite extends HapiSuite {
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";
 
-        return defaultHapiSpec("returnsCorrectBlockProperties")
+        return defaultHapiSpec(
+                        "returnsCorrectBlockProperties", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),

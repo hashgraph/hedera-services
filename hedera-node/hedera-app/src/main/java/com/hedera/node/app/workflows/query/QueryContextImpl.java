@@ -117,7 +117,7 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public BlockRecordInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
-            final var states = state.createReadableStates(BlockRecordService.NAME);
+            final var states = state.getReadableStates(BlockRecordService.NAME);
             final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
                     .get();
             final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY)
