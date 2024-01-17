@@ -56,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -297,7 +298,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
             // Finally, let the transaction handler do warm up of other state it may want to use later
-            dispatcher.dispatchWarmup(context);
+            ForkJoinPool.commonPool().execute(() -> dispatcher.dispatchWarmup(context));
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
