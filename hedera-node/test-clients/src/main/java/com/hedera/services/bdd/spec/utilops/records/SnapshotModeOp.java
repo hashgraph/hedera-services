@@ -106,7 +106,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
     // For large key structures, there can be "significant" fee variation in tinybar units
     // due to different public key sizes and signature map prefixes
-    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 100_000;
+    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 50_000;
     // For some edge cases of custom fee charging,. when crypto transfer fails there are variations in fees
     // Also when auto-creation fails, transaction fee is not re-claimed from payer, so mono-service records
     // has a lot of fees

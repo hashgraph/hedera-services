@@ -175,7 +175,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey", HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
