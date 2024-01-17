@@ -90,10 +90,10 @@ public record CallOutcome(
      * @param recordBuilder the record builder
      */
     public void addCallDetailsTo(@NonNull final ContractCallRecordBuilder recordBuilder) {
-        recordBuilder.contractID(recipientId);
-        // Intentionally omit result on aborted calls (i.e., when gasUsed = 0)
+        recordBuilder.contractCallResult(result);
+        // Intentionally do not omit contract ID on aborted calls (i.e., when gasUsed = 0)
         if (result.gasUsed() != 0L) {
-            recordBuilder.contractCallResult(result);
+            recordBuilder.contractID(recipientId);
         }
         recordBuilder.withCommonFieldsSetFrom(this);
     }
