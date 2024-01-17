@@ -2,6 +2,7 @@
 pragma solidity ^0.6.12;
 import "./hip-206/HederaTokenService.sol";
 import "./hip-206/HederaResponseCodes.sol";
+import "../../solidity/hip-206/HederaTokenService.sol";
 
 contract BurnToken is HederaTokenService {
 
