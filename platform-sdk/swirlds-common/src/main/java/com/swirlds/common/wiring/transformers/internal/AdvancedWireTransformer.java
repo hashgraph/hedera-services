@@ -27,8 +27,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-// TODO unit test output cleanup
-
 /**
  * Similar to a {@link WireTransformer} but for more advanced use cases. Unlike a {@link WireTransformer}, the
  * transforming function is called once per output per data item, and a special method can be called after the data is
