@@ -26,7 +26,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,8 +132,16 @@ public class SyncManagerImpl implements FallenBehindManager {
      * {@inheritDoc}
      */
     @Override
-    public void reportFallenBehind(final NodeId id) {
-        fallenBehindManager.reportFallenBehind(id);
+    public void reportFallenBehind(@NonNull final NodeId peerId) {
+        fallenBehindManager.reportFallenBehind(peerId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportNotFallenBehind(@NonNull final NodeId peerId) {
+        fallenBehindManager.reportNotFallenBehind(peerId);
     }
 
     /**
@@ -145,11 +152,6 @@ public class SyncManagerImpl implements FallenBehindManager {
         fallenBehindManager.resetFallenBehind();
     }
 
-    @Override
-    public List<NodeId> getNeededForFallenBehind() {
-        return fallenBehindManager.getNeededForFallenBehind();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -158,16 +160,8 @@ public class SyncManagerImpl implements FallenBehindManager {
         return fallenBehindManager.hasFallenBehind();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<NodeId> getNeighborsForReconnect() {
-        return fallenBehindManager.getNeighborsForReconnect();
-    }
-
-    @Override
-    public boolean shouldReconnectFrom(final NodeId peerId) {
+    public boolean shouldReconnectFrom(@NonNull final NodeId peerId) {
         return fallenBehindManager.shouldReconnectFrom(peerId);
     }
 

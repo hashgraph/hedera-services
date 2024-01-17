@@ -91,7 +91,8 @@ public class SyncMetrics {
     private final CountPerSecond outgoingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "syncs/sec")
+                    PLATFORM_CATEGORY, "syncsPerSecond")
+            .withUnit("hz")
             .withDescription("Total number of syncs completed per second");
     private final CountPerSecond syncsPerSec;
 
@@ -147,8 +148,8 @@ public class SyncMetrics {
     private final AverageTimeStat avgSyncDuration5;
     private final AverageAndMaxTimeStat avgSyncDuration;
     private final AverageStat knownSetSize;
-    private final AverageAndMax avgEventsPerSyncSent;
-    private final AverageAndMax avgEventsPerSyncRec;
+    private final AverageAndMax eventsSentPerSync;
+    private final AverageAndMax eventsRecievedPerSync;
     private final MaxStat multiTipsPerSync;
     private final AverageStat gensWaitingForExpiry;
     private final RunningAverageMetric syncFilterTime;
@@ -186,10 +187,18 @@ public class SyncMetrics {
                 "sec/sync",
                 "duration of average successful sync (in seconds)");
 
-        avgEventsPerSyncSent = new AverageAndMax(
-                metrics, PLATFORM_CATEGORY, "ev/syncS", "number of events sent per successful sync", FORMAT_8_1);
-        avgEventsPerSyncRec = new AverageAndMax(
-                metrics, PLATFORM_CATEGORY, "ev/syncR", "number of events received per successful sync", FORMAT_8_1);
+        eventsSentPerSync = new AverageAndMax(
+                metrics,
+                PLATFORM_CATEGORY,
+                "eventsSentPerSync",
+                "number of events sent per successful sync",
+                FORMAT_8_1);
+        eventsRecievedPerSync = new AverageAndMax(
+                metrics,
+                PLATFORM_CATEGORY,
+                "eventsReceivedPerSync",
+                "number of events received per successful sync",
+                FORMAT_8_1);
 
         syncGenerationDiff = new AverageStat(
                 metrics,
@@ -334,8 +343,8 @@ public class SyncMetrics {
         }
         syncsPerSec.count();
 
-        avgEventsPerSyncSent.update(info.getEventsWritten());
-        avgEventsPerSyncRec.update(info.getEventsRead());
+        eventsSentPerSync.update(info.getEventsWritten());
+        eventsRecievedPerSync.update(info.getEventsRead());
     }
 
     /**
@@ -412,6 +421,27 @@ public class SyncMetrics {
      */
     public void recordSyncFilterTime(final long nanoseconds) {
         syncFilterTime.update(nanoseconds);
+    }
+
+    /**
+     * Indicate that a sync iteration has been completed.
+     */
+    public void syncComplete() {
+        syncsPerSec.count();
+    }
+
+    /**
+     * Register the number of events sent during a sync.
+     */
+    public void registerNumberOfEventsSent(final int numberOfEventsSent) {
+        eventsSentPerSync.update(numberOfEventsSent);
+    }
+
+    /**
+     * Register the number of events received during a sync.
+     */
+    public void registerNumberOfEventsReceived(final int numberOfEventsReceived) {
+        eventsRecievedPerSync.update(numberOfEventsReceived);
     }
 
     /**

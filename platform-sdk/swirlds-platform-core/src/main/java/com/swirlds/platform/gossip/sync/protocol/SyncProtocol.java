@@ -106,6 +106,8 @@ public class SyncProtocol implements Protocol {
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
      * @param permitProvider         provides permits to sync
+     * @param gossipHalted           returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull        returns true if the intake queue is too full, false otherwise
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      * @param time                   a source of time
@@ -149,7 +151,6 @@ public class SyncProtocol implements Protocol {
      * @return true if the node should sync, false otherwise
      */
     private boolean shouldSync() {
-
         if (!syncCooldownComplete()) {
             syncMetrics.doNotSyncCooldown();
             return false;

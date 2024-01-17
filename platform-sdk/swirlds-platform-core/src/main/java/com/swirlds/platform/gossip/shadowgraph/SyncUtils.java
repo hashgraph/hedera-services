@@ -440,12 +440,6 @@ public final class SyncUtils {
 
             final long latestGenerationInAncestry = latestSelfEventTipset.getTipGenerationForNode(event.getCreatorId());
 
-            if (latestGenerationInAncestry == Tipset.UNDEFINED) {
-                // Special case: we don't have enough information to decide if this node is in our ancestry.
-                filteredList.add(event);
-                continue;
-            }
-
             if (latestGenerationInAncestry >= event.getGeneration()) {
                 // This event is an ancestor* of our latest self event.
                 //
@@ -535,7 +529,7 @@ public final class SyncUtils {
     /**
      * @param sendList The list of events to sort.
      */
-    static void sort(final List<EventImpl> sendList) {
+    public static void sort(final List<EventImpl> sendList) {
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
@@ -548,7 +542,7 @@ public final class SyncUtils {
      * false if we don't
      */
     @NonNull
-    static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
+    public static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
         final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
         for (final ShadowEvent s : theirTipShadows) {
             myBooleans.add(s != null); // is this event is known to me
@@ -567,7 +561,7 @@ public final class SyncUtils {
      * @return a list of tips that they have
      */
     @NonNull
-    static List<ShadowEvent> getMyTipsTheyKnow(
+    public static List<ShadowEvent> getMyTipsTheyKnow(
             @NonNull final Connection connection,
             @NonNull final List<ShadowEvent> myTips,
             @NonNull final List<Boolean> myTipsTheyHave)
@@ -586,10 +580,59 @@ public final class SyncUtils {
         // process their booleans
         for (int i = 0; i < myTipsTheyHave.size(); i++) {
             if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
-                knownTips.add(myTips.get(i));
+
+                final ShadowEvent shadowEvent = myTips.get(i);
+                if (shadowEvent != null) {
+                    knownTips.add(myTips.get(i));
+                }
             }
         }
 
         return knownTips;
+    }
+
+    /**
+     * Given a list of events we are transmitting to the peer and the previous list of tips for events we have
+     * previously transmitted, find the list tips that describe all transmitted events after this batch of events is
+     * transmitted.
+     *
+     * <p>
+     * A tip in this context is defined as an event with no children.
+     *
+     * @param previousTips                the tips of events we have transmitted so far
+     * @param eventsToTransmit            the events we are transmitting
+     * @param minimumGenerationNonAncient the minimum generation that is considered non-ancient from the peer's
+     *                                    perspective
+     * @return the tips of all events we have sent following the transmission we are about to perform
+     */
+    public static List<EventImpl> computeSentTips(
+            @NonNull final List<EventImpl> previousTips,
+            @NonNull final List<EventImpl> eventsToTransmit,
+            final long minimumGenerationNonAncient) {
+
+        final Map<Hash, EventImpl> tips = new HashMap<>();
+        for (final EventImpl event : eventsToTransmit) {
+            tips.put(event.getBaseHash(), event);
+        }
+        for (final EventImpl event : previousTips) {
+            if (event.getBaseEvent().getGeneration() < minimumGenerationNonAncient) {
+                // Don't carry forward ancient tips, even if they have had no self children.
+                continue;
+            }
+            tips.put(event.getBaseHash(), event);
+        }
+
+        // A tip in this context is an event with no self children.
+        // Check the parents of each event, and remove any parent
+        // from the set if it exists.
+
+        for (final EventImpl event : eventsToTransmit) {
+            final EventImpl selfParent = event.getSelfParent();
+            if (selfParent != null) {
+                tips.remove(selfParent.getBaseHash());
+            }
+        }
+
+        return new ArrayList<>(tips.values());
     }
 }

@@ -49,6 +49,8 @@ public class ProtocolNegotiated extends NegotiationStateWithDescription {
         return this;
     }
 
+    //    private final int magic = 1337; // TODO remove
+
     /**
      * {@inheritDoc}
      */
@@ -59,7 +61,26 @@ public class ProtocolNegotiated extends NegotiationStateWithDescription {
             throw new IllegalStateException("Cannot run a protocol because it is null");
         }
         try {
+
+            // TODO
+            //            connection.getDos().writeInt(magic);
+            //            connection.getDos().flush();
+            //            if (connection.getDis().readInt() != magic) {
+            //                throw new IOException("magic number mismatch before protocol " +
+            // protocol.getProtocolName()
+            //                        + " with peer " + connection.getOtherId());
+            //            }
+
             protocol.runProtocol(connection);
+
+            // TODO
+            //            connection.getDos().writeInt(magic);
+            //            connection.getDos().flush();
+            //            if (connection.getDis().readInt() != magic) {
+            //                throw new IOException("magic number mismatch after protocol " + protocol.getProtocolName()
+            //                        + " with peer " + connection.getOtherId());
+            //            }
+
         } finally {
             setDescription("ran protocol " + protocol.getProtocolName());
             protocol = null;

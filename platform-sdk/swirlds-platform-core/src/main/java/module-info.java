@@ -125,6 +125,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.transaction.system;
     exports com.swirlds.platform.event.preconsensus;
     exports com.swirlds.platform.gossip.sync.protocol;
+    exports com.swirlds.platform.gossip.sync.turbo;
     exports com.swirlds.platform.gossip;
     exports com.swirlds.platform.reconnect;
     exports com.swirlds.platform.gossip.shadowgraph;

@@ -2,8 +2,9 @@
 
 Gossip is the process of exchanging events with other peers. There are currently two protocols implemented:
 
-- [Sync](syncing/sync-protocol.md)
-- [Out-of-Order-Gossip](OOG/OOG-protocol.md)
+- [Sync (legacy)](syncing/sync-protocol.md)
+- [Turbo Sync](turbo/turbo-sync.md)
+- [Out-of-Order Gossip](OOG/OOG-protocol.md)
 
 Other docs related to gossip:
 

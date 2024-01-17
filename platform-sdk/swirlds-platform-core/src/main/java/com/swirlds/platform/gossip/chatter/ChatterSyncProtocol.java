@@ -31,7 +31,6 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -96,8 +95,7 @@ public class ChatterSyncProtocol implements Protocol {
      * @return true if we should sync with this neighbor
      */
     private boolean fallenBehindSync() {
-        final List<NodeId> notReportedFallenBehind = fallenBehindManager.getNeededForFallenBehind();
-        return notReportedFallenBehind == null || notReportedFallenBehind.contains(peerId);
+        return fallenBehindManager.shouldReconnectFrom(peerId);
     }
 
     @Override

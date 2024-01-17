@@ -667,6 +667,7 @@ public class SwirldsPlatform implements Platform {
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
             intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);

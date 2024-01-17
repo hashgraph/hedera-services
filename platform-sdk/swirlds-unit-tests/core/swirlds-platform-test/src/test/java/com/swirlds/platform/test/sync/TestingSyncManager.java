@@ -18,17 +18,20 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class TestingSyncManager implements FallenBehindManager {
     /** whether we have fallen behind or not */
     private boolean fallenBehind = false;
 
     @Override
-    public void reportFallenBehind(NodeId id) {
+    public void reportFallenBehind(@NonNull final NodeId peerId) {
         // for testing, we conclude we have fallen behind even if just 1 node says so
         fallenBehind = true;
     }
+
+    @Override
+    public void reportNotFallenBehind(@NonNull final NodeId peerId) {}
 
     @Override
     public void resetFallenBehind() {
@@ -38,16 +41,6 @@ public class TestingSyncManager implements FallenBehindManager {
     @Override
     public boolean hasFallenBehind() {
         return fallenBehind;
-    }
-
-    @Override
-    public List<NodeId> getNeighborsForReconnect() {
-        return null;
-    }
-
-    @Override
-    public List<NodeId> getNeededForFallenBehind() {
-        return null;
     }
 
     @Override

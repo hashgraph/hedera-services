@@ -79,6 +79,14 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
      * {@inheritDoc}
      */
     @Override
+    public int getUnprocessedEventCount(@NonNull final NodeId peer) {
+        return unprocessedEventCounts.get(peer).get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void eventEnteredIntakePipeline(@NonNull final NodeId peer) {
         Objects.requireNonNull(peer);
 
