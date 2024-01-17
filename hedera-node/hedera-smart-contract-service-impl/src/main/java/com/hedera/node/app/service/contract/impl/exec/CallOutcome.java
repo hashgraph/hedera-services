@@ -91,7 +91,7 @@ public record CallOutcome(
      */
     public void addCallDetailsTo(@NonNull final ContractCallRecordBuilder recordBuilder) {
         recordBuilder.contractCallResult(result);
-        // Intentionally do not omit contract ID on aborted calls (i.e., when gasUsed = 0)
+        // Intentionally omit contract ID on aborted calls (i.e., when gasUsed = 0)
         if (result.gasUsed() != 0L) {
             recordBuilder.contractID(recipientId);
         }
