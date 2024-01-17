@@ -273,7 +273,7 @@ class EthereumTransitionLogicTest {
         givenReasonableSemantics();
         given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(callTxn);
         given(semanticCheck.apply(callTxn)).willReturn(INVALID_ACCOUNT_ID);
-        given(contractCallTransitionLogic.semanticCheck()).willReturn(semanticCheck);
+        given(contractCallTransitionLogic.semanticEthCheck()).willReturn(semanticCheck);
 
         assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
     }
