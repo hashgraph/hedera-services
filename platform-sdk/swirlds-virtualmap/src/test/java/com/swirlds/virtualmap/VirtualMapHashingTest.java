@@ -359,7 +359,7 @@ class VirtualMapHashingTest {
         IntStream.range(1, nEntries)
                 .forEach(index -> assertNull(root.getRecords().findHash(index)));
 
-        // prepare the root for h full leaf rehash
+        // prepare the root for full leaf rehash
         doFullRehash(root);
 
         // make sure that the elements have hashes

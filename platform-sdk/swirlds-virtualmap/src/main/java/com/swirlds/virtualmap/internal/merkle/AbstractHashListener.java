@@ -60,14 +60,12 @@ import java.util.stream.Stream;
  */
 public abstract class AbstractHashListener<K extends VirtualKey, V extends VirtualValue>
         implements VirtualHashListener<K, V> {
-    private static final int INITIAL_BATCH_ARRAY_SIZE = 10_000;
+
     private final VirtualDataSource<K, V> dataSource;
     private final long firstLeafPath;
     private final long lastLeafPath;
-    private final List<List<VirtualLeafRecord<K, V>>> batchLeaves = new ArrayList<>();
-    private final List<List<VirtualHashRecord>> batchNodes = new ArrayList<>();
-    private List<VirtualLeafRecord<K, V>> rankLeaves;
-    private List<VirtualHashRecord> rankNodes;
+    private List<VirtualLeafRecord<K, V>> leaves;
+    private List<VirtualHashRecord> nodes;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -97,78 +95,57 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         this.dataSource = Objects.requireNonNull(dataSource);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized void onBatchStarted() {
-        batchLeaves.clear();
-        batchNodes.clear();
+    public void onHashingStarted() {
+        nodes = new ArrayList<>();
+        leaves = new ArrayList<>();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void onRankStarted() {
-        rankLeaves = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
-        rankNodes = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
+    public void onNodeHashed(final long path, final Hash hash) {
+        final List<VirtualHashRecord> dirtyHashesToFlush;
+        final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
+        synchronized (this) {
+            nodes.add(new VirtualHashRecord(path, hash));
+            if (nodes.size() > 10000) { // TODO: make it configurable
+                dirtyHashesToFlush = nodes;
+                nodes = new ArrayList<>();
+                dirtyLeavesToFlush = leaves;
+                leaves = new ArrayList<>();
+            } else {
+                dirtyHashesToFlush = null;
+                dirtyLeavesToFlush = null;
+            }
+        }
+        if ((dirtyHashesToFlush != null) && (dirtyLeavesToFlush != null)) {
+            flush(dirtyHashesToFlush, dirtyLeavesToFlush);
+        }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void onNodeHashed(final long path, final Hash hash) {
-        rankNodes.add(new VirtualHashRecord(path, hash));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public synchronized void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
-        rankLeaves.add(leaf);
+        leaves.add(leaf);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized void onRankCompleted() {
-        batchLeaves.add(rankLeaves);
-        batchNodes.add(rankNodes);
+    public synchronized void onHashingCompleted() {
+        if (!nodes.isEmpty() || !leaves.isEmpty()) {
+            flush(nodes, leaves);
+        }
+        nodes = null;
+        leaves = null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void onBatchCompleted() {
-        long maxPath = -1;
-
-        Stream<VirtualHashRecord> sortedDirtyHashes = Stream.of();
-        for (int i = batchNodes.size() - 1; i >= 0; i--) {
-            final List<VirtualHashRecord> batch = batchNodes.get(i);
-            if (!batch.isEmpty()) {
-                sortedDirtyHashes = Stream.concat(sortedDirtyHashes, batch.stream());
-                maxPath = Math.max(maxPath, batch.get(batch.size() - 1).path());
-            }
-        }
-
-        Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves = Stream.of();
-        for (int i = batchLeaves.size() - 1; i >= 0; i--) {
-            final List<VirtualLeafRecord<K, V>> batch = batchLeaves.get(i);
-            if (!batch.isEmpty()) {
-                sortedDirtyLeaves = Stream.concat(sortedDirtyLeaves, batch.stream());
-                maxPath = Math.max(maxPath, batch.get(batch.size() - 1).getPath());
-            }
-        }
-
+    private void flush(final List<VirtualHashRecord> dirtyHashesToFlush,
+            final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
+        final long maxPath = dirtyLeavesToFlush.stream().mapToLong(VirtualLeafRecord::getPath).max().orElse(-1);
         // flush it down
         try {
-            dataSource.saveRecords(
-                    firstLeafPath, lastLeafPath, sortedDirtyHashes, sortedDirtyLeaves, findLeavesToRemove(maxPath));
+            dataSource.saveRecords(firstLeafPath, lastLeafPath,
+                    dirtyHashesToFlush.stream(), dirtyLeavesToFlush.stream(), findLeavesToRemove(maxPath));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
