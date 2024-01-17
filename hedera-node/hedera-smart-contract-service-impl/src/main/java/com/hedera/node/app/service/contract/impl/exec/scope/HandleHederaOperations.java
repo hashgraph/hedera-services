@@ -46,6 +46,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.ContractsConfig;
@@ -274,14 +276,18 @@ public class HandleHederaOperations implements HederaOperations {
                 AccountID.newBuilder().accountNum(parentNumber).build());
         final var impliedContractCreation = synthContractCreationFromParent(
                 ContractID.newBuilder().contractNum(number).build(), requireNonNull(parent));
-        dispatchAndMarkCreation(
-                number,
-                synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                impliedContractCreation,
-                parent.autoRenewAccountId(),
-                evmAddress,
-                ExternalizeInitcodeOnSuccess.YES);
+        try {
+            dispatchAndMarkCreation(
+                    number,
+                    synthAccountCreationFromHapi(
+                            ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
+                    impliedContractCreation,
+                    parent.autoRenewAccountId(),
+                    evmAddress,
+                    ExternalizeInitcodeOnSuccess.YES);
+        } catch (final HandleException e) {
+            throw new ResourceExhaustedException(e.getStatus());
+        }
     }
 
     /**
