@@ -133,7 +133,9 @@ public class TestIntake implements LoadableFromSignedState {
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        linkedEventIntakeWiring.nonAncientEventWindowOutput().solderTo(orphanBufferWiring.nonAncientEventWindowInput());
+        linkedEventIntakeWiring
+                .nonAncientEventWindowOutput()
+                .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         linkedEventIntakeWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
@@ -223,7 +225,8 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public void flush() {
-        hasherWiring.flushRunnable().run();
+        // TODO reenable once hasher is concurrent again
+        //        hasherWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
         linkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
