@@ -68,8 +68,6 @@ public class SwirldStateMetrics {
      */
     private final AverageTimeStat preHandleTime;
 
-    private final AverageTimeStat preConsHandleTime;
-
     /**
      * Constructor of {@code SwirldStateMetrics}
      *
@@ -83,12 +81,6 @@ public class SwirldStateMetrics {
         avgConsHandleTime = metrics.getOrCreate(AVG_CONS_HANDLE_TIME_CONFIG);
         transHandledPerSecond = metrics.getOrCreate(TRANS_HANDLED_PER_SECOND_CONFIG);
         avgStateCopyMicros = metrics.getOrCreate(AVG_STATE_COPY_MICROS_CONFIG);
-        preConsHandleTime = new AverageTimeStat(
-                metrics,
-                ChronoUnit.MICROS,
-                INTERNAL_CATEGORY,
-                "preConsHandleMicros",
-                "average time it takes to handle a pre-consensus event from q4 (in microseconds)");
         preHandleTime = new AverageTimeStat(
                 metrics,
                 ChronoUnit.MICROS,
@@ -132,13 +124,6 @@ public class SwirldStateMetrics {
      */
     public void stateCopyMicros(final double micros) {
         avgStateCopyMicros.update(micros);
-    }
-
-    /**
-     * The amount of time it takes to handle a single event from the pre-consensus event queue.
-     */
-    public void preConsensusHandleTime(final long start, final long end) {
-        preConsHandleTime.update(start, end);
     }
 
     /**

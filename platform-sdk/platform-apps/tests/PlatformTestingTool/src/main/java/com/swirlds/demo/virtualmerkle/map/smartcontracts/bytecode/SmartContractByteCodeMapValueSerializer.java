@@ -62,6 +62,11 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
+    public int getSerializedSize(@NonNull final SmartContractByteCodeMapValue value) {
+        return value.getSizeInBytes();
+    }
+
+    @Override
     public void serialize(
             @NonNull final SmartContractByteCodeMapValue value, @NonNull final WritableSequentialData out) {
         value.serialize(out);
