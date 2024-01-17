@@ -19,7 +19,6 @@ package com.swirlds.platform.gui;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
@@ -44,9 +43,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class GuiPlatformAccessor {
 
     private final Map<NodeId, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
-    private final Map<NodeId, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
+    private final Map<NodeId, SignedStateNexus> latestImmutableStateComponents = new ConcurrentHashMap<>();
 
     private static final GuiPlatformAccessor INSTANCE = new GuiPlatformAccessor();
 
@@ -149,31 +148,6 @@ public final class GuiPlatformAccessor {
     }
 
     /**
-     * Set the state management component for a node.
-     *
-     * @param nodeId                   the ID of the node
-     * @param stateManagementComponent the state management component
-     */
-    public void setStateManagementComponent(
-            @NonNull final NodeId nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(stateManagementComponent, "stateManagementComponent must not be null");
-        stateManagementComponents.put(nodeId, stateManagementComponent);
-    }
-
-    /**
-     * Get the state management component for a node, or null if none is set.
-     *
-     * @param nodeId the ID of the node
-     * @return the state management component
-     */
-    @Nullable
-    public StateManagementComponent getStateManagementComponent(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        return stateManagementComponents.getOrDefault(nodeId, null);
-    }
-
-    /**
      * Set the consensus for a node.
      *
      * @param nodeId    the ID of the node
@@ -225,5 +199,30 @@ public final class GuiPlatformAccessor {
     public SignedStateNexus getLatestCompleteStateComponent(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return latestCompleteStateComponents.getOrDefault(nodeId, null);
+    }
+
+    /**
+     * Set the latest immutable state component for a node.
+     *
+     * @param nodeId              the ID of the node
+     * @param latestCompleteState the latest immutable state component
+     */
+    public void setLatestImmutableStateComponent(
+            @NonNull final NodeId nodeId, @NonNull final SignedStateNexus latestCompleteState) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(latestCompleteState, "latestCompleteState must not be null");
+        latestImmutableStateComponents.put(nodeId, latestCompleteState);
+    }
+
+    /**
+     * Get the latest immutable state component for a node, or null if none is set.
+     *
+     * @param nodeId the ID of the node
+     * @return the latest immutable state component
+     */
+    @Nullable
+    public SignedStateNexus getLatestImmutableStateComponent(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        return latestImmutableStateComponents.getOrDefault(nodeId, null);
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -145,7 +144,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final Account.Builder updatedAcctBuilder = acct.copyBuilder();
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // Validate that there is at least one fungible token to wipe
-            validateTrue(fungibleWipeCount >= 0 && nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
+            validateTrue(fungibleWipeCount >= 0, INVALID_WIPING_AMOUNT);
 
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - fungibleWipeCount;
@@ -155,8 +154,6 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             newAccountBalance = validated.accountTokenRel().balance() - fungibleWipeCount;
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
         } else {
-            // Check if nft serial numbers are zero, but fungible count is more than zero
-            validateFalse(nftSerialNums.isEmpty() && fungibleWipeCount > 0, FAIL_INVALID);
             // Check if nft serial numbers are zero
             validateFalse(nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
             // Check that the new total supply will not be negative

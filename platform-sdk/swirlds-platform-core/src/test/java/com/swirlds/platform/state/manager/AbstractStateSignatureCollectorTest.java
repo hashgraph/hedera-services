@@ -27,8 +27,8 @@ import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -47,7 +47,7 @@ import org.junit.jupiter.api.AfterEach;
 /**
  * Boilerplate implementation for SignedStateManager tests.
  */
-public class AbstractSignedStateManagerTest {
+public class AbstractStateSignatureCollectorTest {
 
     protected final Random random = getRandomPrintSeed();
 
@@ -85,7 +85,7 @@ public class AbstractSignedStateManagerTest {
      * Add a signature for a node on a state from a given round.
      */
     protected void addSignature(
-            @NonNull final SignedStateManager manager, final long round, @NonNull final NodeId nodeId) {
+            @NonNull final StateSignatureCollectorTester manager, final long round, @NonNull final NodeId nodeId) {
         Objects.requireNonNull(manager, "manager must not be null");
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
@@ -136,15 +136,10 @@ public class AbstractSignedStateManagerTest {
             if (shouldRoundBePresent.test(round)) {
                 assertEquals(-1, signedState.getReservationCount(), "state should have no reservations");
             } else {
-                int expectedReservationCount = 1;
-                if (round == highestRound.get()) {
-                    // the most recent state has an extra reservation inside the SSM
-                    expectedReservationCount++;
-                }
-                if (round == highestCompleteRound.get()) {
-                    // the most recent complete state has an extra reservation held by the nexus
-                    expectedReservationCount++;
-                }
+                // the most recent complete state has a reservation held by the nexus
+                // incomplete states are held by the collector
+                final int expectedReservationCount =
+                        round == highestCompleteRound.get() || !signedState.isComplete() ? 1 : -1;
                 assertEquals(
                         expectedReservationCount,
                         signedState.getReservationCount(),

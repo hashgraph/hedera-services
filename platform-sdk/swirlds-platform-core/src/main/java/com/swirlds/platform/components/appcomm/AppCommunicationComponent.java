@@ -28,11 +28,10 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
@@ -48,12 +47,14 @@ import org.apache.logging.log4j.Logger;
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<ReservedSignedState> asyncLatestCompleteStateQueue;
+    /** The round of the latest state provided to the application */
+    private long latestStateProvidedRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
      * The size of the queue holding tasks for
      * {@link com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer}s
@@ -100,20 +101,17 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
                         stateSavingResult.freezeState()));
     }
 
-    @Override
-    public void newLatestCompleteStateEvent(@NonNull final SignedState signedState) {
-        // the state is reserved now before it is added to the queue
+    public void newLatestCompleteStateEvent(@NonNull final ReservedSignedState reservedSignedState) {
+        // the state is reserved by the caller
         // it will be released by the notification engine after the app consumes it
         // this is done by latestCompleteStateAppNotify()
         // if the state does not make into the queue, it will be released below
-        final ReservedSignedState reservedSignedState =
-                signedState.reserve("AppCommunicationComponent newLatestCompleteStateEvent");
         final boolean success = asyncLatestCompleteStateQueue.offer(reservedSignedState);
         if (!success) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to add new latest complete state task (state round = {}) to {} because it is full",
-                    signedState.getRound(),
+                    reservedSignedState.get().getRound(),
                     asyncLatestCompleteStateQueue.getName());
             reservedSignedState.close();
         }
@@ -123,6 +121,12 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
      * Handler for {@link #asyncLatestCompleteStateQueue}
      */
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
+        if (reservedSignedState.get().getRound() <= latestStateProvidedRound) {
+            // this state is older than the latest state provided to the application, no need to notify
+            reservedSignedState.close();
+            return;
+        }
+        latestStateProvidedRound = reservedSignedState.get().getRound();
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
                 reservedSignedState.get().getState().getPlatformState(),
