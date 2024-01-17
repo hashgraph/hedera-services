@@ -27,9 +27,9 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * Implements the token redirect {@code tokenURI()} call of the HTS system contract.
@@ -54,7 +54,7 @@ public class TokenUriCall extends AbstractNftViewCall {
         requireNonNull(token);
         // #10568 - We add this check to match mono behavior
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, gasCalculator.viewGasRequirement());
+            return haltResult(HederaExceptionalHaltReason.INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         }
 
         String metadata;

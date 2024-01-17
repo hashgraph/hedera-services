@@ -51,7 +51,7 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
         requireNonNull(token);
         final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
         if (nft == null) {
-            return haltResult(HederaExceptionalHaltReason.NOT_SUPPORTED, gasCalculator.viewGasRequirement());
+            return haltResult(HederaExceptionalHaltReason.INVALID_NFT_ID, gasCalculator.viewGasRequirement());
         } else {
             return resultOfViewingNft(token, nft);
         }

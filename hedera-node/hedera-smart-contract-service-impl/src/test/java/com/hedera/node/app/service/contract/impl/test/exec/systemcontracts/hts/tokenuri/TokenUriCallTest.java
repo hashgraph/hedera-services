@@ -24,10 +24,10 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUN
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,9 @@ class TokenUriCallTest extends HtsCallTestBase {
         final var result = subject.execute().fullResult().result();
 
         // then
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(Bytes.wrap(ResponseCodeEnum.INVALID_TOKEN_ID.name().getBytes()), result.getOutput());
+        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
+        assertEquals(
+                HederaExceptionalHaltReason.INVALID_TOKEN_ID,
+                result.getHaltReason().get());
     }
 }

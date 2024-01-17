@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.ownerof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
@@ -35,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -59,8 +59,10 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_NFT_ID), result.getOutput());
+        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
+        assertEquals(
+                HederaExceptionalHaltReason.INVALID_NFT_ID,
+                result.getHaltReason().get());
     }
 
     @Test

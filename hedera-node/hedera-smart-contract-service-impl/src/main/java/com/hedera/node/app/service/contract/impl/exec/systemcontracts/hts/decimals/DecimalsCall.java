@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 
 import com.hedera.hapi.node.base.TokenType;
@@ -24,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -46,7 +48,7 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            throw new UnsupportedOperationException();
+            return haltResult(HederaExceptionalHaltReason.INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         } else {
             final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
             return successResult(
