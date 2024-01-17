@@ -46,7 +46,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -45,7 +45,6 @@ import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
