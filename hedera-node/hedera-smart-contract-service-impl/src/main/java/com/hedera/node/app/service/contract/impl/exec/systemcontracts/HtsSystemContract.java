@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -121,8 +121,11 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                     enhancement
                             .systemOperations()
                             .externalizeResult(
-                                    contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, attempt.senderId()),
+                                    successResultOf(
+                                            attempt.senderId(),
+                                            pricedResult.fullResult(),
+                                            frame,
+                                            !call.allowsStaticFrame()),
                                     responseCode,
                                     enhancement
                                             .systemOperations()

@@ -21,19 +21,23 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
  * A nexus that holds the latest complete signed state.
  */
-public class LatestCompleteStateNexus extends SignedStateNexus {
+public class LatestCompleteStateNexus implements SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
             .withUnit("round");
 
     private final StateConfig stateConfig;
+    private ReservedSignedState currentState;
 
     /**
      * Create a new nexus that holds the latest complete signed state.
@@ -49,6 +53,30 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
         metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
     }
 
+    @Override
+    public synchronized void setState(@Nullable final ReservedSignedState reservedSignedState) {
+        if (currentState != null) {
+            currentState.close();
+        }
+        currentState = reservedSignedState;
+    }
+
+    /**
+     * Replace the current state with the given state if the given state is newer than the current state.
+     * @param reservedSignedState the new state
+     */
+    public synchronized void setStateIfNewer(@Nullable final ReservedSignedState reservedSignedState) {
+        if (reservedSignedState == null) {
+            return;
+        }
+        if (reservedSignedState.isNotNull()
+                && getRound() < reservedSignedState.get().getRound()) {
+            setState(reservedSignedState);
+        } else {
+            reservedSignedState.close();
+        }
+    }
+
     /**
      * Notify the nexus that a new signed state has been created. This is useful for the nexus to know when it should
      * clear the latest complete state. This is used so that we don't hold the latest complete state forever in case we
@@ -56,7 +84,7 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
      *
      * @param newStateRound a new signed state round that is not yet complete
      */
-    public void newIncompleteState(final long newStateRound) {
+    public synchronized void newIncompleteState(final long newStateRound) {
         // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
         // once its refactor is done
 
@@ -68,5 +96,22 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
             // Yes, so remove it
             clear();
         }
+    }
+
+    @Nullable
+    @Override
+    public synchronized ReservedSignedState getState(@NonNull final String reason) {
+        if (currentState == null) {
+            return null;
+        }
+        return currentState.tryGetAndReserve(reason);
+    }
+
+    @Override
+    public synchronized long getRound() {
+        if (currentState == null) {
+            return ConsensusConstants.ROUND_UNDEFINED;
+        }
+        return currentState.get().getRound();
     }
 }

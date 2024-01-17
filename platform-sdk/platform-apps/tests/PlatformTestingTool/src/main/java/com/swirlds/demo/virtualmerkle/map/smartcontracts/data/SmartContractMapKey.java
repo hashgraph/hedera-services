@@ -87,7 +87,7 @@ public final class SmartContractMapKey implements VirtualKey {
         return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
     }
 
-    public static int getSizeInBytes() {
+    static int getSizeInBytes() {
         return 2 * Long.BYTES;
     }
 
