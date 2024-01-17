@@ -389,7 +389,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public long originalKvUsageFor(@NonNull final ContractID id) {
         Account account = accountStore.getContractById(id);
-        final var oldAccount = accountStore.getOriginalValue(account.accountId());
+        final var oldAccount = account == null ? null : accountStore.getOriginalValue(account.accountId());
         return oldAccount == null ? 0 : oldAccount.contractKvPairsNumber();
     }
 

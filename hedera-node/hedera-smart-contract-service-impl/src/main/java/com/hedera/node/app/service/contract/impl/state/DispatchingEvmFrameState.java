@@ -56,10 +56,10 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -143,7 +143,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @NonNull List<StorageAccesses> getStorageChanges() {
-        final Map<ContractID, List<StorageAccess>> modifications = new TreeMap<>();
+        final Map<ContractID, List<StorageAccess>> modifications = new HashMap<>();
         contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
                 .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
                 .add(StorageAccess.newWrite(

@@ -23,6 +23,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.services.stream.proto.SidecarType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -34,7 +35,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  */
 public class StorageAccessTracker {
     private static final Function<ContractID, Map<UInt256, StorageAccess>> MAP_FACTORY = ignored -> new TreeMap<>();
-    private final Map<ContractID, Map<UInt256, StorageAccess>> accessesByContract = new TreeMap<>();
+    private final Map<ContractID, Map<UInt256, StorageAccess>> accessesByContract = new HashMap<>();
 
     /**
      * The first time this method is called for a particular {@link SlotKey}, tracks its
