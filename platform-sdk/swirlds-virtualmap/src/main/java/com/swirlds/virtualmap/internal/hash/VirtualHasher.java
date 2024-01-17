@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -175,7 +176,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
 
         void push(final int p) {
-            if (count.updateAndGet(value -> value - p) == 0) {
+            if (count.addAndGet(-p) == 0) {
                 forkIt();
             }
         }
@@ -236,44 +237,57 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
 
         @Override
-        protected boolean exec() {
-            assert count.get() == 0;
-            final Hash hash;
-            if (leaf != null) {
-                hash = CRYPTO.digestSync(leaf);
-                listener.onLeafHashed(leaf);
-                listener.onNodeHashed(path, hash);
-            } else {
-                int len = 1 << height;
-                long rankPath = path;
-                for (int i = 0; i < height; i++) {
-                    rankPath = Path.getLeftChildPath(rankPath);
-                }
-                while (len > 1) {
-                    for (int i = 0; i < len / 2; i++) {
-                        final long hashedPath = Path.getParentPath(rankPath + i * 2);
-                        Hash left = ins[i * 2];
-                        Hash right = ins[i * 2 + 1];
-                        if ((left == null) && (right == null)) {
-                            ins[i] = null;
-                        } else {
-                            if (left == null) {
-                                left = hashReader.apply(rankPath + i * 2);
-                            }
-                            if (right == null) {
-                                right = hashReader.apply(rankPath + i * 2 + 1);
-                            }
-                            ins[i] = hash(hashedPath, left, right);
-                            listener.onNodeHashed(hashedPath, ins[i]);
-                        }
-                    }
-                    rankPath = Path.getParentPath(rankPath);
-                    len = len >> 1;
-                }
-                hash = ins[0];
+        public void completeExceptionally(Throwable ex) {
+            if (out != null) {
+                out.completeExceptionally(ex);
             }
-            out.setIn(getIndexInOut(), hash);
-            return true;
+            super.completeExceptionally(ex);
+        }
+
+        @Override
+        protected boolean exec() {
+            try {
+                assert count.get() == 0;
+                final Hash hash;
+                if (leaf != null) {
+                    hash = CRYPTO.digestSync(leaf);
+                    listener.onLeafHashed(leaf);
+                    listener.onNodeHashed(path, hash);
+                } else {
+                    int len = 1 << height;
+                    long rankPath = path;
+                    for (int i = 0; i < height; i++) {
+                        rankPath = Path.getLeftChildPath(rankPath);
+                    }
+                    while (len > 1) {
+                        for (int i = 0; i < len / 2; i++) {
+                            final long hashedPath = Path.getParentPath(rankPath + i * 2);
+                            Hash left = ins[i * 2];
+                            Hash right = ins[i * 2 + 1];
+                            if ((left == null) && (right == null)) {
+                                ins[i] = null;
+                            } else {
+                                if (left == null) {
+                                    left = hashReader.apply(rankPath + i * 2);
+                                }
+                                if (right == null) {
+                                    right = hashReader.apply(rankPath + i * 2 + 1);
+                                }
+                                ins[i] = hash(hashedPath, left, right);
+                                listener.onNodeHashed(hashedPath, ins[i]);
+                            }
+                        }
+                        rankPath = Path.getParentPath(rankPath);
+                        len = len >> 1;
+                    }
+                    hash = ins[0];
+                }
+                out.setIn(getIndexInOut(), hash);
+                return true;
+            } catch (final Throwable e) {
+                completeExceptionally(e);
+                throw e;
+            }
         }
 
         static Hash hash(final long path, final Hash left, final Hash right) {
@@ -333,7 +347,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         this.hashReader = hashReader;
         this.listener = listener;
 
-        final int chunkHeight = 5; // TODO: make it configurable
+        final int chunkHeight = config.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
 
@@ -375,7 +389,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 final int chunkWidth = 1 << parentRankHeights[curRank];
                 if (stack[curRank] != INVALID_PATH) {
                     long curStackPath = stack[curRank];
-                    long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
+                    final long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
                     final long curStackChunkNoInRank = (curStackPath - firstPathInRank) / chunkWidth;
                     final long lastPathInCurStackChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth - 1;
                     while (curStackPath < Math.min(curPath, lastPathInCurStackChunk)) {
@@ -439,7 +453,15 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         map.forEach((path, task) -> task.setLeaf(null));
         map.clear();
 
-        rootTask.join();
+        try {
+            rootTask.join();
+        } catch (final Exception e) {
+            if (shutdown.get()) {
+                return null;
+            }
+            logger.error(EXCEPTION.getMarker(), "Failed to wait for all hashing tasks", e);
+            throw e;
+        }
 
         listener.onHashingCompleted();
 
