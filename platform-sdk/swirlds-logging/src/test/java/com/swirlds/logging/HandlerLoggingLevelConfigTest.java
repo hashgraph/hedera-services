@@ -26,7 +26,6 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
 import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator;
 import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator.TestScenario;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
