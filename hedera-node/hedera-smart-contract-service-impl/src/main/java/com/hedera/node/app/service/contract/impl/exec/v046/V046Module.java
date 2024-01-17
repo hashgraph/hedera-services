@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.processors.Processo
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
-import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV046;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -157,7 +156,7 @@ public interface V046Module {
     static Operation provideBalanceOperation(
             @NonNull final GasCalculator gasCalculator,
             @ServicesV046 @NonNull final AddressChecks addressChecks,
-            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
         return new CustomBalanceOperation(gasCalculator, addressChecks, featureFlags);
     }
 
@@ -270,7 +269,7 @@ public interface V046Module {
     static Operation provideExtCodeHashOperation(
             @NonNull final GasCalculator gasCalculator,
             @ServicesV046 @NonNull final AddressChecks addressChecks,
-            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
         return new CustomExtCodeHashOperation(gasCalculator, addressChecks, featureFlags);
     }
 
@@ -281,7 +280,7 @@ public interface V046Module {
     static Operation provideExtCodeSizeOperation(
             @NonNull final GasCalculator gasCalculator,
             @ServicesV046 @NonNull final AddressChecks addressChecks,
-            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
         return new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
@@ -292,7 +291,7 @@ public interface V046Module {
     static Operation provideExtCodeCopyOperation(
             @NonNull final GasCalculator gasCalculator,
             @ServicesV046 @NonNull final AddressChecks addressChecks,
-            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
         return new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
     }
 
