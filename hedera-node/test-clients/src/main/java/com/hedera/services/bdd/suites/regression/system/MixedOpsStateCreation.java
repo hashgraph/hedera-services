@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreez
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.NFT;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
@@ -44,6 +46,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.T
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -55,6 +58,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,13 +88,14 @@ public class MixedOpsStateCreation extends HapiSuite {
     @HapiTest
     final HapiSpec createState() {
         AtomicInteger tokenId = new AtomicInteger(0);
+        AtomicInteger nftId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         AtomicInteger contractId = new AtomicInteger(0);
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, contractId, r);
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -130,7 +135,14 @@ public class MixedOpsStateCreation extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(10_000_000L)
                                 .sending(1_234L)),
-                        inParallel(mixedOpsBurst.get()))
+                        inParallel(mixedOpsBurst.get()),
+                        sleepFor(10000),
+                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(ignore -> mintToken(
+                                                NFT + nftId.getAndDecrement(),
+                                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
+                                        .logging())
+                                .toArray(HapiSpecOperation[]::new)))
                 .when(
                         sleepFor(60000),
                         // freeze nodes

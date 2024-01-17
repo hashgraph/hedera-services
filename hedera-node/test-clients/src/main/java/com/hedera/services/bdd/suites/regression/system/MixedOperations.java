@@ -54,6 +54,7 @@ public class MixedOperations {
     static final String SUBMIT_KEY = "submitKey";
     static final String ADMIN_KEY = "adminKey";
     static final String TOKEN = "token";
+    static final String NFT = "nft";
     static final String SENDER = "sender";
     static final String RECEIVER = "receiver";
     static final String TOPIC = "topic";
@@ -69,6 +70,7 @@ public class MixedOperations {
 
     Supplier<HapiSpecOperation[]> mixedOps(
             final AtomicInteger tokenId,
+            final AtomicInteger nftId,
             final AtomicInteger scheduleId,
             final AtomicInteger contractId,
             final Random r) {
@@ -97,7 +99,7 @@ public class MixedOperations {
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
+                    .mapToObj(ignore -> tokenCreate(NFT + nftId.getAndIncrement())
                             .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                             .treasury(TREASURY)
                             .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
@@ -145,7 +147,7 @@ public class MixedOperations {
                     .mapToObj(ignore -> contractCreate(CONTRACT_NAME_PREFIX + contractId.getAndIncrement())
                             .bytecode(SOME_BYTE_CODE)
                             .logging())
-                    .toArray(HapiSpecOperation[]::new)),
+                    .toArray(HapiSpecOperation[]::new))
         };
     }
 }
