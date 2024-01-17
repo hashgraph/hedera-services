@@ -91,6 +91,17 @@ public interface SystemContractOperations {
             @NonNull Transaction transaction);
 
     /**
+     * Attempts to create a child record of the current record, with the given {@code result}. The child
+     * is marked as "REMOVABLE" meaning that if any exception occurs it will remove it from the record list.
+     *
+     * @param result    contract function result
+     */
+    void externalizeResultRemovableChild(
+            @NonNull ContractFunctionResult result,
+            @NonNull ResponseCodeEnum responseStatus,
+            @NonNull Transaction transaction);
+
+    /**
      * Generate synthetic transaction for child hts call
      *
      * @param input

@@ -110,7 +110,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 if (responseCode == SUCCESS) {
                     enhancement
                             .systemOperations()
-                            .externalizeResult(
+                            .externalizeResultRemovableChild(
                                     successResultOf(
                                             attempt.senderId(),
                                             pricedResult.fullResult(),
