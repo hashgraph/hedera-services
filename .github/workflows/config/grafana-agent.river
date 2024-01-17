@@ -1,0 +1,22 @@
+prometheus.scrape "ping_exporter" {
+  targets = [{
+    __address__ = "127.0.0.1:9427",
+  }]
+
+  forward_to = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  external_labels = {
+    pod = env("RUNNER_NAME")
+    namespace = env("KUBERNETES_NAMESPACE")
+  }
+
+  endpoint {
+    url = "https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push"
+    basic_auth {
+      username = env("GRAFANA_AGENT_USERNAME")
+      password = env("GRAFANA_AGENT_TOKEN")
+    }
+  }
+}
