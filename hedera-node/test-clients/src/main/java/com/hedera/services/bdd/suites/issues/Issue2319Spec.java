@@ -28,6 +28,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -41,7 +43,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-// @HapiTestSuite(order = Integer.MAX_VALUE)
+@HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
 
@@ -63,7 +65,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(2)
-    // @HapiTest
+    @HapiTest
     final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
@@ -90,7 +92,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(1)
-    // @HapiTest
+    @HapiTest
     final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
@@ -115,7 +117,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(3)
-    // @HapiTest
+    @HapiTest
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
@@ -140,7 +142,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(4)
-    // @HapiTest
+    @HapiTest
     final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
 
