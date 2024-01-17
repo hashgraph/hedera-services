@@ -79,6 +79,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -162,7 +163,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
         configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(configuration);
@@ -444,7 +445,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
         when(dispatcher.getHandler(query)).thenReturn(handler);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(handler.needsAnswerOnlyCost(COST_ANSWER)).thenReturn(true);
@@ -475,7 +476,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testParsingFails() throws IOException {
         // given
-        when(queryParser.parseStrict(notNull())).thenThrow(new IOException("Expected failure"));
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenThrow(new IOException("Expected failure"));
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -490,7 +491,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testUnrecognizableQueryTypeFails() throws IOException {
         // given
         final var query = Query.newBuilder().build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -529,7 +530,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
@@ -687,7 +688,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
-        when(queryParser.parseStrict(notNull())).thenReturn(localQuery);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(localQuery);
         when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
         when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);
 
