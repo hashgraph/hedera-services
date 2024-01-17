@@ -24,6 +24,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -64,6 +66,7 @@ import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -89,6 +92,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
+    /**
+     * The object counter that spans the event hasher and the post hash collector.
+     */
+    private final ObjectCounter hashingObjectCounter;
+
     private final PlatformCoordinator platformCoordinator;
 
     /**
@@ -100,7 +108,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         model = WiringModel.create(platformContext, time);
 
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
+        // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
+        // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
+        // This counter is the on-ramp for the event hasher, and the off-ramp for the post hash collector.
+        hashingObjectCounter = new BackpressureObjectCounter(
+                "hashingObjectCounter",
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .eventHasherUnhandledCapacity(),
+                Duration.ofNanos(100));
+
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
@@ -125,8 +144,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         platformCoordinator = new PlatformCoordinator(
-                eventHasherWiring,
-                postHashCollectorWiring,
+                hashingObjectCounter,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,

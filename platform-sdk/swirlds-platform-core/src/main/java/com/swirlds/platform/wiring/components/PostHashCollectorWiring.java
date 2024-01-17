@@ -30,14 +30,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This wiring object is a workaround for the problems that concurrent schedulers currently have with pushing to
  * components that apply backpressure.
  *
- * @param eventInput    the input wire for events that have been hashed
- * @param eventOutput   the output wire for events to be passed further along the pipeline
- * @param flushRunnable the runnable to flush the collector
+ * @param eventInput  the input wire for events that have been hashed
+ * @param eventOutput the output wire for events to be passed further along the pipeline
  */
 public record PostHashCollectorWiring(
-        @NonNull InputWire<GossipEvent> eventInput,
-        @NonNull OutputWire<GossipEvent> eventOutput,
-        @NonNull Runnable flushRunnable) {
+        @NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
 
     /**
      * Create a new instance of this wiring.
@@ -52,6 +49,6 @@ public record PostHashCollectorWiring(
         // component in the pipeline is ready to receive them
         inputWire.bind(hashedEvent -> hashedEvent);
 
-        return new PostHashCollectorWiring(inputWire, taskScheduler.getOutputWire(), taskScheduler::flush);
+        return new PostHashCollectorWiring(inputWire, taskScheduler.getOutputWire());
     }
 }

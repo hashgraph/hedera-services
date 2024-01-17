@@ -17,7 +17,6 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -29,7 +28,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.List;
 
 /**
@@ -75,26 +73,23 @@ public record PlatformSchedulers(
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
      *
-     * @param context the platform context
-     * @param model   the wiring model
+     * @param context              the platform context
+     * @param model                the wiring model
+     * @param hashingObjectCounter the object counter for the event hasher and post hash collector
      * @return the instantiated platform schedulers
      */
-    public static PlatformSchedulers create(@NonNull final PlatformContext context, @NonNull final WiringModel model) {
+    public static PlatformSchedulers create(
+            @NonNull final PlatformContext context,
+            @NonNull final WiringModel model,
+            @NonNull final ObjectCounter hashingObjectCounter) {
         final PlatformSchedulersConfig config =
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
-
-        // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
-        // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
-        // This counter is the on-ramp for the event hasher, and the off-ramp for the post hash collector.
-        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter", config.eventHasherUnhandledCapacity(), Duration.ofNanos(100));
 
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
                         .withType(TaskSchedulerType.CONCURRENT)
                         .withOnRamp(hashingObjectCounter)
                         .withExternalBackPressure(true)
-                        .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
@@ -104,7 +99,6 @@ public record PlatformSchedulers(
                         .withType(TaskSchedulerType.SEQUENTIAL)
                         .withOffRamp(hashingObjectCounter)
                         .withExternalBackPressure(true)
-                        .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
