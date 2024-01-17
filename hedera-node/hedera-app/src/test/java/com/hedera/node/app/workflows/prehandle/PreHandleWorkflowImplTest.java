@@ -153,7 +153,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                 signatureVerifier,
                 signatureExpander,
                 configProvider,
-                deduplicationCache);
+                deduplicationCache,
+                Runnable::run);
     }
 
     /** Null arguments are not permitted to the constructor. */

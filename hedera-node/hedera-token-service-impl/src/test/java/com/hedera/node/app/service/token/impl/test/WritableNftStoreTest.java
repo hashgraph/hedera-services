@@ -172,12 +172,12 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         assertNull(writableNftStore.get(nftToRemove));
     }
 
-
     @Test
     void warmWarmsUnderlyingState(@Mock WritableKVState<NftID, Nft> nfts) {
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(nfts);
         final var nftStore = new WritableNftStore(writableStates);
-        final var id = NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         nftStore.warm(id);
         verify(nfts).warm(id);
     }

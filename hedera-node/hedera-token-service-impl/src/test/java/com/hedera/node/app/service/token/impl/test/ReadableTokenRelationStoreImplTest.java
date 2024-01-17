@@ -45,8 +45,10 @@ class ReadableTokenRelationStoreImplTest {
     private static final AccountID ACCOUNT_20_ID =
             AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
-    private static final EntityIDPair KEY =
-            EntityIDPair.newBuilder().accountId(ACCOUNT_20_ID).tokenId(TOKEN_10_ID).build();
+    private static final EntityIDPair KEY = EntityIDPair.newBuilder()
+            .accountId(ACCOUNT_20_ID)
+            .tokenId(TOKEN_10_ID)
+            .build();
 
     @Mock
     private ReadableStates states;
@@ -100,10 +102,10 @@ class ReadableTokenRelationStoreImplTest {
         Assertions.assertThat(result).isEqualTo(expectedSize);
     }
 
-
     @Test
     void warmWarmsUnderlyingState(@Mock ReadableKVState<EntityIDPair, TokenRelation> tokenRelations) {
-        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY)).willReturn(tokenRelations);
+        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+                .willReturn(tokenRelations);
         final var tokenRelationStore = new ReadableTokenRelationStoreImpl(states);
         tokenRelationStore.warm(ACCOUNT_20_ID, TOKEN_10_ID);
         verify(tokenRelations).warm(KEY);

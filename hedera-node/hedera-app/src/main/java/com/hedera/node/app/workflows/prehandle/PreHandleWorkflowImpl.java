@@ -28,6 +28,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFai
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
@@ -56,6 +57,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -100,6 +102,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final DeduplicationCache deduplicationCache;
 
     /**
+     * Used for running background tasks
+     */
+    private final Executor executor;
+
+    /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
      *
      * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
@@ -116,12 +123,32 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final ConfigProvider configProvider,
             @NonNull final DeduplicationCache deduplicationCache) {
+        this(
+                dispatcher,
+                transactionChecker,
+                signatureVerifier,
+                signatureExpander,
+                configProvider,
+                deduplicationCache,
+                ForkJoinPool.commonPool());
+    }
+
+    @VisibleForTesting
+    PreHandleWorkflowImpl(
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final SignatureExpander signatureExpander,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final DeduplicationCache deduplicationCache,
+            @NonNull final Executor executor) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
         this.configProvider = requireNonNull(configProvider);
         this.deduplicationCache = requireNonNull(deduplicationCache);
+        this.executor = requireNonNull(executor);
     }
 
     /**
@@ -298,7 +325,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
             // Finally, let the transaction handler do warm up of other state it may want to use later
-            ForkJoinPool.commonPool().execute(() -> dispatcher.dispatchWarmup(context));
+            executor.execute(() -> dispatcher.dispatchWarmup(context));
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature

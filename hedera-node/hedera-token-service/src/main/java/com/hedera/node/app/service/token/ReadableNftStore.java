@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.token;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for

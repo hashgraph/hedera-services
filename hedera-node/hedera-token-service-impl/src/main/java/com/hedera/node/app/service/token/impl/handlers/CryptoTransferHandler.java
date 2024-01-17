@@ -152,15 +152,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         tokenTransfers.parallelStream()
                 .filter(TokenTransferList::hasToken)
                 .filter(TokenTransferList::hasNftTransfers)
-                .forEach(
-                    tokenTransferList -> {
-                        final TokenID tokenID = tokenTransferList.tokenOrThrow();
-                        final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
-                        for (final NftTransfer nftTransfer : nftTransfers) {
-                            warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
-                        }
+                .forEach(tokenTransferList -> {
+                    final TokenID tokenID = tokenTransferList.tokenOrThrow();
+                    final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
+                    for (final NftTransfer nftTransfer : nftTransfers) {
+                        warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
                     }
-        );
+                });
     }
 
     private void warmNftTransfer(

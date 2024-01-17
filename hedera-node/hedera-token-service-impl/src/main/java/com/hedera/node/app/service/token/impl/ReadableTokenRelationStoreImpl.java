@@ -74,7 +74,8 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      */
     @Override
     public void warm(@NonNull final AccountID accountID, @NonNull final TokenID tokenId) {
-        final EntityIDPair key = EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenId).build();
+        final EntityIDPair key =
+                EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenId).build();
         readableTokenRelState.warm(key);
     }
 }
