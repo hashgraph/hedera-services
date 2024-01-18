@@ -96,7 +96,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     }
 
     @Override
-    public void onHashingStarted() {
+    public synchronized void onHashingStarted() {
         nodes = new ArrayList<>();
         leaves = new ArrayList<>();
     }
