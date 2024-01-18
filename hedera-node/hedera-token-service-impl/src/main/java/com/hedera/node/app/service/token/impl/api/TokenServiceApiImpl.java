@@ -298,9 +298,9 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final ContractID contractID, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
         requireNonNull(contractID);
-        final var target = requireNonNull(accountStore.getContractById(contractID));
-        if (!target.smartContract()) {
-            throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + contractID);
+        final var target = accountStore.getContractById(contractID);
+        if (target == null) {
+            throw new IllegalArgumentException("No contract found for ID " + contractID);
         }
         final var newNumKvPairs = target.contractKvPairsNumber() + netChangeInSlotsUsed;
         if (newNumKvPairs < 0) {
