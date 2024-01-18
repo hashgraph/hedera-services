@@ -469,7 +469,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).hasChildRecordCount(0),
+                        getTxnRecord(FIRST_CREATE_TXN).hasNonStakingChildRecordCount(0),
                         getAccountBalance(ACCOUNT),
                         getAccountBalance(TOKEN_CREATE_CONTRACT),
                         getContractInfo(TOKEN_CREATE_CONTRACT));

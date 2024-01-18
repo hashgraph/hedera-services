@@ -788,6 +788,8 @@ class ContractCallTransitionLogicTest {
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         contractAccount.setSmartContract(true);
+        given(entityAccess.isExtant(any())).willReturn(true);
+
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -797,6 +799,7 @@ class ContractCallTransitionLogicTest {
         givenValidTxnCtx();
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(entityAccess.isExtant(any())).willReturn(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -807,9 +810,12 @@ class ContractCallTransitionLogicTest {
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
 
         // expect:
-        assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+        assertEquals(OK, subject.semanticEthCheck().apply(contractCallTxn));
     }
 
     @Test
