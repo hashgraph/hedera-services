@@ -17,139 +17,177 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class SyncFilteringTest {
 
+    /**
+     * Generate a random list of events.
+     *
+     * @param random      a random number generator
+     * @param addressBook the address book
+     * @param time        provides the current time
+     * @param timeStep    the time between events
+     * @param count       the number of events to generate
+     * @return the list of events
+     */
+    private static List<EventImpl> generateEvents(
+            @NonNull final Random random,
+            @NonNull final AddressBook addressBook,
+            @NonNull final FakeTime time,
+            final Duration timeStep,
+            final int count) {
+
+        final List<EventImpl> events = new ArrayList<>(count);
+
+        final List<EventSource<?>> sources = new ArrayList<>();
+        for (int i = 0; i < addressBook.getSize(); i++) {
+            sources.add(new StandardEventSource(false));
+        }
+        final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextLong(), sources, addressBook);
+
+        for (int i = 0; i < count; i++) {
+            final EventImpl event = generator.generateEvent();
+            event.getBaseEvent().setTimeReceived(time.now());
+            time.tick(timeStep);
+            events.add(event);
+        }
+
+        return events;
+    }
+
+    /**
+     * Find all ancestors of expected events, and add them to the list of expected events.
+     *
+     * @param expectedEvents the list of expected events
+     */
+    private static void findAncestorsOfExpectedEvents(@NonNull final List<EventImpl> expectedEvents) {
+
+        final Set<Hash> expectedEventHashes = new HashSet<>();
+        for (final EventImpl event : expectedEvents) {
+            expectedEventHashes.add(event.getBaseHash());
+        }
+
+        for (int index = 0; index < expectedEvents.size(); index++) {
+
+            final EventImpl event = expectedEvents.get(index);
+
+            final EventImpl selfParent = event.getSelfParent();
+            if (selfParent != null) {
+                final Hash selfParentHash = selfParent.getBaseHash();
+                if (!expectedEventHashes.contains(selfParentHash)) {
+                    expectedEvents.add(selfParent);
+                    expectedEventHashes.add(selfParentHash);
+                }
+            }
+            final EventImpl otherParent = event.getOtherParent();
+            if (otherParent != null) {
+                final Hash otherParentHash = otherParent.getBaseHash();
+                if (!expectedEventHashes.contains(otherParentHash)) {
+                    expectedEvents.add(otherParent);
+                    expectedEventHashes.add(otherParentHash);
+                }
+            }
+        }
+    }
+
     @Test
     void filterLikelyDuplicatesTest() {
         final Random random = getRandomPrintSeed();
 
-        final NodeId selfId = new NodeId(0);
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(32).build();
+        final NodeId selfId = addressBook.getNodeId(0);
 
-        final FakeTime clock = new FakeTime();
+        final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
+        final Duration timeStep = Duration.ofMillis(10);
 
-        // Step 1: create a bunch of fake data
+        final FakeTime time = new FakeTime(startingTime, Duration.ZERO);
 
-        final List<EventImpl> selfEvents = new ArrayList<>();
-        final List<EventImpl> ancestors = new ArrayList<>();
-        final List<EventImpl> nonAncestors = new ArrayList<>();
+        final int eventCount = 1000;
+        final List<EventImpl> events = generateEvents(random, addressBook, time, timeStep, eventCount);
 
-        final Map<NodeId, EventImpl> tipMap = new HashMap<>();
-        Instant lastTime = null;
-        for (int i = 0; i < 1000; i++) {
-            final EventImpl event = mock(EventImpl.class);
-            final GossipEvent gossipEvent = mock(GossipEvent.class);
-            when(event.getBaseEvent()).thenReturn(gossipEvent);
-            lastTime = clock.now();
-            when(gossipEvent.getTimeReceived()).thenReturn(lastTime);
-            final Hash hash = randomHash(random);
-            when(event.getBaseHash()).thenReturn(hash);
+        events.sort(Comparator.comparingLong(EventImpl::getGeneration));
 
-            if (i % 10 == 0) {
-                // create self event
-                when(event.getCreatorId()).thenReturn(selfId);
-                selfEvents.add(event);
-            } else {
-                // create an other event
+        final Duration nonAncestorSendThreshold = TestPlatformContextBuilder.create()
+                .build()
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .nonAncestorFilterThreshold();
 
-                when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(1, 10)));
+        final Instant endTime =
+                startingTime.plus(timeStep.multipliedBy(eventCount)).plus(nonAncestorSendThreshold.multipliedBy(2));
 
-                if (i % 10 == 1) {
-                    // create non-ancestor
-                    nonAncestors.add(event);
-                } else {
-                    // create ancestor (these are likely to be the most common type during a large sync)
-                    ancestors.add(event);
-                }
-            }
-
-            tipMap.put(event.getCreatorId(), event);
-            clock.tick(Duration.ofMillis(random.nextInt(50, 100)));
-        }
-
-        final List<EventImpl> allEvents = new ArrayList<>();
-        allEvents.addAll(selfEvents);
-        allEvents.addAll(ancestors);
-        allEvents.addAll(nonAncestors);
-
-        // Step 2: create mock shadowgraph that returns the fake data generated in step 1
-
-        final ShadowGraph shadowGraph = mock(ShadowGraph.class);
-
-        final List<ShadowEvent> tips = new ArrayList<>();
-        for (final EventImpl event : tipMap.values()) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            tips.add(shadowEvent);
-        }
-        when(shadowGraph.getTips()).thenReturn(tips);
-
-        final Set<ShadowEvent> ancestorShadowEvents = new HashSet<>();
-        for (final EventImpl event : ancestors) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            ancestorShadowEvents.add(shadowEvent);
-        }
-        for (final EventImpl event : selfEvents) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            ancestorShadowEvents.add(shadowEvent);
-        }
-        when(shadowGraph.findAncestors(any(), any())).thenReturn(ancestorShadowEvents);
-
-        // Step 3: see what gets filtered out depending on the current time
-
-        final Duration nonAncestorThreshold = Duration.ofSeconds(3);
-
-        clock.reset();
-        while (CompareTo.isLessThan(clock.now().plus(nonAncestorThreshold), clock.now())) {
-
-            final Set<EventImpl> expectedEvents = new HashSet<>();
-
-            // we always expect all self events and ancestors of self events
-            expectedEvents.addAll(selfEvents);
-            expectedEvents.addAll(ancestors);
-
-            // We only expect non-ancestor events if we've had them for longer than the non-ancestor threshold
-            for (final EventImpl event : nonAncestors) {
-                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.now());
-                if (CompareTo.isGreaterThan(eventAge, nonAncestorThreshold)) {
-                    expectedEvents.add(event);
-                }
-            }
-
+        // Test filtering multiple times. Each iteration, move time forward. We should see more and more events
+        // returned as they age.
+        while (time.now().isBefore(endTime)) {
             final List<EventImpl> filteredEvents =
-                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorThreshold, clock.now(), allEvents, null);
+                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorSendThreshold, time.now(), events);
 
-            assertEquals(expectedEvents.size(), filteredEvents.size());
-            for (final EventImpl event : filteredEvents) {
-                assertTrue(expectedEvents.contains(event));
+            // Gather a list of events we expect to see.
+            final List<EventImpl> expectedEvents = new ArrayList<>();
+            for (int index = events.size() - 1; index >= 0; index--) {
+                final EventImpl event = events.get(index);
+                if (event.getCreatorId().equals(selfId)) {
+                    expectedEvents.add(event);
+                } else {
+                    final Duration eventAge =
+                            Duration.between(event.getBaseEvent().getTimeReceived(), time.now());
+                    if (CompareTo.isGreaterThan(eventAge, nonAncestorSendThreshold)) {
+                        expectedEvents.add(event);
+                    }
+                }
             }
 
-            clock.tick(Duration.ofMillis(random.nextInt(25, 100)));
+            // The ancestors of events that meet the above criteria are also expected to be seen.
+            findAncestorsOfExpectedEvents(expectedEvents);
+
+            // Gather a list of hashes that were allowed through by the filter.
+            final Set<Hash> filteredHashes = new HashSet<>();
+            for (final EventImpl event : filteredEvents) {
+                filteredHashes.add(event.getBaseHash());
+            }
+
+            // Make sure we see exactly the events we are expecting.
+            assertEquals(expectedEvents.size(), filteredEvents.size());
+            for (final EventImpl expectedEvent : expectedEvents) {
+                assertTrue(filteredHashes.contains(expectedEvent.getBaseHash()));
+            }
+
+            // Verify topological ordering.
+            long maxGeneration = -1;
+            for (final EventImpl event : filteredEvents) {
+                final long generation = event.getBaseEvent().getGeneration();
+                assertTrue(generation >= maxGeneration);
+                maxGeneration = generation;
+            }
+
+            time.tick(Duration.ofMillis(100));
         }
     }
 }

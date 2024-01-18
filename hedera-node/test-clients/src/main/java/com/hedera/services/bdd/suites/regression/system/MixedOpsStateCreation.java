@@ -16,21 +16,23 @@
 
 package com.hedera.services.bdd.suites.regression.system;
 
-import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDown;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
@@ -46,34 +48,31 @@ import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
 
-/**
- * This test is to verify reconnect functionality. It submits a burst of mixed operations, then
- * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
- * submits the same burst of mixed operations again.
- */
-@HapiTestSuite
-@Tag(ND_RECONNECT)
-public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
+public class MixedOpsStateCreation extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(MixedOpsStateCreation.class);
 
-    private static final int NUM_SUBMISSIONS = 700;
+    private static final int NUM_SUBMISSIONS = 20;
+    private static final String KV_CONTRACT = "Create2MultipleCreates";
+    private static final String CONTRACT_ADMIN_KEY = "Create2MultipleCreates";
+    public static final String GET_BYTECODE = "getBytecode";
+    public static final String DEPLOY = "deploy";
 
     public static void main(String... args) {
-        new MixedOpsNodeDeathReconnectTest().runSuiteSync();
+        new MixedOpsStateCreation().runSuiteSync();
     }
 
     @Override
@@ -83,43 +82,59 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(reconnectMixedOps());
+        return List.of(createState());
     }
 
     @HapiTest
-    private HapiSpec reconnectMixedOps() {
-        final AtomicInteger tokenId = new AtomicInteger(0);
-        final AtomicInteger scheduleId = new AtomicInteger(0);
-        final AtomicInteger contractId = new AtomicInteger(0);
+    final HapiSpec createState() {
+        AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger nftId = new AtomicInteger(0);
+        AtomicInteger scheduleId = new AtomicInteger(0);
+        AtomicInteger contractId = new AtomicInteger(0);
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
                 new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         newKeyNamed(SUBMIT_KEY),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
                         cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(TREASURY),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(TREASURY).payingWith(PAYER),
+                        cryptoCreate(SENDER).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).payingWith(PAYER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        // Kill node 2
-                        shutDownNode("Carol").logged(),
-                        // Wait for it to shut down
-                        waitForNodeToShutDown("Carol", 75).logged(),
-                        // This sleep is needed, since the ports of shutdown node may still be in time_wait status,
-                        // which will cause an error that address is already in use when restarting nodes.
-                        // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
-                        // kernel settings), so restarting node succeeds.
-                        sleepFor(180_000L).logged())
-                .when(
-                        // Submit operations when node 2 is down
+                        // Create a contract with some KV Pairs
+                        uploadInitCode(KV_CONTRACT),
+                        contractCreate(KV_CONTRACT)
+                                .payingWith(GENESIS)
+                                .adminKey(CONTRACT_ADMIN_KEY)
+                                .entityMemo("Test contract")
+                                .gas(10_000_000L)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+                        sourcing(() -> contractCallLocal(
+                                        KV_CONTRACT,
+                                        GET_BYTECODE,
+                                        asHeadlongAddress(factoryEvmAddress.get()),
+                                        BigInteger.valueOf(42))
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> contractCall(
+                                        KV_CONTRACT, DEPLOY, testContractInitcode.get(), BigInteger.valueOf(42))
+                                .payingWith(GENESIS)
+                                .gas(10_000_000L)
+                                .sending(1_234L)),
                         inParallel(mixedOpsBurst.get()),
                         sleepFor(10000),
                         inParallel(IntStream.range(0, NUM_SUBMISSIONS)
@@ -127,24 +142,13 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                                                 NFT + nftId.getAndDecrement(),
                                                 List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
                                         .logging())
-                                .toArray(HapiSpecOperation[]::new)),
-                        // start all nodes
-                        startNode("Carol").logged(),
-                        // wait for node 2 to go BEHIND
-                        waitForNodeToBeBehind("Carol", 60).logged(),
-                        // Node 2 will try to reconnect and comes to RECONNECT_COMPLETE
-                        waitForNodeToFinishReconnect("Carol", 60).logged(),
-                        // Node 2 successfully reconnects and becomes ACTIVE
-                        waitForNodeToBecomeActive("Carol", 60).logged())
-                .then(
-                        // Once node 2 come back ACTIVE, submit some operations again
-                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS).payingWith(PAYER),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
-                        fileCreate(SOME_BYTE_CODE)
-                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        inParallel(mixedOpsBurst.get()));
+                                .toArray(HapiSpecOperation[]::new)))
+                .when(
+                        sleepFor(60000),
+                        // freeze nodes
+                        freezeOnly().startingIn(10).payingWith(GENESIS),
+                        // wait for all nodes to be in FREEZE status
+                        waitForNodesToFreeze(75).logged())
+                .then();
     }
 }
