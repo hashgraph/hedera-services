@@ -298,7 +298,7 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    final ConsensusHashManager consensusHashManager;
+    private final ConsensusHashManager consensusHashManager;
 
     /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
@@ -490,9 +490,7 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 appCommunicationComponent,
                 issScratchpad);
-        components.add(issHandler);
-
-        consensusHashManager = components.add(new ConsensusHashManager(
+        consensusHashManager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
                 currentAddressBook,
@@ -500,7 +498,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion,
                 ignorePreconsensusSignatures,
                 roundToIgnore,
-                issHandler));
+                issHandler);
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,

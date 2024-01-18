@@ -23,9 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -96,7 +94,6 @@ public class IssHandler {
      * @param nodeHash      the incorrect hash computed by the node
      * @param consensusHash the correct hash computed by the network
      */
-    @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
             @NonNull final NodeId nodeId,

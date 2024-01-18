@@ -23,8 +23,6 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -154,7 +152,6 @@ public class IssMetrics {
      * @param consensusHash
      * 		the consensus hash computed by the network
      */
-    @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
             @NonNull final NodeId nodeId,

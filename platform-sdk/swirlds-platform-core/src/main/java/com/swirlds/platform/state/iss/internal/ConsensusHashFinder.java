@@ -168,7 +168,7 @@ public class ConsensusHashFinder {
             status = ConsensusHashStatus.DECIDED;
             sendHashValidityDispatchForAllNodes();
         } else {
-            long remainingWeight = totalWeight - hashReportedWeight;
+            final long remainingWeight = totalWeight - hashReportedWeight;
             if (!MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.

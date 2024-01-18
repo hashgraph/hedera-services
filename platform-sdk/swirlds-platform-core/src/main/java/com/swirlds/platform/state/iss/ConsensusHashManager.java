@@ -33,6 +33,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
+import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
@@ -105,6 +106,7 @@ public class ConsensusHashManager {
 
     private final IssHandler issHandler;
     private final IssMetrics issMetrics;
+    final StateHashValidityTrigger stateHashValidityTrigger;
 
     /**
      * Create an object that tracks reported hashes and detects ISS events.
@@ -157,6 +159,10 @@ public class ConsensusHashManager {
         }
         this.issHandler = issHandler;
         this.issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
+        this.stateHashValidityTrigger = (r, id, nh, ch) -> {
+            issMetrics.stateHashValidityObserver(r, id, nh, ch);
+            issHandler.stateHashValidityObserver(r, id, nh, ch);
+        };
     }
 
     /**
@@ -195,7 +201,8 @@ public class ConsensusHashManager {
 
         final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
-        roundData.put(round, new RoundHashValidator(issHandler::stateHashValidityObserver, round, roundWeight));
+
+        roundData.put(round, new RoundHashValidator(stateHashValidityTrigger, round, roundWeight));
     }
 
     /**

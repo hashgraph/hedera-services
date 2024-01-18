@@ -519,7 +519,7 @@ class ConsensusHashManagerTests {
         }
 
         // Shift the window even though we have not added enough data for a decision
-        manager.roundCompleted((long) roundsNonAncient);
+        manager.roundCompleted(roundsNonAncient);
 
         assertEquals(0, issCount.get(), "there wasn't enough data submitted to observe the ISS");
     }
@@ -620,7 +620,7 @@ class ConsensusHashManagerTests {
 
         // Shift the window even though we have not added enough data for a decision.
         // But we will have added enough to lead to a catastrophic ISS when the timeout is triggered.
-        manager.roundCompleted((long) roundsNonAncient);
+        manager.roundCompleted(roundsNonAncient);
 
         assertEquals(1, issCount.get(), "shifting should have caused an ISS");
     }
