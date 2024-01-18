@@ -481,7 +481,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
+                        .hasPrecheck(INVALID_SOLIDITY_ADDRESS));
     }
 
     @HapiTest
@@ -500,7 +500,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatusFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
+                        .hasPrecheckFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
@@ -528,7 +528,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .maxFeePerGas(50L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatus(INVALID_SIGNATURE)))
+                                .hasPrecheck(INVALID_SIGNATURE)))
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
