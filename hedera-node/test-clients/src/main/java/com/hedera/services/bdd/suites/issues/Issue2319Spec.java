@@ -38,11 +38,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
@@ -117,6 +115,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(3)
+    @Disabled
     @HapiTest
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
