@@ -75,4 +75,8 @@ public class SynchronizedThrottleAccumulator {
         final var now = Instant.now();
         lastDecisionTime = now.isBefore(lastDecisionTime) ? lastDecisionTime : now;
     }
+
+    public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
+        frontendThrottle.leakCapacityForNOfUnscaled(n, function);
+    }
 }

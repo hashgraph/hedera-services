@@ -89,6 +89,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -179,6 +180,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ChildRecordFinalizer childRecordFinalizer;
 
     @Mock
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
@@ -230,7 +234,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 DEFAULT_CONSENSUS_NOW,
                 authorizer,
                 solvencyPreCheck,
-                childRecordFinalizer);
+                childRecordFinalizer,
+                synchronizedThrottleAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -259,7 +264,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             DEFAULT_CONSENSUS_NOW,
             authorizer,
             solvencyPreCheck,
-            childRecordFinalizer
+            childRecordFinalizer,
+            synchronizedThrottleAccumulator
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -387,7 +393,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    synchronizedThrottleAccumulator);
         }
 
         @Test
@@ -918,7 +925,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    synchronizedThrottleAccumulator);
         }
 
         @SuppressWarnings("ConstantConditions")
