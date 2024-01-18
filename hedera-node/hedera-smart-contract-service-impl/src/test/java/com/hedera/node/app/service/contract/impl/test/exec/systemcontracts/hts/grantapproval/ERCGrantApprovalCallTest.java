@@ -40,7 +40,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.granta
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
