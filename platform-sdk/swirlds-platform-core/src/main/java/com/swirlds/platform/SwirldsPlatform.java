@@ -839,6 +839,7 @@ public class SwirldsPlatform implements Platform {
         try {
             consensusRoundHandler.waitUntilNotBusy();
         } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted waiting for transaction handling thread to not be busy", e);
         }
     }
