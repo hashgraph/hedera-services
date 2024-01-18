@@ -789,8 +789,6 @@ class ContractCallTransitionLogicTest {
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         contractAccount.setSmartContract(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any(), any()))
-                .willReturn(true);
         given(entityAccess.isExtant(any())).willReturn(true);
 
         // expect:
@@ -802,8 +800,6 @@ class ContractCallTransitionLogicTest {
         givenValidTxnCtx();
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any(), any()))
-                .willReturn(true);
         given(entityAccess.isExtant(any())).willReturn(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
