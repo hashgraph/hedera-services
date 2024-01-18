@@ -497,7 +497,7 @@ public class FileUpdateSuite extends HapiSuite {
                                         .gas(gasToOffer)
                                         .txnId(refundedTxn))
                                 .payingWith(GENESIS))
-                .then(sleepFor(2_000L), withOpContext((spec, opLog) -> {
+                .then(sleepFor(6_000L), withOpContext((spec, opLog) -> {
                     final var unrefundedOp = getTxnRecord(unrefundedTxn);
                     final var refundedOp = getTxnRecord(refundedTxn).assertingNothingAboutHashes();
                     allRunFor(spec, refundedOp, unrefundedOp);

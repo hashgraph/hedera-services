@@ -94,6 +94,24 @@ public class TransactionDispatcher {
     }
 
     /**
+     * Dispatch a warmup request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
+     *
+     * @param context the context of the warmup workflow
+     * @throws NullPointerException if {@code context} is {@code null}
+     */
+    public void dispatchWarmup(@NonNull final PreHandleContext context) {
+        requireNonNull(context, "The supplied argument 'context' cannot be null!");
+
+        try {
+            final var handler = getHandler(context.body());
+            handler.warmUp(context);
+        } catch (UnsupportedOperationException ex) {
+            // do nothing, the handler should have been used before we reach this point
+        }
+    }
+
+    /**
      * Dispatch a compute fees request. It is forwarded to the correct handler, which takes care of the specific
      * calculation and returns the resulting {@link Fees}.
      *

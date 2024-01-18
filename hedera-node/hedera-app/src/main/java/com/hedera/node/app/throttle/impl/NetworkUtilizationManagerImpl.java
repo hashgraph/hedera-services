@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottle
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
@@ -201,10 +200,5 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     @Override
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
         backendThrottle.leakUnusedGasPreviouslyReserved(txnInfo, value);
-    }
-
-    @Override
-    public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
-        backendThrottle.leakCapacityForNOfUnscaled(n, function);
     }
 }

@@ -678,6 +678,13 @@ public interface HandleContext {
     RecordListCheckPoint createRecordListCheckPoint();
 
     /**
+     * Returns whether the current transaction being processed was submitted by this node.
+     *
+     * @return true if the current transaction was submitted by this node
+     */
+    boolean isSelfSubmitted();
+
+    /**
      * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time

@@ -42,21 +42,24 @@ public class AdvancedWireTransformer<A, B> implements Consumer<A> {
     /**
      * Constructor.
      *
-     * @param model       the wiring model containing this output wire
-     * @param name        the name of the output wire
-     * @param transformer the function to transform the data from the input type to the output type. Is called once per
-     *                    output per data item. If this method returns null then the data is not forwarded.
-     * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
-     *                    original data is passed to this method. Ignored if null.
+     * @param model         the wiring model containing this output wire
+     * @param name          the name of the output wire
+     * @param transformer   the function to transform the data from the input type to the output type. Is called once
+     *                      per output per data item. If this method returns null then the data is not forwarded.
+     * @param inputCleanup  an optional method that is called on input data after the data is forwarded to all
+     *                      destinations. The original data is passed to this method. Ignored if null.
+     * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
+     *                      possible if offer soldering is used and the destination declines to take the data.
      */
     public AdvancedWireTransformer(
             @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Function<A, B> transformer,
-            @Nullable final Consumer<A> cleanup) {
+            @Nullable final Consumer<A> inputCleanup,
+            @Nullable final Consumer<B> outputCleanup) {
 
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        outputWire = new TransformingOutputWire<>(model, name, transformer, cleanup);
+        outputWire = new TransformingOutputWire<>(model, name, transformer, inputCleanup, outputCleanup);
     }
 
     /**

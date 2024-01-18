@@ -89,7 +89,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -180,7 +180,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ChildRecordFinalizer childRecordFinalizer;
 
     @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
     private SelfNodeInfo selfNodeInfo;
@@ -235,7 +235,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
-                networkUtilizationManager);
+                synchronizedThrottleAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -265,7 +265,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             authorizer,
             solvencyPreCheck,
             childRecordFinalizer,
-            networkUtilizationManager
+            synchronizedThrottleAccumulator
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -394,7 +394,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
-                    networkUtilizationManager);
+                    synchronizedThrottleAccumulator);
         }
 
         @Test
@@ -926,7 +926,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
-                    networkUtilizationManager);
+                    synchronizedThrottleAccumulator);
         }
 
         @SuppressWarnings("ConstantConditions")

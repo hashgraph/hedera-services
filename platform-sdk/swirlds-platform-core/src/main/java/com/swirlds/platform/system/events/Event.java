@@ -57,13 +57,6 @@ public interface Event {
     NodeId getCreatorId();
 
     /**
-     * Returns an estimate of what the consensus timestamp will be (could be a very bad guess).
-     *
-     * @return the estimated consensus timestamp
-     */
-    Instant getEstimatedTime();
-
-    /**
      * A convenience method that supplies every transaction in this event to a consumer.
      *
      * @param consumer
