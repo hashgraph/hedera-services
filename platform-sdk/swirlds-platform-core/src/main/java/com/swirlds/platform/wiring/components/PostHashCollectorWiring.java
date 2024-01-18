@@ -27,8 +27,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring object that allows for the staging of events that have been hashed, but haven't been passed further down the
  * pipeline yet.
  * <p>
- * This wiring object is a workaround for the problems that concurrent schedulers currently have with pushing to
- * components that apply backpressure.
+ * This wiring object is a workaround for the following problem that concurrent schedulers currently have with pushing
+ * tasks directly to components that apply backpressure:
+ * <p>
+ * If the component immediately following a concurrent scheduler applies backpressure, the concurrent scheduler will
+ * continue doing work and parking each result, unable to pass the unit of work along. This results in a proliferation
+ * of parked threads.
+ * <p>
+ * This wiring object represents a workaround: it is a sequential scheduler which shares a combined object counter with
+ * the preceding concurrent scheduler (in this case, the hasher). Since the pair of schedulers share a counter, the
+ * sequential scheduler does *not* apply backpressure to the concurrent scheduler. Instead, "finished" hashing tasks
+ * will wait in the queue of the sequential scheduler until the next component in the pipeline is ready to receive them.
+ * The concurrent scheduler will refuse to accept additional work based on the number of tasks that are waiting in the
+ * sequential scheduler's queue.
  *
  * @param eventInput  the input wire for events that have been hashed
  * @param eventOutput the output wire for events to be passed further along the pipeline
