@@ -44,8 +44,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -61,8 +59,7 @@ import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -72,7 +69,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -84,7 +80,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -94,18 +89,11 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.memory.InMemoryKey;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
@@ -491,7 +479,7 @@ public final class Hedera implements SwirldMain {
         if (state.getChild(STORAGE) != null) {
             FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
         }
-        // Note: some files have no metadata; these are contract bytecode files
+        // Note: some files have no metadata, e.g. contract bytecode files
 
         // --------------------- ACCOUNTS (4)
         final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
@@ -511,7 +499,7 @@ public final class Hedera implements SwirldMain {
         // firstConsTimeOfCurrentBlock – needed in blockInfo
 
         // --------------------- SPECIAL_FILES (7)
-        // upgrade_file_key is no longer useful; don't migrate
+        // No longer useful; don't migrate
 
         // --------------------- SCHEDULE_TXS (8)
         final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
@@ -532,49 +520,8 @@ public final class Hedera implements SwirldMain {
         // --------------------- CONTRACT_STORAGE (11)
         final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
         if (contractFromStorage != null) {
-            final var fromStore = VirtualMapLike.from(contractFromStorage);
-            final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
-
-            // Start the migration with a clean, writable KV store.  Using the in-memory store here.
-
-            final var contractSchema =
-                    new InitialModServiceContractSchema(version.getServicesVersion(), null, null, null, null);
-            final var contractSchemas = contractSchema.statesToCreate();
-            final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
-                    .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))
-                    .findFirst()
-                    .orElseThrow();
-            final var contractStoreSchemaMetadata =
-                    new StateMetadata<>(ContractService.NAME, contractSchema, contractStoreStateDefinition);
-            final var contractMerkleMap =
-                    new NonAtomicReference<MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>>(
-                            new MerkleMap<>(expectedNumberOfSlots));
-            final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(
-                    new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
-            var flusher = new ContractStateMigrator.StateFlusher() {
-                @Override
-                public WritableKVState<SlotKey, SlotValue> apply(
-                        WritableKVState<SlotKey, SlotValue> slotKeySlotValueWritableKVState) {
-                    // Commit all the new leafs to the underlying map
-                    ((WritableKVStateBase<SlotKey, SlotValue>) (slotKeySlotValueWritableKVState)).commit();
-                    // Copy the underlying map, which does the flush
-                    contractMerkleMap.set(contractMerkleMap.get().copy());
-
-                    // Create a new store to go on with
-                    InMemoryWritableKVState<SlotKey, SlotValue> finishedStore =
-                            new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get());
-                    toStore.set(finishedStore);
-
-                    return finishedStore;
-                }
-            };
-            // For contract storage migration:
-            CONTRACT_SERVICE.setFromState(fromStore);
-            CONTRACT_SERVICE.setToState(toStore.get());
-            CONTRACT_SERVICE.setFlusher(flusher);
-
-            // For contract bytecode migration:
-            CONTRACT_SERVICE.setFileFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
+            ContractServiceImpl.setStorageFromState(VirtualMapLike.from(contractFromStorage));
+            ContractServiceImpl.setBytecodeFromState(() -> VirtualMapLike.from(state.getChild(STORAGE)));
         }
 
         // --------------------- STAKING_INFO (12)

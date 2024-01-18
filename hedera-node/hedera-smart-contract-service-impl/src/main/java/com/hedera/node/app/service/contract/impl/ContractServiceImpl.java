@@ -17,19 +17,15 @@
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 
@@ -41,45 +37,31 @@ public enum ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractServiceComponent component;
 
-    // For migrating contract storage:
-    private static ContractStateMigrator.StateFlusher flusher;
-    private static VirtualMapLike<ContractKey, IterableContractValue> fromState;
-    private static WritableKVState<SlotKey, SlotValue> toState;
-
-    // For migrating contract bytecode:
-    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+    private static VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
+    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState;
 
     ContractServiceImpl() {
         this.component = DaggerContractServiceComponent.create();
     }
 
-    public static void setFileFs(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        ContractServiceImpl.fss = fss;
+    public static void setStorageFromState(VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+        ContractServiceImpl.storageFromState = storageFromState;
     }
 
-    public static void setFlusher(ContractStateMigrator.StateFlusher flusher) {
-        ContractServiceImpl.flusher = flusher;
-    }
-
-    public static void setFromState(VirtualMapLike<ContractKey, IterableContractValue> fromState) {
-        ContractServiceImpl.fromState = fromState;
-    }
-
-    public static void setToState(WritableKVState<SlotKey, SlotValue> toState) {
-        ContractServiceImpl.toState = toState;
+    public static void setBytecodeFromState(
+            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+        ContractServiceImpl.bytecodeFromState = bytecodeFromState;
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new InitialModServiceContractSchema(version, flusher, fromState, toState, fss));
+        registry.register(new InitialModServiceContractSchema(version, storageFromState, bytecodeFromState));
 
         // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
         // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
         // want the old mono state routes to disappear
-        flusher = null;
-        fromState = null;
-        toState = null;
-        fss = null;
+        storageFromState = null;
+        bytecodeFromState = null;
     }
 
     public ContractHandlers handlers() {

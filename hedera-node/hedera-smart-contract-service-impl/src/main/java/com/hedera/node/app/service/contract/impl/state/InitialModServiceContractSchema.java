@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -56,48 +57,68 @@ public class InitialModServiceContractSchema extends Schema {
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
 
     // For migrating contract storage:
-    private ContractStateMigrator.StateFlusher flusher;
-    private VirtualMapLike<ContractKey, IterableContractValue> fromState;
-    private WritableKVState<SlotKey, SlotValue> toState;
+    private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
 
     // For migrating contract bytecode:
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
 
     public InitialModServiceContractSchema(
             final SemanticVersion version,
-            @Nullable final ContractStateMigrator.StateFlusher flusher,
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> fromState,
-            @Nullable final WritableKVState<SlotKey, SlotValue> toState,
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState,
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState) {
         super(version);
-        this.flusher = flusher;
-        this.fromState = fromState;
-        this.toState = toState;
-        this.fss = fss;
+        this.storageFromState = storageFromState;
+        this.contractBytecodeFromState = contractBytecodeFromState;
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (fromState != null) {
+        if (storageFromState != null) {
             log.info("BBM: migrating contract service");
 
             log.info("BBM: migrating contract k/v storage...");
-            var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
-            log.info("BBM: finished migrating contract storage. Result: " + result);
+            final WritableKVState<SlotKey, SlotValue> toState =
+                    ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
+            try {
+                storageFromState.extractVirtualMapData(
+                        AdHocThreadManager.getStaticThreadManager(),
+                        entry -> {
+                            final var contractKey = entry.left();
+                            final var key = SlotKey.newBuilder()
+                                    .contractNumber(contractKey.getContractId())
+                                    .key(bytesFromInts(contractKey.getKey()))
+                                    .build();
+                            final var contractVal = entry.right();
+                            final var value = SlotValue.newBuilder()
+                                    .value(Bytes.wrap(contractVal.getValue()))
+                                    .previousKey(bytesFromInts(contractVal.getExplicitPrevKey()))
+                                    .nextKey(bytesFromInts((contractVal.getExplicitNextKey())))
+                                    .build();
+                            toState.put(key, value);
+                        },
+                        1);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (toState.isModified()) ((WritableKVStateBase) toState).commit();
+
+            log.info("BBM: finished migrating contract storage");
 
             log.info("BBM: migrating contract bytecode...");
-            WritableKVState<EntityNumber, Bytecode> bytecodeTs =
+            final WritableKVState<EntityNumber, Bytecode> bytecodeTs =
                     ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
-            var migratedContractNums = new ArrayList<Integer>();
+            final var migratedContractNums = new ArrayList<Integer>();
             try {
-                fss.get()
+                contractBytecodeFromState
+                        .get()
                         .extractVirtualMapData(
                                 AdHocThreadManager.getStaticThreadManager(),
                                 entry -> {
                                     if (VirtualBlobKey.Type.CONTRACT_BYTECODE
                                             == entry.left().getType()) {
-                                        var contractId = entry.left().getEntityNumCode();
-                                        var contents = entry.right().getData();
+                                        final var contractId = entry.left().getEntityNumCode();
+                                        final var contents = entry.right().getData();
                                         Bytes wrappedContents;
                                         if (contents == null || contents.length < 1) {
                                             log.debug("BBM: contract contents null for contractId " + contractId);
@@ -129,10 +150,8 @@ public class InitialModServiceContractSchema extends Schema {
 
             if (bytecodeTs.isModified()) ((WritableKVStateBase) bytecodeTs).commit();
 
-            flusher = null;
-            fromState = null;
-            toState = null;
-            fss = null;
+            storageFromState = null;
+            contractBytecodeFromState = null;
 
             log.info("BBM: contract migration finished");
         }
