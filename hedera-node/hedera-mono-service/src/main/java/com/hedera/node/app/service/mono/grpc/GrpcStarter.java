@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintStream;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -34,6 +39,7 @@ public class GrpcStarter {
     private static final int PORT_MODULUS = 1000;
 
     private final NodeId nodeId;
+    private final InitTrigger initTrigger;
     private final GrpcServerManager grpc;
     private final NodeLocalProperties nodeLocalProperties;
     private final Optional<PrintStream> console;
@@ -42,11 +48,13 @@ public class GrpcStarter {
     @Inject
     public GrpcStarter(
             final NodeId nodeId,
+            @NonNull final InitTrigger initTrigger,
             final GrpcServerManager grpc,
             final NodeLocalProperties nodeLocalProperties,
             final Supplier<AddressBook> addressBook,
             final Optional<PrintStream> console) {
         this.nodeId = nodeId;
+        this.initTrigger = requireNonNull(initTrigger);
         this.console = console;
         this.grpc = grpc;
         this.addressBook = addressBook;
@@ -54,6 +62,10 @@ public class GrpcStarter {
     }
 
     public void startIfAppropriate() {
+        // Never any reason to start Netty during event stream recovery
+        if (initTrigger == EVENT_STREAM_RECOVERY) {
+            return;
+        }
         final var port = nodeLocalProperties.port();
         final var tlsPort = nodeLocalProperties.tlsPort();
         final var activeProfile = nodeLocalProperties.activeProfile();
