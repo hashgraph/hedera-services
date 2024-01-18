@@ -19,10 +19,12 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.REQUIRE_CODE_DEPOSIT_TO_SUCCEED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
@@ -93,10 +95,12 @@ class CustomContractCreationProcessorTest {
     }
 
     @Test
-    void haltsOnFailedCreation() {
+    void haltsOnFailedCreationDueToEntityLimit() {
         given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willThrow(ResourceExhaustedException.class);
+        given(worldUpdater.getOrCreate(EIP_1014_ADDRESS))
+                .willThrow(new ResourceExhaustedException(
+                        ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
         final Optional<ExceptionalHaltReason> expectedHaltReason =
                 Optional.of(CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED);
 
@@ -105,6 +109,32 @@ class CustomContractCreationProcessorTest {
         verify(frame).setExceptionalHaltReason(expectedHaltReason);
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
         verify(tracer).traceAccountCreationResult(frame, expectedHaltReason);
+    }
+
+    @Test
+    void haltsOnFailedCreationDueToChildRecordLimit() {
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getOrCreate(EIP_1014_ADDRESS))
+                .willThrow(new ResourceExhaustedException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED));
+        final Optional<ExceptionalHaltReason> expectedHaltReason =
+                Optional.of(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS);
+
+        subject.start(frame, tracer);
+
+        verify(frame).setExceptionalHaltReason(expectedHaltReason);
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+        verify(tracer).traceAccountCreationResult(frame, expectedHaltReason);
+    }
+
+    @Test
+    void propagatesIseOnUnrecognizedCreationFailure() {
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getOrCreate(EIP_1014_ADDRESS))
+                .willThrow(new ResourceExhaustedException(ResponseCodeEnum.INVALID_ALIAS_KEY));
+
+        assertThrows(IllegalStateException.class, () -> subject.start(frame, tracer));
     }
 
     @Test

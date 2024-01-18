@@ -22,8 +22,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -40,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -72,14 +71,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final UptimeTracker uptimeTracker;
 
     /**
-     * Handles system transactions pre-consensus
-     */
-    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
-
-    /**
      * Handles system transactions post-consensus
      */
-    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
+    private final BiConsumer<State, ConsensusRound> roundAndStateConsumer;
 
     /**
      * The current software version.
@@ -89,22 +83,21 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext                      the platform context
-     * @param addressBook                          the address book
-     * @param selfId                               this node's id
-     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
-     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
-     * @param swirldStateMetrics                   metrics related to SwirldState
-     * @param statusActionSubmitter                enables submitting platform status actions
-     * @param state                                the genesis state
-     * @param softwareVersion                      the current software version
+     * @param platformContext       the platform context
+     * @param addressBook           the address book
+     * @param selfId                this node's id
+     * @param roundAndStateConsumer consumes a consensus round and the state that results from applying the consensus
+     *                              transactions
+     * @param swirldStateMetrics    metrics related to SwirldState
+     * @param statusActionSubmitter enables submitting platform status actions
+     * @param state                 the genesis state
+     * @param softwareVersion       the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
-            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
+            @NonNull final BiConsumer<State, ConsensusRound> roundAndStateConsumer,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final State state,
@@ -113,8 +106,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
-        this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
+        this.roundAndStateConsumer = Objects.requireNonNull(roundAndStateConsumer);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(state);
@@ -162,19 +154,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * Prehandles system transactions.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleSystemTransactions(final EventImpl event) {
-        final long startTime = System.nanoTime();
-
-        preconsensusSystemTransactionManager.handleEvent(event);
-
-        stats.preConsensusHandleTime(startTime, System.nanoTime());
-    }
-
-    /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
      * {@link SwirldState#handleConsensusRound(Round, PlatformState)}.
      *
@@ -188,7 +167,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
                 state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        consensusSystemTransactionManager.handleRound(state, round);
+        roundAndStateConsumer.accept(state, round);
         updateEpoch();
     }
 

@@ -28,7 +28,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
@@ -72,7 +71,6 @@ public final class GossipFactory {
      * @param appVersion                    the version of the app
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
-     * @param latestEventTipsetTracker      tracks the tipset of the latest self event
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
@@ -97,7 +95,6 @@ public final class GossipFactory {
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
-            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
@@ -159,7 +156,6 @@ public final class GossipFactory {
                     appVersion,
                     epochHash,
                     shadowGraph,
-                    latestEventTipsetTracker,
                     emergencyRecoveryManager,
                     consensusRef,
                     intakeQueue,

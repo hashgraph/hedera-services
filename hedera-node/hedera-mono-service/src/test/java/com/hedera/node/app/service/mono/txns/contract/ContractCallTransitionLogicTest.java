@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -788,6 +789,10 @@ class ContractCallTransitionLogicTest {
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         contractAccount.setSmartContract(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any(), any()))
+                .willReturn(true);
+        given(entityAccess.isExtant(any())).willReturn(true);
+
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -797,6 +802,9 @@ class ContractCallTransitionLogicTest {
         givenValidTxnCtx();
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any(), any()))
+                .willReturn(true);
+        given(entityAccess.isExtant(any())).willReturn(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -807,9 +815,12 @@ class ContractCallTransitionLogicTest {
         given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
 
         // expect:
-        assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+        assertEquals(OK, subject.semanticEthCheck().apply(contractCallTxn));
     }
 
     @Test

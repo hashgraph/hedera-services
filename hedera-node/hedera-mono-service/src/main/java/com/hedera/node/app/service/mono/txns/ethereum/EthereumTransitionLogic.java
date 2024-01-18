@@ -166,7 +166,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             txn = isPrecheck ? syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData) : INVALID_SYNTH_BODY;
         }
         if (txn.hasContractCall()) {
-            return contractCallTransitionLogic.semanticCheck().apply(txn);
+            return contractCallTransitionLogic.semanticEthCheck().apply(txn);
         } else if (txn.hasContractCreateInstance()) {
             return contractCreateTransitionLogic.semanticCheck().apply(txn);
         } else {
