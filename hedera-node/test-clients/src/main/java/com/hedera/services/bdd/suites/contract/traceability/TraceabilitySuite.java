@@ -4302,7 +4302,10 @@ public class TraceabilitySuite extends HapiSuite {
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
         final String toHash = "toHash";
-        return defaultHapiSpec("traceabilityE2EScenario16", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario16",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         tokenCreate("goodToken")
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
