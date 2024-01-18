@@ -20,10 +20,15 @@ import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.platform.commons.support.ReflectionSupport;
 
 /**
  * This validator "reconciles" (compares) the HTS token balances of all accounts between the record
@@ -50,6 +55,28 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
                 TestBase::contextualizedSpecsFromConcurrent);
         concurrentExecutionOf(validationSpecs);
+    }
+
+    @Override
+    public void validateRecordsAndSidecarsHapi(
+            final HapiTestEnv env, final List<RecordWithSidecars> recordsWithSidecars)
+            throws InvocationTargetException, IllegalAccessException {
+        getExpectedBalanceFrom(recordsWithSidecars);
+
+        // First, create an instance of the HapiSuite class (the class that owns this method).
+        final var suite = new TokenBalanceValidation(expectedTokenBalances, accountClassifier);
+        // Second, get the method
+        final var testMethod = ReflectionSupport.findMethod(TokenBalanceValidation.class, "validateTokenBalances")
+                .get();
+        // Third, call the method to get the HapiSpec
+        testMethod.setAccessible(true);
+        final var spec = (HapiSpec) testMethod.invoke(suite);
+        spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+        final var result = suite.runSpecSync(spec, env.getNodes());
+        // Fourth, report the result. YAY!!
+        if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
+            throw new AssertionError();
+        }
     }
 
     private void getExpectedBalanceFrom(final List<RecordWithSidecars> recordsWithSidecars) {

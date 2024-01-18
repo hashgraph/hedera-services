@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit;
 import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
 import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.OUT_OF_PROCESS_ALICE;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
-import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
@@ -483,9 +482,21 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public HapiTestEngineExecutionContext execute(
                 HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
             // run closing time specs
-            final var closingTimeSpecs = TestBase.extractContextualizedSpecsFrom(
-                    List.of(ClosingTime::new), TestBase::contextualizedSpecsFromConcurrent);
-            concurrentExecutionOf(closingTimeSpecs);
+            // First, create an instance of the HapiSuite class (the class that owns this method).
+            final var suite = new ClosingTime();
+            // Second, get the method
+            final var testMethod = ReflectionSupport.findMethod(
+                            ClosingTime.class, "closeLastStreamFileWithNoBalanceImpact")
+                    .get();
+            // Third, call the method to get the HapiSpec
+            testMethod.setAccessible(true);
+            final var spec = (HapiSpec) testMethod.invoke(suite);
+            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+            final var result = suite.runSpecSync(spec, context.getEnv().getNodes());
+            // Fourth, report the result. YAY!!
+            if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
+                throw new AssertionError();
+            }
 
             // read record stream data
             var recordLocs = hapiTestStreamLocs();
@@ -513,7 +524,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                             // The validator will complete silently if no errors are
                             // found
                             v.validateFiles(streamData.files());
-                            v.validateRecordsAndSidecars(streamData.records());
+                            v.validateRecordsAndSidecarsHapi(context.getEnv(), streamData.records());
                             return Stream.empty();
                         } catch (final Throwable t) {
                             return Stream.of(t);
