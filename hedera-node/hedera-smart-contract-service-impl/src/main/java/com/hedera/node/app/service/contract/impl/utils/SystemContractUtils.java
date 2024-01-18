@@ -17,15 +17,18 @@
 package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Utilities for system contracts.
@@ -53,16 +56,21 @@ public final class SystemContractUtils {
 
     /**
      * Create a successful contract function result.
-     * @param gasUsed       Report the gas used.
-     * @param result        The result of the contract call.
-     * @param gas           The remaining gas.
-     * @param inputData     The input data.
-     * @param senderId      The sender id.
-     * @return              The created contract function result for a successful call.
+     *
+     * @param gasUsed Report the gas used.
+     * @param result The result of the contract call.
+     * @param gas The remaining gas.
+     * @param inputData The input data.
+     * @param senderId The sender id.
+     * @return The created contract function result for a successful call.
      */
     @NonNull
-    public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, long gas, Bytes inputData, AccountID senderId) {
+    public static ContractFunctionResult successResultOfZeroValueTraceable(
+            final long gasUsed,
+            final Bytes result,
+            final long gas,
+            @NonNull final Bytes inputData,
+            @NonNull final AccountID senderId) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .gas(gas)
@@ -74,11 +82,43 @@ public final class SystemContractUtils {
     }
 
     /**
+     * Create a successful contract function result for the given frame with
+     * the known sender and result.
+     *
+     * @param senderId the sender id
+     * @param fullResult the full result
+     * @param frame the frame
+     * @param includeTraceabilityFields whether to include traceability fields
+     * @return the created contract function result for a successful call
+     */
+    public static @NonNull ContractFunctionResult successResultOf(
+            @NonNull final AccountID senderId,
+            @NonNull final FullResult fullResult,
+            @NonNull final MessageFrame frame,
+            final boolean includeTraceabilityFields) {
+        requireNonNull(senderId);
+        requireNonNull(fullResult);
+        requireNonNull(frame);
+        final var builder = ContractFunctionResult.newBuilder()
+                .gasUsed(fullResult.gasRequirement())
+                .contractCallResult(tuweniToPbjBytes(fullResult.result().getOutput()))
+                .senderId(senderId)
+                .contractID(HTS_PRECOMPILE_MIRROR_ID);
+        if (includeTraceabilityFields) {
+            builder.gas(frame.getRemainingGas())
+                    .amount(frame.getValue().toLong())
+                    .functionParameters(tuweniToPbjBytes(frame.getInputData()));
+        }
+        return builder.build();
+    }
+
+    /**
      * Create an error contract function result.
-     * @param gasUsed       Report the gas used.
-     * @param errorMsg      The error message to report back to the caller.
-     * @param contractID    The contract ID.
-     * @return              The created contract function result when for a failed call.
+     *
+     * @param gasUsed Report the gas used.
+     * @param errorMsg The error message to report back to the caller.
+     * @param contractID The contract ID.
+     * @return The created contract function result when for a failed call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultFailedFor(
@@ -93,8 +133,8 @@ public final class SystemContractUtils {
     /**
      * Create an error contract function result.
      *
-     * @param gasUsed    Report the gas used.
-     * @param errorMsg   The error message to report back to the caller.
+     * @param gasUsed Report the gas used.
+     * @param errorMsg The error message to report back to the caller.
      * @param contractID The contract ID.
      * @param contractCallResult Bytes representation of the contract call result error
      * @return The created contract function result when for a failed call.

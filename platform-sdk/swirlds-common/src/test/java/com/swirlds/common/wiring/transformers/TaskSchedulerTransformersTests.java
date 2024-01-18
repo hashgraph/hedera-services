@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
@@ -33,8 +34,11 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 class TaskSchedulerTransformersTests {
@@ -279,11 +283,11 @@ class TaskSchedulerTransformersTests {
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer("getValue", TestData::value, null)
+                .buildAdvancedTransformer(new AdvancedTransformationHelper<>("getValue", TestData::value, null, null))
                 .solderTo(inC);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer("getInvert", TestData::invert, null)
+                .buildAdvancedTransformer(new AdvancedTransformationHelper<>("getInvert", TestData::invert, null, null))
                 .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
@@ -383,7 +387,7 @@ class TaskSchedulerTransformersTests {
      */
     @Test
     void advancedWireTransformerTest() {
-        // Component A passes data to components B, C, and D.
+        // Component A passes data to components B, C, D and E.
         final WiringModel model = TestWiringModelBuilder.create();
 
         final AtomicBoolean error = new AtomicBoolean(false);
@@ -395,8 +399,8 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release);
+        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new AdvancedTransformationHelper<>(
+                "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -416,9 +420,17 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
 
+        final TaskScheduler<Void> taskSchedulerE = model.schedulerBuilder("E")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .withUnhandledTaskCapacity(1)
+                .build()
+                .cast();
+        final BindableInputWire<FooBar, Void> inE = taskSchedulerE.buildInputWire("E in");
+
         outAReserved.solderTo(inB);
         outAReserved.solderTo(inC);
         outAReserved.solderTo(inD);
+        outAReserved.solderTo(inE, SolderType.OFFER);
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {
@@ -447,6 +459,12 @@ class TaskSchedulerTransformersTests {
             countD.getAndIncrement();
             x.release();
         });
+        final AtomicInteger countE = new AtomicInteger();
+        inE.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countE.getAndIncrement();
+            x.release();
+        });
 
         final List<FooBar> fooBars = new ArrayList<>(100);
         for (int i = 0; i < 100; i++) {
@@ -459,6 +477,10 @@ class TaskSchedulerTransformersTests {
         assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
         assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
         assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+        assertEventuallyTrue(
+                () -> countE.get() >= 1 && countE.get() <= 100,
+                Duration.ofSeconds(1),
+                "E did not receive data or received too much data");
 
         assertEventuallyTrue(
                 () -> {
@@ -477,16 +499,40 @@ class TaskSchedulerTransformersTests {
         model.stop();
     }
 
-    private record FooBarTransformer(String name) implements AdvancedTransformation<FooBar, FooBar> {
+    /**
+     * Helper class for building an {@link AdvancedTransformation}
+     *
+     * @param name          the name of the transformer
+     * @param transform     the function that transforms the output of this wire into the output of the transformer,
+     *                      called once per output per data item. Null data returned by this method his not forwarded.
+     * @param inputCleanup  an optional method that is called on data entering the output wire after the data is
+     *                      forwarded to all destinations. The original data is passed to this method. Ignored if null.
+     * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
+     *                      possible if offer soldering is used and the destination declines to take the data.
+     * @param <A>     the input type of the transformer
+     * @param <B>     the output type of the transformer
+     */
+    private record AdvancedTransformationHelper<A, B>(
+            @NonNull String name,
+            @NonNull Function<A, B> transform,
+            @Nullable Consumer<A> inputCleanup,
+            @Nullable Consumer<B> outputCleanup)
+            implements AdvancedTransformation<A, B> {
+
         @Nullable
         @Override
-        public FooBar transform(@NonNull final FooBar fooBar) {
-            return fooBar.copyAndReserve();
+        public B transform(@NonNull final A a) {
+            return transform.apply(a);
         }
 
         @Override
-        public void cleanup(@NonNull final FooBar fooBar) {
-            fooBar.release();
+        public void inputCleanup(@NonNull final A a) {
+            Optional.ofNullable(inputCleanup).ifPresent(cleanup -> cleanup.accept(a));
+        }
+
+        @Override
+        public void outputCleanup(@NonNull final B b) {
+            Optional.ofNullable(outputCleanup).ifPresent(cleanup -> cleanup.accept(b));
         }
 
         @NonNull
@@ -494,104 +540,5 @@ class TaskSchedulerTransformersTests {
         public String getName() {
             return name;
         }
-    }
-
-    /**
-     * Tests the version of the buildAdvancedTransformer() method that takes a single object implementing
-     * {@link AdvancedTransformation}.
-     */
-    @Test
-    void advancedWireTransformerInterfaceVariationTest() {
-        // Component A passes data to components B, C, and D.
-        final WiringModel model = TestWiringModelBuilder.create();
-
-        final AtomicBoolean error = new AtomicBoolean(false);
-        final UncaughtExceptionHandler exceptionHandler = (t, e) -> error.set(true);
-
-        final TaskScheduler<FooBar> taskSchedulerA = model.schedulerBuilder("A")
-                .withUncaughtExceptionHandler(exceptionHandler)
-                .build()
-                .cast();
-        final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
-        final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new FooBarTransformer("reserve FooBar"));
-
-        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
-                .withUncaughtExceptionHandler(exceptionHandler)
-                .build()
-                .cast();
-        final BindableInputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
-
-        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
-                .withUncaughtExceptionHandler(exceptionHandler)
-                .build()
-                .cast();
-        final BindableInputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
-
-        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
-                .withUncaughtExceptionHandler(exceptionHandler)
-                .build()
-                .cast();
-        final BindableInputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
-
-        outAReserved.solderTo(inB);
-        outAReserved.solderTo(inC);
-        outAReserved.solderTo(inD);
-
-        final AtomicInteger countA = new AtomicInteger();
-        inA.bind(x -> {
-            assertTrue(x.getReferenceCount() > 0);
-            countA.getAndIncrement();
-            return x;
-        });
-
-        final AtomicInteger countB = new AtomicInteger();
-        inB.bind(x -> {
-            assertTrue(x.getReferenceCount() > 0);
-            countB.getAndIncrement();
-            x.release();
-        });
-
-        final AtomicInteger countC = new AtomicInteger();
-        inC.bind(x -> {
-            assertTrue(x.getReferenceCount() > 0);
-            countC.getAndIncrement();
-            x.release();
-        });
-
-        final AtomicInteger countD = new AtomicInteger();
-        inD.bind(x -> {
-            assertTrue(x.getReferenceCount() > 0);
-            countD.getAndIncrement();
-            x.release();
-        });
-
-        final List<FooBar> fooBars = new ArrayList<>(100);
-        for (int i = 0; i < 100; i++) {
-            final FooBar fooBar = new FooBar();
-            fooBars.add(fooBar);
-            inA.put(fooBar);
-        }
-
-        assertEventuallyEquals(100, countA::get, Duration.ofSeconds(1), "A did not receive all data");
-        assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
-        assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
-        assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
-
-        assertEventuallyTrue(
-                () -> {
-                    for (final FooBar fooBar : fooBars) {
-                        if (fooBar.getReferenceCount() != 0) {
-                            return false;
-                        }
-                    }
-                    return true;
-                },
-                Duration.ofSeconds(1),
-                "Not all FooBars were released");
-
-        assertFalse(error.get());
-
-        model.stop();
     }
 }

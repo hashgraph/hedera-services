@@ -5,25 +5,21 @@ Groups high level grouping of components and component groups. Substitutes known
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -l 'shadowgraph:stale event detection:linkedEventIntake' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
-    -s 'getNonExpiredEventWindow:non-expired event window:e' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getNonExpiredEventWindow' \
-    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Gossip Event Storage:shadowgraph,latestEventTipsetTracker'
-
-
+    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
 #### Simple Collapsing
@@ -32,27 +28,25 @@ Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide thin
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -l 'shadowgraph:stale event detection:linkedEventIntake' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
-    -s 'getNonExpiredEventWindow:non-expired event window:e' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getNonExpiredEventWindow' \
-    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Gossip Event Storage:shadowgraph,latestEventTipsetTracker' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
     -c 'State Signature Collection' \
-    -c 'Gossip Event Storage' \
-    -c 'Preconsensus Event Stream' \
-    -c 'Consensus Pipeline'
+    -c 'State Signature Collection' \
+    -c 'State File Management' \
+    -c 'PCES'
