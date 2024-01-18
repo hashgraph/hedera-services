@@ -19,7 +19,6 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
-import static com.swirlds.virtualmap.internal.Path.getRank;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
@@ -82,6 +81,18 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private static final ThreadLocal<HashBuilder> HASH_BUILDER_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> new HashBuilder(Cryptography.DEFAULT_DIGEST_TYPE));
+
+    /**
+     * A function to look up clean hashes by path during hashing. This function is stored in
+     * a class field to avoid passing it as an arg to every hashing task.
+     */
+    private LongFunction<Hash> hashReader;
+
+    /**
+     * A listener to notify about hashing events. This listener is stored in a class field to
+     * acoid passing it as an arg to every hashing task.
+     */
+    private VirtualHashListener<K, V> listener;
 
     /**
      * Tracks if this virtual hasher has been shut down. If true (indicating that the hasher
@@ -300,10 +311,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
     }
 
-    private LongFunction<Hash> hashReader;
-
-    private VirtualHashListener<K, V> listener;
-
     public Hash hash(
             final LongFunction<Hash> hashReader,
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
@@ -369,7 +376,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
             boolean isLeaf = true;
             while (true) {
-                final int curRank = getRank(curPath);
+                final int curRank = Path.getRank(curPath);
                 final int chunkWidth = 1 << parentRankHeights[curRank];
                 if (stack[curRank] != INVALID_PATH) {
                     long curStackPath = stack[curRank];
