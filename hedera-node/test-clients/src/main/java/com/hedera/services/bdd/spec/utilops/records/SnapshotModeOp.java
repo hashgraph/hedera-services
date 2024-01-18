@@ -466,8 +466,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 && expectedFields.stream()
                         .noneMatch(
                                 field -> field.getKey().getFullName().equals(transferListDescriptor.getFullName()))) {
-            actualFields.remove(actualField.get());
-            return true;
+            return actualFields.remove(actualField.get());
         } else {
             return false;
         }
