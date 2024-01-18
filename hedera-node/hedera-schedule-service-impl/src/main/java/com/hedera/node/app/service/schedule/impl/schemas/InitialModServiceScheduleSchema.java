@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
@@ -52,6 +54,7 @@ import org.eclipse.collections.api.list.primitive.ImmutableLongList;
  * this schema is always correct for the current version of the software.
  */
 public final class InitialModServiceScheduleSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(InitialModServiceScheduleSchema.class);
     private MerkleScheduledTransactions fs;
 
     public InitialModServiceScheduleSchema(final SemanticVersion version, final MerkleScheduledTransactions fs) {
@@ -81,9 +84,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
     @Override
     public void migrate(@NonNull MigrationContext ctx) {
         if (fs != null) {
-            System.out.println("BBM: doing schedule migration");
+            log.info("BBM: doing schedule migration");
 
-            System.out.println("BBM: doing schedule by id");
+            log.info("BBM: doing schedule by id");
             final WritableKVState<ScheduleID, Schedule> schedulesById =
                     ctx.newStates().get(SCHEDULES_BY_ID_KEY);
             fs.byId().forEachNode((entityNumVirtualKey, scheduleVirtualValue) -> {
@@ -100,9 +103,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
                 }
             });
             if (schedulesById.isModified()) ((WritableKVStateBase) schedulesById).commit();
-            System.out.println("BBM: finished schedule by id");
+            log.info("BBM: finished schedule by id");
 
-            System.out.println("BBM: doing schedule by expiration");
+            log.info("BBM: doing schedule by expiration");
             final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration =
                     ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
             fs.byExpirationSecond()
@@ -123,7 +126,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
                                                     .build());
                                             if (schedule != null) schedules.add(schedule);
                                             else {
-                                                System.out.println("BBM: ERROR: no schedule for expiration->id "
+                                                log.info("BBM: ERROR: no schedule for expiration->id "
                                                         + richInstant
                                                         + " -> "
                                                         + scheduleId);
@@ -143,9 +146,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         }
                     });
             if (schedulesByExpiration.isModified()) ((WritableKVStateBase) schedulesByExpiration).commit();
-            System.out.println("BBM: finished schedule by expiration");
+            log.info("BBM: finished schedule by expiration");
 
-            System.out.println("BBM: doing schedule by equality");
+            log.info("BBM: doing schedule by equality");
             final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
             fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> {
@@ -157,7 +160,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
                                 ScheduleID.newBuilder().scheduleNum(scheduleId).build());
                         if (schedule != null) schedules.add(schedule);
                         else {
-                            System.out.println("BBM: ERROR: no schedule for scheduleObjHash->id "
+                            log.error("BBM: ERROR: no schedule for scheduleObjHash->id "
                                     + scheduleObjHash + " -> "
                                     + scheduleId);
                         }
@@ -171,11 +174,11 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         ScheduleList.newBuilder().schedules(schedules).build());
             });
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
-            System.out.println("BBM: finished schedule by equality");
+            log.info("BBM: finished schedule by equality");
 
             fs = null;
 
-            System.out.println("BBM: finished schedule migration");
+            log.info("BBM: finished schedule migration");
         }
     }
 }

@@ -89,7 +89,7 @@ public final class BlockRecordService implements Service {
                             RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
                     runningHashState.put(runningHashes);
                 } else if (mnc != null) {
-                    System.out.println("BBM: doing block record migration");
+                    logger.info("BBM: doing block record migration");
 
                     // first migrate the hashes
                     final var toHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
@@ -112,7 +112,7 @@ public final class BlockRecordService implements Service {
                     fs = null;
                     mnc = null;
 
-                    System.out.println("BBM: finished block record migration");
+                    logger.info("BBM: finished block record migration");
                 }
             }
         });

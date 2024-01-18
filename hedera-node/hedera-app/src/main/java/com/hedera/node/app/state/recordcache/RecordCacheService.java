@@ -33,6 +33,8 @@ import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A service representing this record cache facility. Many services are "big S" services like Hedera Consensus Service.
@@ -40,6 +42,7 @@ import java.util.Set;
  * marketed to the world.
  */
 public class RecordCacheService implements Service {
+    private static final Logger log = LogManager.getLogger(RecordCacheService.class);
     /** The record cache service name */
     public static final String NAME = "RecordCache";
     /** The name of the queue that stores the transaction records */
@@ -61,8 +64,6 @@ public class RecordCacheService implements Service {
     /** {@inheritDoc} */
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        // This is the genesis schema for this service, and simply creates the queue state that stores the
-        // transaction records.
         registry.register(new Schema(version) {
             @NonNull
             @Override
@@ -80,7 +81,7 @@ public class RecordCacheService implements Service {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 if (fromRecs != null) {
-                    System.out.println("BBM: running expirable record (cache) migration...");
+                    log.info("BBM: running expirable record (cache) migration...");
 
                     var toState = ctx.newStates().<TransactionRecordEntry>getQueue(TXN_RECORD_QUEUE);
 
@@ -119,7 +120,7 @@ public class RecordCacheService implements Service {
 
                     fromRecs = null;
 
-                    System.out.println("BBM: finished expirable record (cache) migration");
+                    log.info("BBM: finished expirable record (cache) migration");
                 }
             }
         });

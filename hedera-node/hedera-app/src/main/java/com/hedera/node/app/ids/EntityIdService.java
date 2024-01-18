@@ -27,12 +27,15 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Service for providing incrementing entity id numbers. It stores the most recent entity id in state.
  */
 @SuppressWarnings("rawtypes")
 public class EntityIdService implements Service {
+    private static final Logger log = LogManager.getLogger(EntityIdService.class);
     public static final String NAME = "EntityIdService";
     public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
 
@@ -52,7 +55,6 @@ public class EntityIdService implements Service {
     /** {@inheritDoc} */
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new Schema(version) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
@@ -83,10 +85,11 @@ public class EntityIdService implements Service {
                 final var isGenesis = ctx.previousStates().isEmpty();
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
-                    entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
-                    System.out.println("Setting entity id to " + config.firstUserEntity());
+                    final var entityNum = config.firstUserEntity() - 1;
+                    log.info("Setting entity id to " + entityNum);
+                    entityIdState.put(new EntityNumber(entityNum));
                 } else if (fs > -1) {
-                    System.out.println("Setting entity id to " + fs);
+                    log.info("BBM: Setting entity id to " + fs);
                     entityIdState.put(new EntityNumber(fs));
 
                     // Usually we unassign the 'from' state here, but in this case there's no need because the only

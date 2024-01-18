@@ -39,6 +39,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Defines the schema for the contract service's state.
@@ -47,6 +49,7 @@ import java.util.function.Supplier;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceContractSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(InitialModServiceContractSchema.class);
     public static final String STORAGE_KEY = "STORAGE";
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
@@ -76,13 +79,13 @@ public class InitialModServiceContractSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         if (fromState != null) {
-            System.out.println("BBM: migrating contract service");
+            log.info("BBM: migrating contract service");
 
-            System.out.println("BBM: migrating contract k/v storage...");
+            log.info("BBM: migrating contract k/v storage...");
             var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
-            System.out.println("BBM: finished migrating contract storage. Result: " + result);
+            log.info("BBM: finished migrating contract storage. Result: " + result);
 
-            System.out.println("BBM: migrating contract bytecode...");
+            log.info("BBM: migrating contract bytecode...");
             WritableKVState<EntityNumber, Bytecode> bytecodeTs =
                     ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
             var migratedContractNums = new ArrayList<Integer>();
@@ -97,11 +100,10 @@ public class InitialModServiceContractSchema extends Schema {
                                         var contents = entry.right().getData();
                                         Bytes wrappedContents;
                                         if (contents == null || contents.length < 1) {
-                                            System.out.println(
-                                                    "BBM: contract contents null for contractId " + contractId);
+                                            log.debug("BBM: contract contents null for contractId " + contractId);
                                             wrappedContents = Bytes.EMPTY;
                                         } else {
-                                            System.out.println("BBM: migrating contract contents (length "
+                                            log.debug("BBM: migrating contract contents (length "
                                                     + contents.length
                                                     + ") for contractId "
                                                     + contractId);
@@ -122,7 +124,8 @@ public class InitialModServiceContractSchema extends Schema {
                 throw new RuntimeException(e);
             }
 
-            System.out.println("BBM: finished migrating contract bytecode. Contract nums: " + migratedContractNums);
+            log.info(
+                    "BBM: finished migrating contract bytecode. Number of migrated contracts: " + migratedContractNums);
 
             if (bytecodeTs.isModified()) ((WritableKVStateBase) bytecodeTs).commit();
 
@@ -131,7 +134,7 @@ public class InitialModServiceContractSchema extends Schema {
             toState = null;
             fss = null;
 
-            System.out.println("BBM: contract migration finished");
+            log.info("BBM: contract migration finished");
         }
     }
 

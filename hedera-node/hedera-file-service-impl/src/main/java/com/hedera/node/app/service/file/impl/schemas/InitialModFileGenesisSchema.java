@@ -158,7 +158,7 @@ public class InitialModFileGenesisSchema extends Schema {
         } else if (fss != null && fss.get() != null) {
             var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
-            System.out.println("BBM: running file migration...");
+            logger.info("BBM: running file migration...");
             var allFileIds = extractFileIds(fss.get());
             var migratedFileIds = new ArrayList<Long>();
             allFileIds.forEach(fromFileIdRaw -> {
@@ -182,7 +182,7 @@ public class InitialModFileGenesisSchema extends Schema {
             fileContents = null;
             fileAttrs = null;
 
-            System.out.println("BBM:finished file migration. Migrated files: " + migratedFileIds);
+            logger.info("BBM:finished file migration. Migrated files: " + migratedFileIds);
         }
     }
 

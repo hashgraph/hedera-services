@@ -465,7 +465,7 @@ public final class Hedera implements SwirldMain {
             recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
         }
 
-        System.out.println("BBM: migration beginning 😅...");
+        logger.info("BBM: migration beginning 😅...");
 
         // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
 
@@ -507,13 +507,11 @@ public final class Hedera implements SwirldMain {
 
         // --------------------- NETWORK_CTX (6)
         final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-        System.out.println("BBM: fromNetworkContext: " + fromNetworkContext);
         // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
         // firstConsTimeOfCurrentBlock – needed in blockInfo
 
         // --------------------- SPECIAL_FILES (7)
         // upgrade_file_key is no longer useful; don't migrate
-        // MerkleSpecialFiles h = state.getChild(SPECIAL_FILES);
 
         // --------------------- SCHEDULE_TXS (8)
         final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
@@ -598,8 +596,6 @@ public final class Hedera implements SwirldMain {
 
         // --------------------- Sequence Number (separate service in modular code - entity ID service)
         if (fromNetworkContext != null) {
-            System.out.println("BBM: setting fs to " + fromNetworkContext.seqNo() + ","
-                    + fromNetworkContext.seqNo().current());
             ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
         }
 

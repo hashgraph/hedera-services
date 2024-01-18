@@ -79,7 +79,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
@@ -170,10 +169,10 @@ public class InitialModServiceTokenSchema extends Schema {
         if (isGenesis) {
             createGenesisSchema(ctx);
         } else if (acctsFs != null) {
-            System.out.println("BBM: migrating token service");
+            log.info("BBM: migrating token service");
 
             // ---------- NFTs
-            System.out.println("BBM: doing nfts...");
+            log.info("BBM: doing nfts...");
             var nftsToState = ctx.newStates().<NftID, Nft>get(NFTS_KEY);
             try {
                 VirtualMapLike.from(nftsFs)
@@ -198,10 +197,10 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (nftsToState.isModified()) ((WritableKVStateBase) nftsToState).commit();
-            System.out.println("BBM: finished nfts");
+            log.info("BBM: finished nfts");
 
             // ---------- Token Rels/Associations
-            System.out.println("BBM: doing token rels...");
+            log.info("BBM: doing token rels...");
             var tokenRelsToState = ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY);
             try {
                 VirtualMapLike.from(trFs)
@@ -232,10 +231,10 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (tokenRelsToState.isModified()) ((WritableKVStateBase) tokenRelsToState).commit();
-            System.out.println("BBM: finished token rels");
+            log.info("BBM: finished token rels");
 
             // ---------- Accounts
-            System.out.println("BBM: doing accounts");
+            log.info("BBM: doing accounts");
             var acctsToState = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
             try {
                 VirtualMapLike.from(acctsFs)
@@ -256,47 +255,40 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (acctsToState.isModified()) ((WritableKVStateBase) acctsToState).commit();
-            System.out.println("BBM: finished accts");
+            log.info("BBM: finished accts");
 
             // ---------- Tokens
-            System.out.println("BBM: starting tokens (both fung and non-fung)");
+            log.info("BBM: starting tokens (both fungible and non-fungible)");
             var tokensToState = ctx.newStates().<TokenID, Token>get(TOKENS_KEY);
-            MerkleMapLike.from(tFs).forEachNode(new BiConsumer<EntityNum, MerkleToken>() {
-                @Override
-                public void accept(EntityNum entityNum, MerkleToken merkleToken) {
-                    var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
-                    tokensToState.put(
-                            TokenID.newBuilder().tokenNum(entityNum.longValue()).build(), toToken);
-                }
+            MerkleMapLike.from(tFs).forEachNode((entityNum, merkleToken) -> {
+                var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
+                tokensToState.put(
+                        TokenID.newBuilder().tokenNum(entityNum.longValue()).build(), toToken);
             });
             if (tokensToState.isModified()) ((WritableKVStateBase) tokensToState).commit();
-            System.out.println("BBM: finished tokens (fung and non-fung)");
+            log.info("BBM: finished tokens (fung and non-fung)");
 
             // ---------- Staking Info
-            System.out.println("BBM: starting staking info");
+            log.info("BBM: starting staking info");
             var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach(new BiConsumer<EntityNum, MerkleStakingInfo>() {
-                @Override
-                public void accept(EntityNum entityNum, MerkleStakingInfo merkleStakingInfo) {
-                    var toStakingInfo =
-                            StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
-                    stakingToState.put(
-                            EntityNumber.newBuilder()
-                                    .number(merkleStakingInfo.getKey().longValue())
-                                    .build(),
-                            toStakingInfo);
-                }
+            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
+                stakingToState.put(
+                        EntityNumber.newBuilder()
+                                .number(merkleStakingInfo.getKey().longValue())
+                                .build(),
+                        toStakingInfo);
             });
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
-            System.out.println("BBM: finished staking info");
+            log.info("BBM: finished staking info");
 
             // ---------- Staking Rewards
-            System.out.println("BBM: starting staking rewards");
-            var srToState = ctx.newStates().<NetworkStakingRewards>getSingleton(STAKING_NETWORK_REWARDS_KEY);
-            var toSr = NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(mnc);
+            log.info("BBM: starting staking rewards");
+            final var srToState = ctx.newStates().<NetworkStakingRewards>getSingleton(STAKING_NETWORK_REWARDS_KEY);
+            final var toSr = NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(mnc);
             srToState.put(toSr);
             if (srToState.isModified()) ((WritableSingletonStateBase) srToState).commit();
-            System.out.println("BBM: finished staking rewards");
+            log.info("BBM: finished staking rewards");
 
             nftsFs = null;
             trFs = null;

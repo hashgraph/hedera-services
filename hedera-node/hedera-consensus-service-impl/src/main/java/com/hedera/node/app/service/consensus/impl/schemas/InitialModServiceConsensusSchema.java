@@ -31,6 +31,8 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the consensus service
@@ -39,6 +41,7 @@ import java.util.Set;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceConsensusSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(InitialModServiceConsensusSchema.class);
     private MerkleMap<EntityNum, MerkleTopic> fs;
 
     public InitialModServiceConsensusSchema(SemanticVersion version, final MerkleMap<EntityNum, MerkleTopic> fs) {
@@ -55,7 +58,7 @@ public class InitialModServiceConsensusSchema extends Schema {
     @Override
     public void migrate(@NonNull MigrationContext ctx) {
         if (fs != null) {
-            System.out.println("BBM: running consensus migration...");
+            log.info("BBM: running consensus migration...");
 
             var ts = ctx.newStates().<TopicID, Topic>get(TOPICS_KEY);
             ConsensusServiceStateTranslator.migrateFromMerkleToPbj(fs, ts);
@@ -63,7 +66,7 @@ public class InitialModServiceConsensusSchema extends Schema {
 
             fs = null;
 
-            System.out.println("BBM: finished consensus");
+            log.info("BBM: finished consensus");
         }
     }
 }

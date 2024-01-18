@@ -30,8 +30,11 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FeeService implements Service {
+    private static final Logger log = LogManager.getLogger(FeeService.class);
 
     public static final String NAME = "FeeService";
     static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
@@ -49,8 +52,6 @@ public class FeeService implements Service {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        // BBM: reducing version just for testing
-        // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new Schema(version) {
             @NonNull
             @Override
@@ -82,7 +83,7 @@ public class FeeService implements Service {
 
                     midnightRatesState.put(exchangeRateSet);
                 } else if (fs != null) {
-                    System.out.println("BBM: migrating fee service");
+                    log.info("BBM: migrating fee service");
 
                     var toState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
                     final var toRates = ExchangeRateSet.newBuilder()
@@ -105,7 +106,7 @@ public class FeeService implements Service {
 
                     fs = null;
 
-                    System.out.println("BBM: finished migrating fee service");
+                    log.info("BBM: finished migrating fee service");
                 }
             }
         });
