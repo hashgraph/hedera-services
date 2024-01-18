@@ -16,21 +16,16 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
-import static com.swirlds.virtualmap.internal.Path.getIndexInRank;
-import static com.swirlds.virtualmap.internal.Path.getParentPath;
 import static com.swirlds.virtualmap.internal.Path.getRank;
-import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -42,13 +37,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ForkJoinWorkerThread;
@@ -61,6 +49,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * Responsible for hashing virtual merkle trees. This class is designed to work both for normal
  * hashing use cases, and also for hashing during reconnect.
+ *
+ * <p>There should be one {@link VirtualHasher} shared across all copies of a {@link VirtualMap}
+ * "family".
  *
  * @param <K>
  * 		The {@link VirtualKey} type
@@ -104,13 +95,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     private static final Hash NULL_HASH = CRYPTO.getNullHash();
 
     private static final ForkJoinPool pool = new ForkJoinPool(HASHING_THREAD_COUNT);
-
-    /**
-     * Create a new {@link VirtualHasher}. There should be one {@link VirtualHasher} shared across all copies
-     * of a {@link VirtualMap} "family".
-     */
-    public VirtualHasher() {
-    }
 
     /**
      * Indicate to the virtual hasher that it has been shut down. This method does not interrupt threads, but
@@ -213,8 +197,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         void setOut(final ChunkHashTask out) {
             this.out = out;
-            assert path == 0 || Path.getRank(path) - out.height == Path.getRank(out.path) :
-                    "setOut " + path + " " + height + " " + out.path;
+            assert path == 0 || Path.getRank(path) - out.height == Path.getRank(out.path)
+                    : "setOut " + path + " " + height + " " + out.path;
             push();
         }
 
@@ -291,9 +275,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
 
         static Hash hash(final long path, final Hash left, final Hash right) {
-            final long classId = path == ROOT_PATH
-                    ? VirtualRootNode.CLASS_ID
-                    : VirtualInternalNode.CLASS_ID;
+            final long classId = path == ROOT_PATH ? VirtualRootNode.CLASS_ID : VirtualInternalNode.CLASS_ID;
             final int serId = path == ROOT_PATH
                     ? VirtualRootNode.ClassVersion.CURRENT_VERSION
                     : VirtualInternalNode.SERIALIZATION_VERSION;
@@ -340,8 +322,10 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         // We don't want to include null checks everywhere, so let the listener be NoopListener if null
         if (listener == null) {
-            listener = new VirtualHashListener<>() { /* noop */
-            };
+            listener =
+                    new VirtualHashListener<>() {
+                        /* noop */
+                    };
         }
 
         this.hashReader = hashReader;
@@ -430,8 +414,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     }
                     ChunkHashTask siblingTask = map.remove(siblingPath);
                     if (siblingTask == null) {
-                        siblingTask = new ChunkHashTask(siblingPath, curTask.height,
-                                isLeaf && (!firstLeaf || siblingPath > curPath));
+                        siblingTask = new ChunkHashTask(
+                                siblingPath, curTask.height, isLeaf && (!firstLeaf || siblingPath > curPath));
                     }
                     siblingTask.setOut(parentTask);
                     if ((siblingPath < curPath) && !firstLeaf) {
@@ -474,5 +458,4 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     public Hash emptyRootHash() {
         return ChunkHashTask.hash(ROOT_PATH, NULL_HASH, NULL_HASH);
     }
-
 }

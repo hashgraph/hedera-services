@@ -110,7 +110,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
         synchronized (this) {
             nodes.add(new VirtualHashRecord(path, hash));
-            if (nodes.size() > 10000) { // TODO: make it configurable
+            if (nodes.size() + leaves.size() > 1000000) { // TODO: make it configurable
                 dirtyHashesToFlush = nodes;
                 nodes = new ArrayList<>();
                 dirtyLeavesToFlush = leaves;
@@ -139,13 +139,20 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         leaves = null;
     }
 
-    private void flush(final List<VirtualHashRecord> dirtyHashesToFlush,
-            final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
-        final long maxPath = dirtyLeavesToFlush.stream().mapToLong(VirtualLeafRecord::getPath).max().orElse(-1);
+    private void flush(
+            final List<VirtualHashRecord> dirtyHashesToFlush, final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
+        final long maxPath = dirtyLeavesToFlush.stream()
+                .mapToLong(VirtualLeafRecord::getPath)
+                .max()
+                .orElse(-1);
         // flush it down
         try {
-            dataSource.saveRecords(firstLeafPath, lastLeafPath,
-                    dirtyHashesToFlush.stream(), dirtyLeavesToFlush.stream(), findLeavesToRemove(maxPath));
+            dataSource.saveRecords(
+                    firstLeafPath,
+                    lastLeafPath,
+                    dirtyHashesToFlush.stream(),
+                    dirtyLeavesToFlush.stream(),
+                    findLeavesToRemove(maxPath));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
