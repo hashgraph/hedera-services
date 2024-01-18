@@ -213,6 +213,15 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
+     * Set the time this event was received
+     *
+     * @param timeReceived the time this event was received
+     */
+    public void setTimeReceived(@NonNull final Instant timeReceived) {
+        this.timeReceived = timeReceived;
+    }
+
+    /**
      * Get the id of the node which sent us this event
      *
      * @return the id of the node which sent us this event

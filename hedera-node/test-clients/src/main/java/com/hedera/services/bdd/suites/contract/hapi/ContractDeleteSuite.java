@@ -43,6 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -77,7 +79,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractDeleteSuite extends HapiSuite {
 
@@ -87,8 +89,8 @@ public class ContractDeleteSuite extends HapiSuite {
     private static final String CONTRACT_DESTROY = "destroy";
     private static final String RECEIVER_CONTRACT_NAME = "receiver";
 
-    public static void main(String... args) {
-        new ContractDeleteSuite().runSuiteAsync();
+    public static void main(final String... args) {
+        new ContractDeleteSuite().runSuiteSync();
     }
 
     @Override
@@ -107,6 +109,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 deleteTransfersToContract(),
                 cannotDeleteOrSelfDestructTokenTreasury(),
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
+                cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
     }
 
@@ -120,7 +123,7 @@ public class ContractDeleteSuite extends HapiSuite {
         final var internalCreateViolation = "internalCreateViolation";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotUseMoreThanChildContractLimit")
+        return defaultHapiSpec("CannotUseMoreThanChildContractLimit", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
@@ -167,7 +170,7 @@ public class ContractDeleteSuite extends HapiSuite {
         final var internalViolation = "internal";
         final var externalViolation = "external";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotSendValueToTokenAccount")
+        return defaultHapiSpec("CannotSendValueToTokenAccount", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -240,7 +243,7 @@ public class ContractDeleteSuite extends HapiSuite {
         final var otherMiscContract = "PayReceivable";
         final var beneficiary = "beneficiary";
 
-        return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroBalance")
+        return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroBalance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(multiKey),

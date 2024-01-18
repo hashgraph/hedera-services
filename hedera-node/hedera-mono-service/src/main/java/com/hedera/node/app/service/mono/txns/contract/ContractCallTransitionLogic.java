@@ -146,7 +146,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var sender = accountStore.loadAccount(senderId);
         final var target = targetOf(op);
 
-        Account receiver = extractAndValidateReceiver(op, target, relayerId);
+        Account receiver = extractAndValidateReceiver(op, target, relayerId != null, true);
 
         final var callData = !op.getFunctionParameters().isEmpty()
                 ? Bytes.wrap(op.getFunctionParameters().toByteArray())
@@ -212,7 +212,45 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         return this::validateSemantics;
     }
 
-    private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
+    public Function<TransactionBody, ResponseCodeEnum> semanticEthCheck() {
+        return this::validateEthSemantics;
+    }
+
+    private ResponseCodeEnum validateSemantics(final TransactionBody txBody) {
+        final var op = txBody.getContractCall();
+
+        final var commonSemanticsResult = validateSemanticsCommon(txBody);
+        if (commonSemanticsResult != OK) {
+            return commonSemanticsResult;
+        }
+
+        try {
+            extractAndValidateReceiver(op, targetOf(op), false, false);
+        } catch (InvalidTransactionException e) {
+            return e.getResponseCode();
+        }
+
+        return OK;
+    }
+
+    private ResponseCodeEnum validateEthSemantics(final TransactionBody txBody) {
+        final var op = txBody.getContractCall();
+
+        final var commonSemanticsResult = validateSemanticsCommon(txBody);
+        if (commonSemanticsResult != OK) {
+            return commonSemanticsResult;
+        }
+
+        try {
+            extractAndValidateReceiver(op, targetOf(op), true, false);
+        } catch (InvalidTransactionException e) {
+            return e.getResponseCode();
+        }
+
+        return OK;
+    }
+
+    private ResponseCodeEnum validateSemanticsCommon(final TransactionBody transactionBody) {
         var op = transactionBody.getContractCall();
 
         if (op.getGas()
@@ -281,7 +319,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     }
 
     private Account extractAndValidateReceiver(
-            ContractCallTransactionBody op, final EntityNum unaliasedTargetNum, final Id relayerId) {
+            ContractCallTransactionBody op,
+            final EntityNum unaliasedTargetNum,
+            final boolean isEthTx,
+            final boolean isHandle) {
 
         final var unaliasedTargetId = unaliasedTargetNum.toId();
         final var targetAliasIsMissing = unaliasedTargetNum.equals(EntityNum.MISSING_NUM);
@@ -298,15 +339,17 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (!targetAliasIsMissing) {
 
             if (op.getAmount() > 0) {
-                // Since contracts cannot have receiverSigRequired=true, this can only
-                // restrict us from sending value to an EOA
-                final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                        false,
-                        unaliasedTargetNum.toEvmAddress(),
-                        NEVER_ACTIVE_CONTRACT_ADDRESS,
-                        worldLedgers,
-                        ContractCall);
-                validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                if (isHandle) {
+                    // Since contracts cannot have receiverSigRequired=true, this can only
+                    // restrict us from sending value to an EOA
+                    final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                            false,
+                            unaliasedTargetNum.toEvmAddress(),
+                            NEVER_ACTIVE_CONTRACT_ADDRESS,
+                            worldLedgers,
+                            ContractCall);
+                    validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                }
                 validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
                 validateTrue(
                         entityAccess.isExtant(unaliasedTargetNum.toEvmAddress())
@@ -339,7 +382,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             // lazy create flow
             if (op.getAmount() > 0) {
                 // do not permit lazy creation from non-ethereum transaction
-                validateTrue(relayerId != null, INVALID_FEE_SUBMITTED);
+                validateTrue(isEthTx, INVALID_FEE_SUBMITTED);
                 // do not permit lazy creation in EVM version v030
                 validateTrue(!properties.evmVersion().equals(EVM_VERSION_0_30), INVALID_SOLIDITY_ADDRESS);
                 // do not permit lazy creation of mirror address

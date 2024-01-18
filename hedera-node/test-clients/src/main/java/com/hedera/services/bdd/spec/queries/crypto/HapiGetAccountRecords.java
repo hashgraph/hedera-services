@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
@@ -94,11 +93,9 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expectation.isPresent()) {
-            List<TransactionRecord> actualRecords =
-                    response.getCryptoGetAccountRecords().getRecordsList();
-            if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
-                actualRecords = actualRecords.subList(1, actualRecords.size());
-            }
+            List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList().stream()
+                    .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                    .toList();
             List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
             rethrowSummaryError(log, "Bad account records!", errors);
         }
