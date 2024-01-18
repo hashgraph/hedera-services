@@ -146,7 +146,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var sender = accountStore.loadAccount(senderId);
         final var target = targetOf(op);
 
-        Account receiver = extractAndValidateReceiver(op, target, relayerId != null);
+        Account receiver = extractAndValidateReceiver(op, target, relayerId != null, true);
 
         final var callData = !op.getFunctionParameters().isEmpty()
                 ? Bytes.wrap(op.getFunctionParameters().toByteArray())
@@ -225,7 +225,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         }
 
         try {
-            extractAndValidateReceiver(op, targetOf(op), false);
+            extractAndValidateReceiver(op, targetOf(op), false, false);
         } catch (InvalidTransactionException e) {
             return e.getResponseCode();
         }
@@ -242,7 +242,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         }
 
         try {
-            extractAndValidateReceiver(op, targetOf(op), true);
+            extractAndValidateReceiver(op, targetOf(op), true, false);
         } catch (InvalidTransactionException e) {
             return e.getResponseCode();
         }
@@ -320,7 +320,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     }
 
     private Account extractAndValidateReceiver(
-            ContractCallTransactionBody op, final EntityNum unaliasedTargetNum, final boolean isEthTx) {
+            ContractCallTransactionBody op,
+            final EntityNum unaliasedTargetNum,
+            final boolean isEthTx,
+            final boolean isHandle) {
 
         final var unaliasedTargetId = unaliasedTargetNum.toId();
         final var targetAliasIsMissing = unaliasedTargetNum.equals(EntityNum.MISSING_NUM);
@@ -337,15 +340,17 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (!targetAliasIsMissing) {
 
             if (op.getAmount() > 0) {
-                // Since contracts cannot have receiverSigRequired=true, this can only
-                // restrict us from sending value to an EOA
-                final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                        false,
-                        unaliasedTargetNum.toEvmAddress(),
-                        NEVER_ACTIVE_CONTRACT_ADDRESS,
-                        worldLedgers,
-                        ContractCall);
-                validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                if (isHandle) {
+                    // Since contracts cannot have receiverSigRequired=true, this can only
+                    // restrict us from sending value to an EOA
+                    final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                            false,
+                            unaliasedTargetNum.toEvmAddress(),
+                            NEVER_ACTIVE_CONTRACT_ADDRESS,
+                            worldLedgers,
+                            ContractCall);
+                    validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                }
                 validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
                 validateTrue(
                         entityAccess.isExtant(unaliasedTargetNum.toEvmAddress())
