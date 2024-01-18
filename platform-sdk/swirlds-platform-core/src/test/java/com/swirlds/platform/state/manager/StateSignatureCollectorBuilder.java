@@ -18,46 +18,40 @@ package com.swirlds.platform.state.manager;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.state.SignedStateManagerTester;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 
 /**
- * Utility class for building instances of {@link SignedStateManager}.
+ * Utility class for building instances of {@link StateSignatureCollectorTester}.
  */
-public class SignedStateManagerBuilder {
+public class StateSignatureCollectorBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {};
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {};
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {};
 
-    public SignedStateManagerBuilder(final StateConfig stateConfig) {
+    public StateSignatureCollectorBuilder(final StateConfig stateConfig) {
         this.stateConfig = stateConfig;
 
         this.metrics = new SignedStateMetrics(new NoOpMetrics());
     }
 
-    public SignedStateManagerBuilder stateHasEnoughSignaturesConsumer(final StateHasEnoughSignaturesConsumer consumer) {
+    public StateSignatureCollectorBuilder stateHasEnoughSignaturesConsumer(
+            final StateHasEnoughSignaturesConsumer consumer) {
         this.stateHasEnoughSignaturesConsumer = consumer;
         return this;
     }
 
-    public SignedStateManagerBuilder stateLacksSignaturesConsumer(final StateLacksSignaturesConsumer consumer) {
+    public StateSignatureCollectorBuilder stateLacksSignaturesConsumer(final StateLacksSignaturesConsumer consumer) {
         this.stateLacksSignaturesConsumer = consumer;
         return this;
     }
 
-    public SignedStateManagerTester build() {
-        return SignedStateManagerTester.create(
-                stateConfig,
-                metrics,
-                newLatestCompleteStateConsumer,
-                stateHasEnoughSignaturesConsumer,
-                stateLacksSignaturesConsumer);
+    public StateSignatureCollectorTester build() {
+        return StateSignatureCollectorTester.create(
+                stateConfig, metrics, stateHasEnoughSignaturesConsumer, stateLacksSignaturesConsumer);
     }
 }

@@ -23,13 +23,14 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 import org.mockito.invocation.InvocationOnMock;
 
 /**
- * Utility methods for testing {@link com.swirlds.platform.state.signed.SignedStateManager}
+ * Utility methods for testing {@link StateSignatureCollector}
  */
 public class SignedStateManagerTestUtils {
 

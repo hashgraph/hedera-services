@@ -20,6 +20,8 @@ import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
@@ -32,23 +34,28 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDo
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.NFT;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SOME_BYTE_CODE;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOPIC;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
@@ -81,11 +88,13 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec reconnectMixedOps() {
-        AtomicInteger tokenId = new AtomicInteger(0);
-        AtomicInteger scheduleId = new AtomicInteger(0);
+        final AtomicInteger tokenId = new AtomicInteger(0);
+        final AtomicInteger scheduleId = new AtomicInteger(0);
+        final AtomicInteger contractId = new AtomicInteger(0);
+        AtomicInteger nftId = new AtomicInteger(0);
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, r);
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
@@ -98,6 +107,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
+                        fileCreate(SOME_BYTE_CODE)
+                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
                         // Kill node 2
                         shutDownNode("Carol").logged(),
                         // Wait for it to shut down
@@ -110,6 +121,13 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                 .when(
                         // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
+                        sleepFor(10000),
+                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(ignore -> mintToken(
+                                                NFT + nftId.getAndDecrement(),
+                                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
+                                        .logging())
+                                .toArray(HapiSpecOperation[]::new)),
                         // start all nodes
                         startNode("Carol").logged(),
                         // wait for node 2 to go BEHIND
@@ -125,6 +143,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
+                        fileCreate(SOME_BYTE_CODE)
+                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
                         inParallel(mixedOpsBurst.get()));
     }
 }
