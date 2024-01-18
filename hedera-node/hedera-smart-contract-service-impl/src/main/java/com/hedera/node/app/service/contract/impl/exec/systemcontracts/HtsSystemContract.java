@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.un
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -124,10 +123,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .externalizeResult(
                                     contractFunctionResultSuccessFor(
                                             pricedResult.fullResult().gasRequirement(), output, attempt.senderId()),
-                    responseCode,
-                            enhancement
-                                    .systemOperations()
-                                    .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
+                                    responseCode,
+                                    enhancement
+                                            .systemOperations()
+                                            .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 } else {
                     enhancement
                             .systemOperations()
