@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.tasks;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -66,8 +67,32 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      * If the task has no dependencies then execute it. If the task has dependencies, decrement the dependency count and
      * execute it if the resulting number of dependencies is zero.
      */
-    protected void send() {
+    void send() {
         if (dependencyCount == null || dependencyCount.decrementAndGet() == 0) {
+            runTask();
+        }
+    }
+
+    /**
+     * If the task has no dependencies then execute it. If the task has dependencies, decrement the dependency
+     * count by {@code count} and execute if the resulting number of dependencies is zero.
+     *
+     * @param count dependency count to decrement
+     */
+    void send(final int count) {
+        if (dependencyCount == null || (dependencyCount.addAndGet(-count) == 0)) {
+            runTask();
+        }
+    }
+
+    /*
+     * Schedules this task for execution. If the current thread is a member of this task's {@link pool},
+     * the task is forked, otherwise submitted to the pool using {@link ForkJoinPool#execute} method.
+     */
+    private final void runTask() {
+        if ((Thread.currentThread() instanceof ForkJoinWorkerThread t) && (t.getPool() == pool)) {
+            fork();
+        } else {
             pool.execute(this);
         }
     }

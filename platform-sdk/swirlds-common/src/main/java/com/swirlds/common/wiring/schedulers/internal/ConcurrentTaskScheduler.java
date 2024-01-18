@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.tasks.ConcurrentTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
@@ -75,7 +76,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
     }
 
     /**
@@ -85,7 +86,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
-            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
         }
         return accepted;
     }
@@ -96,7 +97,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
     }
 
     /**

@@ -70,6 +70,7 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring.model;
     exports com.swirlds.common.wiring.schedulers;
     exports com.swirlds.common.wiring.schedulers.builders;
+    exports com.swirlds.common.wiring.tasks;
     exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;
