@@ -81,10 +81,6 @@ public class ShadowGraphSynchronizer {
      */
     private final ShadowGraph shadowGraph;
     /**
-     * Tracks the tipset of the latest self event. Null if feature is not enabled.
-     */
-    private final LatestEventTipsetTracker latestEventTipsetTracker;
-    /**
      * Number of member nodes in the network for this sync
      */
     private final int numberOfNodes;
@@ -144,7 +140,6 @@ public class ShadowGraphSynchronizer {
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ShadowGraph shadowGraph,
-            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -174,10 +169,6 @@ public class ShadowGraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
-        this.latestEventTipsetTracker = latestEventTipsetTracker;
-        if (filterLikelyDuplicates) {
-            Objects.requireNonNull(latestEventTipsetTracker);
-        }
     }
 
     /**
@@ -416,22 +407,17 @@ public class ShadowGraphSynchronizer {
         final List<EventImpl> eventsTheyMayNeed =
                 sendSet.stream().map(ShadowEvent::getEvent).collect(Collectors.toCollection(ArrayList::new));
 
+        SyncUtils.sort(eventsTheyMayNeed);
+
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
-            sendList = filterLikelyDuplicates(
-                    selfId,
-                    nonAncestorFilterThreshold,
-                    time.now(),
-                    eventsTheyMayNeed,
-                    latestEventTipsetTracker.getLatestSelfEventTipset());
+            sendList = filterLikelyDuplicates(selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
             final long endFilterTime = time.nanoTime();
             syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
         }
-
-        SyncUtils.sort(sendList);
 
         return sendList;
     }
