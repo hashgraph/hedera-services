@@ -35,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -83,7 +82,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
     @Override
     public PricedResult execute() {
         final var recordBuilder = systemContractOperations()
-                .dispatch(transactionBody, verificationStrategy, sender, SingleTransactionRecordBuilder.class);
+                .dispatch(transactionBody, verificationStrategy, sender, ContractCallRecordBuilder.class);
 
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(transactionBody, gasCalculator, enhancement, sender);
@@ -99,7 +98,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
             }
             return reversionWith(status, gasRequirement);
         } else {
-            return completionWith(gasRequirement, (ContractCallRecordBuilder) recordBuilder);
+            return completionWith(gasRequirement, recordBuilder);
         }
     }
 

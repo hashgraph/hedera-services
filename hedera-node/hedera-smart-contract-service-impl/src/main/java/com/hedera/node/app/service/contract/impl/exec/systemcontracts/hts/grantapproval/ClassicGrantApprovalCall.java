@@ -34,7 +34,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiCon
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
@@ -62,7 +61,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         }
         final var body = callGrantApproval();
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != ResponseCodeEnum.SUCCESS) {
@@ -77,10 +76,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
 
-            return gasOnly(
-                    FullResult.successResult(encodedOutput, gasRequirement, (ContractCallRecordBuilder) recordBuilder),
-                    status,
-                    false);
+            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
 

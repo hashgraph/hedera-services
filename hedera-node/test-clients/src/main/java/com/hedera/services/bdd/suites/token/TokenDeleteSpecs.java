@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -116,7 +115,6 @@ public class TokenDeleteSpecs extends HapiSuite {
     final HapiSpec deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
-                        overriding("staking.fees.nodeRewardPercentage", "10"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(PAYER),
@@ -132,7 +130,6 @@ public class TokenDeleteSpecs extends HapiSuite {
     public HapiSpec deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
-                        overriding("staking.fees.nodeRewardPercentage", "10"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(PAYER),
@@ -172,7 +169,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
-                .given(overriding("staking.fees.nodeRewardPercentage", "10"), cryptoCreate(PAYER))
+                .given(cryptoCreate(PAYER))
                 .when()
                 .then(
                         tokenDelete("0.0.0").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID),

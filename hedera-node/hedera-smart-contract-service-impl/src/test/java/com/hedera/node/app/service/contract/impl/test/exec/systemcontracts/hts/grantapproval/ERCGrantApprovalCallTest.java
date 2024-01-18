@@ -85,7 +85,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(SingleTransactionRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getAccount(anyLong())).willReturn(account);
@@ -113,7 +113,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(SingleTransactionRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
@@ -170,7 +170,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(SingleTransactionRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);

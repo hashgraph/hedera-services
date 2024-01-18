@@ -36,7 +36,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -79,7 +78,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             return result;
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
@@ -90,10 +89,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                             .getOutputs()
                             .encodeElements();
-            return gasOnly(
-                    successResult(encodedOutput, gasRequirement, (ContractCallRecordBuilder) recordBuilder),
-                    status,
-                    false);
+            return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
 }
