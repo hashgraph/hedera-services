@@ -154,10 +154,15 @@ public class EndOfStakingPeriodUpdater {
                     nodePendingRewards,
                     oldStakeRewardStart,
                     newStakeRewardStart);
-            stakeRewardsHelper.increasePendingRewardsBy(stakingRewardsStore, nodePendingRewards);
+            // In the future when node is deleted we should not update the total pendingRewards on the network.
+            final var clampedNodePendingRewards =
+                    stakeRewardsHelper.increasePendingRewardsBy(stakingRewardsStore, nodePendingRewards);
 
-            currStakingInfo =
-                    currStakingInfo.copyBuilder().unclaimedStakeRewardStart(0).build();
+            currStakingInfo = currStakingInfo
+                    .copyBuilder()
+                    .unclaimedStakeRewardStart(0)
+                    .pendingRewards(clampedNodePendingRewards)
+                    .build();
 
             newTotalStakedRewardStart += newStakeRewardStart;
             newTotalStakedStart += currStakingInfo.stake();

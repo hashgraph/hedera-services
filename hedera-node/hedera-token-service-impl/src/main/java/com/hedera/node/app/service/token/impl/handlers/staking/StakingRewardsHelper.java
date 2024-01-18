@@ -131,8 +131,9 @@ public class StakingRewardsHelper {
      * to be paid in next staking period
      * @param stakingRewardsStore The store to write to for updated values
      * @param amount The amount to increase by
+     * @return The clamped pending rewards
      */
-    public void increasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
+    long increasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards + amount;
         if (newPendingRewards > MAX_PENDING_REWARDS) {
@@ -145,6 +146,7 @@ public class StakingRewardsHelper {
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+        return newPendingRewards;
     }
 
     /**

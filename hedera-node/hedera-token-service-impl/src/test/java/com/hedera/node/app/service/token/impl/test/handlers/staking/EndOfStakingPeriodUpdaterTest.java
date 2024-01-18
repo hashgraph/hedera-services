@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -207,6 +208,9 @@ class EndOfStakingPeriodUpdaterTest {
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
         Assertions.assertThat(STAKING_INFO_2.weight()).isZero();
         Assertions.assertThat(STAKING_INFO_3.weight()).isZero();
+        Assertions.assertThat(STAKING_INFO_1.pendingRewards()).isZero();
+        Assertions.assertThat(STAKING_INFO_2.pendingRewards()).isZero();
+        Assertions.assertThat(STAKING_INFO_3.pendingRewards()).isZero();
 
         subject.updateNodes(context);
 
@@ -222,9 +226,9 @@ class EndOfStakingPeriodUpdaterTest {
         Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
-        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
-        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
         Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         Assertions.assertThat(resultStakingInfo3.weight()).isZero();
@@ -254,11 +258,11 @@ class EndOfStakingPeriodUpdaterTest {
     private static final long STAKE_TO_NOT_REWARD_1 = 300L;
     private static final long STAKE_TO_NOT_REWARD_2 = 200L;
     private static final long STAKE_TO_NOT_REWARD_3 = 20L;
-    private static final long STAKED_REWARD_START_1 = 1_000L;
+    private static final long STAKED_REWARD_START_1 = 1_000L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_1 = STAKED_REWARD_START_1 / 10;
-    private static final long STAKED_REWARD_START_2 = 700L;
+    private static final long STAKED_REWARD_START_2 = 700L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_2 = STAKED_REWARD_START_2 / 10;
-    private static final long STAKED_REWARD_START_3 = 10_000L;
+    private static final long STAKED_REWARD_START_3 = 10_000L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_3 = STAKED_REWARD_START_3 / 10;
     private static final long STAKE_1 = 2_000L;
     private static final long STAKE_2 = 750L;
