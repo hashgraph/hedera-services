@@ -75,8 +75,6 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
@@ -121,7 +119,6 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -259,15 +256,6 @@ public class SwirldsPlatform implements Platform {
     private final PlatformComponents components;
 
     /**
-     * Call this when a reconnect has been completed.
-     */
-    private final ReconnectStateLoadedTrigger reconnectStateLoadedDispatcher;
-
-    /**
-     * Call this when a state has been loaded from disk.
-     */
-    private final DiskStateLoadedTrigger diskStateLoadedDispatcher;
-    /**
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
@@ -351,10 +339,6 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = NotificationEngine.buildEngine(threadManager);
 
         dispatchBuilder.registerObservers(this);
-
-        reconnectStateLoadedDispatcher =
-                dispatchBuilder.getDispatcher(this, ReconnectStateLoadedTrigger.class)::dispatch;
-        diskStateLoadedDispatcher = dispatchBuilder.getDispatcher(this, DiskStateLoadedTrigger.class)::dispatch;
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -785,7 +769,7 @@ public class SwirldsPlatform implements Platform {
                 // If we loaded from disk then call the appropriate dispatch.
                 // It is important that this is sent after the ConsensusHashManager
                 // is initialized.
-                diskStateLoadedDispatcher.dispatch(round, hash);
+                consensusHashManager.overridingStateObserver(round, hash);
 
                 // Let the app know that a state was loaded.
                 notificationEngine.dispatch(
@@ -916,9 +900,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
-
-            reconnectStateLoadedDispatcher.dispatch(
-                    signedState.getRound(), signedState.getState().getHash());
+            consensusHashManager.overridingStateObserver(signedState.getRound(), signedState.getState().getHash());
 
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.

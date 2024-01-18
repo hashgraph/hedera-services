@@ -31,8 +31,6 @@ import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.metrics.IssMetrics;
@@ -331,9 +329,6 @@ public class ConsensusHashManager {
      * @param round     the round of the state that was obtained
      * @param stateHash the hash of the state that was obtained
      */
-    @Observer(
-            value = {DiskStateLoadedTrigger.class, ReconnectStateLoadedTrigger.class},
-            comment = "ingest completed state")
     public void overridingStateObserver(final Long round, final Hash stateHash) {
         roundCompleted(round);
         stateHashedObserver(round, stateHash);
