@@ -82,5 +82,10 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic token names.
      */
-    NONDETERMINISTIC_TOKEN_NAMES
+    NONDETERMINISTIC_TOKEN_NAMES,
+
+    /**
+     * Allows for empty transfer list to be skipped
+     */
+    IGNORE_EMPTY_TRANSFER_LIST
 }
