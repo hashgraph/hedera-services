@@ -146,11 +146,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
     private final ConsensusConfig config;
-    /**
-     * Indicates if an event's status of ancient should be determined by birthRound (true) or generation (false)
-     * FUTURE WORK: Delete this variable and its initialization when we switch to permanently using birthRound.
-     */
-    private final boolean useBirthRoundForAncient;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -665,7 +660,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // Future work: enable the ancient mode to be configurable
         final AncientMode ancientMode = GENERATION_THRESHOLD;
 
-        // Future work: prior to enabling a generation based ancient mode, we need to use real values for
+        // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
         // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
         final long previousRoundNonAncient = 0;
         final long previousRoundNonExpired = 0;

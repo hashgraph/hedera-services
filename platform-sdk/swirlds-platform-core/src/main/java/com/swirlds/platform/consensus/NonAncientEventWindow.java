@@ -17,6 +17,7 @@
 package com.swirlds.platform.consensus;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
@@ -97,14 +98,14 @@ public class NonAncientEventWindow {
     @NonNull
     public static NonAncientEventWindow getGenesisNonAncientEventWindow(@NonNull final AncientMode ancientMode) {
         final long firstIndicator = ancientMode == GENERATION_THRESHOLD ? FIRST_GENERATION : ROUND_FIRST;
-        return new NonAncientEventWindow(ROUND_FIRST, firstIndicator, firstIndicator, ancientMode);
+        return new NonAncientEventWindow(ROUND_NEGATIVE_INFINITY, firstIndicator, firstIndicator, ancientMode);
     }
 
     /**
      * @return true if this is a genesis non-ancient event window, false otherwise.
      */
     public boolean isGenesis() {
-        return latestConsensusRound == ROUND_FIRST;
+        return latestConsensusRound == ROUND_NEGATIVE_INFINITY;
     }
 
     /**
