@@ -839,8 +839,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         "erc20Approve",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1309,11 +1308,9 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "directCallsWorkForErc20",
-                        //                        NONDETERMINISTIC_NONCE,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1462,8 +1459,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -1779,8 +1775,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2071,8 +2066,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         "someErc20ApproveAllowanceScenarioInOneCall",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2133,8 +2127,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec(
                         "directCallsWorkForErc721",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
-                        )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
