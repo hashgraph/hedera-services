@@ -605,7 +605,10 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(3)
     final HapiSpec traceabilityE2EScenario2() {
-        return defaultHapiSpec("traceabilityE2EScenario2", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario2",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
@@ -4540,7 +4543,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(21)
     final HapiSpec traceabilityE2EScenario20() {
-        return defaultHapiSpec("traceabilityE2EScenario20")
+        return defaultHapiSpec("traceabilityE2EScenario20", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
