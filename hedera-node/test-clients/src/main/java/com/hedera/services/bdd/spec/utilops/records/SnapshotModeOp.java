@@ -607,7 +607,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             } else if ("errorMessage".equals(fieldName)
                     && "0x".equals(expected)
                     && matchModes.contains(ALLOW_EMPTY_ERROR_MSG)) {
-                // todo - check this. mono return empty error msg on revert, but in mod we have status enum name
+                // Mono return empty error msg on revert, but in mod we have status enum name
                 Assertions.assertTrue(true);
             } else {
                 Assertions.assertEquals(

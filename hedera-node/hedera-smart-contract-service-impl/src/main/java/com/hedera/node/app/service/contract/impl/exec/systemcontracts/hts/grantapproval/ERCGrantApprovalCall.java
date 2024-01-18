@@ -104,13 +104,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
-            //            final var encodedOutput = tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)
-            //                    ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
-            //                    : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
-            //                            .getOutputs()
-            //                            .encodeElements();
-
-            // todo check why in mono nft approve call has output!
+            // in mono nft approve call has boolean output
             final var encodedOutput =
                     GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true);
 
