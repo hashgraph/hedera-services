@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -106,11 +107,18 @@ public class StakingRewardsHelper {
      * Decrease pending rewards on the network staking rewards store by the given amount.
      * Once we pay reward to an account, the pending rewards on the network should be
      * reduced by that amount, since they no more need to be paid.
+     *
+     * @param stakingInfoStore
      * @param stakingRewardsStore The store to write to for updated values
-     * @param amount The amount to decrease by
+     * @param amount              The amount to decrease by
+     * @param nodeId              The node id to decrease pending rewards for
      */
     public void decreasePendingRewardsBy(
-            final WritableNetworkStakingRewardsStore stakingRewardsStore, final long amount) {
+            @NonNull final WritableStakingInfoStore stakingInfoStore,
+            @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            final long amount,
+            @NonNull final Long nodeId) {
+        // decrement the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards - amount;
         if (newPendingRewards < 0) {
@@ -123,6 +131,21 @@ public class StakingRewardsHelper {
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+
+        // decrement pendingRewards per node also
+        final var stakingInfo = stakingInfoStore.get(nodeId);
+        final var currentNodePendingRewards = stakingInfo.pendingRewards();
+        var newNodePendingRewards = currentNodePendingRewards - amount;
+        if (newNodePendingRewards < 0) {
+            log.error(
+                    "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+                    amount,
+                    newNodePendingRewards);
+            newNodePendingRewards = 0;
+        }
+        final var stakingInfoCopy =
+                stakingInfo.copyBuilder().pendingRewards(newNodePendingRewards).build();
+        stakingInfoStore.put(nodeId, stakingInfoCopy);
     }
 
     /**

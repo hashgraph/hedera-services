@@ -171,7 +171,7 @@ class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
-    void calculatesNewTotalStakesAsExpected() {
+    void calculatesNewEndOfPeriodStakingFieldsAsExpected() {
         final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
 
@@ -216,22 +216,25 @@ class EndOfStakingPeriodUpdaterTest {
 
         Assertions.assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
-        Assertions.assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(1300L);
+        Assertions.assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(130000000000L);
         final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
         final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
         final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
-        Assertions.assertThat(resultStakingInfo1.stake()).isEqualTo(800L);
-        Assertions.assertThat(resultStakingInfo2.stake()).isEqualTo(500L);
+        Assertions.assertThat(resultStakingInfo1.stake()).isEqualTo(80000000000L);
+        Assertions.assertThat(resultStakingInfo2.stake()).isEqualTo(50000000000L);
         Assertions.assertThat(resultStakingInfo3.stake()).isZero();
         Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
-        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
-        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
         Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         Assertions.assertThat(resultStakingInfo3.weight()).isZero();
+        Assertions.assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
+        Assertions.assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(135000L);
+        Assertions.assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(207000L);
         Assertions.assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
                 .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
     }
@@ -250,23 +253,23 @@ class EndOfStakingPeriodUpdaterTest {
     }
 
     private static final int SUM_OF_CONSENSUS_WEIGHTS = 500;
-    private static final long MIN_STAKE = 100L;
-    private static final long MAX_STAKE = 800L;
-    private static final long STAKE_TO_REWARD_1 = 700L;
-    private static final long STAKE_TO_REWARD_2 = 300L;
-    private static final long STAKE_TO_REWARD_3 = 30L;
-    private static final long STAKE_TO_NOT_REWARD_1 = 300L;
-    private static final long STAKE_TO_NOT_REWARD_2 = 200L;
-    private static final long STAKE_TO_NOT_REWARD_3 = 20L;
+    private static final long MIN_STAKE = 100L * HBARS_TO_TINYBARS;
+    private static final long MAX_STAKE = 800L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_REWARD_1 = 700L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_REWARD_2 = 300L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_REWARD_3 = 30L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_NOT_REWARD_1 = 300L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_NOT_REWARD_2 = 200L * HBARS_TO_TINYBARS;
+    private static final long STAKE_TO_NOT_REWARD_3 = 20L * HBARS_TO_TINYBARS;
     private static final long STAKED_REWARD_START_1 = 1_000L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_1 = STAKED_REWARD_START_1 / 10;
     private static final long STAKED_REWARD_START_2 = 700L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_2 = STAKED_REWARD_START_2 / 10;
     private static final long STAKED_REWARD_START_3 = 10_000L * HBARS_TO_TINYBARS;
     private static final long UNCLAIMED_STAKED_REWARD_START_3 = STAKED_REWARD_START_3 / 10;
-    private static final long STAKE_1 = 2_000L;
-    private static final long STAKE_2 = 750L;
-    private static final long STAKE_3 = 75L;
+    private static final long STAKE_1 = 2_000L * HBARS_TO_TINYBARS;
+    private static final long STAKE_2 = 750L * HBARS_TO_TINYBARS;
+    private static final long STAKE_3 = 75L * HBARS_TO_TINYBARS;
     private static final List<Long> REWARD_SUM_HISTORY_1 = List.of(8L, 7L, 2L);
     private static final List<Long> REWARD_SUM_HISTORY_2 = List.of(5L, 5L, 4L);
     private static final List<Long> REWARD_SUM_HISTORY_3 = List.of(4L, 2L, 1L);
