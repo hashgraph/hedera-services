@@ -17,12 +17,10 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -100,9 +98,7 @@ public class TransferContextImpl implements TransferContext {
         try {
             createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         } catch (HandleException e) {
-            if (getHandleContext().getHederaFunctionality() == CRYPTO_TRANSFER
-                    && getHandleContext().getTransactionCategory() == PRECEDING
-                    && getHandleContext().isSelfSubmitted()) {
+            if (getHandleContext().isSelfSubmitted()) {
                 final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
                 getHandleContext().reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
             }

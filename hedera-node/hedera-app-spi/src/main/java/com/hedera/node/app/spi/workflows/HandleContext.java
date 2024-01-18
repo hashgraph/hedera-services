@@ -678,20 +678,6 @@ public interface HandleContext {
     RecordListCheckPoint createRecordListCheckPoint();
 
     /**
-     * Returns the current {@link HederaFunctionality}
-     *
-     * @return the Hedera functionality in the context
-     */
-    HederaFunctionality getHederaFunctionality();
-
-    /**
-     * Returns the current {@link TransactionCategory} of the transaction
-     *
-     * @return the current transaction category
-     */
-    TransactionCategory getTransactionCategory();
-
-    /**
      * Returns whether the current transaction being processed was submitted by this node.
      *
      * @return true if the current transaction was submitted by this node

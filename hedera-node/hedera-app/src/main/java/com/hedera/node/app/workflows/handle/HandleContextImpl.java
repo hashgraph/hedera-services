@@ -897,16 +897,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public HederaFunctionality getHederaFunctionality() {
-        return functionality;
-    }
-
-    @Override
-    public TransactionCategory getTransactionCategory() {
-        return category;
-    }
-
-    @Override
     public boolean isSelfSubmitted() {
         return Objects.equals(
                 body().nodeAccountID(), networkInfo().selfNodeInfo().accountId());
