@@ -131,14 +131,22 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     }
 
     @Override
-    public synchronized void onHashingCompleted() {
-        if (!nodes.isEmpty() || !leaves.isEmpty()) {
+    public void onHashingCompleted() {
+        boolean needFinalFlush = false;
+        synchronized (this) {
+            if (!nodes.isEmpty() || !leaves.isEmpty()) {
+                needFinalFlush = true;
+            }
+        }
+        if (needFinalFlush) {
             flush(nodes, leaves);
         }
         nodes = null;
         leaves = null;
     }
 
+    // Since flushes may take quite some time, this method is called outside synchronized blocks,
+    // otherwise all hashing tasks would be blocked on listener calls until flush is completed.
     private void flush(
             final List<VirtualHashRecord> dirtyHashesToFlush, final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
         final long maxPath = dirtyLeavesToFlush.stream()
