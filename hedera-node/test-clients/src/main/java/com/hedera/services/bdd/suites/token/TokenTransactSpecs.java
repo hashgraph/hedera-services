@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -313,7 +314,9 @@ public class TokenTransactSpecs extends HapiSuite {
         final var multiPurpose = MULTI_PURPOSE;
         final var transferTxn = TRANSFER_TXN;
 
-        return defaultHapiSpec("failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem",
+                        SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiPurpose),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1448,7 +1451,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromZephyr = "txnFromZephyr";
 
-        return defaultHapiSpec("MultipleRoyaltyFallbackCaseStudy")
+        return defaultHapiSpec("MultipleRoyaltyFallbackCaseStudy", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(supplyKey),
                         cryptoCreate(zephyr),
@@ -1573,7 +1576,8 @@ public class TokenTransactSpecs extends HapiSuite {
                 .when(cryptoTransfer(
                                 movingUnique(westWindArt, 1L).between(amelie, alice),
                                 moving(200, usdc).between(alice, amelie),
-                                movingHbar(10 * ONE_HUNDRED_HBARS).between(alice, amelie))  // 100 USDC fractional fee,  royalty 2 USDC
+                                movingHbar(10 * ONE_HUNDRED_HBARS)
+                                        .between(alice, amelie)) // 100 USDC fractional fee,  royalty 2 USDC
                         .signedBy(amelie, alice)
                         .payingWith(amelie)
                         .via(txnFromAmelie)
@@ -1813,7 +1817,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromNonTreasury = "txnFromNonTreasury";
 
-        return defaultHapiSpec("treasuriesAreExemptFromAllCustomFees")
+        return defaultHapiSpec("treasuriesAreExemptFromAllCustomFees", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(edgar),
                         cryptoCreate(nonTreasury),
@@ -1943,7 +1947,7 @@ public class TokenTransactSpecs extends HapiSuite {
     // HIP-573 tests below
     @HapiTest // HERE Transaction fees '43879163' and '44703567'
     public HapiSpec collectorIsChargedFixedFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt")
+        return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::fixedFeeWith),
@@ -1970,7 +1974,7 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
+        return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 FUNGIBLE_COMMON, this::fractionalFeeWith),
@@ -1999,7 +2003,8 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec collectorIsChargedNetOfTransferFractionalFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt")
+        return defaultHapiSpec(
+                        "CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 FUNGIBLE_COMMON, this::netOfTransferFractionalFeeWith),
@@ -2027,7 +2032,8 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest // HERE Mismatched list sizes between expected list [accountID {
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedRoyaltyFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::royaltyFeeNoFallbackWith),
@@ -2060,7 +2066,7 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest // HERE Transaction fees '43879163' and '44703567'  item 0 body
     public HapiSpec collectorIsChargedRoyaltyFallbackFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt")
+        return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::royaltyFeePlusFallbackWith),

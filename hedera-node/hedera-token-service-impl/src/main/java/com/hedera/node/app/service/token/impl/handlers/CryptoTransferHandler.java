@@ -80,13 +80,12 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
