@@ -457,19 +457,19 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private boolean checkIgnoredFields(
             ArrayList<Entry<FieldDescriptor, Object>> expectedFields,
             ArrayList<Entry<FieldDescriptor, Object>> actualFields) {
-        final var transferListDescriptor = TransactionRecord.getDescriptor().findFieldByName("transferList");
-        final var actualField = actualFields.stream()
-                .filter(field -> field.getKey().getFullName().equals(transferListDescriptor.getFullName()))
-                .findAny();
-        if (matchModes.contains(IGNORE_EMPTY_TRANSFER_LIST)
-                && actualField.isPresent()
-                && expectedFields.stream()
-                        .noneMatch(
-                                field -> field.getKey().getFullName().equals(transferListDescriptor.getFullName()))) {
-            return actualFields.remove(actualField.get());
-        } else {
-            return false;
+        if (matchModes.contains(IGNORE_EMPTY_TRANSFER_LIST)) {
+            final var transferListDescriptor = TransactionRecord.getDescriptor().findFieldByName("transferList");
+            final var actualField = actualFields.stream()
+                    .filter(field -> field.getKey().getFullName().equals(transferListDescriptor.getFullName()))
+                    .findAny();
+            if (actualField.isPresent()
+                    && expectedFields.stream()
+                            .noneMatch(field ->
+                                    field.getKey().getFullName().equals(transferListDescriptor.getFullName()))) {
+                return actualFields.remove(actualField.get());
+            }
         }
+        return false;
     }
 
     // inline initializers
