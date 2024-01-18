@@ -68,6 +68,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiPartitionCreate;
+import com.hedera.services.bdd.spec.transactions.token.HapiPartitionUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -638,5 +639,9 @@ public class TxnVerbs {
 
     public static HapiPartitionCreate createNewPartitionDefinitions(String token) {
         return new HapiPartitionCreate(token);
+    }
+
+    public static HapiPartitionUpdate updatePartitionDefinitionsMemo(String token) {
+        return new HapiPartitionUpdate(token);
     }
 }
