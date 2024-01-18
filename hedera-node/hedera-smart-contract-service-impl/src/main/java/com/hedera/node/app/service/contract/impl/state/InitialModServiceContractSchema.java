@@ -65,7 +65,7 @@ public class InitialModServiceContractSchema extends Schema {
             @Nullable final ContractStateMigrator.StateFlusher flusher,
             @Nullable final VirtualMapLike<ContractKey, IterableContractValue> fromState,
             @Nullable final WritableKVState<SlotKey, SlotValue> toState,
-            @Nullable Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
         super(version);
         this.flusher = flusher;
         this.fromState = fromState;
