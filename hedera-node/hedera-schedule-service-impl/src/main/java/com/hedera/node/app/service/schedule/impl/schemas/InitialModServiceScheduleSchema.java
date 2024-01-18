@@ -173,6 +173,8 @@ public final class InitialModServiceScheduleSchema extends Schema {
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
             System.out.println("BBM: finished schedule by equality");
 
+            fs = null;
+
             System.out.println("BBM: finished schedule migration");
         }
     }

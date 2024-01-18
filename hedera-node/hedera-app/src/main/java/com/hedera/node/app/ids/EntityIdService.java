@@ -88,6 +88,9 @@ public class EntityIdService implements Service {
                 } else if (fs > -1) {
                     System.out.println("Setting entity id to " + fs);
                     entityIdState.put(new EntityNumber(fs));
+
+                    // Usually we unassign the 'from' state here, but in this case there's no need because the only
+                    // field is a copied long
                 }
             }
         });

@@ -71,27 +71,18 @@ public enum ContractServiceImpl implements ContractService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new InitialModServiceContractSchema(version));
+        registry.register(new InitialModServiceContractSchema(version, flusher, fromState, toState, fss));
+
+        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
+        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
+        // want the old mono state routes to disappear
+        flusher = null;
+        fromState = null;
+        toState = null;
+        fss = null;
     }
 
     public ContractHandlers handlers() {
         return component.handlers();
-    }
-
-    public static ContractStateMigrator.StateFlusher getFlusher() {
-        return flusher;
-    }
-
-    public static VirtualMapLike<ContractKey, IterableContractValue> getFromState() {
-        return fromState;
-    }
-
-    public static WritableKVState<SlotKey, SlotValue> getToState() {
-        return toState;
-    }
-
-    public static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> getFss() {
-        return fss;
     }
 }

@@ -21,9 +21,12 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -32,8 +35,10 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Defines the schema for the contract service's state.
@@ -47,22 +52,34 @@ public class InitialModServiceContractSchema extends Schema {
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
 
-    public InitialModServiceContractSchema(final SemanticVersion version) {
+    // For migrating contract storage:
+    private ContractStateMigrator.StateFlusher flusher;
+    private VirtualMapLike<ContractKey, IterableContractValue> fromState;
+    private WritableKVState<SlotKey, SlotValue> toState;
+
+    // For migrating contract bytecode:
+    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+
+    public InitialModServiceContractSchema(
+            final SemanticVersion version,
+            @Nullable final ContractStateMigrator.StateFlusher flusher,
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> fromState,
+            @Nullable final WritableKVState<SlotKey, SlotValue> toState,
+            @Nullable Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
         super(version);
+        this.flusher = flusher;
+        this.fromState = fromState;
+        this.toState = toState;
+        this.fss = fss;
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (ContractServiceImpl.getFromState() != null) {
+        if (fromState != null) {
             System.out.println("BBM: migrating contract service");
 
             System.out.println("BBM: migrating contract k/v storage...");
-            var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(
-                    ContractServiceImpl.getFromState(),
-                    ContractServiceImpl.getToState(),
-                    ContractServiceImpl.getFlusher());
-            ContractServiceImpl.setFromState(null);
-            ContractServiceImpl.setToState(null);
+            var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
             System.out.println("BBM: finished migrating contract storage. Result: " + result);
 
             System.out.println("BBM: migrating contract bytecode...");
@@ -70,8 +87,7 @@ public class InitialModServiceContractSchema extends Schema {
                     ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
             var migratedContractNums = new ArrayList<Integer>();
             try {
-                ContractServiceImpl.getFss()
-                        .get()
+                fss.get()
                         .extractVirtualMapData(
                                 AdHocThreadManager.getStaticThreadManager(),
                                 entry -> {
@@ -110,7 +126,10 @@ public class InitialModServiceContractSchema extends Schema {
 
             if (bytecodeTs.isModified()) ((WritableKVStateBase) bytecodeTs).commit();
 
-            ContractServiceImpl.setFileFs(null);
+            flusher = null;
+            fromState = null;
+            toState = null;
+            fss = null;
 
             System.out.println("BBM: contract migration finished");
         }

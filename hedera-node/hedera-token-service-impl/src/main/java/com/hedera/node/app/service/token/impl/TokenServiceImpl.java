@@ -104,7 +104,6 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         requireNonNull(registry);
-        // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new InitialModServiceTokenSchema(
                 sysAccts,
                 stakingAccts,
@@ -118,6 +117,16 @@ public class TokenServiceImpl implements TokenService {
                 nftsFs,
                 trFs,
                 mnc));
+
+        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
+        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
+        // want the old mono state routes to disappear
+        nftsFs = null;
+        trFs = null;
+        acctsFs = null;
+        tFs = null;
+        stakingFs = null;
+        mnc = null;
     }
 
     public void setNftsFromState(VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {

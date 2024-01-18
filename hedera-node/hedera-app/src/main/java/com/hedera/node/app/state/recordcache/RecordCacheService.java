@@ -63,7 +63,6 @@ public class RecordCacheService implements Service {
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
-        // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new Schema(version) {
             @NonNull
             @Override
@@ -90,8 +89,7 @@ public class RecordCacheService implements Service {
                         var fromTransactionValidStart = fromTxnId.getValidStart();
 
                         // Note: fromRec.getExpiry() isn't needed because RecordCacheImpl uses its own mechanism to
-                        // expire
-                        // its entries
+                        // expire its entries
                         var toTxnValidStart = Timestamp.newBuilder()
                                 .seconds(fromTransactionValidStart.getSeconds())
                                 .nanos(fromTransactionValidStart.getNanos());

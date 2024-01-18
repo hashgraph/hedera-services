@@ -59,5 +59,12 @@ public final class FileServiceImpl implements FileService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         registry.register(new InitialModFileGenesisSchema(version, configProvider, fss, fileContents, fileAttrs));
+
+        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
+        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
+        // want the old mono state routes to disappear
+        fss = null;
+        fileContents = null;
+        fileAttrs = null;
     }
 }

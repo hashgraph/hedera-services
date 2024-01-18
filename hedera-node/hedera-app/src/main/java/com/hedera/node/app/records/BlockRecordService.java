@@ -66,7 +66,6 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
@@ -109,6 +108,9 @@ public final class BlockRecordService implements Service {
                     }
 
                     if (toBlockState.isModified()) ((WritableSingletonStateBase) toBlockState).commit();
+
+                    fs = null;
+                    mnc = null;
 
                     System.out.println("BBM: finished block record migration");
                 }

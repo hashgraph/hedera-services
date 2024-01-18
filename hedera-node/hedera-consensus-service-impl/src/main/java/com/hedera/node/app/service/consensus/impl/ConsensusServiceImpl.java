@@ -47,6 +47,12 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema(final SemanticVersion version) {
-        return new InitialModServiceConsensusSchema(version, fs);
+        final var consensusSchema = new InitialModServiceConsensusSchema(version, fs);
+
+        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
+        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
+        // want the old mono state routes to disappear
+        fs = null;
+        return consensusSchema;
     }
 }
