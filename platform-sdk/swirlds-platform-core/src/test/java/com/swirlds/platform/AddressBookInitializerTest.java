@@ -143,7 +143,9 @@ class AddressBookInitializerTest {
         assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
-        assertFalse(initializer.hasAddressBookChanged());
+        // Even when the genesis state has the correct address book, we always adopt the config.txt address book and
+        // indicate an address book change.
+        assertTrue(initializer.hasAddressBookChanged());
     }
 
     @Test
@@ -152,7 +154,7 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         // initial state has currentAddressBook set to configAddressBook
-        final SignedState signedState = getMockSignedState(7, configAddressBook, null, true);
+        final SignedState signedState = getMockSignedState(7, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -169,7 +171,7 @@ class AddressBookInitializerTest {
         assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
-        assertFalse(initializer.hasAddressBookChanged());
+        assertTrue(initializer.hasAddressBookChanged());
     }
 
     @Test
@@ -198,8 +200,8 @@ class AddressBookInitializerTest {
                 "When there is no upgrade, the address book should not change");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
-        // Initializer nullifies the previous address book when there is no software upgrade.
-        assertTrue(initializer.hasAddressBookChanged());
+        // The addressBooks remain unchanged when there is no software upgrade.
+        assertFalse(initializer.hasAddressBookChanged());
     }
 
     @Test
