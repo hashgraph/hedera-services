@@ -50,6 +50,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -93,7 +100,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
@@ -169,7 +176,10 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         final AtomicLong civilianId = new AtomicLong();
         final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ResourceLimitExceededRevertsAllRecords")
+        return defaultHapiSpec(
+                        "ResourceLimitExceededRevertsAllRecords",
+                        FULLY_NONDETERMINISTIC) // marked as fully non-deterministic due to difference between mono and
+                // mod, see use of ifHapiTest() / ifNotHapiTest() below
                 .given(
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
@@ -230,7 +240,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         final AtomicLong civilianId = new AtomicLong();
         final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("AutoCreationFailsWithMirrorAddress")
+        return defaultHapiSpec("AutoCreationFailsWithMirrorAddress", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
@@ -265,7 +275,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     final HapiSpec erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("erc20TransferLazyCreate")
+        return defaultHapiSpec(
+                        "erc20TransferLazyCreate",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
@@ -334,7 +350,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     @HapiTest
     final HapiSpec erc20TransferFromLazyCreate() {
-        return defaultHapiSpec("erc20TransferFromLazyCreate")
+        return defaultHapiSpec(
+                        "erc20TransferFromLazyCreate",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -437,7 +458,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec erc721TransferFromLazyCreate() {
-        return defaultHapiSpec("erc721TransferFromLazyCreate")
+        return defaultHapiSpec(
+                        "erc721TransferFromLazyCreate",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
@@ -522,7 +549,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     final HapiSpec htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
-        return defaultHapiSpec("htsTransferFromFungibleTokenLazyCreate")
+        return defaultHapiSpec(
+                        "htsTransferFromFungibleTokenLazyCreate",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
@@ -593,7 +625,11 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec htsTransferFromForNFTLazyCreate() {
-        return defaultHapiSpec("htsTransferFromForNFTLazyCreate")
+        return defaultHapiSpec(
+                        "htsTransferFromForNFTLazyCreate",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
