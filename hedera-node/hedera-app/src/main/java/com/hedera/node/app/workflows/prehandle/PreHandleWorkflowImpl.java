@@ -274,7 +274,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // Finally, let the transaction handler do warm up of other state it may want to use later
         // We must not perform warmup on the handle-thread as it is done in the background and may cause
         // ConcurrentModificationExceptions.
-        if (! isHandleWorkflow) {
+        if (!isHandleWorkflow) {
             final WarmupContext warmupContext = new WarmupContextImpl(txInfo, storeFactory);
             executor.execute(() -> dispatcher.dispatchWarmup(warmupContext));
         }
