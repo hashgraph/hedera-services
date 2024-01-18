@@ -79,6 +79,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
@@ -132,7 +133,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     @Override
-    public void warm(@NonNull final PreHandleContext context) {
+    public void warm(@NonNull final WarmupContext context) {
         requireNonNull(context);
 
         final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);

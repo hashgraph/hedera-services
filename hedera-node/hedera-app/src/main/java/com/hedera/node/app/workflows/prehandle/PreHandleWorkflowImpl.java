@@ -42,6 +42,7 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -194,6 +195,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final Transaction platformTx,
             @Nullable PreHandleResult previousResult) {
+        final boolean isHandleWorkflow = previousResult != null;
+
         // 0. Ignore the previous result if it was computed using different node configuration
         if (!wasComputedWithCurrentNodeConfiguration(previousResult)) {
             previousResult = null;
@@ -266,7 +269,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
 
         // 3. Expand and verify signatures
-        return expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory, previousResult);
+        final var result = expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory, previousResult);
+
+        // Finally, let the transaction handler do warm up of other state it may want to use later
+        // We must not perform warmup on the handle-thread as it is done in the background and may cause
+        // ConcurrentModificationExceptions.
+        if (! isHandleWorkflow) {
+            final WarmupContext warmupContext = new WarmupContextImpl(txInfo, storeFactory);
+            executor.execute(() -> dispatcher.dispatchWarmup(warmupContext));
+        }
+
+        return result;
     }
 
     /**
@@ -324,10 +337,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             dispatcher.dispatchPureChecks(txBody);
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
-            // Finally, let the transaction handler do warm up of other state it may want to use later
-            if (previousResult == null) {
-                executor.execute(() -> dispatcher.dispatchWarmup(context));
-            }
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
