@@ -10,15 +10,16 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
+    -s 'linkedEventIntake:flush request:f' \
     -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
@@ -33,15 +34,16 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
+    -s 'linkedEventIntake:flush request:f' \
     -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
