@@ -482,26 +482,25 @@ public class SwirldsPlatform implements Platform {
         // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
-        consensusHashManager = components.add(new ConsensusHashManager(
-                platformContext,
-                Time.getCurrent(),
-                dispatchBuilder,
-                currentAddressBook,
-                epochHash,
-                appVersion,
-                ignorePreconsensusSignatures,
-                roundToIgnore));
-
-        components.add(new IssHandler(
+        final IssHandler issHandler = new IssHandler(
                 stateConfig,
                 selfId,
                 platformStatusManager,
                 this::haltRequested,
                 this::handleFatalError,
                 appCommunicationComponent,
-                issScratchpad));
+                issScratchpad);
+        components.add(issHandler);
 
-        components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
+        consensusHashManager = components.add(new ConsensusHashManager(
+                platformContext,
+                Time.getCurrent(),
+                currentAddressBook,
+                epochHash,
+                appVersion,
+                ignorePreconsensusSignatures,
+                roundToIgnore,
+                issHandler));
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,

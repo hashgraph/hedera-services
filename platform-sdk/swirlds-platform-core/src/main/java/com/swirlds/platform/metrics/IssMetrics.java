@@ -24,7 +24,6 @@ import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -201,12 +200,8 @@ public class IssMetrics {
      *
      * @param round
      * 		the round of the ISS
-     * @param selfStateHash
-     * 		the hash computed by this node
      */
-    @Observer(CatastrophicIssTrigger.class)
-    public void catastrophicIssObserver(final Long round, final Hash selfStateHash) {
-
+    public void catastrophicIssObserver(final Long round) {
         if (round <= highestRound) {
             // Don't report old data
             return;

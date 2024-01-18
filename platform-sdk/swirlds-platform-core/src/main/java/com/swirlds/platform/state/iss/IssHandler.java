@@ -25,8 +25,6 @@ import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
-import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
@@ -156,7 +154,6 @@ public class IssHandler {
      * @param ignored1 the incorrect hash computed by this node
      * @param ignored2 the correct hash computed by the network
      */
-    @Observer(SelfIssTrigger.class)
     public void selfIssObserver(@NonNull final Long round, @NonNull final Hash ignored1, @NonNull final Hash ignored2) {
 
         if (halted) {
@@ -236,7 +233,6 @@ public class IssHandler {
      * @param round   the round of the ISS
      * @param ignored the hash computed by this node
      */
-    @Observer(CatastrophicIssTrigger.class)
     public void catastrophicIssObserver(@NonNull final Long round, @NonNull final Hash ignored) {
 
         if (halted) {

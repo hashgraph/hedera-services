@@ -21,7 +21,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
-import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCatastrophicNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateRegularNodeHashes;
@@ -31,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
@@ -40,10 +41,8 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
-import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -60,6 +59,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @DisplayName("ConsensusHashManager Tests")
 class ConsensusHashManagerTests {
@@ -80,22 +80,15 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        final AtomicBoolean fail = new AtomicBoolean(false);
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
-        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> fail.set(true));
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+                mockIssHandler(null, true, true));
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -115,8 +108,6 @@ class ConsensusHashManagerTests {
                         new BasicSoftwareVersion(1));
             }
         }
-
-        assertFalse(fail.get(), "failure condition triggered");
     }
 
     @Test
@@ -194,68 +185,70 @@ class ConsensusHashManagerTests {
             }
         }
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                platformContext,
-                Time.getCurrent(),
-                dispatchBuilder,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
-
         final AtomicBoolean fail = new AtomicBoolean(false);
         final AtomicInteger issCount = new AtomicInteger(0);
         final AtomicInteger catastrophicIssCount = new AtomicInteger(0);
         final Set<Long> observedRounds = new HashSet<>();
 
-        dispatchBuilder.registerObserver(
-                this, SelfIssTrigger.class, (final Long round, final Hash selfStateHash, final Hash consensusHash) -> {
-                    try {
+        final IssHandler issHandler = mock(IssHandler.class);
+        Mockito.doAnswer(i->{
+            final Long round = i.getArgument(0);
+            final Hash selfStateHash = i.getArgument(1);
+            final Hash consensusHash = i.getArgument(2);
+            try {
 
-                        assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
+                assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
 
-                        final int roundIndex = (int) (long) round;
-                        final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
+                final int roundIndex = (int) (long) round;
+                final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
 
-                        assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
+                assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
 
-                        if (expectedStatus == HashValidityStatus.SELF_ISS) {
-                            assertEquals(consensusHashes.get(roundIndex), consensusHash, "unexpected consensus hash");
-                            issCount.getAndIncrement();
-                        } else {
-                            fail("invalid status " + expectedStatus);
-                        }
-                    } catch (final Throwable t) {
-                        t.printStackTrace();
-                        fail.set(true);
-                    }
-                });
+                if (expectedStatus == HashValidityStatus.SELF_ISS) {
+                    assertEquals(consensusHashes.get(roundIndex), consensusHash, "unexpected consensus hash");
+                    issCount.getAndIncrement();
+                } else {
+                    fail("invalid status " + expectedStatus);
+                }
+            } catch (final Throwable t) {
+                t.printStackTrace();
+                fail.set(true);
+            }
+            return null;
+        }).when(issHandler).selfIssObserver(anyLong(), any(), any());
+        Mockito.doAnswer(i->{
+            final Long round = i.getArgument(0);
+            final Hash selfStateHash = i.getArgument(1);
+            try {
+                final int roundIndex = (int) (long) round;
 
-        dispatchBuilder.registerObserver(
-                this, CatastrophicIssTrigger.class, (final Long round, final Hash selfStateHash) -> {
-                    try {
-                        final int roundIndex = (int) (long) round;
+                assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
 
-                        assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
+                final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
 
-                        final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
+                assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
 
-                        assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
+                if (expectedStatus == HashValidityStatus.CATASTROPHIC_ISS) {
+                    catastrophicIssCount.getAndIncrement();
+                } else {
+                    fail("invalid status " + expectedStatus);
+                }
+            } catch (final Throwable t) {
+                t.printStackTrace();
+                fail.set(true);
+            }
+            return null;
+        }).when(issHandler).catastrophicIssObserver(anyLong(), any());
 
-                        if (expectedStatus == HashValidityStatus.CATASTROPHIC_ISS) {
-                            catastrophicIssCount.getAndIncrement();
-                        } else {
-                            fail("invalid status " + expectedStatus);
-                        }
-                    } catch (final Throwable t) {
-                        t.printStackTrace();
-                        fail.set(true);
-                    }
-                });
-
-        dispatchBuilder.start();
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                platformContext,
+                Time.getCurrent(),
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                new BasicSoftwareVersion(1),
+                false,
+                DO_NOT_IGNORE_ROUNDS,
+                issHandler);
 
         manager.overridingStateObserver(0L, selfHashes.get(0));
 
@@ -351,24 +344,16 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final AtomicInteger issCount = new AtomicInteger();
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        dispatchBuilder.registerObserver(
-                this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
-
-        final AtomicInteger issCount = new AtomicInteger();
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> issCount.getAndIncrement());
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+                mockIssHandler(issCount, true, false));
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -433,24 +418,16 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final AtomicInteger issCount = new AtomicInteger();
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        dispatchBuilder.registerObserver(
-                this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
-
-        final AtomicInteger issCount = new AtomicInteger();
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> issCount.getAndIncrement());
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+                mockIssHandler(issCount, true, false));
 
         // Start collecting data for rounds.
         // After this method, round 0 will be too old and will not be tracked.
@@ -498,23 +475,16 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final AtomicInteger issCount = new AtomicInteger();
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        final AtomicInteger issCount = new AtomicInteger();
-        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
-
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> issCount.getAndIncrement());
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+                mockIssHandler(issCount, false, false));
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -603,23 +573,16 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final AtomicInteger issCount = new AtomicInteger();
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        final AtomicInteger issCount = new AtomicInteger();
-        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
-
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail("did not expect self ISS"));
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+                mockIssHandler(issCount, false, true));
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -681,23 +644,16 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final AtomicInteger issCount = new AtomicInteger();
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                DO_NOT_IGNORE_ROUNDS);
-
-        final AtomicInteger issCount = new AtomicInteger();
-        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
-
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail("did not expect self ISS"));
-
-        dispatchBuilder.start();
+                DO_NOT_IGNORE_ROUNDS,
+               mockIssHandler(issCount, false, true));
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -753,22 +709,15 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
-                dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 new BasicSoftwareVersion(1),
                 false,
-                1);
-
-        final AtomicBoolean fail = new AtomicBoolean(false);
-        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
-        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> fail.set(true));
-
-        dispatchBuilder.start();
+                1,
+                mockIssHandler(null, true, true));
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -796,7 +745,31 @@ class ConsensusHashManagerTests {
                 }
             }
         }
+    }
 
-        assertFalse(fail.get(), "failure condition triggered");
+    private static IssHandler mockIssHandler(
+            final AtomicInteger issCounter,
+            final boolean failOnCatastrophicIss,
+            final boolean failOnSelfIss) {
+        final IssHandler issHandler = mock(IssHandler.class);
+        Mockito.doAnswer(i->{
+            if (failOnSelfIss) {
+                fail("unexpected self ISS");
+            }
+            if(issCounter != null) {
+                issCounter.getAndIncrement();
+            }
+            return null;
+        }).when(issHandler).selfIssObserver(anyLong(), any(), any());
+        Mockito.doAnswer(i->{
+            if (failOnCatastrophicIss) {
+                fail("unexpected catastrophic ISS");
+            }
+            if(issCounter != null) {
+                issCounter.getAndIncrement();
+            }
+          return null;
+        }).when(issHandler).catastrophicIssObserver(anyLong(), any());
+        return issHandler;
     }
 }

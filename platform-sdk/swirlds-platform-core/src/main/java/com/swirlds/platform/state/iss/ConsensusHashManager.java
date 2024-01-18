@@ -30,14 +30,11 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
-import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -106,15 +103,13 @@ public class ConsensusHashManager {
      */
     private final long ignoredRound;
 
-    private final SelfIssTrigger selfIssDispatcher;
-    private final CatastrophicIssTrigger catastrophicIssDispatcher;
-    private final StateHashValidityTrigger stateHashValidityDispatcher;
+    private final IssHandler issHandler;
+    private final IssMetrics issMetrics;
 
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
      * @param time                         provides the current wall clock time
-     * @param dispatchBuilder              responsible for building dispatchers
      * @param addressBook                  the address book for the network
      * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
@@ -126,12 +121,12 @@ public class ConsensusHashManager {
     public ConsensusHashManager(
             @NonNull final PlatformContext platformContext,
             final Time time,
-            final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
             final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
-            final long ignoredRound) {
+            final long ignoredRound,
+            final IssHandler issHandler) {
 
         Objects.requireNonNull(currentSoftwareVersion);
 
@@ -143,13 +138,6 @@ public class ConsensusHashManager {
         lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
         selfIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
         catastrophicIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
-
-        this.selfIssDispatcher = dispatchBuilder.getDispatcher(
-                ConsensusHashManager.class, SelfIssTrigger.class, "self ISS detected")::dispatch;
-        this.catastrophicIssDispatcher = dispatchBuilder.getDispatcher(
-                ConsensusHashManager.class, CatastrophicIssTrigger.class, "really bad ISS detected")::dispatch;
-        this.stateHashValidityDispatcher = dispatchBuilder.getDispatcher(
-                ConsensusHashManager.class, StateHashValidityTrigger.class, "round ISS status known")::dispatch;
 
         this.addressBook = addressBook;
         this.currentEpochHash = currentEpochHash;
@@ -167,6 +155,8 @@ public class ConsensusHashManager {
         if (ignoredRound != DO_NOT_IGNORE_ROUNDS) {
             logger.warn(STARTUP.getMarker(), "No ISS detection will be performed for round {}", ignoredRound);
         }
+        this.issHandler = issHandler;
+        this.issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
     }
 
     /**
@@ -205,7 +195,7 @@ public class ConsensusHashManager {
 
         final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
-        roundData.put(round, new RoundHashValidator(stateHashValidityDispatcher, round, roundWeight));
+        roundData.put(round, new RoundHashValidator(issHandler::stateHashValidityObserver, round, roundWeight));
     }
 
     /**
@@ -391,7 +381,7 @@ public class ConsensusHashManager {
                     new IssPayload(sb.toString(), round, selfHash.toMnemonic(), consensusHash.toMnemonic(), false));
         }
 
-        selfIssDispatcher.dispatch(round, selfHash, consensusHash);
+        issHandler.selfIssObserver(round, selfHash, consensusHash);
     }
 
     /**
@@ -419,7 +409,8 @@ public class ConsensusHashManager {
             logger.fatal(EXCEPTION.getMarker(), new IssPayload(sb.toString(), round, selfHash.toMnemonic(), "", true));
         }
 
-        catastrophicIssDispatcher.dispatch(round, selfHash);
+        issMetrics.catastrophicIssObserver(round);
+        issHandler.catastrophicIssObserver(round, selfHash);
     }
 
     /**
