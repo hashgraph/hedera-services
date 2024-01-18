@@ -125,8 +125,33 @@ class AddressBookInitializerTest {
     void noStateLoadedFromDiskGenesisStateSetZeroWeight() throws IOException {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
-        // initial state has currentAddressBook set to configAddressBook
-        final SignedState signedState = getMockSignedState(10, configAddressBook, null, true);
+        // genesis state address book is set to null to test the code path where it may be null. 
+        final SignedState signedState = getMockSignedState(10, null, null, true);
+        final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
+                signedState,
+                configAddressBook,
+                getPlatformContext(false));
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
+        assertEquals(
+                configAddressBook,
+                inititializedAddressBook,
+                "The initial address book must equal the config address book.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
+        assertAddressBookFileContent(
+                initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
+        assertTrue(initializer.hasAddressBookChanged());
+    }
+
+    @Test
+    @DisplayName("No state loaded from disk. Genesis State modifies address book entries.")
+    void noStateLoadedFromDiskGenesisStateChangedAddressBook() throws IOException {
+        clearTestDirectory();
+        final AddressBook configAddressBook = getRandomAddressBook();
+        final SignedState signedState = getMockSignedState(7, configAddressBook, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -145,32 +170,6 @@ class AddressBookInitializerTest {
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
         // Even when the genesis state has the correct address book, we always adopt the config.txt address book and
         // indicate an address book change.
-        assertTrue(initializer.hasAddressBookChanged());
-    }
-
-    @Test
-    @DisplayName("No state loaded from disk. Genesis State modifies address book entries.")
-    void noStateLoadedFromDiskGenesisStateChangedAddressBook() throws IOException {
-        clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
-        // initial state has currentAddressBook set to configAddressBook
-        final SignedState signedState = getMockSignedState(7, null, null, true);
-        final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
-                getMockSoftwareVersion(2),
-                // no software upgrade
-                false,
-                signedState,
-                configAddressBook,
-                getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        assertEquals(
-                configAddressBook,
-                inititializedAddressBook,
-                "The initial address book must equal the config address book.");
-        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
-        assertAddressBookFileContent(
-                initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
         assertTrue(initializer.hasAddressBookChanged());
     }
 
