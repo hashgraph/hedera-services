@@ -91,7 +91,6 @@ public class AutoAccountCreator {
             fee += getLazyCreationFinalizationFee();
         }
         childRecord.memo(memo);
-        childRecord.transactionFee(fee);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
