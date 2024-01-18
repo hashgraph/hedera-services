@@ -470,46 +470,43 @@ public final class Hedera implements SwirldMain {
         // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
 
         // --------------------- UNIQUE_TOKENS (0)
-        VirtualMap<UniqueTokenKey, UniqueTokenValue> a = state.getChild(UNIQUE_TOKENS);
-        if (a != null) {
-            TOKEN_SERVICE.setNftsFromState(a);
+        final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
+        if (uniqTokensFromState != null) {
+            TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
         }
 
         // --------------------- TOKEN_ASSOCIATIONS (1)
-        VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> b = state.getChild(TOKEN_ASSOCIATIONS);
-        if (b != null) {
-            TOKEN_SERVICE.setTokenRelsFromState(b);
+        final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState = state.getChild(TOKEN_ASSOCIATIONS);
+        if (tokenRelsFromState != null) {
+            TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
         }
 
         // --------------------- TOPICS (2)
-        MerkleMap<EntityNum, MerkleTopic> c = state.getChild(TOPICS);
-        if (c != null) {
-            CONSENSUS_SERVICE.setFromState(c);
+        final MerkleMap<EntityNum, MerkleTopic> topicsFromState = state.getChild(TOPICS);
+        if (topicsFromState != null) {
+            CONSENSUS_SERVICE.setFromState(topicsFromState);
         }
 
         // --------------------- STORAGE (3)     // only "non-special" files
-        // There's no 'd' variable here because we don't want this reference to state hanging around
-        // because it seems to contribute to the node hanging. I could be wrong though; can revisit
-        // if needed
         if (state.getChild(STORAGE) != null) {
             FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
         }
         // Note: some files have no metadata; these are contract bytecode files
 
         // --------------------- ACCOUNTS (4)
-        VirtualMap<EntityNumVirtualKey, OnDiskAccount> e = state.getChild(ACCOUNTS);
-        if (e != null) {
-            TOKEN_SERVICE.setAcctsFromState(e);
+        final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
+        if (acctsFromState != null) {
+            TOKEN_SERVICE.setAcctsFromState(acctsFromState);
         }
 
         // --------------------- TOKENS (5)
-        MerkleMap<EntityNum, MerkleToken> f = state.getChild(TOKENS);
-        if (f != null) {
-            TOKEN_SERVICE.setTokensFromState(f);
+        final MerkleMap<EntityNum, MerkleToken> tokensFromState = state.getChild(TOKENS);
+        if (tokensFromState != null) {
+            TOKEN_SERVICE.setTokensFromState(tokensFromState);
         }
 
         // --------------------- NETWORK_CTX (6)
-        MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
+        final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
         System.out.println("BBM: fromNetworkContext: " + fromNetworkContext);
         // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
         // firstConsTimeOfCurrentBlock – needed in blockInfo
@@ -519,31 +516,31 @@ public final class Hedera implements SwirldMain {
         // MerkleSpecialFiles h = state.getChild(SPECIAL_FILES);
 
         // --------------------- SCHEDULE_TXS (8)
-        MerkleScheduledTransactions i = state.getChild(SCHEDULE_TXS);
-        if (i != null) {
-            SCHEDULE_SERVICE.setFs(i);
+        final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
+        if (scheduleFromState != null) {
+            SCHEDULE_SERVICE.setFs(scheduleFromState);
         }
 
         // --------------------- RECORD_STREAM_RUNNING_HASH (9)
         // From MerkleNetworkContext: blockNo, blockHashes
-        RecordsRunningHashLeaf j = state.getChild(RECORD_STREAM_RUNNING_HASH);
-        if (j != null) {
-            BLOCK_SERVICE.setFs(j, fromNetworkContext);
+        final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
+        if (blockInfoFromState != null) {
+            BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
         }
 
         // --------------------- LEGACY_ADDRESS_BOOK (10)
         // Not using anywhere; won't be migrated
-        // AddressBook k = state.getChild(LEGACY_ADDRESS_BOOK);
 
         // --------------------- CONTRACT_STORAGE (11)
-        VirtualMap<ContractKey, IterableContractValue> l = state.getChild(CONTRACT_STORAGE);
-        if (l != null) {
-            final var fromStore = VirtualMapLike.from(l);
+        final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
+        if (contractFromStorage != null) {
+            final var fromStore = VirtualMapLike.from(contractFromStorage);
             final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
 
             // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-            final var contractSchema = new InitialModServiceContractSchema(version.getServicesVersion());
+            final var contractSchema =
+                    new InitialModServiceContractSchema(version.getServicesVersion(), null, null, null, null);
             final var contractSchemas = contractSchema.statesToCreate();
             final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
                     .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))
@@ -583,15 +580,15 @@ public final class Hedera implements SwirldMain {
         }
 
         // --------------------- STAKING_INFO (12)
-        MerkleMap<EntityNum, MerkleStakingInfo> m = state.getChild(STAKING_INFO);
-        if (m != null) {
-            TOKEN_SERVICE.setStakingFs(m, fromNetworkContext);
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(STAKING_INFO);
+        if (stakingInfoFromState != null) {
+            TOKEN_SERVICE.setStakingFs(stakingInfoFromState, fromNetworkContext);
         }
 
         // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
-        FCQueue<ExpirableTxnRecord> n = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
-        if (n != null) {
-            RECORD_SERVICE.setFromState(new ArrayList<>(n));
+        final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
+        if (fcqFromState != null) {
+            RECORD_SERVICE.setFromState(new ArrayList<>(fcqFromState));
         }
 
         // --------------------- Midnight Rates (separate service in modular code - fee service)
