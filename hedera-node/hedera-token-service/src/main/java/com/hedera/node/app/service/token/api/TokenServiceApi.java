@@ -207,15 +207,6 @@ public interface TokenServiceApi {
     void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
 
     /**
-     * Refunds the given fees to the given receiver, and records those fees in the given record builder.
-     *
-     * @param receiver      the id of the contract that should be refunded
-     * @param fees          the fees to refund
-     * @param recordBuilder the record builder to record the fees in
-     */
-    void refundFees(@NonNull ContractID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
-
-    /**
      * Returns the number of storage slots used by the given account before any changes were made via
      * this {@link TokenServiceApi}.
      *

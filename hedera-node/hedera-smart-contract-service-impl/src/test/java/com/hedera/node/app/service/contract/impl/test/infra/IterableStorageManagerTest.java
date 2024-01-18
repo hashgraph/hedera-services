@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -103,7 +103,7 @@ class IterableStorageManagerTest {
                 List.of(new StorageSizeChange(CONTRACT_1, 0, 0), new StorageSizeChange(CONTRACT_2, 1, 0));
 
         given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
-        given(hederaNativeOperations.getAccount(anyLong())).willReturn(account);
+        given(hederaNativeOperations.getAccount((ContractID) any())).willReturn(account);
         given(account.firstContractStorageKey()).willReturn(BYTES_1);
         given(enhancement.operations()).willReturn(hederaOperations);
         // Deleting the last slot contract storage for CONTRACT_2

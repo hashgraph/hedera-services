@@ -382,11 +382,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void refundFees(@NonNull ContractID receiver, @NonNull Fees fees, @NonNull FeeRecordBuilder recordBuilder) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
     public long originalKvUsageFor(@NonNull final ContractID id) {
         Account account = accountStore.getContractById(id);
         final var oldAccount = account == null ? null : accountStore.getOriginalValue(account.accountId());

@@ -364,7 +364,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsExpectedRentFactors() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
+        givenWellKnownContract(A_CONTRACT_ID, accountWith(A_ACCOUNT_ID));
+
         final var expected = new RentFactors(NUM_KV_SLOTS, EXPIRY);
         assertEquals(expected, subject.getRentFactorsFor(A_CONTRACT_ID));
     }
@@ -528,12 +529,12 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
         givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
         given(nativeOperations.transferWithReceiverSigCheck(
-                        eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), captor.capture()))
+                        eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), captor.capture()))
                 .willReturn(OK);
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isEmpty());
         final var strategy = assertInstanceOf(ActiveContractVerificationStrategy.class, captor.getValue());
-        assertEquals(ACCOUNT_NUM, strategy.getActiveContractID());
+        assertEquals(A_ACCOUNT_ID.accountNum(), strategy.getActiveContractID().contractNum());
         assertEquals(tuweniToPbjBytes(LONG_ZERO_ADDRESS), strategy.getActiveAddress());
         assertFalse(strategy.requiresDelegatePermission());
     }
@@ -542,7 +543,7 @@ class DispatchingEvmFrameStateTest {
     void transferDelegationReportsInvalidSignature() {
         givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
         givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
-        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), any()))
                 .willReturn(INVALID_SIGNATURE);
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isPresent());
@@ -553,7 +554,7 @@ class DispatchingEvmFrameStateTest {
     void transferDelegationThrowsOnApparentlyImpossibleFailureMode() {
         givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
         givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
-        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), any()))
                 .willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
         assertThrows(
                 IllegalStateException.class,
@@ -707,6 +708,10 @@ class DispatchingEvmFrameStateTest {
 
     private void givenWellKnownAccount(final AccountID accountID, final Account.Builder builder) {
         given(nativeOperations.getAccount(accountID)).willReturn(builder.build());
+    }
+
+    private void givenWellKnownContract(final ContractID contractID, final Account.Builder builder) {
+        given(nativeOperations.getAccount(contractID)).willReturn(builder.build());
     }
 
     private void givenWellKnownToken() {
