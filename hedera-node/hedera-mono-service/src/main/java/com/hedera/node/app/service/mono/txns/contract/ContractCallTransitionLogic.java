@@ -158,9 +158,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             result = evmTxProcessor.execute(
                     sender, receiver.canonicalAddress(), op.getGas(), op.getAmount(), callData, txnCtx.consensusTime());
         } else {
-            sender.incrementEthereumNonce();
-            accountStore.commitAccount(sender);
-
             result = evmTxProcessor.executeEth(
                     sender,
                     receiver.canonicalAddress(),

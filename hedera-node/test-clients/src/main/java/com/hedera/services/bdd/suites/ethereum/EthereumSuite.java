@@ -136,6 +136,8 @@ public class EthereumSuite extends HapiSuite {
     private static final String PAY_TXN = "payTxn";
     private static final String TOTAL_SUPPLY_TX = "totalSupplyTx";
     private static final String ERC20_ABI = "ERC20ABI";
+    private final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
+    private final String EXTERNAL_FUNCTION = "externalFunction";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteAsync();
@@ -165,8 +167,47 @@ public class EthereumSuite extends HapiSuite {
                                 directTransferWorksForERC20(),
                                 transferHbarsViaEip2930TxSuccessfully(),
                                 callToTokenAddressViaEip2930TxSuccessfully(),
-                                transferTokensViaEip2930TxSuccessfully()))
+                                transferTokensViaEip2930TxSuccessfully(),
+                                nonceNotUpdatedOnHandlerCheckFailed(),
+                                nonceUpdatedAfterSuccessfulExecutedTx()))
                 .toList();
+    }
+
+    private HapiSpec nonceNotUpdatedOnHandlerCheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedOnHandlerCheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(21_000L)
+                        .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_GAS))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
+    }
+
+    private HapiSpec nonceUpdatedAfterSuccessfulExecutedTx() {
+        return defaultHapiSpec("nonceUpdatedAfterSuccessfulExecutedTx")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(100_000L))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(1L)));
     }
 
     @HapiTest

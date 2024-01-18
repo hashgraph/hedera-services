@@ -143,6 +143,9 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         super.setOperationTracer(hederaTracer);
 
         try {
+            // increment sender's nonce right before entering the evm
+            // and after all handler's checks to prevent nonce discrepancies
+            chargingResult.sender().incrementNonce();
             super.execute(sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
         } catch (final ResourceLimitException e) {
             handleResourceLimitExceeded(
