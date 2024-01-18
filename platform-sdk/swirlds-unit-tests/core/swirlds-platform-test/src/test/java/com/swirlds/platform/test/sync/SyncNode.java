@@ -226,7 +226,6 @@ public class SyncNode {
                 platformContext,
                 Time.getCurrent(),
                 shadowGraph,
-                null,
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
