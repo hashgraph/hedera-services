@@ -58,9 +58,9 @@ public class NonAncientEventWindow {
             final long expiredThreshold,
             @NonNull final AncientMode ancientMode) {
 
-        if (latestConsensusRound < ROUND_FIRST) {
+        if (latestConsensusRound < ROUND_NEGATIVE_INFINITY) {
             throw new IllegalArgumentException(
-                    "The latest consensus round cannot be less than the first round of consensus.");
+                    "The latest consensus round cannot be less than 0 (ROUND_NEGATIVE_INFINITY).");
         }
 
         if (ancientMode == GENERATION_THRESHOLD) {

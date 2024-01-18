@@ -319,8 +319,8 @@ class OrphanBufferTests {
             final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
                     latestConsensusRound,
                     ancientMode.selectIndicator(
-                            minimumGenerationNonAncient, Math.max(0, latestConsensusRound - 26 + 1)),
-                    0 /* ignored in this context */,
+                            minimumGenerationNonAncient, Math.max(1, latestConsensusRound - 26 + 1)),
+                    1 /* ignored in this context */,
                     ancientMode);
             unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
 

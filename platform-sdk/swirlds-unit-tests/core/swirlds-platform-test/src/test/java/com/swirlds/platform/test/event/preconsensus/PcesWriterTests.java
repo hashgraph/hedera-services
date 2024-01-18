@@ -313,7 +313,7 @@ class PcesWriterTests {
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
             final GossipEvent event = iterator.next();
@@ -380,7 +380,7 @@ class PcesWriterTests {
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
             final GossipEvent event = iterator.next();
@@ -507,7 +507,7 @@ class PcesWriterTests {
         // We intentionally do not call writer.beginStreamingNewEvents(). This should cause all events
         // passed into the writer to be more or less ignored.
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
@@ -560,7 +560,7 @@ class PcesWriterTests {
 
             final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-            long lowerBound = 0;
+            long lowerBound = ancientMode.selectIndicator(0, 1);
             final Iterator<GossipEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
             while (iterator1.hasNext()) {
                 final GossipEvent event = iterator1.next();
@@ -671,7 +671,7 @@ class PcesWriterTests {
 
         final Set<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
 
