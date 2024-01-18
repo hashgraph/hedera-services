@@ -125,7 +125,7 @@ class AddressBookInitializerTest {
     void noStateLoadedFromDiskGenesisStateSetZeroWeight() throws IOException {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
-        // genesis state address book is set to null to test the code path where it may be null. 
+        // genesis state address book is set to null to test the code path where it may be null.
         final SignedState signedState = getMockSignedState(10, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
