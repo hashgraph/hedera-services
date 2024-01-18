@@ -42,6 +42,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -607,11 +608,10 @@ public final class Hedera implements SwirldMain {
 
         // --------------------- END OF MONO -> MODULAR MIGRATION ---------------------
 
-        // We do nothing for EVENT_STREAM_RECOVERY. This is a special case that is handled by the platform.
-        if (trigger == EVENT_STREAM_RECOVERY) {
-            logger.debug("Skipping state initialization for trigger {}", trigger);
-            return;
-        }
+        // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
+        // This instance should never change on us, once it has been set
+        assert this.platform == null || this.platform == platform : "Platform should never change once set";
+        this.platform = platform;
 
         //noinspection ConstantValue
         assert platformState != null : "Platform should never pass a null platform state";
@@ -636,21 +636,14 @@ public final class Hedera implements SwirldMain {
         }
         logger.info("Deserialized version is {}, version {}", deserializedVersion, version);
 
-        // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
-        // This instance should never change on us, once it has been set
-        assert this.platform == null || this.platform == platform : "Platform should never change once set";
-        this.platform = platform;
-
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state);
-                case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect(state, deserializedVersion);
-                    // We exited from this method early if we were recovering from an event stream.
-                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
