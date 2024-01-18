@@ -87,22 +87,22 @@ public class HRCPrecompileSuite extends HapiSuite {
     private static final String DISSOCIATE = "dissociate";
 
     public static void main(String... args) {
-        new HRCPrecompileSuite().runSuiteSync();
+        new HRCPrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                //                hrcNftAndFungibleTokenAssociateFromEOA(),
-                //                hrcNFTAndFungibleTokenAssociateFromContract(),
-                //                hrcTokenAssociateFromSameEOATwiceShouldFail(),
-                //                hrcTokenDissociateWhenNotAssociatedShouldFail(),
-                //                hrcTokenDissociateWhenBalanceNotZeroShouldFail(),
+                hrcNftAndFungibleTokenAssociateFromEOA(),
+                hrcNFTAndFungibleTokenAssociateFromContract(),
+                hrcTokenAssociateFromSameEOATwiceShouldFail(),
+                hrcTokenDissociateWhenNotAssociatedShouldFail(),
+                hrcTokenDissociateWhenBalanceNotZeroShouldFail(),
                 hrcTooManyTokenAssociateShouldFail());
     }
 
