@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -53,6 +52,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -188,18 +188,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private boolean migrationMode = false;
 
     /**
+     * The ancient mode used to determine if an event is ancient or not.
+     */
+    private AncientMode ancientMode;
+
+    /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
      * @param addressBook the global address book, which never changes
-     * @param useBirthRoundForAncient indicates if we should compare birthRound for determining ancient.
+     * @param ancientMode describes how we are currently computing "ancientness" of events
      */
     public ConsensusImpl(
             @NonNull final ConsensusConfig config,
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook,
-            final boolean useBirthRoundForAncient) {
+            @NonNull final AncientMode ancientMode) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -208,7 +213,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
-        this.useBirthRoundForAncient = useBirthRoundForAncient;
+        this.ancientMode = Objects.requireNonNull(ancientMode);
     }
 
     @Override
@@ -656,9 +661,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 lastConsensusTime = ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             }
         }
-
-        // Future work: enable the ancient mode to be configurable
-        final AncientMode ancientMode = GENERATION_THRESHOLD;
 
         // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
         // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.

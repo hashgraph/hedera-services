@@ -661,6 +661,14 @@ public interface HandleContext {
     void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
 
     /**
+     * Reclaim the capacity for a number of transactions of the same functionality.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     */
+    void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
+
+    /**
      * Create a checkpoint for the current childRecords.
      *
      * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
@@ -668,6 +676,13 @@ public interface HandleContext {
      */
     @NonNull
     RecordListCheckPoint createRecordListCheckPoint();
+
+    /**
+     * Returns whether the current transaction being processed was submitted by this node.
+     *
+     * @return true if the current transaction was submitted by this node
+     */
+    boolean isSelfSubmitted();
 
     /**
      * A stack of savepoints.

@@ -75,6 +75,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -92,6 +93,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -131,6 +133,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ChildRecordFinalizer childRecordFinalizer;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -161,6 +164,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
+     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage tracking of network utilization
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -185,7 +189,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Instant userTransactionConsensusTime,
             @NonNull final Authorizer authorizer,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
-            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -207,6 +212,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -690,7 +697,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 userTransactionConsensusTime,
                 authorizer,
                 solvencyPreCheck,
-                childRecordFinalizer);
+                childRecordFinalizer,
+                synchronizedThrottleAccumulator);
 
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
@@ -881,6 +889,17 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         return new RecordListCheckPoint(firstPreceding, lastFollowing);
+    }
+
+    @Override
+    public void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function) {
+        synchronizedThrottleAccumulator.leakUnusedThrottlePreviouslyReserved(n, function);
+    }
+
+    @Override
+    public boolean isSelfSubmitted() {
+        return Objects.equals(
+                body().nodeAccountID(), networkInfo().selfNodeInfo().accountId());
     }
 
     public enum PrecedingTransactionCategory {

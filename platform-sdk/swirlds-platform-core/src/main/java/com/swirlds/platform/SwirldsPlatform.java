@@ -104,7 +104,6 @@ import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -396,18 +395,6 @@ public class SwirldsPlatform implements Platform {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        final LatestEventTipsetTracker latestEventTipsetTracker;
-        final boolean enableEventFiltering = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .filterLikelyDuplicates();
-        if (enableEventFiltering) {
-            latestEventTipsetTracker =
-                    new LatestEventTipsetTracker(time, currentAddressBook, selfId, eventConfig.getAncientMode());
-        } else {
-            latestEventTipsetTracker = null;
-        }
-
         this.keysAndCerts = keysAndCerts;
 
         EventCounter.registerEventCounterMetrics(metrics);
@@ -659,7 +646,7 @@ public class SwirldsPlatform implements Platform {
         final PcesSequencer sequencer = new PcesSequencer();
 
         final List<EventObserver> eventObservers = new ArrayList<>(List.of(
-                new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
+                new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
                 addedEventMetrics,
                 eventIntakeMetrics));
@@ -694,7 +681,6 @@ public class SwirldsPlatform implements Platform {
                 consensusRef::get,
                 eventObserverDispatcher,
                 shadowGraph,
-                latestEventTipsetTracker,
                 intakeEventCounter,
                 platformWiring.getKeystoneEventSequenceNumberOutput());
 
@@ -756,7 +742,6 @@ public class SwirldsPlatform implements Platform {
                 appVersion,
                 epochHash,
                 shadowGraph,
-                latestEventTipsetTracker,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
@@ -776,7 +761,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .useBirthRoundAncientThreshold()));
+                        .getAncientMode()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;

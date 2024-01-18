@@ -2882,21 +2882,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatus(INVALID_CONTRACT_ID))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("invalidContractCallTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .error(Bytes.of(INVALID_CONTRACT_ID
-                                                                .name()
-                                                                .getBytes())
-                                                        .toHexString())
-                                                .senderId(spec.registry()
-                                                        .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                .getAlias()
-                                                                .toStringUtf8())))))));
+                                .hasPrecheck(INVALID_CONTRACT_ID))))
+                .then();
     }
 
     @HapiTest
