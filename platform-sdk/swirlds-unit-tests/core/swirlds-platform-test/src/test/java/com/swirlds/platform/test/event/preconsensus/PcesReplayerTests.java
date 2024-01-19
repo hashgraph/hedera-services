@@ -62,8 +62,11 @@ class PcesReplayerTests {
                 .when(eventOutputWire)
                 .forward(any());
 
-        final AtomicBoolean flushSystemCalled = new AtomicBoolean(false);
-        final Runnable flushSystem = () -> flushSystemCalled.set(true);
+        final AtomicBoolean flushIntakeCalled = new AtomicBoolean(false);
+        final Runnable flushIntake = () -> flushIntakeCalled.set(true);
+
+        final AtomicBoolean flushTransactionHandlingCalled = new AtomicBoolean(false);
+        final Runnable flushTransactionHandling = () -> flushTransactionHandlingCalled.set(true);
 
         final ReservedSignedState latestImmutableState = mock(ReservedSignedState.class);
         final SignedState signedState = mock(SignedState.class);
@@ -71,8 +74,8 @@ class PcesReplayerTests {
 
         final Supplier<ReservedSignedState> latestImmutableStateSupplier = () -> latestImmutableState;
 
-        final PcesReplayer replayer =
-                new PcesReplayer(time, eventOutputWire, flushSystem, latestImmutableStateSupplier);
+        final PcesReplayer replayer = new PcesReplayer(
+                time, eventOutputWire, flushIntake, flushTransactionHandling, latestImmutableStateSupplier);
 
         final List<GossipEvent> events = new ArrayList<>();
         final int eventCount = 100;
@@ -104,6 +107,7 @@ class PcesReplayerTests {
         replayer.replayPces(ioIterator);
 
         assertEquals(eventCount, eventOutputCount.get());
-        assertTrue(flushSystemCalled.get());
+        assertTrue(flushIntakeCalled.get());
+        assertTrue(flushTransactionHandlingCalled.get());
     }
 }
