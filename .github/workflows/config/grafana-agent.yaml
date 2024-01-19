@@ -1,6 +1,9 @@
 metrics:
   global:
     scrape_interval: 30s
+    external_labels:
+      pod: ${RUNNER_NAME}
+      namespace: ${KUBERNETES_NAMESPACE}
   wal_directory: /tmp/wal
   configs:
     - name: scrape-ping-exporter
@@ -9,9 +12,6 @@ metrics:
         - job_name: self-scrape
           static_configs:
             - targets: ['127.0.0.1:9427']
-              labels:
-                pod: ${RUNNER_NAME}
-                namespace: ${KUBERNETES_NAMESPACE}
 
       remote_write:
         - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push
