@@ -35,7 +35,8 @@ public class ConcurrentTask extends AbstractTask {
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
 
     /**
-     * Constructor. The task is started automatically.
+     * Constructor. The task is created with zero dependencies, but not started automatically. It's
+     * the caller responsibility to start the task using {@link #send()} method.
      *
      * @param pool                     the fork join pool that will execute this task
      * @param offRamp                  an object counter that is decremented when this task is executed
@@ -54,7 +55,6 @@ public class ConcurrentTask extends AbstractTask {
         this.data = data;
         this.offRamp = offRamp;
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;
-        send();
     }
 
     /**

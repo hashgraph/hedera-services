@@ -76,7 +76,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
@@ -86,7 +86,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
-            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
+            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
         }
         return accepted;
     }
@@ -97,7 +97,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data);
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
