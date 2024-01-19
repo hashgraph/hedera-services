@@ -171,10 +171,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST,
-                ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                1,
-                AncientMode.GENERATION_THRESHOLD));
+                ConsensusConstants.ROUND_FIRST, 1, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         final Hash child2Hash = randomHash(random);
         final long child2Generation = 2;
@@ -196,10 +193,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST,
-                ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                2,
-                AncientMode.GENERATION_THRESHOLD));
+                ConsensusConstants.ROUND_FIRST, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         final Hash child3Hash = randomHash(random);
         final long child3Generation = 3;
@@ -215,10 +209,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST,
-                ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                4,
-                AncientMode.GENERATION_THRESHOLD));
+                ConsensusConstants.ROUND_FIRST, 4, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         final Hash child4Hash = randomHash(random);
         final long child4Generation = 4;
@@ -277,10 +268,7 @@ class InOrderLinkerTests {
     void ancientEvent() {
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST,
-                ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                3,
-                AncientMode.GENERATION_THRESHOLD));
+                ConsensusConstants.ROUND_FIRST, 3, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         final GossipEvent child1 = generateMockEvent(
                 randomHash(random),
