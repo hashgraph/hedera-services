@@ -310,11 +310,13 @@ jobs:
 
       - name: Execute Grafana Agent
         uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
+        env:
+          GRAFANA_AGENT_USERNAME: ${{ secrets.rafana-agent-username }}
+          GRAFANA_AGENT_PASSWORD: ${{ secrets.grafana-agent-password }}
         with:
           run: |
-            export GRAFANA_AGENT_USERNAME="${{ secrets.grafana-agent-username }}"
-            export GRAFANA_AGENT_PASSWORD="${{ secrets.grafana-agent-password }}"
-            AGENT_MODE=flow ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml"
+            set            
+            ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml"
             grafana-agent-linux-amd64
           tail: true
           log-output: true
