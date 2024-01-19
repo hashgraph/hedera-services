@@ -38,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.spi.workflows.Context;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -90,9 +89,6 @@ class RootProxyWorldUpdaterTest {
 
     @Mock
     private ContractStateStore store;
-
-    @Mock
-    private Context context;
 
     private Enhancement enhancement;
     private RootProxyWorldUpdater subject;

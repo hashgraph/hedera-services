@@ -18,9 +18,9 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 
-public interface Context {
+public interface OperationContext {
     /**
-     * Verifies if the frontend throttle has enough capacity to handle the given number of the
+     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
      * given function at the given time. (The time matters because we want to consider how much
      * will have leaked between now and that time.)
      *

@@ -60,7 +60,7 @@ import java.util.function.Predicate;
  * </ul>
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface HandleContext extends Context {
+public interface HandleContext extends OperationContext {
     /**
      * Category of the current transaction.
      */
