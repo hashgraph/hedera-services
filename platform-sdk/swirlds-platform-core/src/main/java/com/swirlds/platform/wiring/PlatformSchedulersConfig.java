@@ -85,7 +85,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int orphanBufferUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType linkedEventIntakeSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType linkedEventIntakeSchedulerType,
         @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
