@@ -511,7 +511,6 @@ public class SwirldsPlatform implements Platform {
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
-                dispatchBuilder,
                 this::handleFatalError,
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
@@ -596,6 +595,7 @@ public class SwirldsPlatform implements Platform {
             latestCompleteState.newIncompleteState(rs.get().getRound());
             savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
             stateManagementComponent.newSignedStateFromTransactions(rs);
+            consensusHashManager.stateHashedObserver(rs.get().getRound(), rs.get().getState().getHash());
         };
 
         final QueueThread<ReservedSignedState> stateHashSignQueue =
