@@ -210,9 +210,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         codeWithConstructorArgs,
                         consensusTime);
             } else {
-                sender.incrementEthereumNonce();
-                accountStore.commitAccount(sender);
-
                 result = evmTxProcessor.executeEth(
                         sender,
                         newContractAddress,
