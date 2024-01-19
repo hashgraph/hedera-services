@@ -38,7 +38,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
@@ -108,8 +107,7 @@ public class EthereumNonceUpdateSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasPrice(10L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID)
-                )
+                                .hasKnownStatus(INVALID_ACCOUNT_ID))
                 .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                         .has(accountWith().nonce(0L)));
     }

@@ -392,7 +392,6 @@ class TransactionProcessorTest {
 
         inOrder.verify(worldUpdater)
                 .setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, expectedToAddress);
-        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
                 .buildInitialFrameWith(
@@ -404,6 +403,7 @@ class TransactionProcessorTest {
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas());
+        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
@@ -532,7 +532,6 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
                 .buildInitialFrameWith(
@@ -544,6 +543,7 @@ class TransactionProcessorTest {
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
+        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
@@ -609,7 +609,6 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
                 .buildInitialFrameWith(
@@ -621,6 +620,7 @@ class TransactionProcessorTest {
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
+        inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
