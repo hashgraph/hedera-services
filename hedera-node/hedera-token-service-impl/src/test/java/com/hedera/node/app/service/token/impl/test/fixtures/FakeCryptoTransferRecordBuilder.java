@@ -67,9 +67,8 @@ public class FakeCryptoTransferRecordBuilder {
                 return ResponseCodeEnum.SUCCESS;
             }
 
-            @NotNull
             @Override
-            public CryptoTransferRecordBuilder transferList(@NotNull final TransferList hbarTransfers) {
+            public CryptoTransferRecordBuilder transferList(final TransferList hbarTransfers) {
                 this.transferList = hbarTransfers;
                 return this;
             }

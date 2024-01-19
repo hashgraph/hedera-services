@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
@@ -66,6 +67,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
             recordBuilder.transferList(TransferList.newBuilder()
                     .accountAmounts(asAccountAmounts(hbarChanges))
                     .build());
+        } else if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
+            recordBuilder.transferList(null);
         }
 
         // Declare the top-level token transfer list, which list will include BOTH fungible and non-fungible token

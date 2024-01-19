@@ -170,7 +170,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
-            final var childHbarChangesFromRecord = childRecord.transferList();
+            final var childHbarChangesFromRecord =
+                    childRecord.transferList() == null ? TransferList.DEFAULT : childRecord.transferList();
             for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {

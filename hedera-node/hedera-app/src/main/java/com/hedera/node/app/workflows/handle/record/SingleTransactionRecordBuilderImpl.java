@@ -526,9 +526,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @Override
-    @NonNull
-    public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
-        requireNonNull(transferList, "transferList must not be null");
+    public SingleTransactionRecordBuilderImpl transferList(final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }
