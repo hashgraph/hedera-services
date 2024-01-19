@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_EMPTY_TRANSFER_LIST;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -42,7 +41,6 @@ import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEngine;
 import com.hedera.services.bdd.junit.RecordStreamAccess;
@@ -57,7 +55,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -72,7 +69,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -422,13 +418,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         // getAllFields() returns a SortedMap so ordering is deterministic here
         final var expectedFields =
                 new ArrayList<>(expectedMessage.getAllFields().entrySet());
-        var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
+        final var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
         if (expectedFields.size() != actualFields.size()) {
-            if (!checkIgnoredFields(expectedFields, actualFields)) {
-                Assertions.fail("Mismatched field counts "
-                        + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
-                        + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
-            }
+            Assertions.fail("Mismatched field counts "
+                    + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
+                    + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
         }
         for (int i = 0, n = expectedFields.size(); i < n; i++) {
             final var expectedField = expectedFields.get(i);
@@ -452,24 +446,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     actualPlaceholderNum,
                     mismatchContext);
         }
-    }
-
-    private boolean checkIgnoredFields(
-            ArrayList<Entry<FieldDescriptor, Object>> expectedFields,
-            ArrayList<Entry<FieldDescriptor, Object>> actualFields) {
-        if (matchModes.contains(IGNORE_EMPTY_TRANSFER_LIST)) {
-            final var transferListDescriptor = TransactionRecord.getDescriptor().findFieldByName("transferList");
-            final var actualField = actualFields.stream()
-                    .filter(field -> field.getKey().getFullName().equals(transferListDescriptor.getFullName()))
-                    .findAny();
-            if (actualField.isPresent()
-                    && expectedFields.stream()
-                            .noneMatch(field ->
-                                    field.getKey().getFullName().equals(transferListDescriptor.getFullName()))) {
-                return actualFields.remove(actualField.get());
-            }
-        }
-        return false;
     }
 
     // inline initializers

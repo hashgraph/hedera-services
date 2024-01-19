@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_EMPTY_TRANSFER_LIST;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
@@ -335,8 +334,7 @@ public class HRCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec(
                         "hrcTokenAssociateFromSameEOATwiceShouldFail",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_NONCE,
-                        IGNORE_EMPTY_TRANSFER_LIST)
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RANDOM_KEY),
@@ -453,8 +451,7 @@ public class HRCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec(
                         "hrcTokenDissociateWhenBalanceNotZeroShouldFail",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        IGNORE_EMPTY_TRANSFER_LIST)
+                        NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RANDOM_KEY),
@@ -527,8 +524,7 @@ public class HRCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec(
                         "hrcTooManyTokenAssociateShouldFail",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        IGNORE_EMPTY_TRANSFER_LIST)
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         overriding("tokens.maxPerAccount", "2"),
                         overriding("entities.limitTokenAssociations", "true"),
