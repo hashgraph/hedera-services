@@ -314,8 +314,8 @@ jobs:
           run: |
             export GRAFANA_AGENT_USERNAME="${{ secrets.grafana-agent-username }}"
             export GRAFANA_AGENT_PASSWORD="${{ secrets.grafana-agent-password }}"
-            sleep 3600
-            AGENT_MODE=flow ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 run "${{ github.workspace }}/.github/workflows/config/grafana-agent.river"
+            AGENT_MODE=flow ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml"
+            grafana-agent-linux-amd64
           tail: true
           log-output: true
           wait-for: 60m
@@ -341,6 +341,7 @@ jobs:
 
       - name: Install Python Virtual Environment
         run: |
+          sleep 3600
           echo "::group::Aptitude Update"
             sudo apt update
           echo "::endgroup::"
