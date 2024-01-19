@@ -81,17 +81,6 @@ public final class SystemContractUtils {
                 .build();
     }
 
-    @NonNull
-    public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, AccountID senderId) {
-        return ContractFunctionResult.newBuilder()
-                .gasUsed(gasUsed)
-                .contractCallResult(tuweniToPbjBytes(result))
-                .senderId(senderId)
-                .contractID(HTS_PRECOMPILE_MIRROR_ID)
-                .build();
-    }
-
     /**
      * Create a successful contract function result for the given frame with
      * the known sender and result.
