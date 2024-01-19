@@ -45,7 +45,7 @@ public record ShadowgraphWiring(
 
         return new ShadowgraphWiring(
                 taskScheduler.buildInputWire("linked events"),
-                taskScheduler.buildInputWire("non-expired event window"),
+                taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler::flush);
     }
 
