@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -152,11 +153,17 @@ public class StakingRewardsHelper {
      * Increase pending rewards on the network staking rewards store by the given amount.
      * This is called in EndOdStakingPeriod when we calculate the pending rewards on the network
      * to be paid in next staking period
+     *
      * @param stakingRewardsStore The store to write to for updated values
-     * @param amount The amount to increase by
+     * @param amount              The amount to increase by
+     * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    long increasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
+    StakingNodeInfo increasePendingRewardsBy(
+            final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            long amount,
+            final StakingNodeInfo currStakingInfo) {
+        // increment the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards + amount;
         if (newPendingRewards > MAX_PENDING_REWARDS) {
@@ -169,7 +176,13 @@ public class StakingRewardsHelper {
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
-        return newPendingRewards;
+
+        // Update the individual node pending node rewards
+        return currStakingInfo
+                .copyBuilder()
+                .unclaimedStakeRewardStart(0)
+                .pendingRewards(newPendingRewards)
+                .build();
     }
 
     /**
