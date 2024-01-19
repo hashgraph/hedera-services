@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -98,6 +99,8 @@ class HtsSystemContractTest {
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
         given(attempt.senderId()).willReturn(SENDER_ID);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
     }
