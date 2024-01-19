@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
@@ -32,10 +32,6 @@ import java.time.Duration;
  * into config records with a prefix defined by a {@link ConfigData} tag. Adding
  * settings to this record pollutes the top level namespace.
  *
- * @param showInternalStats
- * 		show the user all statistics, including those with category "internal"?
- * @param verboseStatistics
- * 		show expand statistics values, inlcude mean, min, max, stdDev
  * @param numConnections
  * 		number of connections maintained by each member (syncs happen on random connections from that set
  * @param logStack
@@ -72,21 +68,19 @@ import java.time.Duration;
  */
 @ConfigData
 public record BasicConfig(
-        @ConfigProperty(defaultValue = "true") boolean showInternalStats,
-        @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
-        @ConfigProperty(defaultValue = "1000") int numConnections,
-        @ConfigProperty(defaultValue = "true") boolean logStack,
-        @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
-        @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
-        @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
-        @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
-        @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
-        @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
-        @ConfigProperty(defaultValue = "true") boolean enablePingTrans,
-        @ConfigProperty(defaultValue = "1") long pingTransFreq,
-        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
-        @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "1000") int numConnections, // core
+        @ConfigProperty(defaultValue = "true") boolean logStack, // not-referenced
+        @ConfigProperty(defaultValue = "500") int sleepHeartbeat, // not-referenced
+        @ConfigProperty(defaultValue = "60") double statsSkipSeconds, // core
+        @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup, // not-referenced
+        @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles, // core
+        @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs, // core
+        @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs, // core
+        @ConfigProperty(defaultValue = "true") boolean enablePingTrans, // not-referenced
+        @ConfigProperty(defaultValue = "1") long pingTransFreq, // not-referenced
+        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration, // core
+        @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir, // core
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) { // core
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

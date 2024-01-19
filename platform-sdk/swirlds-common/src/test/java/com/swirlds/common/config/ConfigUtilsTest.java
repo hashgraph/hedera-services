@@ -24,6 +24,8 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.StateConfig;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class ConfigUtilsTest {
 
     @Test
-    void testDefaultBehavior() {
+    void testDefaultBehavior() { // TODO: should this test be moved to platform-core?
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
@@ -41,6 +43,8 @@ class ConfigUtilsTest {
         // then
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicConfig.class));
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateCommonConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(CryptoConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TemporaryFileConfig.class));

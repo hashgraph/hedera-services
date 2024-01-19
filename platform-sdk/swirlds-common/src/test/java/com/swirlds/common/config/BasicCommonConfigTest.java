@@ -22,12 +22,12 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class BasicConfigTest {
+class BasicCommonConfigTest {
 
     @Test
     public void testDefaultValuesValid() {
         // given
-        final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(BasicConfig.class);
+        final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(BasicCommonConfig.class);
 
         // then
         Assertions.assertDoesNotThrow(() -> builder.build(), "All default values of BasicConfig should be valid");
@@ -37,11 +37,11 @@ class BasicConfigTest {
     void propertiesHasNoPrefix() {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "42")
+                .withValue(BasicCommonConfig_.SHOW_INTERNAL_STATS, "true")
                 .getOrCreateConfig();
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+        final BasicCommonConfig basicConfig = configuration.getConfigData(BasicCommonConfig.class);
 
         // then
-        Assertions.assertEquals(42, basicConfig.jvmPauseDetectorSleepMs());
+        Assertions.assertTrue(basicConfig.showInternalStats());
     }
 }

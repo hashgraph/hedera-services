@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.nio.file.Path;
 import java.time.Duration;
 
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
  *
- * @param savedStateDirectory           The directory where states are saved. This is relative to the current working
- *                                      directory, unless the provided path begins with "/", in which case it will be
- *                                      interpreted as an absolute path.
- * @param mainClassNameOverride         Typically, the fully qualified name of the application class implementing
- *                                      SwirldMain is used as a directory
- *                                      name when saving signed states. If this property is not the empty string then it
- *                                      overrides the main class name for signed states.
  * @param saveStatePeriod               The frequency of writes of a state to disk every this many seconds (0 to never
  *                                      write).
  * @param signedStateDisk               Keep at least this many of the old complete signed states on disk. This should
@@ -87,26 +79,25 @@ import java.time.Duration;
  */
 @ConfigData("state")
 public record StateConfig(
-        @ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory,
-        @ConfigProperty(defaultValue = "") String mainClassNameOverride,
-        @ConfigProperty(defaultValue = "900") int saveStatePeriod,
-        @ConfigProperty(defaultValue = "5") int signedStateDisk,
-        @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
-        @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery,
-        @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
-        @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
-        @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
-        @ConfigProperty(defaultValue = "5") int debugHashDepth,
-        @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
-        @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
-        @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
-        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
-        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
-        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
-        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
-        @ConfigProperty(defaultValue = "1") int signedStateFreq,
-        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles,
-        @ConfigProperty(defaultValue = "true") boolean validateInitialState) {
+        @ConfigProperty(defaultValue = "") String mainClassNameOverride, // platform
+        @ConfigProperty(defaultValue = "900") int saveStatePeriod, // platform
+        @ConfigProperty(defaultValue = "5") int signedStateDisk, // platform
+        @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss, // platform
+        @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery, // platform
+        @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss, // platform
+        @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs, // platform
+        @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging, // platform
+        @ConfigProperty(defaultValue = "5") int debugHashDepth, // platform
+        @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures, // platform
+        @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning, // platform
+        @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning, // not-referenced
+        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge, // platform
+        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled, // platform
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled, // platform
+        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName, // platform
+        @ConfigProperty(defaultValue = "1") int signedStateFreq, // platform
+        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles, // platform
+        @ConfigProperty(defaultValue = "true") boolean validateInitialState) { // platform
 
     /**
      * Get the main class name that should be used for signed states.
