@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -352,6 +353,50 @@ final class BlockRecordManagerTest extends AppTestBase {
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
                 BLOCK_NUM);
+    }
+
+    @Test
+    void isDefaultConsTimeForNullParam() {
+        @SuppressWarnings("ConstantValue")
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(null);
+        //noinspection ConstantValue
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForNullConsensusTimeOfLastHandledTxn() {
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, null, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampAfterEpoch() {
+        final var timestampAfterEpoch = Timestamp.newBuilder()
+                .seconds(EPOCH.seconds())
+                .nanos(EPOCH.nanos() + 1)
+                .build();
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, timestampAfterEpoch, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isFalse();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampAtEpoch() {
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, EPOCH, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampBeforeEpoch() {
+        final var timestampBeforeEpoch = Timestamp.newBuilder()
+                .seconds(EPOCH.seconds())
+                .nanos(EPOCH.nanos() - 1)
+                .build();
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, timestampBeforeEpoch, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
     }
 
     private static Instant fromTimestamp(final Timestamp timestamp) {

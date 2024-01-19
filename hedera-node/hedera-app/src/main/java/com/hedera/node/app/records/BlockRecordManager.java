@@ -107,4 +107,9 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      */
     @Override
     void close();
+
+    /**
+     * Notifies the block record manager that any startup migration records have been streamed.
+     */
+    void markMigrationRecordsStreamed();
 }

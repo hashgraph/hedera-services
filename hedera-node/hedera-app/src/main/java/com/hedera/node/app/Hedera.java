@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
@@ -394,7 +395,7 @@ public final class Hedera implements SwirldMain {
             final var blockInfo = blockRecordState
                     .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
                     .get();
-            if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+            if (isDefaultConsTimeOfLastHandledTxn(blockInfo)) {
                 createSynthRecords = true;
             }
         } else {
