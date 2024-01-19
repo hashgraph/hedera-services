@@ -17,4 +17,4 @@ metrics:
         - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push
           basic_auth:
             username: ${GRAFANA_AGENT_USERNAME}
-            password: ${GRAFANA_AGENT_TOKEN}
+            password: ${GRAFANA_AGENT_PASSWORD}
