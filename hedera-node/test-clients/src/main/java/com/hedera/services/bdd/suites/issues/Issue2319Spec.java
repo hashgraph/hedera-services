@@ -17,12 +17,14 @@
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -31,14 +33,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Order;
 
 @HapiTestSuite
@@ -115,15 +116,28 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Order(3)
-    @Disabled
+    //    @Disabled
     @HapiTest
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
+
+        final Key[] originalExchangeRateControlKey = {null};
+
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
                         keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            final var exchangeRateControlInfo = getAccountInfo(EXCHANGE_RATE_CONTROL);
+                            allRunFor(spec, exchangeRateControlInfo);
+                            originalExchangeRateControlKey[0] = exchangeRateControlInfo
+                                    .getResponse()
+                                    .getCryptoGetInfo()
+                                    .getAccountInfo()
+                                    .getKey();
+                        }),
+                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
                 .then(
                         cryptoUpdate(EXCHANGE_RATE_CONTROL)
                                 .payingWith(SYSTEM_ADMIN)
@@ -137,7 +151,10 @@ public class Issue2319Spec extends HapiSuite {
                                 .payingWith("civilian")
                                 .signedBy("civilian", GENESIS, "persistent")
                                 .receiverSigRequired(true),
-                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
+                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false),
+                        withOpContext((spec, opLog) -> {
+                            cryptoUpdate(EXCHANGE_RATE_CONTROL).key(originalExchangeRateControlKey[0].toString());
+                        }));
     }
 
     @Order(4)
@@ -151,7 +168,7 @@ public class Issue2319Spec extends HapiSuite {
                         keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
                         withOpContext((spec, opLog) -> {
                             var fetch = getFileContents(EXCHANGE_RATES);
-                            CustomSpecAssert.allRunFor(spec, fetch);
+                            allRunFor(spec, fetch);
                             validRates.set(fetch.getResponse()
                                     .getFileGetContents()
                                     .getFileContents()
