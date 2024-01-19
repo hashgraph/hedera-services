@@ -63,7 +63,7 @@ public final class MetricNamingRules {
 
     public <T extends Metric> void validate(@NonNull final MetricConfig<T, ?> config) {
         for (Rule rule : Rule.values()) {
-            if (rule.isApplicable(config) && rule.isOffendedBy(config)) {
+            if (rule.isOffendedBy(config)) {
                 log.error(
                         EXCEPTION.getMarker(),
                         "Rule:{} failed for metric(name:{},category:{},unit{}):{}",
@@ -96,23 +96,20 @@ public final class MetricNamingRules {
         private final String reason;
 
         Rule(
-                final Predicate<MetricValues> offendingPredicate,
-                final Predicate<MetricConfig<?, ?>> applicablePredicate,
-                final String reason) {
+                final @NonNull Predicate<MetricValues> offendingPredicate,
+                final @NonNull Predicate<MetricConfig<?, ?>> applicablePredicate,
+                final @NonNull String reason) {
             this.offendingPredicate = offendingPredicate;
             this.applicablePredicate = applicablePredicate;
             this.reason = reason;
         }
 
         public boolean isOffendedBy(@NonNull final MetricConfig<?, ?> config) {
-            return offendingPredicate.test(new MetricValues(config.getName(), config.getCategory(), config.getUnit()));
+            return  applicablePredicate.test(config) &&
+            offendingPredicate.test(new MetricValues(config.getName(), config.getCategory(), config.getUnit()));
         }
 
-        public boolean isApplicable(@NonNull final MetricConfig<?, ?> config) {
-            return applicablePredicate.test(config);
-        }
-
-        public String getReason() {
+        public @NonNull String getReason() {
             return reason;
         }
 
