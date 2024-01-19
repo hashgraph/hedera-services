@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class WarmupContextImpl implements WarmupContext {
 
     @NonNull
-    private final TransactionInfo txInfo;
+    private final TransactionBody txBody;
 
     @NonNull
     private final ReadableStoreFactory storeFactory;
@@ -36,18 +36,18 @@ public class WarmupContextImpl implements WarmupContext {
     /**
      * Constructor of {@code WarmupContextImpl}
      *
-     * @param txInfo the {@link TransactionInfo} of the transaction
+     * @param txBody the {@link TransactionInfo} of the transaction
      * @param storeFactory the {@link ReadableStoreFactory} to create stores
      */
-    public WarmupContextImpl(@NonNull final TransactionInfo txInfo, @NonNull final ReadableStoreFactory storeFactory) {
-        this.txInfo = txInfo;
+    public WarmupContextImpl(@NonNull final TransactionBody txBody, @NonNull final ReadableStoreFactory storeFactory) {
+        this.txBody = txBody;
         this.storeFactory = storeFactory;
     }
 
     @NonNull
     @Override
     public TransactionBody body() {
-        return txInfo.txBody();
+        return txBody;
     }
 
     @NonNull

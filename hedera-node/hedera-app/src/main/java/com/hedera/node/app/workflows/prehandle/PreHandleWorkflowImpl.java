@@ -28,7 +28,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFai
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
@@ -42,7 +41,6 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -58,8 +56,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -103,11 +99,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final DeduplicationCache deduplicationCache;
 
     /**
-     * Used for running background tasks
-     */
-    private final Executor executor;
-
-    /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
      *
      * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
@@ -124,32 +115,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final ConfigProvider configProvider,
             @NonNull final DeduplicationCache deduplicationCache) {
-        this(
-                dispatcher,
-                transactionChecker,
-                signatureVerifier,
-                signatureExpander,
-                configProvider,
-                deduplicationCache,
-                ForkJoinPool.commonPool());
-    }
-
-    @VisibleForTesting
-    PreHandleWorkflowImpl(
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final SignatureExpander signatureExpander,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final DeduplicationCache deduplicationCache,
-            @NonNull final Executor executor) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
         this.configProvider = requireNonNull(configProvider);
         this.deduplicationCache = requireNonNull(deduplicationCache);
-        this.executor = requireNonNull(executor);
     }
 
     /**
@@ -195,8 +166,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final Transaction platformTx,
             @Nullable PreHandleResult previousResult) {
-        final boolean isHandleWorkflow = previousResult != null;
-
         // 0. Ignore the previous result if it was computed using different node configuration
         if (!wasComputedWithCurrentNodeConfiguration(previousResult)) {
             previousResult = null;
@@ -269,17 +238,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
 
         // 3. Expand and verify signatures
-        final var result = expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory, previousResult);
-
-        // Finally, let the transaction handler do warm up of other state it may want to use later
-        // We must not perform warmup on the handle-thread as it is done in the background and may cause
-        // ConcurrentModificationExceptions.
-        if (!isHandleWorkflow) {
-            final WarmupContext warmupContext = new WarmupContextImpl(txInfo, storeFactory);
-            executor.execute(() -> dispatcher.dispatchWarmup(warmupContext));
-        }
-
-        return result;
+        return expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory, previousResult);
     }
 
     /**
