@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.tasks;
+package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;
+import com.swirlds.common.wiring.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 /**
  * A task in a {@link ConcurrentTaskScheduler}.
  */
-public class ConcurrentTask extends AbstractTask {
+class ConcurrentTask extends AbstractTask {
 
     private final Consumer<Object> handler;
     private final Object data;
@@ -44,7 +44,7 @@ public class ConcurrentTask extends AbstractTask {
      * @param handler                  the method that will be called when this task is executed
      * @param data                     the data to be passed to the consumer for this task
      */
-    public ConcurrentTask(
+    ConcurrentTask(
             @NonNull final ForkJoinPool pool,
             @NonNull final ObjectCounter offRamp,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
@@ -70,5 +70,14 @@ public class ConcurrentTask extends AbstractTask {
             offRamp.offRamp();
         }
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void send() {
+        // Expose this method to the scheduler
+        super.send();
     }
 }

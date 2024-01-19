@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.tasks;
+package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.schedulers.internal.SequentialTaskScheduler;
+import com.swirlds.common.wiring.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 /**
  * A task in a {@link SequentialTaskScheduler}.
  */
-public class SequentialTask extends AbstractTask {
+class SequentialTask extends AbstractTask {
     private Consumer<Object> handler;
     private Object data;
     private SequentialTask nextTask;
@@ -46,7 +46,7 @@ public class SequentialTask extends AbstractTask {
      * @param uncaughtExceptionHandler the uncaught exception handler
      * @param firstTask                true if this is the first task in the scheduler, false otherwise
      */
-    public SequentialTask(
+    SequentialTask(
             @NonNull final ForkJoinPool pool,
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
@@ -65,7 +65,7 @@ public class SequentialTask extends AbstractTask {
      * @param handler  the method that will be called when this task is executed
      * @param data     the data to be passed to the consumer for this task
      */
-    public void send(
+    void send(
             @NonNull final SequentialTask nextTask,
             @NonNull final Consumer<Object> handler,
             @Nullable final Object data) {
