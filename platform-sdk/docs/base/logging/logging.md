@@ -6,28 +6,32 @@
 
 
 ### Introduction
-The Hedera Logging API is a custom logging facade which is crafted to meet our unique requirements, ensuring compatibility with various software integrations.
-It acts as a bridge, redirecting events from eg SLF4J to our facade, providing flexibility for all dependencies used in the project.
+The Hedera Logging API is a custom logging API which is crafted to meet our unique requirements, ensuring compatibility with various software integrations.
+In addition, it acts as a bridge, redirecting log events from e.g. [SLF4J](https://www.slf4j.org) to our library, providing flexibility for all dependencies used in the project.
+Our goal was to create a logging library that is lightweight, efficient, and easy to use, while also being highly performant and flexible.
 
+### Architecture
+As any project from the base team, the logging library is split into a public API and a private implementation which provides the basics for logging.
+In addition, we enhanced the functionality of the library by introducing extension points, allowing for the creation of e.g. custom logging handlers.
+Also, we aimed not to reinvent the wheel, so we decided to use common standards for using the API as you probably know from other logging libraries.
 
-### Architecture and Configuration
 The architecture does not dictate the format of logging output, allowing for a wide range of output options.
 This flexibility permits various configurations, from console outputs to integrations with systems like Graylog or Kibana.
 
-
-### Features of the Logging Facade
-The facade goes beyond mere message logging, encapsulating rich information within each logging event.
+#### Features of the Logging Facade
+The library goes beyond mere message logging, encapsulating rich information within each logging event.
 Key features include:
 
 1. Support for Message Placeholders
-2. Event Origin Tracking
+2. Event Origin Tracking (limited to the class)
 3. Timestamp Inclusion
 4. Thread Identification
 5. Throwable Cause Handling
 6. Support for Various Log Levels
 7. Marker Support
 8. Key-Value Based Metadata
-9. Mapped Diagnostic Context (MDC) Support
+9. Simple property based configuration
+10. Test Support
 
 ---
 
@@ -84,11 +88,13 @@ Here’s how to use it:
 The configuration syntax is designed for clarity and ease of use.
 It allows setting a global default logging level and specific levels for packages or classes, with an option to introduce filters for markers.
 
-For practicality, the `logging.properties` file should be set to reload every second, ensuring up-to-date logging configurations at all times.
+For practicality, the `logging.properties` file reload every second, ensuring up-to-date logging configurations at all times.
+
+The default search path for the properties file is the current working directory. It can be modified by setting the `LOG_CONFIG_PATH` environment variable.
 
 The format of the logging configuration is user-friendly and self-explanatory.
-Here's an example representation of the syntax for setting logging levels:
 ### Levels
+Here's an example representation of the syntax for setting logging levels:
 
 ```properties
 # Global default logging level
