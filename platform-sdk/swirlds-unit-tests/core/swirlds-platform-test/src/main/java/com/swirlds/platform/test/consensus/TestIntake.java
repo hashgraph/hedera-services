@@ -84,7 +84,8 @@ public class TestIntake implements LoadableFromSignedState {
         this.consensusConfig = consensusConfig;
 
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
-        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, false);
+        consensus = new ConsensusImpl(
+                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
         shadowGraph =
                 new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
@@ -208,10 +209,10 @@ public class TestIntake implements LoadableFromSignedState {
                         AncientMode.GENERATION_THRESHOLD));
         linkerWiring
                 .nonAncientEventWindowInput()
-                .put(NonAncientEventWindow.createUsingRoundsNonAncient(
+                .put(new NonAncientEventWindow(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
-                        consensusConfig.roundsNonAncient(),
+                        consensus.getMinRoundGeneration(),
                         AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();
