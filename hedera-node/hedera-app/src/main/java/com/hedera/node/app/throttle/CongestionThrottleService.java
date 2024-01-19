@@ -52,7 +52,7 @@ public class CongestionThrottleService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
@@ -94,7 +94,9 @@ public class CongestionThrottleService implements Service {
                 final var congestionLevelStartsState = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
                 congestionLevelStartsState.put(CongestionLevelStarts.DEFAULT);
 
-                log.info("Finished migrationg congestion throttle state");
+                log.info("Finished migrating congestion throttle state");
+
+                log.info("BBM: no actions needed for congestion throttle service");
             }
         });
     }

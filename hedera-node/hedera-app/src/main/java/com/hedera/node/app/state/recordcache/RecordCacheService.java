@@ -31,6 +31,8 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -57,13 +59,13 @@ public class RecordCacheService implements Service {
         return NAME;
     }
 
-    public void setFromState(List<ExpirableTxnRecord> fromRecs) {
+    public void setFromState(@Nullable final List<ExpirableTxnRecord> fromRecs) {
         this.fromRecs = fromRecs;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             @NonNull
             @Override
@@ -79,7 +81,7 @@ public class RecordCacheService implements Service {
             }
 
             @Override
-            public void migrate(@NonNull MigrationContext ctx) {
+            public void migrate(@NonNull final MigrationContext ctx) {
                 if (fromRecs != null) {
                     log.info("BBM: running expirable record (cache) migration...");
 
@@ -118,10 +120,12 @@ public class RecordCacheService implements Service {
                     }
                     ((WritableQueueStateBase) toState).commit();
 
-                    fromRecs = null;
-
                     log.info("BBM: finished expirable record (cache) migration");
+                } else {
+                    log.warn("BBM: no record cache 'from' state found");
                 }
+
+                fromRecs = null;
             }
         });
     }

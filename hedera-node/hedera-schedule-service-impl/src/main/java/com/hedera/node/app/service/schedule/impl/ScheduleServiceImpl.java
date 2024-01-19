@@ -20,9 +20,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.InitialModServiceScheduleSchema;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
@@ -32,26 +32,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
-    private MerkleScheduledTransactions fs;
+    private InitialModServiceScheduleSchema scheduleSchema;
 
-    public void setFs(MerkleScheduledTransactions fs) {
-        this.fs = fs;
+    public void setFs(@Nullable final MerkleScheduledTransactions fs) {
+        scheduleSchema.setFs(fs);
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(scheduleSchema(version));
-    }
-
-    private Schema scheduleSchema(final SemanticVersion version) {
-        // Everything in memory for now
-        final var scheduleSchema = new InitialModServiceScheduleSchema(version, fs);
-
-        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
-        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
-        // want the old mono state routes to disappear
-        fs = null;
-
-        return scheduleSchema;
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+        scheduleSchema = new InitialModServiceScheduleSchema(version);
+        registry.register(scheduleSchema);
     }
 }

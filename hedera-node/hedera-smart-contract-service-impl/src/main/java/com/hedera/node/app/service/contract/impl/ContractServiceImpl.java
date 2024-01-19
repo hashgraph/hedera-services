@@ -27,6 +27,8 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.function.Supplier;
 
 /**
@@ -37,31 +39,24 @@ public enum ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractServiceComponent component;
 
-    private static VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
-    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState;
+    private InitialModServiceContractSchema initialContractSchema;
 
     ContractServiceImpl() {
         this.component = DaggerContractServiceComponent.create();
     }
 
-    public static void setStorageFromState(VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        ContractServiceImpl.storageFromState = storageFromState;
+    public void setStorageFromState(@Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+        initialContractSchema.setStorageFromState(storageFromState);
     }
 
-    public static void setBytecodeFromState(
-            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        ContractServiceImpl.bytecodeFromState = bytecodeFromState;
+    public void setBytecodeFromState(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+        initialContractSchema.setBytecodeFromState(bytecodeFromState);
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new InitialModServiceContractSchema(version, storageFromState, bytecodeFromState));
-
-        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
-        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
-        // want the old mono state routes to disappear
-        storageFromState = null;
-        bytecodeFromState = null;
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+        initialContractSchema = new InitialModServiceContractSchema(version);
+        registry.register(initialContractSchema);
     }
 
     public ContractHandlers handlers() {

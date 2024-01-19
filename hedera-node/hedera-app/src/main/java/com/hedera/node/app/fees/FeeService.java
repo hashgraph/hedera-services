@@ -29,6 +29,8 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,12 +48,12 @@ public class FeeService implements Service {
         return NAME;
     }
 
-    public void setFs(ExchangeRates fs) {
+    public void setFs(@Nullable final ExchangeRates fs) {
         this.fs = fs;
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             @NonNull
             @Override
@@ -60,7 +62,7 @@ public class FeeService implements Service {
             }
 
             @Override
-            public void migrate(@NonNull MigrationContext ctx) {
+            public void migrate(@NonNull final MigrationContext ctx) {
                 final var isGenesis = ctx.previousStates().isEmpty();
                 final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
                 if (isGenesis) {
@@ -82,7 +84,9 @@ public class FeeService implements Service {
                             .build();
 
                     midnightRatesState.put(exchangeRateSet);
-                } else if (fs != null) {
+                }
+
+                if (fs != null) {
                     log.info("BBM: migrating fee service");
 
                     var toState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
@@ -104,10 +108,12 @@ public class FeeService implements Service {
 
                     if (toState.isModified()) ((WritableSingletonStateBase) toState).commit();
 
-                    fs = null;
-
                     log.info("BBM: finished migrating fee service");
+                } else {
+                    log.warn("BBM: no fee 'from' state found");
                 }
+
+                fs = null;
             }
         });
     }

@@ -41,10 +41,6 @@ public class EntityIdService implements Service {
 
     private long fs = -1;
 
-    public void setFs(long fs) {
-        this.fs = fs;
-    }
-
     /** {@inheritDoc} */
     @NonNull
     @Override
@@ -52,9 +48,13 @@ public class EntityIdService implements Service {
         return NAME;
     }
 
+    public void setFs(long fs) {
+        this.fs = fs;
+    }
+
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
@@ -88,13 +88,16 @@ public class EntityIdService implements Service {
                     final var entityNum = config.firstUserEntity() - 1;
                     log.info("Setting entity id to " + entityNum);
                     entityIdState.put(new EntityNumber(entityNum));
-                } else if (fs > -1) {
+                }
+
+                if (fs > -1) {
                     log.info("BBM: Setting entity id to " + fs);
                     entityIdState.put(new EntityNumber(fs));
-
-                    // Usually we unassign the 'from' state here, but in this case there's no need because the only
-                    // field is a copied long
+                } else {
+                    log.warn("BBM: no entity ID 'from' state found");
                 }
+
+                // Usually we unassign the 'from' state here, but in this case there's no need because the only field is a copied long
             }
         });
     }

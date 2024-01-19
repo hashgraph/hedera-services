@@ -261,7 +261,7 @@ public class DumpContractStoresSubcommand {
 
         // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-        final var contractSchema = new InitialModServiceContractSchema(CURRENT_VERSION, null, null);
+        final var contractSchema = new InitialModServiceContractSchema(CURRENT_VERSION);
         final var contractSchemas = contractSchema.statesToCreate();
         final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
                 .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))

@@ -45,7 +45,10 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.service.file.impl.codec.FileServiceStateTranslator;
+import com.hedera.node.app.service.mono.files.DataMapFactory;
 import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.MetadataMapFactory;
+import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -64,6 +67,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -99,24 +104,16 @@ public class InitialModFileGenesisSchema extends Schema {
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
     /** Create a new instance */
-    public InitialModFileGenesisSchema(
-            final SemanticVersion version,
-            final ConfigProvider configProvider,
-            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss,
-            final Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents,
-            final Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs) {
+    public InitialModFileGenesisSchema(@NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
         this.configProvider = requireNonNull(configProvider);
-        this.fss = fss;
-        this.fileContents = fileContents;
-        this.fileAttrs = fileAttrs;
     }
 
     @NonNull
     @Override
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
-        Set<StateDefinition> definitions = new LinkedHashSet<>();
+        final Set<StateDefinition> definitions = new LinkedHashSet<>();
         definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
 
         final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
@@ -138,6 +135,13 @@ public class InitialModFileGenesisSchema extends Schema {
         return definitions;
     }
 
+    public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
+        this.fss = fss;
+        var blobStore = new FcBlobsBytesStore(fss);
+        this.fileContents = DataMapFactory.dataMapFrom(blobStore);
+        this.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
+    }
+
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         logger.debug("Migrating genesis state");
@@ -155,7 +159,9 @@ public class InitialModFileGenesisSchema extends Schema {
             createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
-        } else if (fss != null && fss.get() != null) {
+        }
+
+        if (fss != null && fss.get() != null) {
             var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
             logger.info("BBM: running file migration...");
@@ -178,12 +184,14 @@ public class InitialModFileGenesisSchema extends Schema {
 
             if (ts.isModified()) ((WritableKVStateBase) ts).commit();
 
-            fss = null;
-            fileContents = null;
-            fileAttrs = null;
-
             logger.info("BBM:finished file migration. Migrated files: " + migratedFileIds);
+        } else {
+            logger.warn("BBM: no file 'from' state found");
         }
+
+        fss = null;
+        fileContents = null;
+        fileAttrs = null;
     }
 
     private List<Long> extractFileIds(VirtualMapLike<VirtualBlobKey, VirtualBlobValue> fileStorage) {

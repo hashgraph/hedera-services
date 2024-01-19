@@ -36,6 +36,8 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.function.Supplier;
@@ -54,17 +56,7 @@ public class TokenServiceImpl implements TokenService {
     private final Supplier<SortedSet<Account>> treasuryAccts;
     private final Supplier<SortedSet<Account>> miscAccts;
     private final Supplier<SortedSet<Account>> blocklistAccts;
-    private VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsFs;
-    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs;
-    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs;
-    private MerkleMap<EntityNum, MerkleToken> tFs;
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingFs;
-    private MerkleNetworkContext mnc;
-
-    public void setStakingFs(MerkleMap<EntityNum, MerkleStakingInfo> stakingFs, MerkleNetworkContext mnc) {
-        this.stakingFs = stakingFs;
-        this.mnc = mnc;
-    }
+    private InitialModServiceTokenSchema modTokenSchema;
 
     /**
      * Constructor for the token service. Each of the given suppliers should produce a {@link SortedSet}
@@ -102,46 +94,35 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         requireNonNull(registry);
-        registry.register(new InitialModServiceTokenSchema(
+        modTokenSchema = new InitialModServiceTokenSchema(
                 sysAccts,
                 stakingAccts,
                 treasuryAccts,
                 miscAccts,
                 blocklistAccts,
-                version,
-                acctsFs,
-                tFs,
-                stakingFs,
-                nftsFs,
-                trFs,
-                mnc));
-
-        // Once the 'from' state is passed in to the schema class, we don't need that reference in this class anymore.
-        // We don't want to keep these references around because, in the case of migrating from mono to mod service, we
-        // want the old mono state routes to disappear
-        nftsFs = null;
-        trFs = null;
-        acctsFs = null;
-        tFs = null;
-        stakingFs = null;
-        mnc = null;
+                version);
+        registry.register(modTokenSchema);
     }
 
-    public void setNftsFromState(VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
-        this.nftsFs = fs;
+    public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
+        modTokenSchema.setNftsFromState(fs);
     }
 
-    public void setTokenRelsFromState(VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
-        this.trFs = fs;
+    public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
+        modTokenSchema.setTokenRelsFromState(fs);
     }
 
-    public void setAcctsFromState(VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
-        this.acctsFs = fs;
+    public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
+        modTokenSchema.setAcctsFromState(fs);
     }
 
-    public void setTokensFromState(MerkleMap<EntityNum, MerkleToken> fs) {
-        this.tFs = fs;
+    public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
+        modTokenSchema.setTokensFromState(fs);
+    }
+
+    public void setStakingFs(@Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs, @Nullable final MerkleNetworkContext mnc) {
+        modTokenSchema.setStakingFs(stakingFs, mnc);
     }
 }

@@ -56,19 +56,20 @@ public class InitialModServiceContractSchema extends Schema {
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
 
-    // For migrating contract storage:
     private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
-
-    // For migrating contract bytecode:
     private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
 
-    public InitialModServiceContractSchema(
-            final SemanticVersion version,
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState,
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState) {
+    public InitialModServiceContractSchema(@NonNull final SemanticVersion version) {
         super(version);
+    }
+
+    public void setStorageFromState(@Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
         this.storageFromState = storageFromState;
-        this.contractBytecodeFromState = contractBytecodeFromState;
+    }
+
+    public void setBytecodeFromState(
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+        this.contractBytecodeFromState = bytecodeFromState;
     }
 
     @Override
@@ -78,7 +79,7 @@ public class InitialModServiceContractSchema extends Schema {
 
             log.info("BBM: migrating contract k/v storage...");
             final WritableKVState<SlotKey, SlotValue> toState =
-                    ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
+                    ctx.newStates().get(InitialModServiceContractSchema.STORAGE_KEY);
             try {
                 storageFromState.extractVirtualMapData(
                         AdHocThreadManager.getStaticThreadManager(),
@@ -150,11 +151,13 @@ public class InitialModServiceContractSchema extends Schema {
 
             if (bytecodeTs.isModified()) ((WritableKVStateBase) bytecodeTs).commit();
 
-            storageFromState = null;
-            contractBytecodeFromState = null;
-
             log.info("BBM: contract migration finished");
+        } else {
+            log.warn("BBM: no contract 'from' state found");
         }
+
+        storageFromState = null;
+        contractBytecodeFromState = null;
     }
 
     @NonNull

@@ -55,7 +55,7 @@ public interface Service {
      * @param registry the registry to register the schemas with
      * @param version the current services version
      */
-    default void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    default void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         // No-op
     }
 }

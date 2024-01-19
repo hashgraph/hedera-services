@@ -30,6 +30,8 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,9 +46,8 @@ public class InitialModServiceConsensusSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceConsensusSchema.class);
     private MerkleMap<EntityNum, MerkleTopic> fs;
 
-    public InitialModServiceConsensusSchema(SemanticVersion version, final MerkleMap<EntityNum, MerkleTopic> fs) {
+    public InitialModServiceConsensusSchema(@NonNull final SemanticVersion version) {
         super(version);
-        this.fs = fs;
     }
 
     @NonNull
@@ -55,8 +56,12 @@ public class InitialModServiceConsensusSchema extends Schema {
         return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
     }
 
+    public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
+        this.fs = fs;
+    }
+
     @Override
-    public void migrate(@NonNull MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         if (fs != null) {
             log.info("BBM: running consensus migration...");
 
@@ -64,9 +69,11 @@ public class InitialModServiceConsensusSchema extends Schema {
             ConsensusServiceStateTranslator.migrateFromMerkleToPbj(fs, ts);
             if (ts.isModified()) ((WritableKVStateBase) ts).commit();
 
-            fs = null;
-
             log.info("BBM: finished consensus");
+        } else {
+            log.warn("BBM: no consensus 'from' state found");
         }
+
+        fs = null;
     }
 }

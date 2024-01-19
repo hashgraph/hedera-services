@@ -268,13 +268,7 @@ final class InitialModServiceTokenSchemaTest {
                 this::allMiscAccts,
                 this::allTreasuryClones,
                 this::allBlocklistAccts,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
 
         // We'll only configure 4 system accounts, half of which will already exist
         config = buildConfig(4, true);
@@ -504,13 +498,7 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -540,13 +528,7 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -578,13 +560,7 @@ final class InitialModServiceTokenSchemaTest {
                 this::allTreasuryClones,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -614,13 +590,7 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 this::allMiscAccts,
                 Collections::emptySortedSet,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -649,13 +619,7 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allBlocklistAccts,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -780,13 +744,7 @@ final class InitialModServiceTokenSchemaTest {
                 this::allMiscAccts,
                 this::allTreasuryClones,
                 this::allBlocklistAccts,
-                CURRENT_VERSION,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+                CURRENT_VERSION);
     }
 
     /**

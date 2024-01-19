@@ -455,100 +455,112 @@ public final class Hedera implements SwirldMain {
             recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
         }
 
-        logger.info("BBM: migration beginning 😅...");
+        final Object test = state.getChild(0);
+        boolean doBbmMigration = test instanceof VirtualMap;
+        if (doBbmMigration) {
+            // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
+            logger.info("BBM: migration beginning 😅...");
 
-        // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
 
-        // --------------------- UNIQUE_TOKENS (0)
-        final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
-        if (uniqTokensFromState != null) {
-            TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
+            // --------------------- UNIQUE_TOKENS (0)
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(
+                    UNIQUE_TOKENS);
+            if (uniqTokensFromState != null) {
+                TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
+            }
+
+            // --------------------- TOKEN_ASSOCIATIONS (1)
+            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState =
+                    state.getChild(TOKEN_ASSOCIATIONS);
+            if (tokenRelsFromState != null) {
+                TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
+            }
+
+            // --------------------- TOPICS (2)
+            final MerkleMap<EntityNum, MerkleTopic> topicsFromState = state.getChild(TOPICS);
+            if (topicsFromState != null) {
+                CONSENSUS_SERVICE.setFromState(topicsFromState);
+            }
+
+            // --------------------- STORAGE (3)     // only "non-special" files
+            if (state.getChild(STORAGE) != null) {
+                FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
+            }
+            // Note: some files have no metadata, e.g. contract bytecode files
+
+            // --------------------- ACCOUNTS (4)
+            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(
+                    ACCOUNTS);
+            if (acctsFromState != null) {
+                TOKEN_SERVICE.setAcctsFromState(acctsFromState);
+            }
+
+            // --------------------- TOKENS (5)
+            final MerkleMap<EntityNum, MerkleToken> tokensFromState = state.getChild(TOKENS);
+            if (tokensFromState != null) {
+                TOKEN_SERVICE.setTokensFromState(tokensFromState);
+            }
+
+            // --------------------- NETWORK_CTX (6)
+            final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
+            // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
+            // firstConsTimeOfCurrentBlock – needed in blockInfo
+
+            // --------------------- SPECIAL_FILES (7)
+            // No longer useful; don't migrate
+
+            // --------------------- SCHEDULE_TXS (8)
+            final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
+            if (scheduleFromState != null) {
+                SCHEDULE_SERVICE.setFs(scheduleFromState);
+            }
+
+            // --------------------- RECORD_STREAM_RUNNING_HASH (9)
+            // From MerkleNetworkContext: blockNo, blockHashes
+            final RecordsRunningHashLeaf blockInfoFromState = state.getChild(
+                    RECORD_STREAM_RUNNING_HASH);
+            if (blockInfoFromState != null) {
+                BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
+            }
+
+            // --------------------- LEGACY_ADDRESS_BOOK (10)
+            // Not using anywhere; won't be migrated
+
+            // --------------------- CONTRACT_STORAGE (11)
+            final VirtualMap<ContractKey, IterableContractValue> contractFromStorage =
+                    state.getChild(CONTRACT_STORAGE);
+            if (contractFromStorage != null) {
+                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(contractFromStorage));
+                CONTRACT_SERVICE.setBytecodeFromState(
+                        () -> VirtualMapLike.from(state.getChild(STORAGE)));
+            }
+
+            // --------------------- STAKING_INFO (12)
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(
+                    STAKING_INFO);
+            if (stakingInfoFromState != null) {
+                TOKEN_SERVICE.setStakingFs(stakingInfoFromState, fromNetworkContext);
+            }
+
+            // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
+            final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(
+                    PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
+            if (fcqFromState != null) {
+                RECORD_SERVICE.setFromState(new ArrayList<>(fcqFromState));
+            }
+
+            // --------------------- Midnight Rates (separate service in modular code - fee service)
+            if (fromNetworkContext != null) {
+                FEE_SERVICE.setFs(fromNetworkContext.getMidnightRates());
+            }
+
+            // --------------------- Sequence Number (separate service in modular code - entity ID service)
+            if (fromNetworkContext != null) {
+                ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
+            }
+
+            // --------------------- END OF MONO -> MODULAR MIGRATION ---------------------
         }
-
-        // --------------------- TOKEN_ASSOCIATIONS (1)
-        final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState = state.getChild(TOKEN_ASSOCIATIONS);
-        if (tokenRelsFromState != null) {
-            TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
-        }
-
-        // --------------------- TOPICS (2)
-        final MerkleMap<EntityNum, MerkleTopic> topicsFromState = state.getChild(TOPICS);
-        if (topicsFromState != null) {
-            CONSENSUS_SERVICE.setFromState(topicsFromState);
-        }
-
-        // --------------------- STORAGE (3)     // only "non-special" files
-        if (state.getChild(STORAGE) != null) {
-            FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
-        }
-        // Note: some files have no metadata, e.g. contract bytecode files
-
-        // --------------------- ACCOUNTS (4)
-        final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
-        if (acctsFromState != null) {
-            TOKEN_SERVICE.setAcctsFromState(acctsFromState);
-        }
-
-        // --------------------- TOKENS (5)
-        final MerkleMap<EntityNum, MerkleToken> tokensFromState = state.getChild(TOKENS);
-        if (tokensFromState != null) {
-            TOKEN_SERVICE.setTokensFromState(tokensFromState);
-        }
-
-        // --------------------- NETWORK_CTX (6)
-        final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-        // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
-        // firstConsTimeOfCurrentBlock – needed in blockInfo
-
-        // --------------------- SPECIAL_FILES (7)
-        // No longer useful; don't migrate
-
-        // --------------------- SCHEDULE_TXS (8)
-        final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
-        if (scheduleFromState != null) {
-            SCHEDULE_SERVICE.setFs(scheduleFromState);
-        }
-
-        // --------------------- RECORD_STREAM_RUNNING_HASH (9)
-        // From MerkleNetworkContext: blockNo, blockHashes
-        final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
-        if (blockInfoFromState != null) {
-            BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
-        }
-
-        // --------------------- LEGACY_ADDRESS_BOOK (10)
-        // Not using anywhere; won't be migrated
-
-        // --------------------- CONTRACT_STORAGE (11)
-        final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
-        if (contractFromStorage != null) {
-            ContractServiceImpl.setStorageFromState(VirtualMapLike.from(contractFromStorage));
-            ContractServiceImpl.setBytecodeFromState(() -> VirtualMapLike.from(state.getChild(STORAGE)));
-        }
-
-        // --------------------- STAKING_INFO (12)
-        final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(STAKING_INFO);
-        if (stakingInfoFromState != null) {
-            TOKEN_SERVICE.setStakingFs(stakingInfoFromState, fromNetworkContext);
-        }
-
-        // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
-        final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
-        if (fcqFromState != null) {
-            RECORD_SERVICE.setFromState(new ArrayList<>(fcqFromState));
-        }
-
-        // --------------------- Midnight Rates (separate service in modular code - fee service)
-        if (fromNetworkContext != null) {
-            FEE_SERVICE.setFs(fromNetworkContext.getMidnightRates());
-        }
-
-        // --------------------- Sequence Number (separate service in modular code - entity ID service)
-        if (fromNetworkContext != null) {
-            ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
-        }
-
-        // --------------------- END OF MONO -> MODULAR MIGRATION ---------------------
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
         // This instance should never change on us, once it has been set

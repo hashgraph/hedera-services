@@ -37,6 +37,8 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,9 +59,8 @@ public final class InitialModServiceScheduleSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceScheduleSchema.class);
     private MerkleScheduledTransactions fs;
 
-    public InitialModServiceScheduleSchema(final SemanticVersion version, final MerkleScheduledTransactions fs) {
+    public InitialModServiceScheduleSchema(@NonNull final SemanticVersion version) {
         super(version);
-        this.fs = fs;
     }
 
     @SuppressWarnings("rawtypes")
@@ -69,20 +70,12 @@ public final class InitialModServiceScheduleSchema extends Schema {
         return Set.of(schedulesByIdDef(), schedulesByExpirySec(), schedulesByEquality());
     }
 
-    private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
-        return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF);
-    }
-
-    private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
-        return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
-    }
-
-    private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
-        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF);
+    public void setFs(@Nullable final MerkleScheduledTransactions fs) {
+        this.fs = fs;
     }
 
     @Override
-    public void migrate(@NonNull MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         if (fs != null) {
             log.info("BBM: doing schedule migration");
 
@@ -176,9 +169,23 @@ public final class InitialModServiceScheduleSchema extends Schema {
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
             log.info("BBM: finished schedule by equality");
 
-            fs = null;
-
             log.info("BBM: finished schedule migration");
+        } else {
+            log.warn("BBM: no schedule 'from' state found");
         }
+
+        fs = null;
+    }
+
+    private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
+        return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF);
+    }
+
+    private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
+        return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
+    }
+
+    private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
+        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF);
     }
 }

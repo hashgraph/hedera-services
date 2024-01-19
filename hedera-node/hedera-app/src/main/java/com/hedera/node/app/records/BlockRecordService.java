@@ -29,6 +29,8 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.IOException;
 import java.util.Set;
 import javax.inject.Singleton;
@@ -65,7 +67,7 @@ public final class BlockRecordService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
@@ -88,7 +90,9 @@ public final class BlockRecordService implements Service {
                     final var runningHashes =
                             RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
                     runningHashState.put(runningHashes);
-                } else if (mnc != null) {
+                }
+
+                if (mnc != null) {
                     logger.info("BBM: doing block record migration");
 
                     // first migrate the hashes
@@ -109,16 +113,18 @@ public final class BlockRecordService implements Service {
 
                     if (toBlockState.isModified()) ((WritableSingletonStateBase) toBlockState).commit();
 
-                    fs = null;
-                    mnc = null;
-
                     logger.info("BBM: finished block record migration");
+                } else {
+                    logger.warn("BBM: no block 'from' state found");
                 }
+
+                fs = null;
+                mnc = null;
             }
         });
     }
 
-    public void setFs(RecordsRunningHashLeaf fs, MerkleNetworkContext mnc) {
+    public void setFs(@Nullable final RecordsRunningHashLeaf fs, @Nullable final MerkleNetworkContext mnc) {
         this.fs = fs;
         this.mnc = mnc;
     }

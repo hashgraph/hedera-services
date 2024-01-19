@@ -75,6 +75,8 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.SortedSet;
@@ -128,13 +130,7 @@ public class InitialModServiceTokenSchema extends Schema {
             final Supplier<SortedSet<Account>> treasuryAccts,
             final Supplier<SortedSet<Account>> miscAccts,
             final Supplier<SortedSet<Account>> blocklistAccts,
-            final SemanticVersion version,
-            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs,
-            final MerkleMap<EntityNum, MerkleToken> tFs,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
-            final VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsFs,
-            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs,
-            final MerkleNetworkContext mnc) {
+            final SemanticVersion version) {
         super(version);
 
         this.sysAccts = sysAccts;
@@ -142,12 +138,6 @@ public class InitialModServiceTokenSchema extends Schema {
         this.treasuryAccts = treasuryAccts;
         this.miscAccts = miscAccts;
         this.blocklistAccts = blocklistAccts;
-        this.acctsFs = acctsFs;
-        this.tFs = tFs;
-        this.stakingFs = stakingFs;
-        this.nftsFs = nftsFs;
-        this.trFs = trFs;
-        this.mnc = mnc;
     }
 
     @NonNull
@@ -163,12 +153,35 @@ public class InitialModServiceTokenSchema extends Schema {
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
+    public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
+        this.nftsFs = fs;
+    }
+
+    public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
+        this.trFs = fs;
+    }
+
+    public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
+        this.acctsFs = fs;
+    }
+
+    public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
+        this.tFs = fs;
+    }
+
+    public void setStakingFs(@Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs, @Nullable final MerkleNetworkContext mnc) {
+        this.stakingFs = stakingFs;
+        this.mnc = mnc;
+    }
+
     @Override
-    public void migrate(@NonNull MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         final var isGenesis = ctx.previousStates().isEmpty();
         if (isGenesis) {
             createGenesisSchema(ctx);
-        } else if (acctsFs != null) {
+        }
+
+        if (acctsFs != null) {
             log.info("BBM: migrating token service");
 
             // ---------- NFTs
@@ -289,18 +302,20 @@ public class InitialModServiceTokenSchema extends Schema {
             srToState.put(toSr);
             if (srToState.isModified()) ((WritableSingletonStateBase) srToState).commit();
             log.info("BBM: finished staking rewards");
-
-            nftsFs = null;
-            trFs = null;
-            acctsFs = null;
-            tFs = null;
-
-            stakingFs = null;
-            mnc = null;
+        } else {
+            log.warn("BBM: no token 'from' state found");
         }
+
+        nftsFs = null;
+        trFs = null;
+        acctsFs = null;
+        tFs = null;
+
+        stakingFs = null;
+        mnc = null;
     }
 
-    private void createGenesisSchema(@NonNull MigrationContext ctx) {
+    private void createGenesisSchema(@NonNull final MigrationContext ctx) {
         // Create the network rewards state
         initializeNetworkRewards(ctx);
         initializeStakingNodeInfo(ctx);
