@@ -762,7 +762,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .useBirthRoundAncientThreshold()));
+                        .getAncientMode()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -779,8 +779,14 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                    initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
+            // We only load non-ancient events during start up, so the initial non-expired event window will be
+            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
+            // the non-expired event window will continue to expand until it reaches its full size.
+            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+                    initialState.getRound(),
+                    initialMinimumGenerationNonAncient,
+                    initialMinimumGenerationNonAncient,
+                    AncientMode.getAncientMode(platformContext)));
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
@@ -976,8 +982,12 @@ public class SwirldsPlatform implements Platform {
                     .inject(new AddressBookUpdate(
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                    signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
+
+            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+                    signedState.getRound(),
+                    signedState.getMinRoundGeneration(),
+                    signedState.getMinRoundGeneration(),
+                    AncientMode.getAncientMode(platformContext)));
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 

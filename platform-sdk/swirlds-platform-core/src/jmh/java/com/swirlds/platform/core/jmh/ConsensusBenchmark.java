@@ -82,7 +82,7 @@ public class ConsensusBenchmark {
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
                 emitter.getGraphGenerator().getAddressBook(),
-                configuration.getConfigData(EventConfig.class).useBirthRoundAncientThreshold());
+                configuration.getConfigData(EventConfig.class).getAncientMode());
     }
 
     @Benchmark
