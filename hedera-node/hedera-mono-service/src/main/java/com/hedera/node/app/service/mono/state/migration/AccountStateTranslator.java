@@ -277,7 +277,7 @@ public class AccountStateTranslator {
                 .tokenIdOrElse(TokenID.DEFAULT)
                 .tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
-        if (account.firstContractStorageKey() != null)
+        if (account.firstContractStorageKey().length() > 0)
             merkleAccount.setFirstUint256StorageKey(new ContractKey(
                             account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
                             account.firstContractStorageKey().toByteArray())
