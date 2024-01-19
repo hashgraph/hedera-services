@@ -1,5 +1,5 @@
 ########################################################################################################################
-#### Uncollapsed
+#### Slight Collapsing
 
 Groups high level grouping of components and component groups. Substitutes known spammy wires.
 
@@ -10,7 +10,6 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -23,7 +22,7 @@ pcli diagram \
     -c 'Orphan Buffer'
 
 ########################################################################################################################
-#### Simple Collapsing
+#### Heavy Collapsing
 
 Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
 
