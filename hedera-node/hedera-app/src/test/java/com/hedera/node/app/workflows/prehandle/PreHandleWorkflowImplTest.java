@@ -618,6 +618,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            verify(dispatcher).dispatchWarmup(any());
             // And we do see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
@@ -667,6 +668,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            verify(dispatcher).dispatchWarmup(any());
             // And we do see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
@@ -713,6 +715,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(previousResult.txInfo());
             assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            verify(dispatcher).dispatchWarmup(any());
             // And we do see this transaction registered with the deduplication cache
             verifyNoInteractions(deduplicationCache);
         }
@@ -750,6 +753,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            verify(dispatcher).dispatchWarmup(any());
             // And we do see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
@@ -791,6 +795,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.responseCode()).isEqualTo(OK);
             assertThat(result.payer()).isEqualTo(payerAccountID);
+            verify(dispatcher).dispatchWarmup(any());
             // and the payer sig check succeeds
             final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
             final KeyVerifier verifier = new DefaultKeyVerifier(1, config, result.verificationResults());

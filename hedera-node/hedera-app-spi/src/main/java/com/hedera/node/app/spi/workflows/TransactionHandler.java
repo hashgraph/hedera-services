@@ -53,6 +53,15 @@ public interface TransactionHandler {
     default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     /**
+     * This method can be used to perform any warm up, e.g. loading data into memory that is needed
+     * for the transaction to be handled. Providing an implementation is optional.
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws NullPointerException if {@code context} is {@code null}
+     */
+    default void warmUp(@NonNull final PreHandleContext context) {}
+
+    /**
      * Calculates the fees for a transaction
      *
      * @param feeContext the {@link FeeContext} with all information needed for the calculation

@@ -35,8 +35,6 @@ public class EventMetadata implements Clearable {
     private EventImpl selfParent;
     /** the other parent of this */
     private EventImpl otherParent;
-    /** an estimate of what the consensus timestamp will be (could be a very bad guess) */
-    private Instant estimatedTime;
     /** has this event been cleared (because it was old and should be discarded)? */
     private boolean cleared = false;
     /** is this a witness? (is round > selfParent's round, or there is no self parent?) */
@@ -91,7 +89,6 @@ public class EventMetadata implements Clearable {
     private boolean[] votes;
 
     public EventMetadata() {
-        this.estimatedTime = Instant.now(); // until a better estimate is found, just guess the time it is now
         // ConsensusImpl.currMark starts at 1 and counts up, so all events initially count as
         // unmarked
         this.mark = ConsensusConstants.EVENT_UNMARKED;
@@ -151,21 +148,6 @@ public class EventMetadata implements Clearable {
      */
     public void setOtherParent(@Nullable final EventImpl otherParent) {
         this.otherParent = otherParent;
-    }
-
-    /**
-     * @return an estimate of what the consensus timestamp will be (could be a very bad guess)
-     */
-    public @NonNull Instant getEstimatedTime() {
-        return estimatedTime;
-    }
-
-    /**
-     * @param estimatedTime an estimate of what the consensus timestamp will be (could be a very bad
-     *     guess)
-     */
-    public void setEstimatedTime(@NonNull final Instant estimatedTime) {
-        this.estimatedTime = estimatedTime;
     }
 
     public boolean isWitness() {
