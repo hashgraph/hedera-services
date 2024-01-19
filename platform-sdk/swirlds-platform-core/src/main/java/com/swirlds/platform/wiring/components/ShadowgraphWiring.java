@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring.components;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<Long> nonExpiredEventWindowInput,
+        @NonNull InputWire<NonAncientEventWindow> nonExpiredEventWindowInput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -55,6 +56,7 @@ public record ShadowgraphWiring(
      */
     public void bind(@NonNull final ShadowGraph shadowgraph) {
         ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<Long, Void>) nonExpiredEventWindowInput).bind(shadowgraph::updateNonExpiredEventWindow);
+        ((BindableInputWire<NonAncientEventWindow, Void>) nonExpiredEventWindowInput)
+                .bind(shadowgraph::updateNonExpiredEventWindow);
     }
 }

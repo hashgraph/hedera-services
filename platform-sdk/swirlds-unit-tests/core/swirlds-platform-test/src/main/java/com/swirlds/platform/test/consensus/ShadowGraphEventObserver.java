@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.shadowgraph;
+package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -51,7 +53,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        shadowGraph.updateNonExpiredEventWindow(consensusRound.getGenerations().getMinRoundGeneration());
+        shadowGraph.updateNonExpiredEventWindow(consensusRound.getNonAncientEventWindow());
     }
 
     /**

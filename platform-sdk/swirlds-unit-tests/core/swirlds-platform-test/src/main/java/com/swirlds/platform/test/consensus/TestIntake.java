@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
@@ -36,7 +35,6 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -64,8 +62,6 @@ public class TestIntake implements LoadableFromSignedState {
     private final ShadowGraph shadowGraph;
     private final ConsensusOutput output;
 
-    private final ConsensusConfig consensusConfig;
-
     private final InOrderLinkerWiring linkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
 
@@ -75,14 +71,12 @@ public class TestIntake implements LoadableFromSignedState {
     public TestIntake(@NonNull final AddressBook addressBook, @NonNull final ConsensusConfig consensusConfig) {
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
-        this.consensusConfig = consensusConfig;
 
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
                 consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
         shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
 
-        final NodeId selfId = new NodeId(0);
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();

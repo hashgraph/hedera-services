@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -31,6 +32,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -254,7 +256,7 @@ public class SyncNode {
     }
 
     /**
-     * <p>Calls the {@link ShadowGraph#updateNonExpiredEventWindow(long)} method and saves the {@code expireBelow} value for use in
+     * <p>Calls the {@link ShadowGraph#updateNonExpiredEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the {@code expireBelow} value for use in
      * validation. For the purposes of these tests, the {@code expireBelow} value becomes the oldest non-expired
      * generation in the shadow graph returned by {@link SyncNode#getOldestGeneration()} . In order words, these tests
      * assume there are no generation reservations prior to the sync that occurs in the test.</p>
@@ -264,7 +266,11 @@ public class SyncNode {
      */
     public void expireBelow(final long expireBelow) {
         this.oldestGeneration = expireBelow;
-        shadowGraph.updateNonExpiredEventWindow(expireBelow);
+
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelow, GENERATION_THRESHOLD);
+
+        shadowGraph.updateNonExpiredEventWindow(eventWindow);
     }
 
     public NodeId getNodeId() {

@@ -24,6 +24,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
@@ -359,25 +360,27 @@ public class ShadowGraph implements Clearable {
      *     <li>whose generation is less than the smallest generation with a non-zero number of reservations</li>
      * </ol>
      *
-     * @param generation The generation below which all generations should be expired. For example, if
-     *                   {@code generation} is 100, events in generation 99 and below should be expired.
+     * @param eventWindow describes the current window of non-expired events
      */
-    public synchronized void updateNonExpiredEventWindow(final long generation) {
-        if (generation < expireBelow) {
+    public synchronized void updateNonExpiredEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+
+        final long expiredThreshold = eventWindow.getExpiredThreshold();
+
+        if (expiredThreshold < expireBelow) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "A request to expire generations below {} is less than request of {}. Ignoring expiration request",
-                    generation,
+                    "A request to expire below {} is less than request of {}. Ignoring expiration request",
+                    expiredThreshold,
                     expireBelow);
             // The value of expireBelow must never decrease, so if we receive an invalid request like this, ignore it
             return;
         }
 
-        // Update the smallest generation that should not be expired
-        expireBelow = generation;
+        // Update the smallest threshold that should not be expired
+        expireBelow = expiredThreshold;
 
-        // Remove reservations for generations that can and should be expired, and
-        // keep track of the oldest generation that can be expired
+        // Remove reservations for events that can and should be expired, and
+        // keep track of the oldest threshold that can be expired
         long oldestReservedGen = pruneReservationList();
 
         if (oldestReservedGen == NO_GENERATION_RESERVED) {
