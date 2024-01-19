@@ -117,7 +117,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
         super.setupFields(payload, contractCreation);
 
-        final var chargingResult = chargeForGas(
+        final var chargingResult = chargeForGasAndIncrementEthereumNonce(
                 gasCost,
                 upfrontCost,
                 value,
@@ -143,11 +143,6 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         super.setOperationTracer(hederaTracer);
 
         try {
-            // increment sender's ethereum nonce right before entering the evm
-            // and after all handler's checks to prevent nonce discrepancies
-            if (relayer != null) {
-                chargingResult.sender().incrementNonce();
-            }
             super.execute(sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
         } catch (final ResourceLimitException e) {
             handleResourceLimitExceeded(
@@ -252,7 +247,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         mutableCoinbase.incrementBalance(Wei.of(amount * gasPrice));
     }
 
-    private ChargingResult chargeForGas(
+    private ChargingResult chargeForGasAndIncrementEthereumNonce(
             final Wei gasCost,
             final Wei upfrontCost,
             final long value,
@@ -314,6 +309,12 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
         }
+
+        // increment sender's ethereum nonce right after all checks and before entering the evm
+        if (relayer != null) {
+            senderAccount.incrementNonce();
+        }
+
         return new ChargingResult(senderAccount, mutableRelayer, allowanceCharged);
     }
 
@@ -330,7 +331,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final Wei upfrontCost) {
         // Consume all gas on resource exhaustion, using a clean updater
         final var feesOnlyUpdater = (HederaWorldState.Updater) worldState.updater();
-        chargeForGas(
+        chargeForGasAndIncrementEthereumNonce(
                 gasCost,
                 upfrontCost,
                 value,
