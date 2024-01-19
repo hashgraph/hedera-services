@@ -87,6 +87,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.hederaEvmContext = Objects.requireNonNull(hederaEvmContext);
         this.hevmTransactionFactory = Objects.requireNonNull(hevmTransactionFactory);
+        this.rootProxyWorldUpdater.setupContext(context);
     }
 
     @Override

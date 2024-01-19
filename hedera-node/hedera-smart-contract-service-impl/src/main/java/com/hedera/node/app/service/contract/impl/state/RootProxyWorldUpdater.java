@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -95,6 +99,11 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // information for the Hedera record
         final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
         createdContractIds = contractChangeSummary.newContractIds();
+
+        context().ifPresent(context -> {
+            final var creationCapacity = context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+            validateTrue(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
+        });
 
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {

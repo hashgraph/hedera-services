@@ -207,6 +207,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                             recordCache,
                             exchangeRateManager,
                             feeCalculator,
+                            consensusTime,
+                            synchronizedThrottleAccumulator,
                             payerID);
 
                     // A super-user does not have to pay for a query and has all permissions
@@ -250,6 +252,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                             recordCache,
                             exchangeRateManager,
                             feeCalculator,
+                            consensusTime,
+                            synchronizedThrottleAccumulator,
                             null);
                 }
 

@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.workflows.Context;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -272,6 +273,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @NonNull
     List<StorageAccesses> pendingStorageUpdates();
+
+    void setupContext(@NonNull Context context);
+
+    @NonNull
+    Optional<Context> context();
 
     /**
      * Externalizes the results of a system contract call into a record

@@ -164,7 +164,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
-     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage tracking of network utilization
+     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of network throttling
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -894,6 +894,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function) {
         synchronizedThrottleAccumulator.leakUnusedThrottlePreviouslyReserved(n, function);
+    }
+
+    @Override
+    public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
+        return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
     }
 
     @Override

@@ -79,4 +79,9 @@ public class SynchronizedThrottleAccumulator {
     public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
         frontendThrottle.leakCapacityForNOfUnscaled(n, function);
     }
+
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
+        return frontendThrottle.shouldThrottleNOfUnscaled(n, function, consensusTime);
+    }
 }
