@@ -300,7 +300,7 @@ jobs:
         uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
         with:
           run: |
-            sleep 3600
+            sudo setcap cap_net_raw+ep /usr/local/ping-exporter/ping_exporter
             ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
           tail: true
           log-output: true
@@ -314,6 +314,7 @@ jobs:
           run: |
             export GRAFANA_AGENT_USERNAME="${{ secrets.grafana-agent-username }}"
             export GRAFANA_AGENT_PASSWORD="${{ secrets.grafana-agent-password }}"
+            sleep 3600
             AGENT_MODE=flow ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 run "${{ github.workspace }}/.github/workflows/config/grafana-agent.river"
           tail: true
           log-output: true
