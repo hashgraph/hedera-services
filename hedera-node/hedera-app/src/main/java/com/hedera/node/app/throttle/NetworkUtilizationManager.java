@@ -78,4 +78,14 @@ public interface NetworkUtilizationManager {
      * @param state the state of the node
      */
     void saveTo(@NonNull final HederaState state);
+
+    /*
+     * Updates the throttle requirements for the given transaction and returns whether the transaction
+     * should be throttled for the current time(Instant.now).
+     *
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param state the current state of the node
+     * @return whether the transaction should be throttled
+     */
+    boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state);
 }

@@ -19,5 +19,23 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.base.HederaFunctionality;
 
 public interface Context {
+    /**
+     * Verifies if the frontend throttle has enough capacity to handle the given number of the
+     * given function at the given time. (The time matters because we want to consider how much
+     * will have leaked between now and that time.)
+     *
+     * @param n the number of the given function
+     * @param function the function
+     * @return true if the system should throttle the given number of the given function
+     * at the instant for which throttling should be calculated
+     */
     boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
+
+    /**
+     * For each following child transaction consumes the capacity
+     * required for that child transaction in the consensus throttle buckets.
+     *
+     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
+     */
+    boolean hasThrottleCapacityForChildTransactions();
 }

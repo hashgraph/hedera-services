@@ -163,4 +163,9 @@ public class QueryContextImpl implements QueryContext {
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
         return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function, userQueryConsensusTime);
     }
+
+    @Override
+    public boolean hasThrottleCapacityForChildTransactions() {
+        return true;
+    }
 }

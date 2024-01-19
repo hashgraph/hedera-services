@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -75,9 +78,11 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -133,6 +138,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ChildRecordFinalizer childRecordFinalizer;
+    private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private ReadableStoreFactory readableStoreFactory;
@@ -164,7 +170,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
-     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of network throttling
+     * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
+     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -190,6 +197,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Authorizer authorizer,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
@@ -212,6 +220,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
+        this.networkUtilizationManager =
+                requireNonNull(networkUtilizationManager, "networkUtilization must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
@@ -698,6 +708,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                networkUtilizationManager,
                 synchronizedThrottleAccumulator);
 
         if (dispatchValidationResult != null) {
@@ -899,6 +910,35 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
         return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
+    }
+
+    public boolean shouldThrottleTxn(TransactionInfo txInfo) {
+        return networkUtilizationManager.shouldThrottle(txInfo, current());
+    }
+
+    @Override
+    public boolean hasThrottleCapacityForChildTransactions() {
+        var isAllowed = true;
+        final var childRecords = recordListBuilder.childRecordBuilders();
+
+        for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
+            final var childRecord = childRecords.get(i);
+            if (Objects.equals(childRecord.status(), SUCCESS)) {
+                final var tx = childRecord.build().transaction();
+                final var txInfo = new TransactionInfo(
+                        tx, childRecord.transactionBody(), tx.sigMap(), tx.signedTransactionBytes(), functionality);
+
+                if (txInfo.functionality() == CONTRACT_CREATE || txInfo.functionality() == CONTRACT_CALL) {
+                    continue;
+                }
+
+                if (shouldThrottleTxn(txInfo)) {
+                    isAllowed = false;
+                }
+            }
+        }
+
+        return isAllowed;
     }
 
     @Override

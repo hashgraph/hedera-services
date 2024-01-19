@@ -669,18 +669,6 @@ public interface HandleContext extends Context {
     void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
 
     /**
-     * Verifies if the frontend throttle has enough capacity to handle the given number of the
-     * given function at the given time. (The time matters because we want to consider how much
-     * will have leaked between now and that time.)
-     *
-     * @param n the number of the given function
-     * @param function the function
-     * @return true if the system should throttle the given number of the given function
-     * at the instant for which throttling should be calculated
-     */
-    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
-
-    /**
      * Create a checkpoint for the current childRecords.
      *
      * @return the checkpoint for the current childRecords, containing the first preceding record and the last following

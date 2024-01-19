@@ -201,4 +201,9 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
         backendThrottle.leakUnusedGasPreviouslyReserved(txnInfo, value);
     }
+
+    public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
+        final var now = Instant.now();
+        return backendThrottle.shouldThrottle(txnInfo, now, state);
+    }
 }
