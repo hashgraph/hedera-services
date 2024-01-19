@@ -143,6 +143,13 @@ public class TransactionProcessor {
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
+
+        if (transaction.isEthereumTransaction()) {
+            // increment sender's ethereum nonce right before entering the evm
+            // and after all handler's checks to prevent nonce discrepancies
+            parties.sender().incrementNonce();
+        }
+
         final var result = frameRunner.runToCompletion(
                 transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
 
@@ -246,7 +253,6 @@ public class TransactionProcessor {
         }
         if (transaction.isEthereumTransaction()) {
             validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
-            parties.sender().incrementNonce();
         }
         return parties;
     }
