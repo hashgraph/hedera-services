@@ -296,6 +296,17 @@ jobs:
           sudo rm -rf /tmp/ping-exporter.tar.gz
           sudo chmod +x /usr/local/ping-exporter/ping_exporter
 
+      - name: Execute Ping Exporter
+        uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
+        with:
+          run: |
+            ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
+          tail: true
+          log-output: true
+          wait-for: 60m
+          wait-on: |
+            http://localhost:9427/metrics
+
       - name: Execute Grafana Agent
         uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
         with:
@@ -306,18 +317,7 @@ jobs:
             AGENT_MODE=flow ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 run "${{ github.workspace }}/.github/workflows/config/grafana-agent.river"
           tail: true
           log-output: true
-          wait-for: 1m
-          wait-on: |
-            http://localhost:12345/metrics
-
-      - name: Execute Ping Exporter
-        uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
-        with:
-          run: |
-            ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
-          tail: true
-          log-output: true
-          wait-for: 1m
+          wait-for: 60m
           wait-on: |
             http://localhost:9427/metrics
 
