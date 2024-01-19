@@ -284,7 +284,7 @@ jobs:
         run: |
           sudo mkdir -p /usr/local/grafana-agent
           curl -sSL -o /tmp/grafana-agent.zip https://github.com/grafana/agent/releases/download/v0.39.1/grafana-agent-linux-amd64.zip
-          sudo tar -xzf /tmp/grafana-agent.zip -C /usr/local/grafana-agent
+          sudo unzip -d /usr/local/grafana-agent /tmp/grafana-agent.zip 
           sudo rm -rf /tmp/grafana-agent.zip
           sudo chmod +x /usr/local/grafana-agent/grafana-agent-linux-amd64
 
