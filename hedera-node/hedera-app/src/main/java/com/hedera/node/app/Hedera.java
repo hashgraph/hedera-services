@@ -81,6 +81,7 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -327,7 +328,8 @@ public final class Hedera implements SwirldMain {
                         RECORD_SERVICE,
                         BLOCK_SERVICE,
                         FEE_SERVICE,
-                        new CongestionThrottleService())
+                        new CongestionThrottleService(),
+                        new NetworkServiceImpl())
                 .forEach(service -> servicesRegistry.register(service, version));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
