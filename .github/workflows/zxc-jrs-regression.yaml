@@ -304,7 +304,7 @@ jobs:
             ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
           tail: true
           log-output: true
-          wait-for: 60m
+          wait-for: 1m
           wait-on: |
             http://localhost:9427/metrics
 
@@ -318,7 +318,7 @@ jobs:
             grafana-agent-linux-amd64
           tail: true
           log-output: true
-          wait-for: 60m
+          wait-for: 1m
           wait-on: |
             http://localhost:9427/metrics
 
@@ -341,7 +341,6 @@ jobs:
 
       - name: Install Python Virtual Environment
         run: |
-          sleep 3600
           echo "::group::Aptitude Update"
             sudo apt update
           echo "::endgroup::"

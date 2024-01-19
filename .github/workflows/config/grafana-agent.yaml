@@ -1,9 +1,7 @@
-server:
-  log_level: info
-
 metrics:
   global:
-    scrape_interval: 1m
+    scrape_interval: 30s
+  wal_directory: /tmp/wal
   configs:
     - name: scrape-ping-exporter
       host_filter: false
