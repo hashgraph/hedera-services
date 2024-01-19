@@ -1,13 +1,22 @@
-scrape_configs:
-  - job_name: self-scrape
-    static_configs:
-      - targets: ['127.0.0.1:9427']
-        labels:
-          pod: ${RUNNER_NAME}
-          namespace: ${KUBERNETES_NAMESPACE}
+server:
+  log_level: info
 
-remote_write:
-  - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push
-    basic_auth:
-      username: ${GRAFANA_AGENT_USERNAME}
-      password: ${GRAFANA_AGENT_TOKEN}
+metrics:
+  global:
+    scrape_interval: 1m
+  configs:
+    - name: scrape-ping-exporter
+      host_filter: false
+      scrape_configs:
+        - job_name: self-scrape
+          static_configs:
+            - targets: ['127.0.0.1:9427']
+              labels:
+                pod: ${RUNNER_NAME}
+                namespace: ${KUBERNETES_NAMESPACE}
+
+      remote_write:
+        - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push
+          basic_auth:
+            username: ${GRAFANA_AGENT_USERNAME}
+            password: ${GRAFANA_AGENT_TOKEN}
