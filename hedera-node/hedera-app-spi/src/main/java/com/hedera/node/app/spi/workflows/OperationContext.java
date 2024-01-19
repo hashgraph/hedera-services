@@ -18,6 +18,17 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 
+/**
+ * Represents a generalized operation context (HandleContext or QueryContext) of a single {@code handle()}-call.
+ * <ul>
+ *     <li>Information about the transaction being handled, such as its consensus time, its body, and its category</li>
+ *     <li>Configuration data and objects that depend on the current configuration</li>
+ *     <li>Verification data, that has been assembled during pre-handle</li>
+ *     <li>State related data and the possibility to rollback changes</li>
+ *     <li>Data related to the record stream</li>
+ *     <li>Functionality to dispatch preceding and child transactions</li>
+ * </ul>
+ */
 public interface OperationContext {
     /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
