@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
@@ -66,6 +67,12 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     private final long lastLeafPath;
     private List<VirtualLeafRecord<K, V>> leaves;
     private List<VirtualHashRecord> nodes;
+
+    // Flushes are initiated from onNodeHashed(). While a flush is in progress, other nodes
+    // are still hashed in parallel, so it may happen that enough nodes are hashed to
+    // start a new flush, while the previous flush is not complete yet. This flag is
+    // protection from that
+    private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -110,7 +117,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
         synchronized (this) {
             nodes.add(new VirtualHashRecord(path, hash));
-            if (nodes.size() + leaves.size() > 1000000) { // TODO: make it configurable
+            if ((nodes.size() + leaves.size() > 1000000) && !flushInProgress.get()) { // TODO: make it configurable
                 dirtyHashesToFlush = nodes;
                 nodes = new ArrayList<>();
                 dirtyLeavesToFlush = leaves;
@@ -149,20 +156,27 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     // otherwise all hashing tasks would be blocked on listener calls until flush is completed.
     private void flush(
             final List<VirtualHashRecord> dirtyHashesToFlush, final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
-        final long maxPath = dirtyLeavesToFlush.stream()
-                .mapToLong(VirtualLeafRecord::getPath)
-                .max()
-                .orElse(-1);
-        // flush it down
+        if (!flushInProgress.compareAndSet(false, true)) {
+            throw new IllegalStateException("Cannot start flushing, flush already in progress?");
+        }
         try {
-            dataSource.saveRecords(
-                    firstLeafPath,
-                    lastLeafPath,
-                    dirtyHashesToFlush.stream(),
-                    dirtyLeavesToFlush.stream(),
-                    findLeavesToRemove(maxPath));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            final long maxPath = dirtyLeavesToFlush.stream()
+                    .mapToLong(VirtualLeafRecord::getPath)
+                    .max()
+                    .orElse(-1);
+            // flush it down
+            try {
+                dataSource.saveRecords(
+                        firstLeafPath,
+                        lastLeafPath,
+                        dirtyHashesToFlush.stream(),
+                        dirtyLeavesToFlush.stream(),
+                        findLeavesToRemove(maxPath));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        } finally {
+            flushInProgress.set(false);
         }
     }
 

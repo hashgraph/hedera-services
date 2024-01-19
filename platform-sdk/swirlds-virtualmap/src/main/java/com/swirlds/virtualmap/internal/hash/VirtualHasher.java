@@ -166,21 +166,11 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         void push() {
             if (count.decrementAndGet() == 0) {
-                forkIt();
-            }
-        }
-
-        void push(final int p) {
-            if (count.addAndGet(-p) == 0) {
-                forkIt();
-            }
-        }
-
-        private void forkIt() {
-            if (Thread.currentThread() instanceof ForkJoinWorkerThread) {
-                fork();
-            } else {
-                pool.execute(this);
+                if (Thread.currentThread() instanceof ForkJoinWorkerThread) {
+                    fork();
+                } else {
+                    pool.execute(this);
+                }
             }
         }
     }
@@ -199,11 +189,11 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         // isLeaf is just an optimization: if the task is known to be used as a leaf task,
         // there is no need to allocate an array of hashes that will always be empty
-        ChunkHashTask(long path, int height, boolean isLeaf) {
+        ChunkHashTask(long path, int height) {
             super(1 + (1 << height));
             this.height = height;
             this.path = path;
-            this.ins = isLeaf ? null : new Hash[1 << height];
+            this.ins = new Hash[1 << height];
         }
 
         void setOut(final ChunkHashTask out) {
@@ -213,19 +203,20 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             push();
         }
 
-        void setLeaf(final VirtualLeafRecord<K, V> leaf) {
+        void setData(final VirtualLeafRecord<K, V> leaf) {
             assert leaf == null || path == leaf.getPath();
             assert leaf == null || height == 1;
             assert leaf != null || out != null;
             if (leaf == null) {
-                out.setIn(getIndexInOut(), null);
+                out.setHash(getIndexInOut(), null);
             } else {
                 this.leaf = leaf;
-                push(1 << height);
+                push(); // left hash dependency
+                push(); // right hash dependency
             }
         }
 
-        void setIn(final int index, final Hash hash) {
+        void setHash(final int index, final Hash hash) {
             assert index >= 0 && index < (1 << height);
             ins[index] = hash;
             push();
@@ -277,7 +268,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     }
                     hash = ins[0];
                 }
-                out.setIn(getIndexInOut(), hash);
+                out.setHash(getIndexInOut(), hash);
                 return true;
             } catch (final Throwable e) {
                 completeExceptionally(e);
@@ -346,9 +337,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         listener.onHashingStarted();
 
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
-        ChunkHashTask resultTask = new ChunkHashTask(INVALID_PATH, 1, false);
+        ChunkHashTask resultTask = new ChunkHashTask(INVALID_PATH, 1);
         int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        ChunkHashTask rootTask = new ChunkHashTask(ROOT_PATH, rootTaskHeight, false);
+        ChunkHashTask rootTask = new ChunkHashTask(ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -370,11 +361,10 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             long curPath = leaf.getPath();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {
-                curTask = new ChunkHashTask(curPath, 1, true);
+                curTask = new ChunkHashTask(curPath, 1);
             }
-            curTask.setLeaf(leaf);
+            curTask.setData(leaf);
 
-            boolean isLeaf = true;
             while (true) {
                 final int curRank = Path.getRank(curPath);
                 final int chunkWidth = 1 << parentRankHeights[curRank];
@@ -386,7 +376,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     while (curStackPath < Math.min(curPath, lastPathInCurStackChunk)) {
                         final ChunkHashTask t = map.remove(curStackPath);
                         assert t != null;
-                        t.setLeaf(null);
+                        t.setData(null);
                         curStackPath++;
                     }
                     stack[curRank] = INVALID_PATH;
@@ -403,7 +393,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 }
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
-                    parentTask = new ChunkHashTask(parentPath, parentRankHeights[curRank], false);
+                    parentTask = new ChunkHashTask(parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
 
@@ -416,17 +406,16 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         continue;
                     }
                     if (siblingPath > lastLeafPath) {
-                        parentTask.setIn((int) (siblingPath - firstSiblingPath), NULL_HASH);
+                        parentTask.setHash((int) (siblingPath - firstSiblingPath), NULL_HASH);
                         continue;
                     }
                     ChunkHashTask siblingTask = map.remove(siblingPath);
                     if (siblingTask == null) {
-                        siblingTask = new ChunkHashTask(
-                                siblingPath, curTask.height, isLeaf && (!firstLeaf || siblingPath > curPath));
+                        siblingTask = new ChunkHashTask(siblingPath, curTask.height);
                     }
                     siblingTask.setOut(parentTask);
                     if ((siblingPath < curPath) && !firstLeaf) {
-                        siblingTask.setLeaf(null);
+                        siblingTask.setData(null);
                     } else {
                         map.put(siblingPath, siblingTask);
                     }
@@ -437,11 +426,10 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
                 curPath = parentPath;
                 curTask = parentTask;
-                isLeaf = false;
             }
             firstLeaf = false;
         }
-        map.forEach((path, task) -> task.setLeaf(null));
+        map.forEach((path, task) -> task.setData(null));
         map.clear();
 
         try {
