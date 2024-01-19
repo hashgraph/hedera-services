@@ -40,10 +40,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -95,17 +99,20 @@ class ConsensusHashManagerTests {
             final Hash roundHash = randomHash(random);
 
             if (round == 1) {
-                manager.overridingStateObserver(round, roundHash);
+                manager.overridingState(mockState(round, roundHash));
             } else {
                 manager.roundCompleted(round);
-                manager.stateHashedObserver(round, roundHash);
+                manager.newStateHashed(mockState(round, roundHash));
             }
 
             for (final Address address : addressBook) {
-                manager.handlePostconsensusSignatureTransaction(
-                        address.getNodeId(),
-                        new StateSignatureTransaction(round, mock(Signature.class), roundHash),
-                        new BasicSoftwareVersion(1));
+                manager.handlePostconsensusSignatures(List.of(
+                        new ScopedSystemTransaction<>(
+                                address.getNodeId(),
+                                new BasicSoftwareVersion(1),
+                                new StateSignatureTransaction(round, mock(Signature.class), roundHash)
+                        )
+                ));
             }
         }
     }
@@ -250,7 +257,7 @@ class ConsensusHashManagerTests {
                 DO_NOT_IGNORE_ROUNDS,
                 issHandler);
 
-        manager.overridingStateObserver(0L, selfHashes.get(0));
+        manager.overridingState(mockState(0L, selfHashes.get(0)));
 
         // Start collecting data for rounds.
         for (long round = 1; round < roundsNonAncient; round++) {
@@ -259,7 +266,7 @@ class ConsensusHashManagerTests {
 
         // Add all the self hashes.
         for (long round = 1; round < roundsNonAncient; round++) {
-            manager.stateHashedObserver(round, selfHashes.get((int) round));
+            manager.newStateHashed(mockState(round, selfHashes.get((int) round)));
         }
 
         // Report hashes from the network in random order
@@ -276,12 +283,14 @@ class ConsensusHashManagerTests {
 
         for (final RoundHashValidatorTests.NodeHashInfo nodeHashInfo : operations) {
             final NodeId nodeId = nodeHashInfo.nodeId();
-
-            manager.handlePostconsensusSignatureTransaction(
-                    nodeId,
-                    new StateSignatureTransaction(
-                            nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+            manager.handlePostconsensusSignatures(List.of(
+                    new ScopedSystemTransaction<>(
+                            nodeId,
+                            new BasicSoftwareVersion(1),
+                            new StateSignatureTransaction(
+                                    nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash())
+                    )
+            ));
         }
 
         // Shifting after completion should have no side effects
@@ -370,13 +379,14 @@ class ConsensusHashManagerTests {
             if (info.nodeId() == selfId) {
                 assertThrows(
                         IllegalStateException.class,
-                        () -> manager.stateHashedObserver(targetRound, info.nodeStateHash()),
+                        () -> manager.newStateHashed(mockState(targetRound, info.nodeStateHash())),
                         "should not be able to add hash for round not being tracked");
             }
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -388,12 +398,13 @@ class ConsensusHashManagerTests {
         manager.roundCompleted(targetRound);
         for (final RoundHashValidatorTests.NodeHashInfo info : data.nodeList()) {
             if (info.nodeId() == selfId) {
-                manager.stateHashedObserver(targetRound, info.nodeStateHash());
+                manager.newStateHashed(mockState(targetRound, info.nodeStateHash()));
             }
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
         }
 
         assertEquals(1, issCount.get(), "data should not have been ignored");
@@ -444,13 +455,14 @@ class ConsensusHashManagerTests {
             if (info.nodeId() == selfId) {
                 assertThrows(
                         IllegalStateException.class,
-                        () -> manager.stateHashedObserver(targetRound, info.nodeStateHash()),
+                        () -> manager.newStateHashed(mockState(targetRound, info.nodeStateHash())),
                         "should not be able to add hash for round not being tracked");
             }
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -499,7 +511,7 @@ class ConsensusHashManagerTests {
 
         for (final RoundHashValidatorTests.NodeHashInfo info : data.nodeList()) {
             if (info.nodeId() == selfId) {
-                manager.stateHashedObserver(0L, info.nodeStateHash());
+                manager.newStateHashed(mockState(0L, info.nodeStateHash()));
             }
         }
 
@@ -512,10 +524,12 @@ class ConsensusHashManagerTests {
             }
             submittedWeight += weight;
 
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
+
         }
 
         // Shift the window even though we have not added enough data for a decision
@@ -597,7 +611,7 @@ class ConsensusHashManagerTests {
 
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             if (info.nodeId() == selfId) {
-                manager.stateHashedObserver(0L, info.nodeStateHash());
+                manager.newStateHashed(mockState(0L, info.nodeStateHash()));
             }
         }
 
@@ -605,10 +619,11 @@ class ConsensusHashManagerTests {
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -745,6 +760,17 @@ class ConsensusHashManagerTests {
                 }
             }
         }
+    }
+
+    private static ReservedSignedState mockState(final long round, final Hash hash){
+        final ReservedSignedState rs = mock(ReservedSignedState.class);
+        final SignedState ss = mock(SignedState.class);
+        final State s = mock(State.class);
+        Mockito.when(rs.get()).thenReturn(ss);
+        Mockito.when(ss.getState()).thenReturn(s);
+        Mockito.when(ss.getRound()).thenReturn(round);
+        Mockito.when(s.getHash()).thenReturn(hash);
+        return rs;
     }
 
     private static IssHandler mockIssHandler(

@@ -595,7 +595,7 @@ public class SwirldsPlatform implements Platform {
             latestCompleteState.newIncompleteState(rs.get().getRound());
             savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
             stateManagementComponent.newSignedStateFromTransactions(rs);
-            consensusHashManager.stateHashedObserver(rs.get().getRound(), rs.get().getState().getHash());
+            consensusHashManager.newStateHashed(rs.getAndReserve("issDetector"));
         };
 
         final QueueThread<ReservedSignedState> stateHashSignQueue =
@@ -1044,7 +1044,7 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesReplayerIteratorInput().inject(iterator);
         }
 
-        consensusHashManager.signalEndOfPreconsensusReplay();
+        consensusHashManager.signalEndOfPreconsensusReplay(Void.class);
 
         platformStatusManager.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));

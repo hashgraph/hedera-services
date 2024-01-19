@@ -29,18 +29,21 @@ import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -164,7 +167,7 @@ public class ConsensusHashManager {
     /**
      * This method is called once all preconsensus events have been replayed.
      */
-    public void signalEndOfPreconsensusReplay() {
+    public void signalEndOfPreconsensusReplay(@Nullable final Object ignored) {
         replayingPreconsensusStream = false;
     }
 
@@ -226,6 +229,19 @@ public class ConsensusHashManager {
                         "Unexpected hash validation status " + status + ", should have decided prior to now");
             }
         }
+    }
+
+    /**
+     * Handle postconsensus state signatures.
+     *
+     * @param transactions the signature transactions to handle
+     */
+    public void handlePostconsensusSignatures(
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+        transactions.forEach(t->handlePostconsensusSignatureTransaction(
+                t.submitterId(),
+                t.transaction(),
+                t.softwareVersion()));
     }
 
     /**
@@ -296,6 +312,12 @@ public class ConsensusHashManager {
         }
     }
 
+    public void newStateHashed(@NonNull final ReservedSignedState state){
+        try (state) {
+            stateHashedObserver(state.get().getRound(), state.get().getState().getHash());
+        }
+    }
+
     /**
      * Observe when this node finishes hashing a state.
      *
@@ -317,6 +339,12 @@ public class ConsensusHashManager {
         final boolean decided = roundHashValidator.reportSelfHash(hash);
         if (decided) {
             checkValidity(roundHashValidator);
+        }
+    }
+
+    public void overridingState(@NonNull final ReservedSignedState state){
+        try (state) {
+            overridingStateObserver(state.get().getRound(), state.get().getState().getHash());
         }
     }
 
