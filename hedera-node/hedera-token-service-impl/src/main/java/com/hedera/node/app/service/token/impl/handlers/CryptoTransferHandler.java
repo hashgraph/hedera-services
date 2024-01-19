@@ -84,8 +84,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -93,7 +91,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
-    private final Logger log = LogManager.getLogger(CryptoTransferHandler.class);
     private final CryptoTransferValidator validator;
 
     @Inject
@@ -239,7 +236,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
-        log.info("customFeeAssessedOps: " + customFeeAssessedOps);
 
         for (final var txn : customFeeAssessedOps) {
             steps.add(new AssociateTokenRecipientsStep(txn));
