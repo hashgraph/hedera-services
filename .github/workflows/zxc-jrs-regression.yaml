@@ -316,8 +316,7 @@ jobs:
         with:
           run: |
             set            
-            ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml"
-            grafana-agent-linux-amd64
+            ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml" >> /tmp/grafana-agent.log 2>&1
           tail: true
           log-output: true
           wait-for: 1m
