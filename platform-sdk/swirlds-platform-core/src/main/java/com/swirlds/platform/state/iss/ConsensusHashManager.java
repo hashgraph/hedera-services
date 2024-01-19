@@ -30,9 +30,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
@@ -304,7 +302,6 @@ public class ConsensusHashManager {
      * @param round the round of the state
      * @param hash  the hash of the state
      */
-    @Observer(value = StateHashedTrigger.class, comment = "check hash derived by this node")
     public void stateHashedObserver(final Long round, final Hash hash) {
         if (round == ignoredRound) {
             // This round is intentionally ignored.
