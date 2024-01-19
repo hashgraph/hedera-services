@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
@@ -112,27 +111,20 @@ public class ShadowGraph implements Clearable {
     /** the number of nodes in the network, used for debugging */
     private final int numberOfNodes;
 
-    private final NodeId selfId;
-
     /**
      * Constructor.
      *
      * @param time              provides wall clock time
      * @param syncMetrics       metrics for sync gossip
      * @param addressBook       the address book
-     * @param selfId            the id of this node
      */
     public ShadowGraph(
-            @NonNull final Time time,
-            @NonNull final SyncMetrics syncMetrics,
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId) {
+            @NonNull final Time time, @NonNull final SyncMetrics syncMetrics, @NonNull final AddressBook addressBook) {
 
         Objects.requireNonNull(time);
 
         this.syncMetrics = syncMetrics;
         this.numberOfNodes = addressBook.getSize();
-        this.selfId = Objects.requireNonNull(selfId);
         expireBelow = FIRST_GENERATION;
         oldestGeneration = FIRST_GENERATION;
         tips = new HashSet<>();
