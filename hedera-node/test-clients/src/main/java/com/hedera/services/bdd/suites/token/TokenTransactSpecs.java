@@ -61,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -216,7 +217,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var multiPurpose = MULTI_PURPOSE;
         final var transferTxn = TRANSFER_TXN;
 
-        return defaultHapiSpec("AutoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory")
+        return defaultHapiSpec("AutoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiPurpose),
                         cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(1),
@@ -1155,7 +1156,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR));
     }
 
-    @HapiTest // HERE Transaction fees '834046' and '1668113'
+    @HapiTest
     public HapiSpec fractionalCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
@@ -1200,7 +1201,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
-    @HapiTest // HERE Transaction fees '834046' and '1668113'
+    @HapiTest
     public HapiSpec fractionalNetOfTransfersCaseStudy() {
         final var gerry = "gerry";
         final var horace = "horace";
@@ -1245,7 +1246,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(useCaseToken, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
-    @HapiTest // HERE Transaction fees '1580974' and '3161972'
+    @HapiTest
     public HapiSpec simpleHtsFeeCaseStudy() {
         final var claire = "Claire";
         final var debbie = DEBBIE;
@@ -1369,7 +1370,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithHbarFee, Long.MAX_VALUE - 1_000L));
     }
 
-    @HapiTest // HERE Transaction fees '1635740' and '3271522'
+    @HapiTest
     public HapiSpec nestedFractionalCaseStudy() {
         final var edgar = EDGAR;
         final var fern = "Fern";
@@ -1436,7 +1437,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
-    @HapiTest // HERE Transaction fees '1984165' and '693703'
+    @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
         final var amelie = AMELIE;
@@ -1529,7 +1530,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
 
-    @HapiTest // HERE
+    @HapiTest
     public HapiSpec royaltyAndFractionalTogetherCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1633,7 +1634,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(txnFromAmelie).logged());
     }
 
-    @HapiTest // HERE Transaction fees '2437435' and '4874913'
+    @HapiTest
     public HapiSpec nestedHtsCaseStudy() {
         final var debbie = DEBBIE;
         final var edgar = EDGAR;
@@ -1717,7 +1718,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var nonExemptUnderfundedTxn = "nonExemptUnderfundedTxn";
         final var nonExemptFundedTxn = "nonExemptFundedTxn";
 
-        return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee")
+        return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(gabriella),
                         cryptoCreate(harry),
@@ -1805,7 +1806,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTokenNftInfo(artToken, 1L).hasAccountID(harry));
     }
 
-    @HapiTest // HERE Transaction fees '834046' and '1668113'
+    @HapiTest
     public HapiSpec treasuriesAreExemptFromAllCustomFees() {
         final var edgar = EDGAR;
         final var feeToken = "FeeToken";
@@ -1945,7 +1946,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     // HIP-573 tests below
-    @HapiTest // HERE Transaction fees '43879163' and '44703567'
+    @HapiTest // HERE
     public HapiSpec collectorIsChargedFixedFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -1972,7 +1973,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
-    @HapiTest
+    @HapiTest // HERE
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -2030,10 +2031,10 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
-    @HapiTest // HERE Mismatched list sizes between expected list [accountID {
+    @HapiTest // HERE custom fees fee collector ids in different order
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
         return defaultHapiSpec(
-                        "CollectorIsChargedRoyaltyFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+                        "CollectorIsChargedRoyaltyFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::royaltyFeeNoFallbackWith),
@@ -2064,7 +2065,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
-    @HapiTest // HERE Transaction fees '43879163' and '44703567'  item 0 body
+    @HapiTest // HERE
     public HapiSpec collectorIsChargedRoyaltyFallbackFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(

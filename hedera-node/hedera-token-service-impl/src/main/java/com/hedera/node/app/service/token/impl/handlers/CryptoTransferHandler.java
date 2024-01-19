@@ -484,7 +484,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         boolean triedAndFailedToUseCustomFees = false;
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
-            System.out.println("assessedCustomFees: " + assessedCustomFees);
         } catch (HandleException ignore) {
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
