@@ -75,7 +75,7 @@ class CustomCallCodeOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomCallCodeOperation(gasCalculator, addressChecks);
+        subject = new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Test
@@ -90,8 +90,10 @@ class CustomCallCodeOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
             givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            frameUtils
+                    .when(() -> FrameUtils.contractRequired(frame, NON_SYSTEM_LONG_ZERO_ADDRESS, featureFlags))
+                    .thenReturn(true);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -100,11 +102,8 @@ class CustomCallCodeOperationTest {
     @Test
     void permitsSystemAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
-            given(addressChecks.isSystemAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
             given(frame.stackSize()).willReturn(7);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
