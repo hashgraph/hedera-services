@@ -68,7 +68,6 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -104,7 +103,8 @@ public class InitialModFileGenesisSchema extends Schema {
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
     /** Create a new instance */
-    public InitialModFileGenesisSchema(@NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
+    public InitialModFileGenesisSchema(
+            @NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
         this.configProvider = requireNonNull(configProvider);
     }

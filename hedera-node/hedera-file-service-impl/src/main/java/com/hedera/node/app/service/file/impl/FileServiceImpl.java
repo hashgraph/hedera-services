@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.function.Supplier;
 import javax.inject.Inject;
 

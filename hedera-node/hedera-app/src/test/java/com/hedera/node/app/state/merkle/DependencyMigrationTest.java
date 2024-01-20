@@ -140,7 +140,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
         final var entityService = new EntityIdService() {
             @Override
-            public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+            public void registerSchemas(
+                    @NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
                 registry.register(new Schema(version) {
                     @NonNull
                     @Override
@@ -192,7 +193,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         // Define the Entity ID Service:
         final EntityIdService entityIdService = new EntityIdService() {
             @Override
-            public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+            public void registerSchemas(
+                    @NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
                 registry.register(new Schema(version) {
                     @NonNull
                     public Set<StateDefinition> statesToCreate() {
@@ -214,7 +216,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
 
             @Override
-            public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+            public void registerSchemas(
+                    @NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
                 registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("A-Service#migrate");
@@ -231,7 +234,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
 
             @Override
-            public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+            public void registerSchemas(
+                    @NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
                 registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("B-Service#migrate");
@@ -242,7 +246,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         // Define DependentService:
         final DependentService dsService = new DependentService() {
             @Override
-            public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+            public void registerSchemas(
+                    @NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
                 registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("DependentService#migrate");

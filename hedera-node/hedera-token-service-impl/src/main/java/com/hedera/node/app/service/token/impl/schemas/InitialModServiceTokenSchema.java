@@ -76,7 +76,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.Set;
 import java.util.SortedSet;
@@ -169,7 +168,9 @@ public class InitialModServiceTokenSchema extends Schema {
         this.tFs = fs;
     }
 
-    public void setStakingFs(@Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs, @Nullable final MerkleNetworkContext mnc) {
+    public void setStakingFs(
+            @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
+            @Nullable final MerkleNetworkContext mnc) {
         this.stakingFs = stakingFs;
         this.mnc = mnc;
     }

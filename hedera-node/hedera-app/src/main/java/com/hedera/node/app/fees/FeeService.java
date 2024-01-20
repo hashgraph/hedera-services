@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

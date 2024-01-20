@@ -59,7 +59,6 @@ import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -461,10 +460,8 @@ public final class Hedera implements SwirldMain {
             // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
             logger.info("BBM: migration beginning 😅...");
 
-
             // --------------------- UNIQUE_TOKENS (0)
-            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(
-                    UNIQUE_TOKENS);
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
             if (uniqTokensFromState != null) {
                 TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
             }
@@ -489,8 +486,7 @@ public final class Hedera implements SwirldMain {
             // Note: some files have no metadata, e.g. contract bytecode files
 
             // --------------------- ACCOUNTS (4)
-            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(
-                    ACCOUNTS);
+            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
             if (acctsFromState != null) {
                 TOKEN_SERVICE.setAcctsFromState(acctsFromState);
             }
@@ -517,8 +513,7 @@ public final class Hedera implements SwirldMain {
 
             // --------------------- RECORD_STREAM_RUNNING_HASH (9)
             // From MerkleNetworkContext: blockNo, blockHashes
-            final RecordsRunningHashLeaf blockInfoFromState = state.getChild(
-                    RECORD_STREAM_RUNNING_HASH);
+            final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
             if (blockInfoFromState != null) {
                 BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
             }
@@ -527,24 +522,20 @@ public final class Hedera implements SwirldMain {
             // Not using anywhere; won't be migrated
 
             // --------------------- CONTRACT_STORAGE (11)
-            final VirtualMap<ContractKey, IterableContractValue> contractFromStorage =
-                    state.getChild(CONTRACT_STORAGE);
+            final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
             if (contractFromStorage != null) {
                 CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(contractFromStorage));
-                CONTRACT_SERVICE.setBytecodeFromState(
-                        () -> VirtualMapLike.from(state.getChild(STORAGE)));
+                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(state.getChild(STORAGE)));
             }
 
             // --------------------- STAKING_INFO (12)
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(
-                    STAKING_INFO);
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(STAKING_INFO);
             if (stakingInfoFromState != null) {
                 TOKEN_SERVICE.setStakingFs(stakingInfoFromState, fromNetworkContext);
             }
 
             // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
-            final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(
-                    PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
+            final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
             if (fcqFromState != null) {
                 RECORD_SERVICE.setFromState(new ArrayList<>(fcqFromState));
             }

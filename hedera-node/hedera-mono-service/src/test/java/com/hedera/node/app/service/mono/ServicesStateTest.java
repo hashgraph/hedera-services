@@ -399,7 +399,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void merkleMetaAsExpected() {
         // expect:
-        assertEquals(0x8e300b0dfdafbb10L, subject.getClassId());
+        assertEquals(0x8e300b0dfdafbb1aL, subject.getClassId());
         assertEquals(StateVersions.CURRENT_VERSION, subject.getVersion());
     }
 

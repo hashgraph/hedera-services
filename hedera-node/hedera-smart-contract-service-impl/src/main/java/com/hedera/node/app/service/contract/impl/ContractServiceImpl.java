@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.function.Supplier;
 
 /**
@@ -45,11 +44,13 @@ public enum ContractServiceImpl implements ContractService {
         this.component = DaggerContractServiceComponent.create();
     }
 
-    public void setStorageFromState(@Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+    public void setStorageFromState(
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
         initialContractSchema.setStorageFromState(storageFromState);
     }
 
-    public void setBytecodeFromState(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+    public void setBytecodeFromState(
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
         initialContractSchema.setBytecodeFromState(bytecodeFromState);
     }
 

@@ -37,7 +37,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.function.Supplier;
@@ -97,12 +96,7 @@ public class TokenServiceImpl implements TokenService {
     public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         requireNonNull(registry);
         modTokenSchema = new InitialModServiceTokenSchema(
-                sysAccts,
-                stakingAccts,
-                treasuryAccts,
-                miscAccts,
-                blocklistAccts,
-                version);
+                sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version);
         registry.register(modTokenSchema);
     }
 
@@ -122,7 +116,9 @@ public class TokenServiceImpl implements TokenService {
         modTokenSchema.setTokensFromState(fs);
     }
 
-    public void setStakingFs(@Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs, @Nullable final MerkleNetworkContext mnc) {
+    public void setStakingFs(
+            @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
+            @Nullable final MerkleNetworkContext mnc) {
         modTokenSchema.setStakingFs(stakingFs, mnc);
     }
 }

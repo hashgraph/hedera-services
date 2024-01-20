@@ -63,7 +63,8 @@ public class InitialModServiceContractSchema extends Schema {
         super(version);
     }
 
-    public void setStorageFromState(@Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+    public void setStorageFromState(
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
         this.storageFromState = storageFromState;
     }
 

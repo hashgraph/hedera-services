@@ -97,7 +97,8 @@ public class EntityIdService implements Service {
                     log.warn("BBM: no entity ID 'from' state found");
                 }
 
-                // Usually we unassign the 'from' state here, but in this case there's no need because the only field is a copied long
+                // Usually we unassign the 'from' state here, but in this case there's no need because the only field is
+                // a copied long
             }
         });
     }
