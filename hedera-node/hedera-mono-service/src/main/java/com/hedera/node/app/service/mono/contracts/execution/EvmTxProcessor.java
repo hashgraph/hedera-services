@@ -308,11 +308,12 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 final var senderCanAffordValue = senderAccount.getBalance().compareTo(Wei.of(value)) >= 0;
                 validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
-        }
 
-        // increment sender's ethereum nonce right after all checks and before entering the evm
-        if (relayer != null) {
-            senderAccount.incrementNonce();
+            // increment sender's ethereum nonce right after all checks
+            // and before entering the evm for non-static calls
+            if (relayer != null) {
+                senderAccount.incrementNonce();
+            }
         }
 
         return new ChargingResult(senderAccount, mutableRelayer, allowanceCharged);
