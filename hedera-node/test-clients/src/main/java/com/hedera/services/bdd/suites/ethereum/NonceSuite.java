@@ -38,7 +38,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
@@ -65,11 +68,13 @@ public class NonceSuite extends HapiSuite {
     private static final String RECEIVER = "receiver";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
+    private static final String MANY_CHILDREN_CONTRACT = "ManyChildren";
     private static final String FACTORY_CONTRACT = "FactoryContract";
     private static final String EXTERNAL_FUNCTION = "externalFunction";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
+    private static final String CHECK_BALANCE_REPEATEDLY_FUNCTION = "checkBalanceRepeatedly";
 
     public static void main(String... args) {
         new NonceSuite().runSuiteAsync();
@@ -83,6 +88,12 @@ public class NonceSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                // pre-checks
+                nonceNotUpdatedWhenSignerDoesExistPrecheckFailed(),
+                nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed(),
+                nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed(),
+                nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed(),
+                nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed(),
                 // handler checks
                 nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed(),
                 nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailed(),
@@ -104,6 +115,101 @@ public class NonceSuite extends HapiSuite {
                 nonceUpdatedAfterSuccessfulInternalCall(),
                 nonceUpdatedAfterSuccessfulInternalTransfer(),
                 nonceUpdatedAfterSuccessfulInternalContractDeployment());
+    }
+
+    private HapiSpec nonceNotUpdatedWhenSignerDoesExistPrecheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedWhenSignerDoesExistPrecheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasPrecheck(INVALID_ACCOUNT_ID))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+    }
+
+    private HapiSpec nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(1L),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(5644L)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
+    }
+
+    private HapiSpec nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxGasAllowance(-1L)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
+    }
+
+    private HapiSpec nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(0L)
+                        .hasPrecheck(INSUFFICIENT_GAS))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
+    }
+
+    private HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
+        final var illegalMaxGasPerSec = HapiSpecSetup.getDefaultNodeProps().getInteger("contracts.maxGasPerSec") + 1;
+        return defaultHapiSpec("nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
+                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(illegalMaxGasPerSec)
+                        .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED))
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
     }
 
     private HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed() {
@@ -380,8 +486,6 @@ public class NonceSuite extends HapiSuite {
     }
 
     private HapiSpec nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded() {
-        final String MANY_CHILDREN_CONTRACT = "ManyChildren";
-        final String CHECK_BALANCE_REPEATEDLY_FUNCTION = "checkBalanceRepeatedly";
         final String TOKEN_TREASURY = "treasury";
         final String FUNGIBLE_TOKEN = "fungibleToken";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
