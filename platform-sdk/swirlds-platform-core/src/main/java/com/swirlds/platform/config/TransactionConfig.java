@@ -32,7 +32,7 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("transaction")
 public record TransactionConfig(
-        @ConfigProperty(defaultValue = "6144") int transactionMaxBytes, // platform; common
-        @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent, // platform
-        @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent, // platform
-        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize) {} // platform
+        @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
+        @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent,
+        @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent,
+        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize) {}

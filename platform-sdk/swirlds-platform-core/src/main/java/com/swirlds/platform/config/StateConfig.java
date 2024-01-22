@@ -79,25 +79,25 @@ import java.time.Duration;
  */
 @ConfigData("state")
 public record StateConfig(
-        @ConfigProperty(defaultValue = "") String mainClassNameOverride, // platform
-        @ConfigProperty(defaultValue = "900") int saveStatePeriod, // platform
-        @ConfigProperty(defaultValue = "5") int signedStateDisk, // platform
-        @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss, // platform
-        @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery, // platform
-        @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss, // platform
-        @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs, // platform
-        @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging, // platform
-        @ConfigProperty(defaultValue = "5") int debugHashDepth, // platform
-        @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures, // platform
-        @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning, // platform
-        @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning, // not-referenced
-        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge, // platform
-        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled, // platform
-        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled, // platform
-        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName, // platform
-        @ConfigProperty(defaultValue = "1") int signedStateFreq, // platform
-        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles, // platform
-        @ConfigProperty(defaultValue = "true") boolean validateInitialState) { // platform
+        @ConfigProperty(defaultValue = "") String mainClassNameOverride,
+        @ConfigProperty(defaultValue = "900") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "5") int signedStateDisk,
+        @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
+        @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery,
+        @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
+        @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
+        @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
+        @ConfigProperty(defaultValue = "5") int debugHashDepth,
+        @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
+        @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
+        @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
+        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
+        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
+        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
+        @ConfigProperty(defaultValue = "1") int signedStateFreq,
+        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles,
+        @ConfigProperty(defaultValue = "true") boolean validateInitialState) {
 
     /**
      * Get the main class name that should be used for signed states.
