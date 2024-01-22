@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.event;
 
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,6 +63,18 @@ public enum AncientMode {
         return switch (this) {
             case GENERATION_THRESHOLD -> generationIndicator;
             case BIRTH_ROUND_THRESHOLD -> birthRoundIndicator;
+        };
+    }
+
+    /**
+     * Depending on the ancient mode, select the appropriate indicator for events created at genesis.
+     *
+     * @return the selected indicator
+     */
+    public long getGenesisIndicator() {
+        return switch (this) {
+            case GENERATION_THRESHOLD -> FIRST_GENERATION;
+            case BIRTH_ROUND_THRESHOLD -> ROUND_FIRST;
         };
     }
 }

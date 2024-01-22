@@ -22,30 +22,28 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphReservation;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -70,15 +68,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Shadow Graph Tests")
-class ShadowGraphTest {
+class ShadowgraphTest {
 
     private List<IndexedEvent> generatedEvents;
     private HashMap<Hash, Set<Hash>> ancestorsMap;
-    private ShadowGraph shadowGraph;
+    private Shadowgraph shadowGraph;
     private Map<Long, Set<ShadowEvent>> genToShadows;
     private long maxGen;
     private StandardEventEmitter emitter;
     private AddressBook addressBook;
+    private PlatformContext platformContext;
 
     private static Stream<Arguments> graphSizes() {
         return Stream.of(
@@ -102,7 +101,9 @@ class ShadowGraphTest {
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
 
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
+        platformContext = TestPlatformContextBuilder.create().build();
+
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
         for (int i = 0; i < numEvents; i++) {
             IndexedEvent event = emitter.emitEvent();
@@ -125,7 +126,7 @@ class ShadowGraphTest {
     }
 
     /**
-     * Tests that the {@link ShadowGraph#findAncestors(Iterable, Predicate)} returns the correct set of ancestors.
+     * Tests that the {@link Shadowgraph#findAncestors(Iterable, Predicate)} returns the correct set of ancestors.
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
@@ -223,21 +224,21 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        GenerationReservation r1 = shadowGraph.reserve();
-        assertEquals(FIRST_GENERATION, r1.getGeneration(), "First reservation should reserve generation 1");
+        ShadowgraphReservation r1 = shadowGraph.reserve();
+        assertEquals(FIRST_GENERATION, r1.getReservedIndicator(), "First reservation should reserve generation 1");
         assertEquals(
                 1,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "The first call to reserve() after initialization should result in 1 reservation.");
 
         r1.close();
         assertEquals(
                 FIRST_GENERATION,
-                r1.getGeneration(),
+                r1.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 0,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
     }
 
@@ -254,36 +255,36 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        GenerationReservation r1 = shadowGraph.reserve();
-        GenerationReservation r2 = shadowGraph.reserve();
+        ShadowgraphReservation r1 = shadowGraph.reserve();
+        ShadowgraphReservation r2 = shadowGraph.reserve();
         assertEquals(
                 r1,
                 r2,
                 "The second call to reserve() prior to the first being closed should return the same object as the "
                         + "first reservation.");
-        assertEquals(FIRST_GENERATION, r2.getGeneration(), "Second reservation should reserve generation 1");
-        assertEquals(2, r2.getNumReservations(), "The second call to reserve() should result in 2 reservations.");
+        assertEquals(FIRST_GENERATION, r2.getReservedIndicator(), "Second reservation should reserve generation 1");
+        assertEquals(2, r2.getReservationCount(), "The second call to reserve() should result in 2 reservations.");
 
         r2.close();
 
         assertEquals(
                 FIRST_GENERATION,
-                r1.getGeneration(),
+                r1.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 1,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
 
         r1.close();
 
         assertEquals(
                 FIRST_GENERATION,
-                r1.getGeneration(),
+                r1.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 0,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
     }
 
@@ -302,12 +303,12 @@ class ShadowGraphTest {
 
         long expireBelowGen = FIRST_GENERATION + 1;
 
-        GenerationReservation r1 = shadowGraph.reserve();
+        ShadowgraphReservation r1 = shadowGraph.reserve();
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
-        GenerationReservation r2 = shadowGraph.reserve();
+        ShadowgraphReservation r2 = shadowGraph.reserve();
         assertNotEquals(
                 r1,
                 r2,
@@ -315,40 +316,40 @@ class ShadowGraphTest {
                         + "instance.");
         assertEquals(
                 expireBelowGen,
-                r2.getGeneration(),
+                r2.getReservedIndicator(),
                 "Reservation after call to expire() should reserve the expired generation + 1");
         assertEquals(
-                1, r2.getNumReservations(), "The first reservation after expire() should result in 1 reservation.");
+                1, r2.getReservationCount(), "The first reservation after expire() should result in 1 reservation.");
 
         r2.close();
 
         assertEquals(
                 expireBelowGen,
-                r2.getGeneration(),
+                r2.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 0,
-                r2.getNumReservations(),
+                r2.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
 
         assertEquals(
                 FIRST_GENERATION,
-                r1.getGeneration(),
+                r1.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 1,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
 
         r1.close();
 
         assertEquals(
                 FIRST_GENERATION,
-                r1.getGeneration(),
+                r1.getReservedIndicator(),
                 "The generation should not be affected by a reservation being closed.");
         assertEquals(
                 0,
-                r1.getNumReservations(),
+                r1.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
     }
 
@@ -407,19 +408,19 @@ class ShadowGraphTest {
         initShadowGraph(random, numEvents, numNodes);
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
-        GenerationReservation r0 = shadowGraph.reserve();
+        ShadowgraphReservation r0 = shadowGraph.reserve();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 1,
                 GENERATION_THRESHOLD));
-        GenerationReservation r1 = shadowGraph.reserve();
+        ShadowgraphReservation r1 = shadowGraph.reserve();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
                 GENERATION_THRESHOLD));
-        GenerationReservation r2 = shadowGraph.reserve();
+        ShadowgraphReservation r2 = shadowGraph.reserve();
 
         // release the middle reservation to ensure that generations
         // greater than the lowest reserved generation are not expired.
@@ -529,7 +530,7 @@ class ShadowGraphTest {
     void testAddNullEvent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowGraphInsertionException.class,
+                ShadowgraphInsertionException.class,
                 () -> shadowGraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }
@@ -540,7 +541,7 @@ class ShadowGraphTest {
         initShadowGraph(random, 10, 4);
         IndexedEvent randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertThrows(
-                ShadowGraphInsertionException.class,
+                ShadowgraphInsertionException.class,
                 () -> shadowGraph.addEvent(randomDuplicateEvent),
                 "An event that is already in the shadow graph should not be added.");
     }
@@ -560,7 +561,7 @@ class ShadowGraphTest {
         genToShadows
                 .get(FIRST_GENERATION)
                 .forEach(shadow -> assertThrows(
-                        ShadowGraphInsertionException.class,
+                        ShadowgraphInsertionException.class,
                         () -> shadowGraph.addEvent(shadow.getEvent()),
                         "Expired events should not be added."));
     }
@@ -650,8 +651,8 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        GenerationReservation r0 = shadowGraph.reserve();
-        GenerationReservation r1 = shadowGraph.reserve();
+        ShadowgraphReservation r0 = shadowGraph.reserve();
+        ShadowgraphReservation r1 = shadowGraph.reserve();
         r0.close();
         r1.close();
 
@@ -663,9 +664,9 @@ class ShadowGraphTest {
                     shadowGraph.shadow(generatedEvent), "Shadow graph should not have any events after being cleared.");
         }
         r0 = shadowGraph.reserve();
-        assertEquals(0, r0.getGeneration(), "The first reservation after clearing should reserve generation 0.");
+        assertEquals(0, r0.getReservedIndicator(), "The first reservation after clearing should reserve generation 0.");
         assertEquals(
-                1, r0.getNumReservations(), "The first reservation after clearing should have a single reservation.");
+                1, r0.getReservationCount(), "The first reservation after clearing should have a single reservation.");
     }
 
     @Test
@@ -724,105 +725,9 @@ class ShadowGraphTest {
     }
 
     @Test
-    void testInitFromEvents_NullEventList() {
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> shadowGraph.initFromEvents(null, 0L),
-                "method should throw if supplied with null");
-    }
-
-    @Test
-    void testInitFromEvents_EmptyEventList() {
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
-        final List<EventImpl> empty = Collections.emptyList();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    shadowGraph.initFromEvents(empty, 0L);
-                },
-                "method should throw if supplied with empty list");
-    }
-
-    @Test
-    void testInitFromEvents_EventList() {
-        Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(4).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
-
-        List<IndexedEvent> events = emitter.emitEvents(20);
-        List<EventImpl> filteredEvents = events.stream()
-                .filter(e -> e.getGeneration() > 5)
-                .sorted(EventUtils::generationComparator)
-                .collect(Collectors.toList());
-
-        long minGeneration = filteredEvents.get(0).getGeneration();
-        shadowGraph.initFromEvents(filteredEvents, minGeneration);
-
-        for (EventImpl event : filteredEvents) {
-            assertNotNull(shadowGraph.shadow(event), "All events should have been added to the shadow graph.");
-        }
-
-        GenerationReservation reservation = shadowGraph.reserve();
-        assertEquals(
-                minGeneration, reservation.getGeneration(), "The generation reserved should match the minGeneration");
-    }
-
-    @Test
-    void testInitFromEvents_EventListDifferentMinGen() {
-        Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(4).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
-
-        List<IndexedEvent> events = emitter.emitEvents(20);
-        List<EventImpl> filteredEvents =
-                events.stream().filter(e -> e.getGeneration() > 5).collect(Collectors.toList());
-
-        long minGeneration = 2;
-        shadowGraph.initFromEvents(filteredEvents, minGeneration);
-
-        for (EventImpl event : filteredEvents) {
-            assertNotNull(shadowGraph.shadow(event), "All events should have been added to the shadow graph.");
-        }
-
-        GenerationReservation reservation = shadowGraph.reserve();
-        assertEquals(
-                minGeneration, reservation.getGeneration(), "The generation reserved should match the minGeneration");
-    }
-
-    @Test
-    void testInitFromEvents_AddEventThrows() {
-        Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(4).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
-
-        List<IndexedEvent> events = emitter.emitEvents(20);
-        List<EventImpl> filteredEvents =
-                events.stream().filter(e -> e.getGeneration() > 5).collect(Collectors.toList());
-        // shuffle the events to cause ShadowGraph.addEvent(EventImpl) to throw
-        Collections.shuffle(filteredEvents);
-
-        long minGeneration = 2;
-        shadowGraph.initFromEvents(filteredEvents, minGeneration);
-
-        GenerationReservation reservation = shadowGraph.reserve();
-        assertEquals(
-                minGeneration, reservation.getGeneration(), "The generation reserved should match the minGeneration");
-    }
-
-    @Test
     @Disabled("It does not make sense to run this test in CCI since the outcome can vary depending on the load."
             + "The purpose of this test is to tune the performance of this method by running the test locally.")
-    void findAncestorsPerformance() throws ShadowGraphInsertionException {
+    void findAncestorsPerformance() throws ShadowgraphInsertionException {
         final int numEvents = 200_000;
         final int numNodes = 21;
         final int numRuns = 10;
@@ -832,7 +737,7 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(numNodes).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
         for (int i = 0; i < numEvents; i++) {
             shadowGraph.addEvent(emitter.emitEvent());
         }

@@ -19,8 +19,8 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -31,23 +31,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Observes events and consensus in order to update the {@link ShadowGraph}
+ * Observes events and consensus in order to update the {@link Shadowgraph}
  */
 public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRoundObserver {
     private static final Logger logger = LogManager.getLogger(ShadowGraphEventObserver.class);
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
 
     /**
      * Constructor.
      *
-     * @param shadowGraph              the {@link ShadowGraph} to update
+     * @param shadowGraph              the {@link Shadowgraph} to update
      */
-    public ShadowGraphEventObserver(@NonNull final ShadowGraph shadowGraph) {
+    public ShadowGraphEventObserver(@NonNull final Shadowgraph shadowGraph) {
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
     }
 
     /**
-     * Expire events in {@link ShadowGraph} based on the new minimum round generation
+     * Expire events in {@link Shadowgraph} based on the new minimum round generation
      *
      * @param consensusRound a new consensus round
      */
@@ -57,7 +57,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     }
 
     /**
-     * Add an event to the {@link ShadowGraph}
+     * Add an event to the {@link Shadowgraph}
      *
      * @param event the event to add
      */
@@ -65,7 +65,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     public void eventAdded(final EventImpl event) {
         try {
             shadowGraph.addEvent(event);
-        } catch (final ShadowGraphInsertionException e) {
+        } catch (final ShadowgraphInsertionException e) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "failed to add event {} to shadow graph",

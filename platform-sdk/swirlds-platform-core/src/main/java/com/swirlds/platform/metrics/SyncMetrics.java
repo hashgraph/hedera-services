@@ -28,8 +28,8 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
 import com.swirlds.platform.network.Connection;
@@ -150,7 +150,7 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncSent;
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
-    private final AverageStat gensWaitingForExpiry;
+    private final AverageStat indicatorsWaitingForExpiry;
     private final RunningAverageMetric syncFilterTime;
 
     /**
@@ -251,11 +251,11 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-        gensWaitingForExpiry = new AverageStat(
+        indicatorsWaitingForExpiry = new AverageStat(
                 metrics,
                 PLATFORM_CATEGORY,
-                PlatformStatNames.GENS_WAITING_FOR_EXPIRY,
-                "the average number of generations waiting to be expired",
+                "indicatorsWaitingForExpiry",
+                "the average number of indicators waiting to be expired by the shadowgraph",
                 FORMAT_5_3,
                 AverageStat.WEIGHT_VOLATILE);
 
@@ -339,7 +339,7 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
      * that have more than one {@code sendTip} in the current synchronization.
      *
      * @param multiTipCount the number of creators in the current synchronization that have more than one sending tip.
@@ -349,7 +349,7 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of
      * {@code sendTips} in the current synchronization.
      *
      * @param tipCount the number of sending tips in the current synchronization.
@@ -359,13 +359,13 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraph} to update the number of generations that should be expired but can't be yet due to
+     * Called by {@link Shadowgraph} to update the number of generations that should be expired but can't be yet due to
      * reservations.
      *
      * @param numGenerations the new number of generations
      */
-    public void updateGensWaitingForExpiry(final long numGenerations) {
-        gensWaitingForExpiry.update(numGenerations);
+    public void updateIndicatorsWaitingForExpiry(final long numGenerations) { // TODO pull into shadowgraph metrics
+        indicatorsWaitingForExpiry.update(numGenerations);
     }
 
     /**

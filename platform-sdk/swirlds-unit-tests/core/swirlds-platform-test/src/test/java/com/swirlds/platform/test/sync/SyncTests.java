@@ -1087,7 +1087,8 @@ public class SyncTests {
             when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
         });
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            listener.getShadowGraph().startFromGeneration(caller.getConsensus().getMinGenerationNonAncient());
+            listener.getShadowGraph()
+                    .startWithExpiredThreshold(caller.getConsensus().getMinGenerationNonAncient());
         });
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
