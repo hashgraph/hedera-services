@@ -18,10 +18,13 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -241,7 +244,7 @@ public class FrameUtils {
         // This determines if we should treat this as a delegate call.
         // We accept delegates if the token redirect contract calls us.
         if (isToken(frame, recipient)
-                || (ConversionUtils.isLongZero(recipient)
+                || (isLongZero(recipient)
                         && permittedDelegateCallers.contains(ConversionUtils.numberOfLongZero(recipient)))) {
             // make sure we have a parent calling context
             final var stack = frame.getMessageFrameStack();
@@ -255,6 +258,32 @@ public class FrameUtils {
             return isDelegateCall(frames.next());
         }
         return true;
+    }
+
+    /**
+     * Returns true if the given frame is a call to a contract that must be present based on feature flag settings.
+     * @param frame
+     * @param address to check for possible grandfathering
+     * @param featureFlags
+     * @return
+     */
+    public static boolean contractRequired(
+            @NonNull final MessageFrame frame,
+            @NonNull final Address address,
+            @NonNull final FeatureFlags featureFlags) {
+        requireNonNull(frame);
+        requireNonNull(address);
+        requireNonNull(featureFlags);
+
+        Long maybeGrandfatheredNumber = null;
+        if (isLongZero(address)) {
+            try {
+                maybeGrandfatheredNumber = asNumberedContractId(address).contractNum();
+            } catch (final ArithmeticException ignore) {
+                // Not a valid numbered contract id
+            }
+        }
+        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame), maybeGrandfatheredNumber);
     }
 
     private static boolean isToken(final MessageFrame frame, final Address address) {
