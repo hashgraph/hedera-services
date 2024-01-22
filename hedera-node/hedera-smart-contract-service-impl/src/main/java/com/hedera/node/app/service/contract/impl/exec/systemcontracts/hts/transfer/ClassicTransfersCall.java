@@ -202,7 +202,9 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
         for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
             final var unitAdjusts = tokenTransfers.transfersOrElse(emptyList());
-            minimumTinybarPrice += unitAdjusts.size() * baseUnitAdjustTinybarPrice;
+            final var unitAdjustsCreditCount =
+                    unitAdjusts.stream().filter(a -> a.amount() > 0).count();
+            minimumTinybarPrice += unitAdjustsCreditCount * baseUnitAdjustTinybarPrice;
             for (final var unitAdjust : unitAdjusts) {
                 if (unitAdjust.amount() > 0
                         && unitAdjust.accountIDOrElse(AccountID.DEFAULT).hasAlias()) {

@@ -49,6 +49,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
@@ -76,7 +78,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
 
@@ -113,7 +115,10 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> bSenderAddr = new AtomicReference<>();
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("ApprovalFallbacksRequiredWithoutTopLevelSigAccess")
+        return propertyPreservingHapiSpec(
+                        "ApprovalFallbacksRequiredWithoutTopLevelSigAccess",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
@@ -342,7 +347,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var receiver = "receiver";
         final var controlledSpenderKey = "controlledSpenderKey";
 
-        return propertyPreservingHapiSpec("CanStillTransferByVirtueOfContractIdInEOAThreshold")
+        return propertyPreservingHapiSpec(
+                        "CanStillTransferByVirtueOfContractIdInEOAThreshold", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                         "contracts.withSpecialHapiSigsAccess",
@@ -403,7 +409,9 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ContractKeysStillHaveSpecificityNoMatterTopLevelSignatures")
+        return defaultHapiSpec(
+                        "ContractKeysStillHaveSpecificityNoMatterTopLevelSignatures",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(managementContract, PAY_RECEIVABLE_CONTRACT),
                         newKeyNamed(tmpAdminKey),
