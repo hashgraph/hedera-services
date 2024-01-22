@@ -16,20 +16,16 @@
 
 package com.swirlds.config.extensions.test.export;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.common.config.BasicCommonConfig;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.export.ConfigExport;
-import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
@@ -38,16 +34,15 @@ import org.junit.jupiter.api.Test;
 class ConfigExportTest {
 
     @Test
-    void testPrint()
-            throws IOException { // TODO: check with Hendrik if this test should contain its own records instead
+    void testPrint() throws IOException {
         // given
-        final Path configFile =
-                Paths.get(ConfigExportTest.class.getResource("test.properties").getPath());
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(BasicCommonConfig.class)
-                .withConfigDataTypes(StateCommonConfig.class)
-                .withConfigDataTypes(MetricsConfig.class)
-                .withSource(new PropertyFileConfigSource(configFile))
+                .withConfigDataType(ConfigExportTestRecord.class)
+                .withConfigDataType(PrefixedConfigExportTestRecord.class)
+                .withSource(new SimpleConfigSource("property", "value"))
+                .withSource(new SimpleConfigSource("prefix.property", "anotherValue"))
+                .withSource(new SimpleConfigSource("prefix.unmappedProperty", "notPresentValue"))
+                .withSource(new SimpleConfigSource("unmappedProperty", "anotherNotPresentValue"))
                 .build();
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -58,28 +53,25 @@ class ConfigExportTest {
 
         // then
         Assertions.assertNotNull(lines);
+        Assertions.assertFalse(lines.isEmpty());
 
-        Assertions.assertTrue(lines.size() > 10);
-
-        // Verify properties in file are listed
-        assertContains(regexForLine("showInternalStats", "true", true), lines);
-        assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);
-
-
-        // Verify properties not in file are listed (spot check only)
-        //TODO: review this should not be found
-        assertContains(regexForLine("state.signedStateDisk", "5", true), lines);
-        assertContains(regexForLine("numConnections", "1000", true), lines);
-        assertContains(regexForLine("verboseStatistics", "false", true), lines);
+        assertThat(lines)
+                .as("All values of the exported configuration")
+                .isNotNull()
+                .isNotEmpty()
+                // Verify properties in file are listed
+                .anySatisfy(value -> assertThat(value).matches("^property, value\\s*$"))
+                .anySatisfy(value -> assertThat(value).matches("^prefix.property, anotherValue\\s*$"))
+                // Verify properties not in file are listed (spot check only)
+                .anySatisfy(value -> assertThat(value)
+                        .matches("^prefix.unmappedProperty, notPresentValue\\s*\\[NOT USED IN RECORD]$"))
+                .anySatisfy(value -> assertThat(value)
+                        .matches("^unmappedProperty, anotherNotPresentValue\\s*\\[NOT USED IN RECORD]$"));
     }
 
-    private String regexForLine(final String paramName, final String value, final boolean inRecord) {
-        return "^" + paramName + ", " + value + "\\s*" + (inRecord ? "" : "\\[NOT USED IN RECORD\\]") + "$";
-    }
+    @ConfigData
+    public record ConfigExportTestRecord(String property) {}
 
-    private static void assertContains(final String regex, final List<String> list) {
-        if (list.stream().noneMatch(value -> value.matches(regex))) {
-            fail("List does not contain value " + regex);
-        }
-    }
+    @ConfigData("prefix")
+    public record PrefixedConfigExportTestRecord(String property) {}
 }
