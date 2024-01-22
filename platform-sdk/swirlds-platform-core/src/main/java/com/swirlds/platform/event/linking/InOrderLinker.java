@@ -28,6 +28,7 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -280,6 +281,7 @@ public class InOrderLinker {
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
+        EventCounter.incrementLinkedEventCount();
 
         final EventDescriptor eventDescriptor = event.getDescriptor();
         parentDescriptorMap.put(eventDescriptor, linkedEvent);
