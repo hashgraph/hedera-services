@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
@@ -53,11 +53,14 @@ import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
 
@@ -73,6 +76,8 @@ public class TestIntake implements LoadableFromSignedState {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+
+    private final BackpressureObjectCounter hashingObjectCounter;
 
     /**
      * @param addressBook the address book used by this intake
@@ -91,12 +96,23 @@ public class TestIntake implements LoadableFromSignedState {
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();
         final WiringModel model = WiringModel.create(platformContext, time);
-        final PlatformSchedulers schedulers =
-                PlatformSchedulers.create(platformContext, model, mock(ObjectCounter.class));
+
+        hashingObjectCounter = new BackpressureObjectCounter(
+                "hashingObjectCounter",
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .eventHasherUnhandledCapacity(),
+                Duration.ofNanos(100));
+
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         hasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         hasherWiring.bind(eventHasher);
+
+        final PostHashCollectorWiring postHashCollectorWiring =
+                PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
@@ -122,7 +138,8 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
-        hasherWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
+        postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
@@ -218,8 +235,7 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public void flush() {
-        // TODO reenable once hasher is concurrent again
-        //        hasherWiring.flushRunnable().run();
+        hashingObjectCounter.waitUntilEmpty();
         orphanBufferWiring.flushRunnable().run();
         linkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();

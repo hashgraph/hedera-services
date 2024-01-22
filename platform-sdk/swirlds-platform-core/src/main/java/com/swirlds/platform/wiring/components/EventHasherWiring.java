@@ -28,15 +28,14 @@ import java.util.function.LongSupplier;
 /**
  * Wiring for the {@link EventHasher}.
  *
- * @param eventInput    the input wire for events to be hashed
- * @param eventOutput   the output wire for hashed events
- * @param flushRunnable the runnable to flush the hasher
+ * @param eventInput                   the input wire for events to be hashed
+ * @param eventOutput                  the output wire for hashed events
+ * @param unprocessedTaskCountSupplier the supplier for the number of unprocessed tasks
  */
 public record EventHasherWiring(
         @NonNull InputWire<GossipEvent> eventInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
-        @NonNull LongSupplier unprocessedTaskCountSupplier,
-        @NonNull Runnable flushRunnable) {
+        @NonNull LongSupplier unprocessedTaskCountSupplier) {
     /**
      * Create a new instance of this wiring.
      *
@@ -47,8 +46,7 @@ public record EventHasherWiring(
         return new EventHasherWiring(
                 taskScheduler.buildInputWire("events to hash"),
                 taskScheduler.getOutputWire(),
-                taskScheduler::getUnprocessedTaskCount,
-                taskScheduler::flush);
+                taskScheduler::getUnprocessedTaskCount);
     }
 
     /**
