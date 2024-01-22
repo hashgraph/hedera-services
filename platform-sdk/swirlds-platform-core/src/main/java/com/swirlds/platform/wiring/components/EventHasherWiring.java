@@ -28,10 +28,9 @@ import java.util.function.LongSupplier;
 /**
  * Wiring for the {@link EventHasher}.
  *
- * @param eventInput                   the input wire for events to be hashed
- * @param eventOutput                  the output wire for hashed events
- * @param unprocessedTaskCountSupplier the supplier for the number of unprocessed tasks
- * @param flushRunnable                the runnable to flush the hasher
+ * @param eventInput    the input wire for events to be hashed
+ * @param eventOutput   the output wire for hashed events
+ * @param flushRunnable the runnable to flush the hasher
  */
 public record EventHasherWiring(
         @NonNull InputWire<GossipEvent> eventInput,
