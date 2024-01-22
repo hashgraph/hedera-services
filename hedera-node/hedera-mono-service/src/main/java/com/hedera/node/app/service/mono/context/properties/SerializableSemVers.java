@@ -35,7 +35,7 @@ public class SerializableSemVers implements SoftwareVersion {
     private static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
     private static boolean currentVersionHasPatchMigrationRecords = false;
     public static final int RELEASE_027_VERSION = 1;
-    public static final long CLASS_ID = 0x7f2b1bc2df8cbd0bL;
+    public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
     private int servicesPreAlphaNumber;
     private int protoPreAlphaNumber;
