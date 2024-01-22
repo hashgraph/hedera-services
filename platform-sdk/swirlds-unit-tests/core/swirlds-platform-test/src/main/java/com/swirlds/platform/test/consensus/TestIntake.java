@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -88,7 +89,8 @@ public class TestIntake implements LoadableFromSignedState {
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();
         final WiringModel model = WiringModel.create(platformContext, time);
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
+        final PlatformSchedulers schedulers =
+                PlatformSchedulers.create(platformContext, model, mock(ObjectCounter.class));
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
