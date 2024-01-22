@@ -27,9 +27,4 @@ import java.nio.file.Path;
  *                                      interpreted as an absolute path.
  */
 @ConfigData("state")
-public record StateCommonConfig(
-        @ConfigProperty(defaultValue = "data/saved")
-                Path savedStateDirectory
-        // TODO: check with Hendrik, should this be copied to Platform record or
-        //  should it only be owned by 1 record
-        ) {}
+public record StateCommonConfig(@ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory) {}
