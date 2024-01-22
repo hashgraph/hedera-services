@@ -285,8 +285,6 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    private final ConsensusHashManager consensusHashManager;
-
     /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
     /** Controls which states are saved to disk */
@@ -473,7 +471,7 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 appCommunicationComponent,
                 issScratchpad);
-        consensusHashManager = new ConsensusHashManager(
+        ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
                 currentAddressBook,
@@ -524,8 +522,8 @@ public class SwirldsPlatform implements Platform {
                 this::waitUntilTransactionHandlingThreadIsNotBusy,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
-        platformWiring.bind(
-                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
+        platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter,
+                eventDurabilityNexus, consensusHashManager);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -761,8 +759,7 @@ public class SwirldsPlatform implements Platform {
                     initialMinimumGenerationNonAncient,
                     initialMinimumGenerationNonAncient,
                     AncientMode.getAncientMode(platformContext)));
-            platformWiring.getIssDetectorWiring().overridingState().put(
-                    initialState.reserve("initialize issDetector"));
+            platformWiring.getIssDetectorWiring().overridingState().put(initialState.reserve("initialize issDetector"));
 
             // We don't want to invoke these callbacks until after we are starting up.
             components.add((Startable) () -> {
