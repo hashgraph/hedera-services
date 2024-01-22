@@ -683,7 +683,7 @@ class ConsensusHashManagerTests {
 
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             if (info.nodeId() == selfId) {
-                manager.stateHashedObserver(0L, info.nodeStateHash());
+                manager.newStateHashed(mockState(0L, info.nodeStateHash()));
             }
         }
 
@@ -691,10 +691,11 @@ class ConsensusHashManagerTests {
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
-            manager.handlePostconsensusSignatureTransaction(
+            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    new BasicSoftwareVersion(1));
+                    new BasicSoftwareVersion(1),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash())
+            )));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -705,7 +706,7 @@ class ConsensusHashManagerTests {
         }
 
         // Shifting the window a great distance should not trigger the ISS.
-        manager.overridingStateObserver(roundsNonAncient + 100L, randomHash(random));
+        manager.overridingState(mockState(roundsNonAncient + 100L, randomHash(random)));
 
         assertEquals(0, issCount.get(), "there wasn't enough data submitted to observe the ISS");
     }
@@ -739,24 +740,26 @@ class ConsensusHashManagerTests {
             final Hash roundHash = randomHash(random);
 
             if (round == 1) {
-                manager.overridingStateObserver(round, roundHash);
+                manager.overridingState(mockState(round, roundHash));
             } else {
                 manager.roundCompleted(round);
-                manager.stateHashedObserver(round, roundHash);
+                manager.newStateHashed(mockState(round, roundHash));
             }
 
             for (final Address address : addressBook) {
                 if (round == 1) {
                     // Intentionally send bad hashes in the first round. We are configured to ignore this round.
-                    manager.handlePostconsensusSignatureTransaction(
+                    manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                             address.getNodeId(),
-                            new StateSignatureTransaction(round, mock(Signature.class), randomHash(random)),
-                            new BasicSoftwareVersion(1));
+                            new BasicSoftwareVersion(1),
+                            new StateSignatureTransaction(round, mock(Signature.class), randomHash(random))
+                    )));
                 } else {
-                    manager.handlePostconsensusSignatureTransaction(
+                    manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
                             address.getNodeId(),
-                            new StateSignatureTransaction(round, mock(Signature.class), roundHash),
-                            new BasicSoftwareVersion(1));
+                            new BasicSoftwareVersion(1),
+                            new StateSignatureTransaction(round, mock(Signature.class), roundHash)
+                    )));
                 }
             }
         }
