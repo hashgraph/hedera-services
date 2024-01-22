@@ -38,32 +38,38 @@ import java.util.List;
 public class KeyComparator implements Comparator<Key> {
     @Override
     public int compare(final Key first, final Key second) {
-        if (first == second) return 0;
-        else if (first == null) return -1;
-        else if (second == null) return 1;
+        // use a temporary so we can "normalize" results at the end.
+        int result;
+        if (first == second) result = 0;
+        else if (first == null) result = -1;
+        else if (second == null) result = 1;
         // Note, record defines equals, but it uses reference equality for reference type members.
         //       We must not use reference equality here, so we cannot use that.
-        else if (first.key() == null) return second.key() == null ? 0 : -1;
-        else if (second.key() == null) return 1;
-
-        final KeyOneOfType firstKeyType = first.key().kind();
-        final KeyOneOfType secondKeyType = second.key().kind();
-        if (firstKeyType != secondKeyType) return compareCrossType(firstKeyType, secondKeyType);
+        else if (first.key() == null) result = second.key() == null ? 0 : -1;
+        else if (second.key() == null) result = 1;
         else {
-            // both keys are the same type; so compare the details.
-            return switch (firstKeyType) {
-                case UNSET -> 0; // both unset compares equal.
-                case CONTRACT_ID -> compareContractId(first, second);
-                case DELEGATABLE_CONTRACT_ID -> compareDelegateable(first, second);
-                case ED25519 -> compareEdwards(first, second);
-                case ECDSA_SECP256K1 -> compareSecp256k(first, second);
-                case THRESHOLD_KEY -> compareThreshold(first, second);
-                case KEY_LIST -> compareKeyList(first, second);
+            final KeyOneOfType firstKeyType = first.key().kind();
+            final KeyOneOfType secondKeyType = second.key().kind();
+            if (firstKeyType != secondKeyType)
+                result = firstKeyType.compareTo(secondKeyType);
+            else {
+                // both keys are the same type; so compare the details.
+                result = switch (firstKeyType) {
+                    case UNSET -> 0; // both unset compares equal.
+                    case CONTRACT_ID -> compareContractId(first, second);
+                    case DELEGATABLE_CONTRACT_ID -> compareDelegateable(first, second);
+                    case ED25519 -> compareEdwards(first, second);
+                    case ECDSA_SECP256K1 -> compareSecp256k(first, second);
+                    case THRESHOLD_KEY -> compareThreshold(first, second);
+                    case KEY_LIST -> compareKeyList(first, second);
                     // The next two are not currently supported key types.
-                case RSA_3072 -> compareRsa(first, second);
-                case ECDSA_384 -> compareEcdsa(first, second);
-            };
+                    case RSA_3072 -> compareRsa(first, second);
+                    case ECDSA_384 -> compareEcdsa(first, second);
+                };
+            }
         }
+        // Use Integer.compare to "normalize" result as exactly -1, 0, or 1
+        return Integer.compare(result, 0);
     }
 
     private int compareContractId(final Key first, final Key second) {
@@ -72,7 +78,7 @@ public class KeyComparator implements Comparator<Key> {
         if (lhs == rhs) return 0;
         else if (lhs == null) return -1;
         else if (rhs == null) return 1;
-        else return compareId(lhs, rhs);
+        else return lhs.compareTo(rhs);
     }
 
     private int compareDelegateable(final Key first, final Key second) {
@@ -81,34 +87,7 @@ public class KeyComparator implements Comparator<Key> {
         if (lhs == rhs) return 0;
         else if (lhs == null) return -1;
         else if (rhs == null) return 1;
-        else return compareId(lhs, rhs);
-    }
-
-    private int compareId(final ContractID leftId, final ContractID rightId) {
-        final long realmOne = leftId.realmNum();
-        final long realmTwo = rightId.realmNum();
-        final long shardOne = leftId.shardNum();
-        final long shardTwo = rightId.shardNum();
-        final Bytes evmOne = leftId.evmAddress();
-        final Bytes evmTwo = rightId.evmAddress();
-        final Long leftNum = leftId.contractNum();
-        final Long rightNum = rightId.contractNum();
-        // default -1 so contractNum sorts "before" evm address
-        final long firstId = leftNum != null ? leftNum.longValue() : -1L;
-        final long secondId = rightNum != null ? rightNum.longValue() : -1L;
-        if (realmOne == realmTwo) {
-            if (shardOne == shardTwo) {
-                if (firstId == secondId) {
-                    return compareBytes(evmOne, evmTwo);
-                } else {
-                    return Long.compare(firstId, secondId);
-                }
-            } else {
-                return Long.compare(shardOne, shardTwo);
-            }
-        } else {
-            return Long.compare(realmOne, realmTwo);
-        }
+        else return lhs.compareTo(rhs);
     }
 
     private int compareEdwards(final Key first, final Key second) {
@@ -184,32 +163,6 @@ public class KeyComparator implements Comparator<Key> {
         if (lhs == rhs) return 0;
         else if (lhs == null) return -1;
         else if (rhs == null) return 1;
-
-        final long leftLength = lhs.length();
-        final long rightLength = rhs.length();
-        if (leftLength != rightLength) return leftLength > rightLength ? -1 : 1;
-        else {
-            // left and right length are equal.
-            for (long offset = 0L; offset < leftLength; offset++) {
-                final byte left = lhs.getByte(offset);
-                final byte right = rhs.getByte(offset);
-                if (left != right) return Byte.compareUnsigned(left, right) > 0 ? 1 : -1;
-            }
-        }
-        // nothing differed, so these are equal.
-        return 0;
-    }
-
-    /**
-     * Compare two keys of different types for sort ordering.
-     * The "natural" order, in this case, is just the type order in the proto file.
-     * @param firstKeyType The OneOfType for the first (left hand) key.
-     * @param secondKeyType The OneOfType for the second (right hand) key.
-     * @return a value greater than, equal to, or less than 0 indicating if the first key type is
-     *     "greater than" (sorted after), the same as, or "less than" (sorted before),
-     *     the second key type.
-     */
-    private int compareCrossType(final KeyOneOfType firstKeyType, final KeyOneOfType secondKeyType) {
-        return Integer.compare(firstKeyType.protoOrdinal(), secondKeyType.protoOrdinal());
+        else return lhs.compareTo(rhs);
     }
 }

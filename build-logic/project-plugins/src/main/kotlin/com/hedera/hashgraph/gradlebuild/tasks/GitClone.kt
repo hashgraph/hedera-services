@@ -51,7 +51,7 @@ abstract class GitClone : DefaultTask() {
         }
         exec.exec {
             workingDir = localClone.asFile
-            commandLine("git", "reset", "--hard", "origin/${branchOrTag.get()}", "-q")
+            commandLine("git", "reset", "--hard", "${branchOrTag.get()}", "-q")
         }
     }
 }

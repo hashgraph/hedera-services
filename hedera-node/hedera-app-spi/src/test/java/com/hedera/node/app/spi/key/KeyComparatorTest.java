@@ -41,6 +41,10 @@ class KeyComparatorTest {
             Expected value is %d, not %5$d.
             compare(%s, %s) returned %d.
             """;
+    // All results are normalized, so we can use these constants for comparisons
+    private static final Integer ZERO = Integer.valueOf(0);
+    private static final Integer ONE = Integer.valueOf(1);
+    private static final Integer MINUS_ONE = Integer.valueOf(-1);
 
     @BeforeEach
     void setUp() {}
@@ -95,101 +99,98 @@ class KeyComparatorTest {
     //                              Parameterized test method sources                             //
     ////////////////////////////////////////////////////////////////////////////////////////////////
     public static Stream<Arguments> generateAllCrossTypeMatches() {
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         final Key unsetKey = Key.newBuilder().build(); // no type assigned, so UNSET
         final List<Arguments> result = new LinkedList<>();
 
-        result.add(Arguments.of("Null Input", zero, null, null));
-        result.add(Arguments.of("Null-UNSET", minusOne, null, unsetKey));
-        result.add(Arguments.of("UNSET-Null", one, unsetKey, null));
+        result.add(Arguments.of("Null Input", ZERO, null, null));
+        result.add(Arguments.of("Null-UNSET", MINUS_ONE, null, unsetKey));
+        result.add(Arguments.of("UNSET-Null", ONE, unsetKey, null));
 
-        result.add(Arguments.of("UNSET-CONTRACT", minusOne, unsetKey, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("UNSET-ED25519", minusOne, unsetKey, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("UNSET-RSA3072", minusOne, unsetKey, INVALID_RSA_KEY));
-        result.add(Arguments.of("UNSET-ECDSAP384", minusOne, unsetKey, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("UNSET-THRESHOLD", minusOne, unsetKey, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("UNSET-KEYLIST", minusOne, unsetKey, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("UNSET-SECP256K1", minusOne, unsetKey, SIMPLE_ECDSA[1]));
-        result.add(Arguments.of("UNSET-DELEGATE_CONTRACT", minusOne, unsetKey, SAMPLE_DELEGATE_CONTRACT_ID));
+        result.add(Arguments.of("UNSET-CONTRACT", MINUS_ONE, unsetKey, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("UNSET-ED25519", MINUS_ONE, unsetKey, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("UNSET-RSA3072", MINUS_ONE, unsetKey, INVALID_RSA_KEY));
+        result.add(Arguments.of("UNSET-ECDSAP384", MINUS_ONE, unsetKey, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("UNSET-THRESHOLD", MINUS_ONE, unsetKey, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("UNSET-KEYLIST", MINUS_ONE, unsetKey, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("UNSET-SECP256K1", MINUS_ONE, unsetKey, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("UNSET-DELEGATE_CONTRACT", MINUS_ONE, unsetKey, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("CONTRACT-UNSET", one, SAMPLE_CONTRACT_ID, unsetKey));
-        result.add(Arguments.of("CONTRACT-ED25519", minusOne, SAMPLE_CONTRACT_ID, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("CONTRACT-RSA3072", minusOne, SAMPLE_CONTRACT_ID, INVALID_RSA_KEY));
-        result.add(Arguments.of("CONTRACT-ECDSAP384", minusOne, SAMPLE_CONTRACT_ID, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("CONTRACT-THRESHOLD", minusOne, SAMPLE_CONTRACT_ID, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("CONTRACT-KEYLIST", minusOne, SAMPLE_CONTRACT_ID, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("CONTRACT-SECP256K1", minusOne, SAMPLE_CONTRACT_ID, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("CONTRACT-UNSET", ONE, SAMPLE_CONTRACT_ID, unsetKey));
+        result.add(Arguments.of("CONTRACT-ED25519", MINUS_ONE, SAMPLE_CONTRACT_ID, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("CONTRACT-RSA3072", MINUS_ONE, SAMPLE_CONTRACT_ID, INVALID_RSA_KEY));
+        result.add(Arguments.of("CONTRACT-ECDSAP384", MINUS_ONE, SAMPLE_CONTRACT_ID, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("CONTRACT-THRESHOLD", MINUS_ONE, SAMPLE_CONTRACT_ID, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("CONTRACT-KEYLIST", MINUS_ONE, SAMPLE_CONTRACT_ID, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("CONTRACT-SECP256K1", MINUS_ONE, SAMPLE_CONTRACT_ID, SIMPLE_ECDSA[1]));
         result.add(
-                Arguments.of("CONTRACT-DELEGATE_CONTRACT", minusOne, SAMPLE_CONTRACT_ID, SAMPLE_DELEGATE_CONTRACT_ID));
+                Arguments.of("CONTRACT-DELEGATE_CONTRACT", MINUS_ONE, SAMPLE_CONTRACT_ID, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("ED25519-UNSET", one, SIMPLE_ED25519[1], unsetKey));
-        result.add(Arguments.of("ED25519-CONTRACT", one, SIMPLE_ED25519[1], SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("ED25519-RSA3072", minusOne, SIMPLE_ED25519[1], INVALID_RSA_KEY));
-        result.add(Arguments.of("ED25519-ECDSAP384", minusOne, SIMPLE_ED25519[1], INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("ED25519-THRESHOLD", minusOne, SIMPLE_ED25519[1], ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("ED25519-KEYLIST", minusOne, SIMPLE_ED25519[1], MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("ED25519-SECP256K1", minusOne, SIMPLE_ED25519[1], SIMPLE_ECDSA[1]));
-        result.add(Arguments.of("ED25519-DELEGATE_CONTRACT", minusOne, SIMPLE_ED25519[1], SAMPLE_DELEGATE_CONTRACT_ID));
+        result.add(Arguments.of("ED25519-UNSET", ONE, SIMPLE_ED25519[1], unsetKey));
+        result.add(Arguments.of("ED25519-CONTRACT", ONE, SIMPLE_ED25519[1], SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("ED25519-RSA3072", MINUS_ONE, SIMPLE_ED25519[1], INVALID_RSA_KEY));
+        result.add(Arguments.of("ED25519-ECDSAP384", MINUS_ONE, SIMPLE_ED25519[1], INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("ED25519-THRESHOLD", MINUS_ONE, SIMPLE_ED25519[1], ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("ED25519-KEYLIST", MINUS_ONE, SIMPLE_ED25519[1], MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("ED25519-SECP256K1", MINUS_ONE, SIMPLE_ED25519[1], SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("ED25519-DELEGATE_CONTRACT", MINUS_ONE, SIMPLE_ED25519[1], SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("RSA3072-UNSET", one, INVALID_RSA_KEY, unsetKey));
-        result.add(Arguments.of("RSA3072-CONTRACT", one, INVALID_RSA_KEY, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("RSA3072-ED25519", one, INVALID_RSA_KEY, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("RSA3072-ECDSAP384", minusOne, INVALID_RSA_KEY, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("RSA3072-THRESHOLD", minusOne, INVALID_RSA_KEY, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("RSA3072-KEYLIST", minusOne, INVALID_RSA_KEY, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("RSA3072-SECP256K1", minusOne, INVALID_RSA_KEY, SIMPLE_ECDSA[1]));
-        result.add(Arguments.of("RSA3072-DELEGATE_CONTRACT", minusOne, INVALID_RSA_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
+        result.add(Arguments.of("RSA3072-UNSET", ONE, INVALID_RSA_KEY, unsetKey));
+        result.add(Arguments.of("RSA3072-CONTRACT", ONE, INVALID_RSA_KEY, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("RSA3072-ED25519", ONE, INVALID_RSA_KEY, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("RSA3072-ECDSAP384", MINUS_ONE, INVALID_RSA_KEY, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("RSA3072-THRESHOLD", MINUS_ONE, INVALID_RSA_KEY, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("RSA3072-KEYLIST", MINUS_ONE, INVALID_RSA_KEY, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("RSA3072-SECP256K1", MINUS_ONE, INVALID_RSA_KEY, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("RSA3072-DELEGATE_CONTRACT", MINUS_ONE, INVALID_RSA_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("ECDSAP384-UNSET", one, INVALID_ECDSAP384_KEY, unsetKey));
-        result.add(Arguments.of("ECDSAP384-CONTRACT", one, INVALID_ECDSAP384_KEY, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("ECDSAP384-ED25519", one, INVALID_ECDSAP384_KEY, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("ECDSAP384-RSA3072", one, INVALID_ECDSAP384_KEY, INVALID_RSA_KEY));
-        result.add(Arguments.of("ECDSAP384-THRESHOLD", minusOne, INVALID_ECDSAP384_KEY, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("ECDSAP384-KEYLIST", minusOne, INVALID_ECDSAP384_KEY, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("ECDSAP384-SECP256K1", minusOne, INVALID_ECDSAP384_KEY, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("ECDSAP384-UNSET", ONE, INVALID_ECDSAP384_KEY, unsetKey));
+        result.add(Arguments.of("ECDSAP384-CONTRACT", ONE, INVALID_ECDSAP384_KEY, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("ECDSAP384-ED25519", ONE, INVALID_ECDSAP384_KEY, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("ECDSAP384-RSA3072", ONE, INVALID_ECDSAP384_KEY, INVALID_RSA_KEY));
+        result.add(Arguments.of("ECDSAP384-THRESHOLD", MINUS_ONE, INVALID_ECDSAP384_KEY, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("ECDSAP384-KEYLIST", MINUS_ONE, INVALID_ECDSAP384_KEY, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("ECDSAP384-SECP256K1", MINUS_ONE, INVALID_ECDSAP384_KEY, SIMPLE_ECDSA[1]));
         result.add(Arguments.of(
-                "ECDSAP384-DELEGATE_CONTRACT", minusOne, INVALID_ECDSAP384_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
+                "ECDSAP384-DELEGATE_CONTRACT", MINUS_ONE, INVALID_ECDSAP384_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("THRESHOLD-UNSET", one, MIXED_THRESHOLD_KEY, unsetKey));
-        result.add(Arguments.of("THRESHOLD-CONTRACT", one, MIXED_THRESHOLD_KEY, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("THRESHOLD-ED25519", one, MIXED_THRESHOLD_KEY, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("THRESHOLD-RSA3072", one, MIXED_THRESHOLD_KEY, INVALID_RSA_KEY));
-        result.add(Arguments.of("THRESHOLD-ECDSAP384", one, MIXED_THRESHOLD_KEY, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("THRESHOLD-KEYLIST", minusOne, MIXED_THRESHOLD_KEY, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("THRESHOLD-SECP256K1", minusOne, MIXED_THRESHOLD_KEY, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("THRESHOLD-UNSET", ONE, MIXED_THRESHOLD_KEY, unsetKey));
+        result.add(Arguments.of("THRESHOLD-CONTRACT", ONE, MIXED_THRESHOLD_KEY, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("THRESHOLD-ED25519", ONE, MIXED_THRESHOLD_KEY, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("THRESHOLD-RSA3072", ONE, MIXED_THRESHOLD_KEY, INVALID_RSA_KEY));
+        result.add(Arguments.of("THRESHOLD-ECDSAP384", ONE, MIXED_THRESHOLD_KEY, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("THRESHOLD-KEYLIST", MINUS_ONE, MIXED_THRESHOLD_KEY, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("THRESHOLD-SECP256K1", MINUS_ONE, MIXED_THRESHOLD_KEY, SIMPLE_ECDSA[1]));
         result.add(Arguments.of(
-                "THRESHOLD-DELEGATE_CONTRACT", minusOne, MIXED_THRESHOLD_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
+                "THRESHOLD-DELEGATE_CONTRACT", MINUS_ONE, MIXED_THRESHOLD_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("KEYLIST-UNSET", one, MIXED_KEY_LIST_KEY, unsetKey));
-        result.add(Arguments.of("KEYLIST-CONTRACT", one, MIXED_KEY_LIST_KEY, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("KEYLIST-ED25519", one, MIXED_KEY_LIST_KEY, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("KEYLIST-RSA3072", one, MIXED_KEY_LIST_KEY, INVALID_RSA_KEY));
-        result.add(Arguments.of("KEYLIST-ECDSAP384", one, MIXED_KEY_LIST_KEY, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("KEYLIST-THRESHOLD", one, MIXED_KEY_LIST_KEY, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("KEYLIST-SECP256K1", minusOne, MIXED_KEY_LIST_KEY, SIMPLE_ECDSA[1]));
+        result.add(Arguments.of("KEYLIST-UNSET", ONE, MIXED_KEY_LIST_KEY, unsetKey));
+        result.add(Arguments.of("KEYLIST-CONTRACT", ONE, MIXED_KEY_LIST_KEY, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("KEYLIST-ED25519", ONE, MIXED_KEY_LIST_KEY, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("KEYLIST-RSA3072", ONE, MIXED_KEY_LIST_KEY, INVALID_RSA_KEY));
+        result.add(Arguments.of("KEYLIST-ECDSAP384", ONE, MIXED_KEY_LIST_KEY, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("KEYLIST-THRESHOLD", ONE, MIXED_KEY_LIST_KEY, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("KEYLIST-SECP256K1", MINUS_ONE, MIXED_KEY_LIST_KEY, SIMPLE_ECDSA[1]));
         result.add(
-                Arguments.of("KEYLIST-DELEGATE_CONTRACT", minusOne, MIXED_KEY_LIST_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
+                Arguments.of("KEYLIST-DELEGATE_CONTRACT", MINUS_ONE, MIXED_KEY_LIST_KEY, SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("SECP256K1-UNSET", one, SIMPLE_ECDSA[1], unsetKey));
-        result.add(Arguments.of("SECP256K1-CONTRACT", one, SIMPLE_ECDSA[1], SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("SECP256K1-ED25519", one, SIMPLE_ECDSA[1], SIMPLE_ED25519[1]));
-        result.add(Arguments.of("SECP256K1-RSA3072", one, SIMPLE_ECDSA[1], INVALID_RSA_KEY));
-        result.add(Arguments.of("SECP256K1-ECDSAP384", one, SIMPLE_ECDSA[1], INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("SECP256K1-THRESHOLD", one, SIMPLE_ECDSA[1], ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("SECP256K1-KEYLIST", one, SIMPLE_ECDSA[1], MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("SECP256K1-DELEGATE_CONTRACT", minusOne, SIMPLE_ECDSA[1], SAMPLE_DELEGATE_CONTRACT_ID));
+        result.add(Arguments.of("SECP256K1-UNSET", ONE, SIMPLE_ECDSA[1], unsetKey));
+        result.add(Arguments.of("SECP256K1-CONTRACT", ONE, SIMPLE_ECDSA[1], SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("SECP256K1-ED25519", ONE, SIMPLE_ECDSA[1], SIMPLE_ED25519[1]));
+        result.add(Arguments.of("SECP256K1-RSA3072", ONE, SIMPLE_ECDSA[1], INVALID_RSA_KEY));
+        result.add(Arguments.of("SECP256K1-ECDSAP384", ONE, SIMPLE_ECDSA[1], INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("SECP256K1-THRESHOLD", ONE, SIMPLE_ECDSA[1], ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("SECP256K1-KEYLIST", ONE, SIMPLE_ECDSA[1], MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("SECP256K1-DELEGATE_CONTRACT", MINUS_ONE, SIMPLE_ECDSA[1], SAMPLE_DELEGATE_CONTRACT_ID));
 
-        result.add(Arguments.of("DELEGATE_CONTRACT-UNSET", one, SAMPLE_DELEGATE_CONTRACT_ID, unsetKey));
-        result.add(Arguments.of("DELEGATE_CONTRACT-CONTRACT", one, SAMPLE_DELEGATE_CONTRACT_ID, SAMPLE_CONTRACT_ID));
-        result.add(Arguments.of("DELEGATE_CONTRACT-ED25519", one, SAMPLE_DELEGATE_CONTRACT_ID, SIMPLE_ED25519[1]));
-        result.add(Arguments.of("DELEGATE_CONTRACT-RSA3072", one, SAMPLE_DELEGATE_CONTRACT_ID, INVALID_RSA_KEY));
+        result.add(Arguments.of("DELEGATE_CONTRACT-UNSET", ONE, SAMPLE_DELEGATE_CONTRACT_ID, unsetKey));
+        result.add(Arguments.of("DELEGATE_CONTRACT-CONTRACT", ONE, SAMPLE_DELEGATE_CONTRACT_ID, SAMPLE_CONTRACT_ID));
+        result.add(Arguments.of("DELEGATE_CONTRACT-ED25519", ONE, SAMPLE_DELEGATE_CONTRACT_ID, SIMPLE_ED25519[1]));
+        result.add(Arguments.of("DELEGATE_CONTRACT-RSA3072", ONE, SAMPLE_DELEGATE_CONTRACT_ID, INVALID_RSA_KEY));
         result.add(
-                Arguments.of("DELEGATE_CONTRACT-ECDSAP384", one, SAMPLE_DELEGATE_CONTRACT_ID, INVALID_ECDSAP384_KEY));
-        result.add(Arguments.of("DELEGATE_CONTRACT-THRESHOLD", one, SAMPLE_DELEGATE_CONTRACT_ID, ECDSA_THRESHOLD_KEY));
-        result.add(Arguments.of("DELEGATE_CONTRACT-KEYLIST", one, SAMPLE_DELEGATE_CONTRACT_ID, MIXED_KEY_LIST_KEY));
-        result.add(Arguments.of("DELEGATE_CONTRACT-SECP256K1", one, SAMPLE_DELEGATE_CONTRACT_ID, SIMPLE_ECDSA[1]));
+                Arguments.of("DELEGATE_CONTRACT-ECDSAP384", ONE, SAMPLE_DELEGATE_CONTRACT_ID, INVALID_ECDSAP384_KEY));
+        result.add(Arguments.of("DELEGATE_CONTRACT-THRESHOLD", ONE, SAMPLE_DELEGATE_CONTRACT_ID, ECDSA_THRESHOLD_KEY));
+        result.add(Arguments.of("DELEGATE_CONTRACT-KEYLIST", ONE, SAMPLE_DELEGATE_CONTRACT_ID, MIXED_KEY_LIST_KEY));
+        result.add(Arguments.of("DELEGATE_CONTRACT-SECP256K1", ONE, SAMPLE_DELEGATE_CONTRACT_ID, SIMPLE_ECDSA[1]));
 
         return result.stream();
     }
@@ -201,12 +202,11 @@ class KeyComparatorTest {
     }
 
     public static Stream<Arguments> generateAllSameTypeMatches() {
-        final Integer zero = Integer.valueOf(0);
         final Key unsetKey = Key.newBuilder().build(); // no type assigned, so UNSET
         final List<Arguments> result = new LinkedList<>();
         // null == null and unset == unset.
-        result.add(Arguments.of("Null Input", zero, null, null));
-        result.add(Arguments.of("UNSET-UNSET", zero, unsetKey, unsetKey));
+        result.add(Arguments.of("Null Input", ZERO, null, null));
+        result.add(Arguments.of("UNSET-UNSET", ZERO, unsetKey, unsetKey));
         // Note: the test itself verifies both forward and inverse for all inputs,
         //     so we do not need to include the inverse of each case.
         ed25519Cases(result);
@@ -220,9 +220,6 @@ class KeyComparatorTest {
 
     private static void thresholdCases(final List<Arguments> result) {
         final String testNameFormat = "Threshold-%s-%s";
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         // Create 10 each contract and delegate-contract keys
         // contract num are even and evm address are odd
         final Key[] contractKeys = generateContractKeysForLists();
@@ -237,31 +234,31 @@ class KeyComparatorTest {
         thresholdKeys.add(thresholdOf(2, baseLists[1].keyList()));
         thresholdKeys.add(thresholdOf(3, baseLists[1].keyList()));
         thresholdKeys.add(thresholdOf(1, baseLists[1].keyList()));
-        result.add(Arguments.of("Threshold-same-values-equal", zero, thresholdKeys.get(0), thresholdKeys.get(1)));
-        result.add(Arguments.of("Threshold-higher-threshold", minusOne, thresholdKeys.get(1), thresholdKeys.get(2)));
-        result.add(Arguments.of("Threshold-lower-threshold", one, thresholdKeys.get(2), thresholdKeys.get(3)));
-        result.add(Arguments.of("Threshold-simple-lists-differ", minusOne, thresholdKeys.get(3), thresholdKeys.get(6)));
-        result.add(Arguments.of("Threshold-simple-all-differ", minusOne, thresholdKeys.get(1), thresholdKeys.get(5)));
+        result.add(Arguments.of("Threshold-same-values-equal", ZERO, thresholdKeys.get(0), thresholdKeys.get(1)));
+        result.add(Arguments.of("Threshold-higher-threshold", MINUS_ONE, thresholdKeys.get(1), thresholdKeys.get(2)));
+        result.add(Arguments.of("Threshold-lower-threshold", ONE, thresholdKeys.get(2), thresholdKeys.get(3)));
+        result.add(Arguments.of("Threshold-simple-lists-differ", MINUS_ONE, thresholdKeys.get(3), thresholdKeys.get(6)));
+        result.add(Arguments.of("Threshold-simple-all-differ", MINUS_ONE, thresholdKeys.get(1), thresholdKeys.get(5)));
         // two lists, not identical contents, but *equal* contents
         Key leftList = keyListOf(thresholdKeys.get(2), thresholdKeys.get(0), SIMPLE_ED25519[2]);
         Key rightList = keyListOf(thresholdKeys.get(2), thresholdKeys.get(1), SIMPLE_ED25519[2]);
-        result.add(Arguments.of("Threshold-in-list-same", zero, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-same", ZERO, leftList, rightList));
         // two lists, not identical, and *not equal* contents
         leftList = keyListOf(thresholdKeys.get(2), thresholdKeys.get(0), SIMPLE_ED25519[2]);
         rightList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(1), SIMPLE_ED25519[2]);
-        result.add(Arguments.of("Threshold-in-list-lower-threshold", one, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-lower-threshold", ONE, leftList, rightList));
         leftList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(3), SIMPLE_ED25519[2]);
         rightList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(1), SIMPLE_ED25519[2]);
-        result.add(Arguments.of("Threshold-in-list-higher-threshold", minusOne, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-higher-threshold", MINUS_ONE, leftList, rightList));
         leftList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(2), SIMPLE_ED25519[2]);
         rightList = keyListOf(thresholdKeys.get(6), thresholdKeys.get(3), SIMPLE_ED25519[2]);
-        result.add(Arguments.of("Threshold-in-list-first-difference-counts", minusOne, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-first-difference-counts", MINUS_ONE, leftList, rightList));
         leftList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(0), SIMPLE_ED25519[2]);
         rightList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(1), SIMPLE_ED25519[3]);
-        result.add(Arguments.of("Threshold-in-list-still-compares-list", minusOne, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-still-compares-list", MINUS_ONE, leftList, rightList));
         leftList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(0), SIMPLE_ED25519[1]);
         rightList = keyListOf(thresholdKeys.get(3), thresholdKeys.get(1), SIMPLE_ED25519[4]);
-        result.add(Arguments.of("Threshold-in-list-still-compares-last", one, leftList, rightList));
+        result.add(Arguments.of("Threshold-in-list-still-compares-last", ONE, leftList, rightList));
     }
 
     private static Key thresholdOf(final int threshold, final KeyList... baseList) {
@@ -279,34 +276,31 @@ class KeyComparatorTest {
 
     private static void keyListCases(final List<Arguments> result) {
         final String testNameFormat = "KeyList-%s-%s";
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         final List<NamedKeyList> keyLists = generateKeyLists();
         NamedKeyList nextLeft = keyLists.get(0);
         NamedKeyList nextRight = keyLists.get(1);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, minusOne, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, MINUS_ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(1);
         nextRight = keyLists.get(2);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, one, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(2);
         nextRight = keyLists.get(3);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, minusOne, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, MINUS_ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(3);
         nextRight = keyLists.get(4);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, one, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(4);
         nextRight = keyLists.get(5);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, minusOne, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, MINUS_ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(5);
         nextRight = keyLists.get(6);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, one, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(6);
         nextRight = keyLists.get(7);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, one, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, ONE, nextLeft.key(), nextRight.key()));
         nextLeft = keyLists.get(7);
         nextRight = keyLists.get(8);
-        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, one, nextLeft.key(), nextRight.key()));
+        result.add(Arguments.of(nextLeft.name + "-" + nextRight.name, ONE, nextLeft.key(), nextRight.key()));
     }
 
     private static List<NamedKeyList> generateKeyLists() {
@@ -376,152 +370,140 @@ class KeyComparatorTest {
 
     private static void ed25519Cases(final List<Arguments> result) {
         final String testNameFormat = "%s-Key-%d-%d";
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         // ED25519 sort in byte order
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 0), zero, SIMPLE_ED25519[0], SIMPLE_ED25519[0]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 0), ZERO, SIMPLE_ED25519[0], SIMPLE_ED25519[0]));
         result.add(Arguments.of(
-                testNameFormat.formatted("ED25519", 0, 1), minusOne, SIMPLE_ED25519[0], SIMPLE_ED25519[1]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 2), one, SIMPLE_ED25519[0], SIMPLE_ED25519[2]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 3), one, SIMPLE_ED25519[0], SIMPLE_ED25519[3]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 4), one, SIMPLE_ED25519[0], SIMPLE_ED25519[4]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 1), zero, SIMPLE_ED25519[1], SIMPLE_ED25519[1]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 2), one, SIMPLE_ED25519[1], SIMPLE_ED25519[2]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 3), one, SIMPLE_ED25519[1], SIMPLE_ED25519[3]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 4), one, SIMPLE_ED25519[1], SIMPLE_ED25519[4]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 2, 2), zero, SIMPLE_ED25519[2], SIMPLE_ED25519[2]));
+                testNameFormat.formatted("ED25519", 0, 1), MINUS_ONE, SIMPLE_ED25519[0], SIMPLE_ED25519[1]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 2), ONE, SIMPLE_ED25519[0], SIMPLE_ED25519[2]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 3), ONE, SIMPLE_ED25519[0], SIMPLE_ED25519[3]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 0, 4), ONE, SIMPLE_ED25519[0], SIMPLE_ED25519[4]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 1), ZERO, SIMPLE_ED25519[1], SIMPLE_ED25519[1]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 2), ONE, SIMPLE_ED25519[1], SIMPLE_ED25519[2]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 3), ONE, SIMPLE_ED25519[1], SIMPLE_ED25519[3]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 1, 4), ONE, SIMPLE_ED25519[1], SIMPLE_ED25519[4]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 2, 2), ZERO, SIMPLE_ED25519[2], SIMPLE_ED25519[2]));
         result.add(Arguments.of(
-                testNameFormat.formatted("ED25519", 2, 3), minusOne, SIMPLE_ED25519[2], SIMPLE_ED25519[3]));
+                testNameFormat.formatted("ED25519", 2, 3), MINUS_ONE, SIMPLE_ED25519[2], SIMPLE_ED25519[3]));
         result.add(Arguments.of(
-                testNameFormat.formatted("ED25519", 2, 4), minusOne, SIMPLE_ED25519[2], SIMPLE_ED25519[4]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 3, 3), zero, SIMPLE_ED25519[3], SIMPLE_ED25519[3]));
+                testNameFormat.formatted("ED25519", 2, 4), MINUS_ONE, SIMPLE_ED25519[2], SIMPLE_ED25519[4]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 3, 3), ZERO, SIMPLE_ED25519[3], SIMPLE_ED25519[3]));
         result.add(Arguments.of(
-                testNameFormat.formatted("ED25519", 3, 4), minusOne, SIMPLE_ED25519[3], SIMPLE_ED25519[4]));
-        result.add(Arguments.of(testNameFormat.formatted("ED25519", 4, 4), zero, SIMPLE_ED25519[4], SIMPLE_ED25519[4]));
+                testNameFormat.formatted("ED25519", 3, 4), MINUS_ONE, SIMPLE_ED25519[3], SIMPLE_ED25519[4]));
+        result.add(Arguments.of(testNameFormat.formatted("ED25519", 4, 4), ZERO, SIMPLE_ED25519[4], SIMPLE_ED25519[4]));
     }
 
     private static void SecP256K1Cases(final List<Arguments> result) {
         final String testNameFormat = "%s-Key-%d-%d";
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         // SecP256K1 sort in byte order
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 0, 0), zero, SIMPLE_ECDSA[0], SIMPLE_ECDSA[0]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 0, 0), ZERO, SIMPLE_ECDSA[0], SIMPLE_ECDSA[0]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 1), minusOne, SIMPLE_ECDSA[0], SIMPLE_ECDSA[1]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 1), MINUS_ONE, SIMPLE_ECDSA[0], SIMPLE_ECDSA[1]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 2), minusOne, SIMPLE_ECDSA[0], SIMPLE_ECDSA[2]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 0, 3), one, SIMPLE_ECDSA[0], SIMPLE_ECDSA[3]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 2), MINUS_ONE, SIMPLE_ECDSA[0], SIMPLE_ECDSA[2]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 0, 3), ONE, SIMPLE_ECDSA[0], SIMPLE_ECDSA[3]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 4), minusOne, SIMPLE_ECDSA[0], SIMPLE_ECDSA[4]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 1, 1), zero, SIMPLE_ECDSA[1], SIMPLE_ECDSA[1]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 0, 4), MINUS_ONE, SIMPLE_ECDSA[0], SIMPLE_ECDSA[4]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 1, 1), ZERO, SIMPLE_ECDSA[1], SIMPLE_ECDSA[1]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 1, 2), minusOne, SIMPLE_ECDSA[1], SIMPLE_ECDSA[2]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 1, 3), one, SIMPLE_ECDSA[1], SIMPLE_ECDSA[3]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 1, 2), MINUS_ONE, SIMPLE_ECDSA[1], SIMPLE_ECDSA[2]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 1, 3), ONE, SIMPLE_ECDSA[1], SIMPLE_ECDSA[3]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 1, 4), minusOne, SIMPLE_ECDSA[1], SIMPLE_ECDSA[4]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 2, 2), zero, SIMPLE_ECDSA[2], SIMPLE_ECDSA[2]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 2, 3), one, SIMPLE_ECDSA[2], SIMPLE_ECDSA[3]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 1, 4), MINUS_ONE, SIMPLE_ECDSA[1], SIMPLE_ECDSA[4]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 2, 2), ZERO, SIMPLE_ECDSA[2], SIMPLE_ECDSA[2]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 2, 3), ONE, SIMPLE_ECDSA[2], SIMPLE_ECDSA[3]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 2, 4), minusOne, SIMPLE_ECDSA[2], SIMPLE_ECDSA[4]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 3, 3), zero, SIMPLE_ECDSA[3], SIMPLE_ECDSA[3]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 2, 4), MINUS_ONE, SIMPLE_ECDSA[2], SIMPLE_ECDSA[4]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 3, 3), ZERO, SIMPLE_ECDSA[3], SIMPLE_ECDSA[3]));
         result.add(
-                Arguments.of(testNameFormat.formatted("SecP256K1", 3, 4), minusOne, SIMPLE_ECDSA[3], SIMPLE_ECDSA[4]));
-        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 4, 4), zero, SIMPLE_ECDSA[4], SIMPLE_ECDSA[4]));
+                Arguments.of(testNameFormat.formatted("SecP256K1", 3, 4), MINUS_ONE, SIMPLE_ECDSA[3], SIMPLE_ECDSA[4]));
+        result.add(Arguments.of(testNameFormat.formatted("SecP256K1", 4, 4), ZERO, SIMPLE_ECDSA[4], SIMPLE_ECDSA[4]));
     }
 
     private static void contractIdCases(final List<Arguments> result) {
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         // evm addresses sort in byte order
-        addContractId(result, zero, new IdVal("one", 0, 0, 0, -1), new IdVal("one", 0, 0, 0, -1));
-        addContractId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("two", 1, 0, 0, -1));
-        addContractId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("three", 2, 0, 0, -1));
-        addContractId(result, one, new IdVal("one", 0, 0, 0, -1), new IdVal("four", 3, 0, 0, -1));
-        addContractId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("five", 4, 0, 0, -1));
+        addContractId(result, ZERO, new IdVal("one", 0, 0, 0, -1), new IdVal("one", 0, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("two", 1, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("three", 2, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("four", 3, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("five", 4, 0, 0, -1));
         // contract numbers sort numerically
-        addContractId(result, minusOne, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("one[2]", 0, 0, 0, 2));
-        addContractId(result, one, new IdVal("one[2]", 0, 0, 0, 2), new IdVal("one[1]", 0, 0, 0, 1));
-        addContractId(result, one, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("two[1]", 1, 0, 0, 1));
-        addContractId(result, minusOne, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("four[3]", 3, 0, 0, 3));
-        // Contract number sorts "before" evm address
-        addContractId(result, one, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("four", 3, 0, 0, -1));
-        addContractId(result, one, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("three", 2, 0, 0, -1));
-        addContractId(result, one, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
-        addContractId(result, one, new IdVal("two[5]", 0, 0, 0, 5), new IdVal("four", 3, 0, 0, -1));
-        addContractId(result, one, new IdVal("three[0]", 0, 0, 0, 0), new IdVal("three", 2, 0, 0, -1));
-        addContractId(result, one, new IdVal("four[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("one[2]", 0, 0, 0, 2));
+        addContractId(result, ONE, new IdVal("one[2]", 0, 0, 0, 2), new IdVal("one[1]", 0, 0, 0, 1));
+        addContractId(result, ONE, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("two[1]", 1, 0, 0, 1));
+        addContractId(result, MINUS_ONE, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("four[3]", 3, 0, 0, 3));
+        // Contract number sorts "after" evm address
+        addContractId(result, MINUS_ONE, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("four", 3, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("three", 2, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("two[5]", 0, 0, 0, 5), new IdVal("four", 3, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("three[0]", 0, 0, 0, 0), new IdVal("three", 2, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("four[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
         // realm compare numeric order
-        addContractId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.one", 0, 0, 0, -1));
-        addContractId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.two", 1, 0, 0, -1));
-        addContractId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.three", 2, 0, 0, -1));
-        addContractId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.four", 3, 0, 0, -1));
-        addContractId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.five", 4, 0, 0, -1));
-        addContractId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.one", 0, 2, 0, -1));
-        addContractId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.two", 1, 2, 0, -1));
-        addContractId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.three", 2, 2, 0, -1));
-        addContractId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.four", 3, 2, 0, -1));
-        addContractId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.five", 4, 2, 0, -1));
+        addContractId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.one", 0, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.two", 1, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.three", 2, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.four", 3, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.five", 4, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.one", 0, 2, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.two", 1, 2, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.three", 2, 2, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.four", 3, 2, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.five", 4, 2, 0, -1));
         // shard compare numeric order
-        addContractId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.one", 0, 0, 0, -1));
-        addContractId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.two", 1, 0, 0, -1));
-        addContractId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.three", 2, 0, 0, -1));
-        addContractId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.four", 3, 0, 0, -1));
-        addContractId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.five", 4, 0, 0, -1));
-        addContractId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.one", 0, 0, 2, -1));
-        addContractId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.two", 1, 0, 2, -1));
-        addContractId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.three", 2, 0, 2, -1));
-        addContractId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.four", 3, 0, 2, -1));
-        addContractId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.five", 4, 0, 2, -1));
+        addContractId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.one", 0, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.two", 1, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.three", 2, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.four", 3, 0, 0, -1));
+        addContractId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.five", 4, 0, 0, -1));
+        addContractId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.one", 0, 0, 2, -1));
+        addContractId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.two", 1, 0, 2, -1));
+        addContractId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.three", 2, 0, 2, -1));
+        addContractId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.four", 3, 0, 2, -1));
+        addContractId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.five", 4, 0, 2, -1));
     }
 
     private static void delegateIdCases(final List<Arguments> result) {
-        final Integer zero = Integer.valueOf(0);
-        final Integer one = Integer.valueOf(1);
-        final Integer minusOne = Integer.valueOf(-1);
         // Delegated contract IDs sort like contract IDs
         // evm addresses sort in byte order
-        addDelegateId(result, zero, new IdVal("one", 0, 0, 0, -1), new IdVal("one", 0, 0, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("two", 1, 0, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("three", 2, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("one", 0, 0, 0, -1), new IdVal("four", 3, 0, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("one", 0, 0, 0, -1), new IdVal("five", 4, 0, 0, -1));
+        addDelegateId(result, ZERO, new IdVal("one", 0, 0, 0, -1), new IdVal("one", 0, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("two", 1, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("three", 2, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("four", 3, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one", 0, 0, 0, -1), new IdVal("five", 4, 0, 0, -1));
         // contract numbers sort numerically
-        addDelegateId(result, minusOne, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("one[2]", 0, 0, 0, 2));
-        addDelegateId(result, one, new IdVal("one[2]", 0, 0, 0, 2), new IdVal("one[1]", 0, 0, 0, 1));
-        addDelegateId(result, one, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("two[1]", 1, 0, 0, 1));
-        addDelegateId(result, minusOne, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("four[3]", 3, 0, 0, 3));
-        // Contract number sorts "before" evm address
-        addDelegateId(result, one, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("four", 3, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("three", 2, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("two[5]", 0, 0, 0, 5), new IdVal("four", 3, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("three[0]", 0, 0, 0, 0), new IdVal("three", 2, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("four[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("one[2]", 0, 0, 0, 2));
+        addDelegateId(result, ONE, new IdVal("one[2]", 0, 0, 0, 2), new IdVal("one[1]", 0, 0, 0, 1));
+        addDelegateId(result, ONE, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("two[1]", 1, 0, 0, 1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one[1]", 0, 0, 0, 1), new IdVal("four[3]", 3, 0, 0, 3));
+        // Contract number sorts "after" evm address
+        addDelegateId(result, MINUS_ONE, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("four", 3, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one[3]", 0, 0, 0, 3), new IdVal("three", 2, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("one[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("two[5]", 0, 0, 0, 5), new IdVal("four", 3, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("three[0]", 0, 0, 0, 0), new IdVal("three", 2, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("four[0]", 0, 0, 0, 0), new IdVal("two", 1, 0, 0, -1));
         // realm compare numeric order
-        addDelegateId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.one", 0, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.two", 1, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.three", 2, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.four", 3, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.five", 4, 0, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.one", 0, 2, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.two", 1, 2, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.three", 2, 2, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.four", 3, 2, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.five", 4, 2, 0, -1));
+        addDelegateId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.one", 0, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.two", 1, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.three", 2, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.four", 3, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("0.five", 4, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.one", 0, 2, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.two", 1, 2, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.three", 2, 2, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.four", 3, 2, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("1.one", 0, 1, 0, -1), new IdVal("2.five", 4, 2, 0, -1));
         // shard compare numeric order
-        addDelegateId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.one", 0, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.two", 1, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.three", 2, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.four", 3, 0, 0, -1));
-        addDelegateId(result, one, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.five", 4, 0, 0, -1));
-        addDelegateId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.one", 0, 0, 2, -1));
-        addDelegateId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.two", 1, 0, 2, -1));
-        addDelegateId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.three", 2, 0, 2, -1));
-        addDelegateId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.four", 3, 0, 2, -1));
-        addDelegateId(result, minusOne, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.five", 4, 0, 2, -1));
+        addDelegateId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.one", 0, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.two", 1, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.three", 2, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.four", 3, 0, 0, -1));
+        addDelegateId(result, ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.0.five", 4, 0, 0, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.one", 0, 0, 2, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.two", 1, 0, 2, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.three", 2, 0, 2, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.four", 3, 0, 2, -1));
+        addDelegateId(result, MINUS_ONE, new IdVal("0.1.one", 0, 0, 1, -1), new IdVal("0.2.five", 4, 0, 2, -1));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
