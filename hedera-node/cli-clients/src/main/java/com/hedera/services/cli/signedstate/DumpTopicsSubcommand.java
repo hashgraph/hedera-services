@@ -16,6 +16,7 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.services.cli.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
 
@@ -97,31 +98,39 @@ public class DumpTopicsSubcommand {
         System.out.printf("=== topics report is %d bytes%n", reportSize);
     }
 
+    @SuppressWarnings(
+            "java:S6218") // "Equals/hashcode method should be overridden in records containing array fields" - this
     record Topic(
             int number,
             @NonNull String memo,
-            @NonNull JKey adminKey,
-            @NonNull JKey submitKey,
-            long autoRenewDurationSeconds,
-            @Nullable EntityId autoRenewAccountId,
             @NonNull RichInstant expirationTimestamp,
             boolean deleted,
-            long sequenceNumber) {
+            @NonNull JKey adminKey,
+            @NonNull JKey submitKey,
+            @NonNull byte[] runningHash,
+            long sequenceNumber,
+            long autoRenewDurationSeconds,
+            @Nullable EntityId autoRenewAccountId
+            ) {
         Topic(@NonNull final MerkleTopic topic) {
             this(
                     topic.getNumber(),
                     topic.getMemo(),
-                    topic.getAdminKey(),
-                    topic.getSubmitKey(),
-                    topic.getAutoRenewDurationSeconds(),
-                    topic.getAutoRenewAccountId(),
                     topic.getExpirationTimestamp(),
                     topic.isDeleted(),
-                    topic.getSequenceNumber());
+                    topic.getAdminKey(),
+                    topic.getSubmitKey(),
+                    null != topic.getRunningHash() ? topic.getRunningHash() : EMPTY_BYTES,
+                    topic.getSequenceNumber(),
+                    topic.getAutoRenewDurationSeconds(),
+                    topic.getAutoRenewAccountId()
+                    );
             Objects.requireNonNull(memo, "memo");
             Objects.requireNonNull(adminKey, "adminKey");
             Objects.requireNonNull(submitKey, "submitKey");
+            Objects.requireNonNull(runningHash, "runningHash");
         }
+        static final byte[] EMPTY_BYTES = new byte[0];
     }
 
     @NonNull
@@ -165,6 +174,7 @@ public class DumpTopicsSubcommand {
             Pair.of("deleted", getFieldFormatter(Topic::deleted, booleanFormatter)),
             Pair.of("adminKey", getFieldFormatter(Topic::adminKey, ThingsToStrings::toStringOfJKey)),
             Pair.of("submitKey", getFieldFormatter(Topic::submitKey, ThingsToStrings::toStringOfJKey)),
+            Pair.of("runningHash", getFieldFormatter(Topic::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
             Pair.of("sequenceNumber", getFieldFormatter(Topic::sequenceNumber, Object::toString)),
             Pair.of("autoRenewSecs", getFieldFormatter(Topic::autoRenewDurationSeconds, Object::toString)),
             Pair.of(
