@@ -98,9 +98,11 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         // This method is only used for PBJ serialization, so estimation is for PBJ, not JDB
         int size = 0;
         if (data.path() != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_HASHRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_HASHRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                    + Long.BYTES;
         }
-        size += ProtoWriterTools.sizeOfDelimited(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+        size += ProtoWriterTools.sizeOfDelimited(
+                FIELD_HASHRECORD_HASH, data.hash().getValue().length);
         return size;
     }
 

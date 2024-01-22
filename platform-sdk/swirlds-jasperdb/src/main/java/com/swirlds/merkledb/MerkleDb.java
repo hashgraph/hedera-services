@@ -885,7 +885,8 @@ public final class MerkleDb {
         public int pbjSizeInBytes() {
             int size = 0;
             if (tableId != 0) {
-                size += ProtoWriterTools.sizeOfTag(FIELD_TABLEMETADATA_TABLEID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+                size += ProtoWriterTools.sizeOfTag(
+                        FIELD_TABLEMETADATA_TABLEID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
                 size += ProtoWriterTools.sizeOfVarInt32(tableId);
             }
             size += ProtoWriterTools.sizeOfDelimited(

@@ -391,7 +391,9 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
                 readBuf.reset();
                 final int tag = readBuf.getVarInt(0, false); // tag
-                assert tag == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET) | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
+                assert tag
+                        == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET)
+                                | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
                 final int sizeOfTag = ProtoWriterTools.sizeOfUnsignedVarInt32(tag);
                 final int size = readBuf.getVarInt(sizeOfTag, false);
                 final int sizeOfSize = ProtoWriterTools.sizeOfUnsignedVarInt32(size);

@@ -123,10 +123,12 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     public int getSerializedSize(@NonNull final VirtualLeafRecord<K, V> data) {
         int size = 0;
         if (data.getPath() != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_LEAFRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_LEAFRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                    + Long.BYTES;
         }
         size += ProtoWriterTools.sizeOfDelimited(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
-        size += ProtoWriterTools.sizeOfDelimited(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
+        size += ProtoWriterTools.sizeOfDelimited(
+                FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
         return size;
     }
 

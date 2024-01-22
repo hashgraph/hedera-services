@@ -259,18 +259,22 @@ public class DataFileMetadata {
             size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_INDEX, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(index);
         }
-        size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_SECONDS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_DATAFILEMETADATA_CREATION_SECONDS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
         size += ProtoWriterTools.sizeOfVarInt64(creationDate.getEpochSecond());
-        size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_NANOS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_DATAFILEMETADATA_CREATION_NANOS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
         size += ProtoWriterTools.sizeOfVarInt64(creationDate.getNano());
         size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, ProtoConstants.WIRE_TYPE_FIXED_64_BIT);
         size += Long.BYTES;
         if (serializationVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_ITEM_VERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_DATAFILEMETADATA_ITEM_VERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt64(serializationVersion);
         }
         if (compactionLevel != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(compactionLevel);
         }
         return size;

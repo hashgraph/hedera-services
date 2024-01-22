@@ -99,7 +99,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     public int sizeInBytes() {
         int size = 0;
         if (bucketIndex > 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
+                    + Integer.BYTES;
         }
         for (final BucketEntry entry : entries) {
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
@@ -347,9 +348,11 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
 
         public int sizeInBytes() {
             int size = 0;
-            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
+                    + Integer.BYTES;
             if (value != 0) {
-                size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+                size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                        + Long.BYTES;
             }
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
             return size;

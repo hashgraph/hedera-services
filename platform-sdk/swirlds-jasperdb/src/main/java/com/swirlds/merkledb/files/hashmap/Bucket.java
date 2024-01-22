@@ -167,8 +167,8 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     /** Get the index for this bucket */
     public int getBucketIndex() {
-        final long bucketIndexValueOffset =
-                bucketIndexFieldOffset + ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT);
+        final long bucketIndexValueOffset = bucketIndexFieldOffset
+                + ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT);
         return bucketData.getInt(bucketIndexValueOffset);
     }
 
@@ -265,11 +265,12 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         findEntry(hashCode, key);
         final long entryOffset = bucketData.limit();
         final int keySize = keySerializer.getSerializedSize(key);
-        final int entrySize = ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
-                + Integer.BYTES
-                + ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
-                + Long.BYTES
-                + ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
+        final int entrySize =
+                ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
+                        + Integer.BYTES
+                        + ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                        + Long.BYTES
+                        + ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
         final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
         setSize(Math.toIntExact(entryOffset + totalSize));
         bucketData.position(entryOffset);
@@ -278,7 +279,8 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
             out.writeInt(hashCode);
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
             out.writeLong(value);
-            ProtoWriterTools.writeDelimited(out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
+            ProtoWriterTools.writeDelimited(
+                    out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
         });
     }
 

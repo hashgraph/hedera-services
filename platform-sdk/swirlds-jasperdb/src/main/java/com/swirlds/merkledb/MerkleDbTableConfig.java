@@ -216,7 +216,8 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     public int pbjSizeInBytes() {
         int size = 0;
         if (hashVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_HASHVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_TABLECONFIG_HASHVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(hashVersion);
         }
         size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_DIGESTTYPEID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
@@ -225,24 +226,30 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_KEYVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(keyVersion);
         }
-        size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_KEYSERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_TABLECONFIG_KEYSERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
         size += ProtoWriterTools.sizeOfVarInt64(keySerializer.getClassId());
         if (valueVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_VALUEVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_TABLECONFIG_VALUEVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(valueVersion);
         }
-        size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_VALUESERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_TABLECONFIG_VALUESERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
         size += ProtoWriterTools.sizeOfVarInt64(valueSerializer.getClassId());
         if (preferDiskBasedIndices) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_PREFERDISKINDICES, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_TABLECONFIG_PREFERDISKINDICES, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(1);
         }
         if (maxNumberOfKeys != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_MAXNUMBEROFKEYS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_TABLECONFIG_MAXNUMBEROFKEYS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt64(maxNumberOfKeys);
         }
         if (hashesRamToDiskThreshold != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt64(hashesRamToDiskThreshold);
         }
         return size;
