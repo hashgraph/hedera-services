@@ -300,7 +300,6 @@ jobs:
         uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
         with:
           run: |
-            set
             sudo setcap cap_net_raw+ep /usr/local/ping-exporter/ping_exporter
             ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
           tail: true
