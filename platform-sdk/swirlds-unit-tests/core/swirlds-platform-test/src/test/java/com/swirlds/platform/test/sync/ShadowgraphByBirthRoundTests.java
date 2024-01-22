@@ -33,7 +33,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
@@ -43,6 +45,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -101,7 +104,13 @@ class ShadowgraphByBirthRoundTests {
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
 
-        platformContext = TestPlatformContextBuilder.create().build();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
+                .getOrCreateConfig();
+
+        platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
@@ -166,7 +175,7 @@ class ShadowgraphByBirthRoundTests {
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
 
@@ -313,7 +322,7 @@ class ShadowgraphByBirthRoundTests {
         ShadowgraphReservation r1 = shadowGraph.reserve();
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
@@ -378,7 +387,7 @@ class ShadowgraphByBirthRoundTests {
 
         final long expireBelowBirthRound = random.nextInt((int) maxBirthRound) + 2;
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
@@ -424,13 +433,13 @@ class ShadowgraphByBirthRoundTests {
         ShadowgraphReservation r0 = shadowGraph.reserve();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
         ShadowgraphReservation r1 = shadowGraph.reserve();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
                 BIRTH_ROUND_THRESHOLD));
         ShadowgraphReservation r2 = shadowGraph.reserve();
@@ -446,7 +455,7 @@ class ShadowgraphByBirthRoundTests {
         // Attempt to expire everything up to
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
                 BIRTH_ROUND_THRESHOLD));
 
@@ -456,7 +465,7 @@ class ShadowgraphByBirthRoundTests {
         r0.close();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
                 BIRTH_ROUND_THRESHOLD));
 
@@ -568,7 +577,7 @@ class ShadowgraphByBirthRoundTests {
 
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
         birthRoundToShadows
@@ -607,7 +616,7 @@ class ShadowgraphByBirthRoundTests {
         IndexedEvent newEvent = emitter.emitEvent();
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 newEvent.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD),
                 BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
@@ -731,7 +740,7 @@ class ShadowgraphByBirthRoundTests {
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 oldestTipBirthRound + 1,
                 BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
