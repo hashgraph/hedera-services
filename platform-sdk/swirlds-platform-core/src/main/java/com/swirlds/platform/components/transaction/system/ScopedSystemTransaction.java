@@ -32,6 +32,4 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param <T>         the type of transaction
  */
 public record ScopedSystemTransaction<T extends SystemTransaction>(
-        @NonNull NodeId submitterId,
-        @Nullable SoftwareVersion softwareVersion,
-        @NonNull T transaction) {}
+        @NonNull NodeId submitterId, @Nullable SoftwareVersion softwareVersion, @NonNull T transaction) {}

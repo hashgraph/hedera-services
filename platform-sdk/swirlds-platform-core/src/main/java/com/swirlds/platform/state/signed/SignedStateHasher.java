@@ -60,9 +60,7 @@ public class SignedStateHasher {
      *       <li>{@code fatalErrorConsumer}</li>
      *     </ul>
      */
-    public SignedStateHasher(
-            SignedStateMetrics signedStateMetrics,
-            FatalErrorConsumer fatalErrorConsumer) {
+    public SignedStateHasher(SignedStateMetrics signedStateMetrics, FatalErrorConsumer fatalErrorConsumer) {
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;
     }

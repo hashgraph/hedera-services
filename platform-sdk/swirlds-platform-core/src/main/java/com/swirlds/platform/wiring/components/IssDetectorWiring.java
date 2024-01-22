@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.wiring.model.WiringModel;
@@ -29,14 +45,16 @@ public record IssDetectorWiring(
      * @return the new wiring instance
      */
     @NonNull
-    public static IssDetectorWiring create(@NonNull final WiringModel model, @NonNull final TaskScheduler<Void> taskScheduler) {
+    public static IssDetectorWiring create(
+            @NonNull final WiringModel model, @NonNull final TaskScheduler<Void> taskScheduler) {
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
-                model,
-                "extractConsensusSignatureTransactions",
-                "consensus round",
-                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
-        final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput = taskScheduler.buildInputWire("handlePostconsensusSignatures");
+                        model,
+                        "extractConsensusSignatureTransactions",
+                        "consensus round",
+                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+        final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =
+                taskScheduler.buildInputWire("handlePostconsensusSignatures");
         roundTransformer.getOutputWire().solderTo(sigInput);
         return new IssDetectorWiring(
                 taskScheduler.buildInputWire("endOfPcesReplay"),
@@ -50,7 +68,8 @@ public record IssDetectorWiring(
     public void bind(@NonNull final ConsensusHashManager hashManager) {
         ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(hashManager::signalEndOfPreconsensusReplay);
         ((BindableInputWire<Long, Void>) roundCompletedInput).bind(hashManager::roundCompleted);
-        ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, Void>) handlePostconsensusSignatures)
+        ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, Void>)
+                        handlePostconsensusSignatures)
                 .bind(hashManager::handlePostconsensusSignatures);
         ((BindableInputWire<ReservedSignedState, Void>) newStateHashed).bind(hashManager::newStateHashed);
         ((BindableInputWire<ReservedSignedState, Void>) overridingState).bind(hashManager::overridingState);

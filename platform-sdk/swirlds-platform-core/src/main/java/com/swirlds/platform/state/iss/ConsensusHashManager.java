@@ -238,10 +238,8 @@ public class ConsensusHashManager {
      */
     public void handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        transactions.forEach(t->handlePostconsensusSignatureTransaction(
-                t.submitterId(),
-                t.transaction(),
-                t.softwareVersion()));
+        transactions.forEach(
+                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()));
     }
 
     /**
@@ -312,7 +310,7 @@ public class ConsensusHashManager {
         }
     }
 
-    public void newStateHashed(@NonNull final ReservedSignedState state){
+    public void newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
             stateHashedObserver(state.get().getRound(), state.get().getState().getHash());
         }
@@ -345,7 +343,7 @@ public class ConsensusHashManager {
     /**
      * Called when an overriding state is obtained, i.e. via reconnect or state loading.
      */
-    public void overridingState(@NonNull final ReservedSignedState state){
+    public void overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();

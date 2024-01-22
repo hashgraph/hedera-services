@@ -888,7 +888,10 @@ public class SwirldsPlatform implements Platform {
         logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
-            platformWiring.getIssDetectorWiring().overridingState().put(signedState.reserve("reconnect state to issDetector"));
+            platformWiring
+                    .getIssDetectorWiring()
+                    .overridingState()
+                    .put(signedState.reserve("reconnect state to issDetector"));
 
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
