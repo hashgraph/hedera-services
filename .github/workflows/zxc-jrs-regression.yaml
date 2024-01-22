@@ -315,7 +315,7 @@ jobs:
           GRAFANA_AGENT_PASSWORD: ${{ secrets.grafana-agent-password }}
         with:
           run: |
-            /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.expand-env -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml" >> /tmp/grafana-agent.log 2>&1
+            ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.expand-env -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml" >> /tmp/grafana-agent.log 2>&1
           tail: true
           log-output: true
           wait-for: 1m
