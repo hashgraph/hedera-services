@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -27,7 +29,13 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
-    private final EventHasherWiring eventHasherWiring;
+    /**
+     * The object counter which spans the {@link EventHasherWiring} and the {@link PostHashCollectorWiring}
+     * <p>
+     * Used to flush the pair of components together.
+     */
+    private final ObjectCounter hashingObjectCounter;
+
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -41,7 +49,7 @@ public class PlatformCoordinator {
     /**
      * Constructor
      *
-     * @param eventHasherWiring                      the event hasher wiring
+     * @param hashingObjectCounter                   the hashing object counter
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
@@ -53,7 +61,7 @@ public class PlatformCoordinator {
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      */
     public PlatformCoordinator(
-            @NonNull final EventHasherWiring eventHasherWiring,
+            @NonNull final ObjectCounter hashingObjectCounter,
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
             @NonNull final EventDeduplicatorWiring eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
@@ -64,7 +72,7 @@ public class PlatformCoordinator {
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
 
-        this.eventHasherWiring = Objects.requireNonNull(eventHasherWiring);
+        this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
@@ -80,6 +88,11 @@ public class PlatformCoordinator {
      * Flushes the intake pipeline
      */
     public void flushIntakePipeline() {
+        // it isn't possible to flush the event hasher and the post hash collector independently, since the framework
+        // currently doesn't support flushing if multiple components share the same object counter. As a workaround,
+        // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
+        hashingObjectCounter.waitUntilEmpty();
+
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
