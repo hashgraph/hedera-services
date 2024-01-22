@@ -539,6 +539,12 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getGeneration();
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public long getBirthRound() {
+        return baseEvent.getHashedData().getBirthRound();
+    }
+
     /**
      * {@inheritDoc}
      */
