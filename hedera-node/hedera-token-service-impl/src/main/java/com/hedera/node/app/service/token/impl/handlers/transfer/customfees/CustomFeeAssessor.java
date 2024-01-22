@@ -96,7 +96,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             @NonNull final Predicate<AccountID> autoCreationTest) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
-        for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
+        for (final var entry : result.getMutableInputBalanceAdjustments().entrySet()) {
             inputFungibleTransfers += entry.getValue().size();
         }
         result.getHbarAdjustments().forEach((k, v) -> {
@@ -107,7 +107,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                 validateTrue(currentAccount != null, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                 final var finalBalance = currentAccount.tinybarBalance()
                         + v
-                        + result.getInputHbarAdjustments().getOrDefault(k, 0L);
+                        + result.getImmutableInputHbarAdjustments().getOrDefault(k, 0L);
                 validateTrue(finalBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         });
@@ -159,7 +159,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                 if (fee.tokenId() != null) {
                     final var tokenRel = tokenRelStore.get(payer, fee.tokenId());
                     for (final var entry :
-                            result.getMutableInputTokenAdjustments().entrySet()) {
+                            result.getMutableInputBalanceAdjustments().entrySet()) {
                         if (entry.getKey().equals(fee.tokenId())) {
                             entry.getValue().forEach((accId, v) -> {
                                 if (v < 0 && accId.equals(payer)) {
@@ -177,7 +177,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
 
         final var balanceChanges = result.getHbarAdjustments().size()
                 + newFungibleTransfers
-                + result.getInputHbarAdjustments().size()
+                + result.getImmutableInputHbarAdjustments().size()
                 + inputFungibleTransfers
                 + initialNftChanges;
         validateFalse(balanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);

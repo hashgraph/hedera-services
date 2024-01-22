@@ -17,15 +17,16 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHbarFees;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHtsFees;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.ADJUSTMENTS_MAP_FACTORY;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.asFixedFee;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.getFungibleCredits;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.safeFractionMultiply;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -144,29 +145,69 @@ public class CustomRoyaltyFeeAssessor {
                 /* The id of the charging token is only used here to avoid recursively charging
                 on fees charged in the units of their denominating token; but this is a credit,
                 hence the id is irrelevant, and we can use null. */
-                if (denom == null) {
-                    // exchange is for hbar
-                    adjustHbarFees(result, account, fee);
-                } else {
+                if (denom != null) {
                     // exchange is for token
-                    adjustHtsFees(result, account, feeCollector, feeMeta, royalty, denom);
+                    redirectHtsRoyaltyFee(result, account, feeCollector, royalty, denom);
+                } else {
+                    // exchange is for hbar
+                    redirectHbarRoyaltyFee(result, account, feeCollector, royalty);
                 }
 
                 final var assessedCustomFeeBuilder = AssessedCustomFee.newBuilder()
                         .amount(royalty)
                         .feeCollectorAccountId(feeCollector)
                         .effectivePayerAccountId(account);
-                if (denom == null) {
-                    // exchange is for hbar
-                    result.addAssessedCustomFee(assessedCustomFeeBuilder.build());
-                } else {
+                if (denom != null) {
                     // exchange is for token
                     result.addAssessedCustomFee(
                             assessedCustomFeeBuilder.tokenId(denom).build());
+                } else {
+                    // exchange is for hbar
+                    result.addAssessedCustomFee(assessedCustomFeeBuilder.build());
                 }
             } catch (final ArithmeticException e) {
                 throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         }
+    }
+
+    /**
+     * Redirects royalty fee from the sender to the fee collector.
+     * @param result assessment result
+     * @param account sender
+     * @param feeCollector fee collector
+     * @param royalty royalty fee
+     * @param denom token id
+     */
+    private void redirectHtsRoyaltyFee(
+            @NonNull final AssessmentResult result,
+            @NonNull final AccountID account,
+            @NonNull final AccountID feeCollector,
+            final long royalty,
+            @NonNull final TokenID denom) {
+        final var htsAdjustments = result.getHtsAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
+        final var mutableInputHtsAdjustments =
+                result.getMutableInputBalanceAdjustments().get(denom);
+        mutableInputHtsAdjustments.merge(account, -royalty, Long::sum);
+        htsAdjustments.merge(feeCollector, royalty, Long::sum);
+    }
+
+    /**
+     * Redirects royalty fee from the sender to the fee collector.
+     * @param result assessment result
+     * @param account sender
+     * @param feeCollector fee collector
+     * @param royalty royalty fee
+     */
+    private void redirectHbarRoyaltyFee(
+            @NonNull final AssessmentResult result,
+            @NonNull final AccountID account,
+            @NonNull final AccountID feeCollector,
+            final long royalty) {
+        final var hbarAdjustments = result.getHbarAdjustments();
+        final var mutableHbarAdjustments =
+                result.getMutableInputBalanceAdjustments().get(HBAR_TOKEN_ID);
+        mutableHbarAdjustments.merge(account, -royalty, Long::sum);
+        hbarAdjustments.merge(feeCollector, royalty, Long::sum);
     }
 }
