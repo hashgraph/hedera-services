@@ -110,8 +110,7 @@ public class DumpTopicsSubcommand {
             @NonNull byte[] runningHash,
             long sequenceNumber,
             long autoRenewDurationSeconds,
-            @Nullable EntityId autoRenewAccountId
-            ) {
+            @Nullable EntityId autoRenewAccountId) {
         Topic(@NonNull final MerkleTopic topic) {
             this(
                     topic.getNumber(),
@@ -123,13 +122,13 @@ public class DumpTopicsSubcommand {
                     null != topic.getRunningHash() ? topic.getRunningHash() : EMPTY_BYTES,
                     topic.getSequenceNumber(),
                     topic.getAutoRenewDurationSeconds(),
-                    topic.getAutoRenewAccountId()
-                    );
+                    topic.getAutoRenewAccountId());
             Objects.requireNonNull(memo, "memo");
             Objects.requireNonNull(adminKey, "adminKey");
             Objects.requireNonNull(submitKey, "submitKey");
             Objects.requireNonNull(runningHash, "runningHash");
         }
+
         static final byte[] EMPTY_BYTES = new byte[0];
     }
 
