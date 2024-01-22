@@ -57,13 +57,10 @@ public class BooleanAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public BooleanAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType);
+        super(adapterType, metric);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Gauge.Builder builder = new Gauge.Builder()
-                .subsystem(fix(metric.getCategory()))
-                .name(fix(metric.getName()))
-                .help(metric.getDescription());
+        final Gauge.Builder builder = fill(new Gauge.Builder());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

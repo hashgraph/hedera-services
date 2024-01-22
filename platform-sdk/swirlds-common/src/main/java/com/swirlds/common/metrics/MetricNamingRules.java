@@ -82,7 +82,7 @@ public final class MetricNamingRules {
                 Constants.ALL_METRICS,
                 "Use a-z;A-Z;0-9 and _"),
         UNNORMALIZED_UNIT(/*Only one version for units is preferred*/
-                mv -> Constants.NON_NORMALIZED_UNITS.test(mv.unit()),
+                mv -> Constants.NON_NORMALIZED_UNITS.test(mv.unit().toLowerCase()),
                 Constants.ALL_METRICS,
                 "Use normalized version for unit: "
                         + "seconds|count|milliseconds|microseconds|bytes|megabytes|gigabytes|hertz|rounds"),
