@@ -406,6 +406,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for passing a PCES iterator to the replayer
      */
+    @NonNull
     public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
         return pcesReplayerWiring.pcesIteratorInputWire();
     }
@@ -415,6 +416,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
+    @NonNull
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
     }
@@ -424,6 +426,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for the PCES writer minimum generation to store
      */
+    @NonNull
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
         return pcesWriterWiring.minimumAncientIdentifierToStoreInputWire();
     }
@@ -433,6 +436,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for the PCES writer to register a discontinuity
      */
+    @NonNull
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
         return pcesWriterWiring.discontinuityInputWire();
     }
@@ -442,6 +446,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return a supplier for the number of unprocessed tasks in the hasher
      */
+    @NonNull
     public LongSupplier getHasherUnprocessedTaskCountSupplier() {
         return eventHasherWiring.unprocessedTaskCountSupplier();
     }
@@ -452,6 +457,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the output wire for keystone event sequence numbers
      */
+    @NonNull
     public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
         return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }
