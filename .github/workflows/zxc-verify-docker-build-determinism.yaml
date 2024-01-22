@@ -175,7 +175,7 @@ jobs:
           if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
             docker context rm -f setup-docker-action
           fi
-          
+
           DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
           docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
           docker context use setup-docker-action
@@ -387,7 +387,7 @@ jobs:
           if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
             docker context rm -f setup-docker-action
           fi
-          
+
           DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
           docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
           docker context use setup-docker-action
