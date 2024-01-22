@@ -50,7 +50,7 @@ public record IssDetectorWiring(
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
                         model,
-                        "extractConsensusSignatureTransactions",
+                        "extractSignaturesForIssDetector",
                         "consensus round",
                         new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =

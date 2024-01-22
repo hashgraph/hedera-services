@@ -586,8 +586,10 @@ public class SwirldsPlatform implements Platform {
             latestImmutableState.setState(rs.getAndReserve("newSignedStateFromTransactionsConsumer"));
             latestCompleteState.newIncompleteState(rs.get().getRound());
             savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
-            stateManagementComponent.newSignedStateFromTransactions(rs);
+            stateManagementComponent.newSignedStateFromTransactions(
+                    rs.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
             platformWiring.getIssDetectorWiring().newStateHashed().put(rs.getAndReserve("issDetector"));
+            rs.close();
         };
 
         final QueueThread<ReservedSignedState> stateHashSignQueue =
