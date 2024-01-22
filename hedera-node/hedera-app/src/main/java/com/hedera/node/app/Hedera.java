@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
@@ -62,6 +63,7 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
@@ -561,9 +563,12 @@ public final class Hedera implements SwirldMain {
         //noinspection ConstantValue
         assert platformState != null : "Platform should never pass a null platform state";
         logger.info(
-                "Initializing Hedera state with trigger {} and previous version {}",
+                "Initializing Hedera state with trigger {} and previous version {} instance of {}",
                 () -> trigger,
-                () -> previousVersion == null ? "<NONE>" : previousVersion);
+                () -> previousVersion == null ? "<NONE>" : previousVersion,
+                () -> previousVersion == null
+                        ? "<NONE>"
+                        : previousVersion.getClass().getName());
 
         // We do not support downgrading from one version to an older version.
         final HederaSoftwareVersion deserializedVersion;
@@ -576,6 +581,11 @@ public final class Hedera implements SwirldMain {
                         version);
                 System.exit(1);
             }
+        } else if (previousVersion instanceof SerializableSemVers) {
+            // On restart the RuntimeConstructable instantiates a ServicesState because of CLASS_ID
+            final var servicesVersion = ((SerializableSemVers) previousVersion).getServices();
+            final var hapiVersion = ((SerializableSemVers) previousVersion).getProto();
+            deserializedVersion = new HederaSoftwareVersion(toPbj(hapiVersion), toPbj(servicesVersion));
         } else {
             deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
         }
@@ -1041,7 +1051,7 @@ public final class Hedera implements SwirldMain {
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger) {
-        logger.debug(trigger + " Initialization");
+        logger.info(trigger + " Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
         if (deserializedVersion == null) {

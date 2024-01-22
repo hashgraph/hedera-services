@@ -244,8 +244,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     handleThrottling,
                     entityIdStore);
             if (restartInsteadOfMigrate) {
+                logger.info("Restarting service {} for schema {}", serviceName, schema);
                 schema.restart(migrationContext);
             } else {
+                logger.info("Migrating service {} for schema {}", serviceName, schema);
                 schema.migrate(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
