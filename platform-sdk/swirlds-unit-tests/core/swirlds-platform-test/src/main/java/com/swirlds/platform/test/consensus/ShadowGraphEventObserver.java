@@ -40,7 +40,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     /**
      * Constructor.
      *
-     * @param shadowGraph              the {@link Shadowgraph} to update
+     * @param shadowGraph the {@link Shadowgraph} to update
      */
     public ShadowGraphEventObserver(@NonNull final Shadowgraph shadowGraph) {
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
