@@ -581,11 +581,6 @@ public final class Hedera implements SwirldMain {
                         version);
                 System.exit(1);
             }
-        } else if (previousVersion instanceof SerializableSemVers) {
-            // On restart the RuntimeConstructable instantiates a ServicesState because of CLASS_ID
-            final var servicesVersion = ((SerializableSemVers) previousVersion).getServices();
-            final var hapiVersion = ((SerializableSemVers) previousVersion).getProto();
-            deserializedVersion = new HederaSoftwareVersion(toPbj(hapiVersion), toPbj(servicesVersion));
         } else {
             deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
         }
