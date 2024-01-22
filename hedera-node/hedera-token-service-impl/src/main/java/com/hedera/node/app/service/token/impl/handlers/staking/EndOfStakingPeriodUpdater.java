@@ -144,6 +144,7 @@ public class EndOfStakingPeriodUpdater {
                     .copyBuilder()
                     .stake(recomputedStake.stake())
                     .stakeRewardStart(recomputedStake.stakeRewardStart())
+                    .unclaimedStakeRewardStart(0)
                     .build();
             final var newStakeRewardStart = recomputedStake.stakeRewardStart();
             final var nodePendingRewards = pendingRewardHbars * newPendingRewardRate;

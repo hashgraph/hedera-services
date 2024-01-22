@@ -178,11 +178,7 @@ public class StakingRewardsHelper {
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
 
         // Update the individual node pending node rewards
-        return currStakingInfo
-                .copyBuilder()
-                .unclaimedStakeRewardStart(0)
-                .pendingRewards(newPendingRewards)
-                .build();
+        return currStakingInfo.copyBuilder().pendingRewards(newPendingRewards).build();
     }
 
     /**
