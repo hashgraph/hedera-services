@@ -53,5 +53,4 @@ class ConfigUtilsTest {
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(MetricsConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(PrometheusConfig.class));
     }
-
 }

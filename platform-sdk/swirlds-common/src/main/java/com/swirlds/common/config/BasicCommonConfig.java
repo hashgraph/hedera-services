@@ -36,5 +36,4 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData
 public record BasicCommonConfig(
         @ConfigProperty(defaultValue = "true") boolean showInternalStats,
-        @ConfigProperty(defaultValue = "false") boolean verboseStatistics
-        ) {}
+        @ConfigProperty(defaultValue = "false") boolean verboseStatistics) {}
