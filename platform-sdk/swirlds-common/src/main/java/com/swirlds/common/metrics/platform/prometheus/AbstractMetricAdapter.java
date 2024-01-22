@@ -30,10 +30,10 @@ import org.apache.logging.log4j.Logger;
 public abstract class AbstractMetricAdapter implements MetricAdapter {
     private static final Logger log = LogManager.getLogger(AbstractMetricAdapter.class);
     protected final PrometheusEndpoint.AdapterType adapterType;
-    private final String subSystem;
-    private final String name;
-    private final String unit;
-    private final String help;
+    private final @NonNull String subSystem;
+    private final @NonNull String name;
+    private final @NonNull String unit;
+    private final @NonNull String help;
 
 
     private final AtomicInteger referenceCount = new AtomicInteger();
@@ -64,9 +64,9 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
 
     protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> T fill(SimpleCollector.Builder<T, C> collectorBuilder) {
         return collectorBuilder.subsystem(subSystem)
-                .name(fix(name))
+                .name(name)
                 .help(help)
-                .unit(fix(unit));
+                .unit(unit);
 
     }
 
