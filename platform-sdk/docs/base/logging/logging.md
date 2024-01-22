@@ -88,7 +88,7 @@ Here’s how to use it:
 The configuration syntax is designed for clarity and ease of use.
 It allows setting a global default logging level and specific levels for packages or classes, with an option to introduce filters for markers.
 
-For practicality, the `logging.properties` file reload every second, ensuring up-to-date logging configurations at all times.
+For practicality, the `logging.properties` file will reload every second, ensuring up-to-date logging configurations at all times.
 
 The default search path for the properties file is the current working directory. It can be modified by setting the `LOG_CONFIG_PATH` environment variable.
 
@@ -162,6 +162,7 @@ For example, if you need a handler that only logs entries marked with the `CRYPT
 
 ```properties
 # Handler specific for CRYPTO marker
+logging.handler.CRYPTO_FILE.inheritLevels = false
 logging.handler.CRYPTO_FILE.level = OFF
 logging.handler.CRYPTO_FILE.marker.CRYPTO = ENABLED
 ```
