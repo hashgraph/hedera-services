@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.service.mono.state.StateModule.providePrintStream;
 import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -60,7 +61,13 @@ class StateModuleTest {
     private NetworkInfo networkInfo;
 
     @Mock
+    private Platform platform;
+
+    @Mock
     private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private StateModule.ConsoleCreator consoleCreator;
 
     @Mock
     private BalancesExporter balancesExporter;
@@ -72,6 +79,12 @@ class StateModuleTest {
         // expect:
         assertEquals(
                 Charset.defaultCharset(), StateModule.provideNativeCharset().get());
+    }
+
+    @Test
+    void providesEmptyConsolePrintStreamDuringEventRecovery() {
+        final var maybePrintStream = providePrintStream(consoleCreator, InitTrigger.EVENT_STREAM_RECOVERY, platform);
+        assertTrue(maybePrintStream.isEmpty());
     }
 
     @Test
