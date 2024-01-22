@@ -165,20 +165,32 @@ public class StakingRewardsHelper {
             final StakingNodeInfo currStakingInfo) {
         // increment the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
-        var newPendingRewards = currentPendingRewards + amount;
-        if (newPendingRewards > MAX_PENDING_REWARDS) {
+        long nodePendingRewards = currStakingInfo.pendingRewards();
+        long newNetworkPendingRewards;
+        long newNodePendingRewards;
+        if (!currStakingInfo.deleted()) {
+            newNetworkPendingRewards = currentPendingRewards + amount;
+            newNodePendingRewards = nodePendingRewards + amount;
+        } else {
+            newNetworkPendingRewards = currentPendingRewards;
+            newNodePendingRewards = 0L;
+        }
+        if (newNetworkPendingRewards > MAX_PENDING_REWARDS) {
             log.error(
                     "Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar",
                     amount,
-                    newPendingRewards);
-            newPendingRewards = MAX_PENDING_REWARDS;
+                    newNetworkPendingRewards);
+            newNetworkPendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
-        stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+        stakingRewardsStore.put(copy.pendingRewards(newNetworkPendingRewards).build());
 
         // Update the individual node pending node rewards
-        return currStakingInfo.copyBuilder().pendingRewards(newPendingRewards).build();
+        return currStakingInfo
+                .copyBuilder()
+                .pendingRewards(newNodePendingRewards)
+                .build();
     }
 
     /**
