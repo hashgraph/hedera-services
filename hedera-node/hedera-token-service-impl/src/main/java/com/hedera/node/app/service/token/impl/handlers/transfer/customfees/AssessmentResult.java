@@ -35,25 +35,29 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class AssessmentResult {
+
+    public static TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
     private Map<TokenID, Map<AccountID, Long>> htsAdjustments;
     // two maps to aggregate all custom fee balance changes. These two maps are used
     // to construct a transaction body that needs to be assessed again for custom fees
     private Map<AccountID, Long> hbarAdjustments;
     private Set<Pair<AccountID, TokenID>> royaltiesPaid;
     private Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
-    private Map<TokenID, Map<AccountID, Long>> mutableInputTokenAdjustments;
-    private Map<AccountID, Long> inputHbarAdjustments;
+    // Contains Hbar and token adjustments. Hbar adjustments are used using a sentinel tokenId key
+    private Map<TokenID, Map<AccountID, Long>> mutableInputBalanceAdjustments;
+    private Map<AccountID, Long> immutableInputHbarAdjustments;
     /* And for each "assessable change" that can be charged a custom fee, delegate to our
     fee assessor to update the balance changes with the custom fee. */
     private List<AssessedCustomFee> assessedCustomFees;
 
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
-        mutableInputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
-        immutableInputTokenAdjustments = Collections.unmodifiableMap(mutableInputTokenAdjustments.entrySet().stream()
+        mutableInputBalanceAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+        immutableInputTokenAdjustments = Collections.unmodifiableMap(mutableInputBalanceAdjustments.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue()))));
 
-        inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
+        immutableInputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
+        mutableInputBalanceAdjustments.put(HBAR_TOKEN_ID, new LinkedHashMap<>(immutableInputHbarAdjustments));
 
         htsAdjustments = new LinkedHashMap<>();
         hbarAdjustments = new LinkedHashMap<>();
@@ -65,8 +69,8 @@ public class AssessmentResult {
         return immutableInputTokenAdjustments;
     }
 
-    public Map<TokenID, Map<AccountID, Long>> getMutableInputTokenAdjustments() {
-        return mutableInputTokenAdjustments;
+    public Map<TokenID, Map<AccountID, Long>> getMutableInputBalanceAdjustments() {
+        return mutableInputBalanceAdjustments;
     }
 
     public Map<AccountID, Long> getHbarAdjustments() {
@@ -97,8 +101,8 @@ public class AssessmentResult {
         royaltiesPaid.add(paid);
     }
 
-    public Map<AccountID, Long> getInputHbarAdjustments() {
-        return inputHbarAdjustments;
+    public Map<AccountID, Long> getImmutableInputHbarAdjustments() {
+        return immutableInputHbarAdjustments;
     }
 
     private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
