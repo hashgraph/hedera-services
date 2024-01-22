@@ -139,9 +139,10 @@ public class StakingRewardsHelper {
         var newNodePendingRewards = currentNodePendingRewards - amount;
         if (newNodePendingRewards < 0) {
             log.error(
-                    "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+                    "Pending rewards decreased by {} to a meaningless {} for node {}, fixing to zero hbar",
                     amount,
-                    newNodePendingRewards);
+                    newNodePendingRewards,
+                    nodeId);
             newNodePendingRewards = 0;
         }
         final var stakingInfoCopy =
@@ -181,6 +182,14 @@ public class StakingRewardsHelper {
                     amount,
                     newNetworkPendingRewards);
             newNetworkPendingRewards = MAX_PENDING_REWARDS;
+        }
+        if (newNodePendingRewards > MAX_PENDING_REWARDS) {
+            log.error(
+                    "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
+                    amount,
+                    newNetworkPendingRewards,
+                    nodePendingRewards);
+            newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
