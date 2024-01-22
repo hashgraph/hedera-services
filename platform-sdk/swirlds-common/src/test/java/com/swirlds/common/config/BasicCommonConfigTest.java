@@ -30,7 +30,7 @@ class BasicCommonConfigTest {
         final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(BasicCommonConfig.class);
 
         // then
-        Assertions.assertDoesNotThrow(() -> builder.build(), "All default values of BasicConfig should be valid");
+        Assertions.assertDoesNotThrow(builder::build, "All default values of BasicConfig should be valid");
     }
 
     @Test

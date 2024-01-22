@@ -28,6 +28,6 @@ class StateCommonConfigTest {
         final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(StateCommonConfig.class);
 
         // then
-        Assertions.assertDoesNotThrow(() -> builder.build(), "All default values of StateConfig should be valid");
+        Assertions.assertDoesNotThrow(builder::build, "All default values of StateConfig should be valid");
     }
 }
