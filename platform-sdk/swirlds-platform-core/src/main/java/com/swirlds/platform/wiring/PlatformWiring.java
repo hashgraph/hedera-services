@@ -58,6 +58,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -86,6 +87,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
+    private final IssDetectorWiring issDetectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -136,7 +138,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
-
+        issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
         wire();
     }
 
@@ -424,6 +426,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
         return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
+    }
+
+    public IssDetectorWiring getIssDetectorWiring() {
+        return issDetectorWiring;
     }
 
     /**

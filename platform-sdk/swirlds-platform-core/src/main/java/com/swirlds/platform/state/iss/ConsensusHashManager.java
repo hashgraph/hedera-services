@@ -258,7 +258,7 @@ public class ConsensusHashManager {
      * @param signatureTransaction the signature transaction
      * @param eventVersion         the version of the event that contains the transaction
      */
-    public void handlePostconsensusSignatureTransaction(
+    private void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId,
             @NonNull final StateSignatureTransaction signatureTransaction,
             @Nullable final SoftwareVersion eventVersion) {
@@ -324,7 +324,7 @@ public class ConsensusHashManager {
      * @param round the round of the state
      * @param hash  the hash of the state
      */
-    public void stateHashedObserver(final Long round, final Hash hash) {
+    private void stateHashedObserver(final Long round, final Hash hash) {
         if (round == ignoredRound) {
             // This round is intentionally ignored.
             return;
@@ -342,21 +342,16 @@ public class ConsensusHashManager {
         }
     }
 
+    /**
+     * Called when an overriding state is obtained, i.e. via reconnect or state loading.
+     */
     public void overridingState(@NonNull final ReservedSignedState state){
         try (state) {
-            overridingStateObserver(state.get().getRound(), state.get().getState().getHash());
+            final long round = state.get().getRound();
+            final Hash stateHash = state.get().getState().getHash();
+            roundCompleted(round);
+            stateHashedObserver(round, stateHash);
         }
-    }
-
-    /**
-     * Observe when an overriding state is obtained, i.e. via reconnect or state loading.
-     *
-     * @param round     the round of the state that was obtained
-     * @param stateHash the hash of the state that was obtained
-     */
-    public void overridingStateObserver(final Long round, final Hash stateHash) {
-        roundCompleted(round);
-        stateHashedObserver(round, stateHash);
     }
 
     /**

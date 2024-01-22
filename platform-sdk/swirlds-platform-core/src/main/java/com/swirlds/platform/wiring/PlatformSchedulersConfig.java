@@ -100,4 +100,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
+        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity) {}

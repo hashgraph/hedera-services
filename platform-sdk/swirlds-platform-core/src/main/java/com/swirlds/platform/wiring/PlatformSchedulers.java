@@ -65,7 +65,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
-        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler) {
+        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
+        @NonNull TaskScheduler<Void> issDetectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -178,6 +179,13 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("issDetector")
+                        .withType(config.issDetectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)//TODO do I need this?
                         .build()
                         .cast());
     }
