@@ -29,6 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param eventInput                 the input wire for events to be added to the shadow graph
  * @param nonExpiredEventWindowInput the input wire for the non-expired event window
+ * @param flushRunnable              the runnable to flush the task scheduler
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,

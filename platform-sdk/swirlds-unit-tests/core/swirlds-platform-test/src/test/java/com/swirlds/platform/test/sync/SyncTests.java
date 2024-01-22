@@ -595,7 +595,7 @@ public class SyncTests {
                     .updateNonExpiredEventWindow(new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
                             0 /* ignored by shadowgraph */,
-                            callerMaxGen,
+                            callerMinGen,
                             GENERATION_THRESHOLD));
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
