@@ -67,7 +67,7 @@ public class ActionsHelper {
         var ok = true;
         ok &= null != action.callType() && NO_ACTION != action.callType();
         ok &= 1 == countNonNulls(action.callingAccount(), action.callingContract());
-        ok &= null != action.input();
+        ok &= action.input().length() > 0;
         ok &= 1 >= countNonNulls(action.recipientAccount(), action.recipientContract(), action.targetedAddress());
         ok &= 1 == countNonNulls(action.output(), action.revertReason(), action.error());
         ok &= null != action.callOperationType() && OP_UNKNOWN != action.callOperationType();
