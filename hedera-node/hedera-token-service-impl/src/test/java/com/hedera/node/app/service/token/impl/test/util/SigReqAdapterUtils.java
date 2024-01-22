@@ -114,7 +114,6 @@ public class SigReqAdapterUtils {
 
     protected final Bytes metadata = Bytes.wrap(new byte[] {0});
 
-
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
