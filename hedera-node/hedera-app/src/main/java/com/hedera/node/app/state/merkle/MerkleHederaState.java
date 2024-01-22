@@ -649,6 +649,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final var md = stateMetadata.get(stateKey);
             final VirtualMap<?, ?> virtualMap = (VirtualMap<?, ?>) findNode(md);
             final var mutableCopy = virtualMap.copy();
+            System.out.println("Copying and releasing virtual map for " + stateKey
+                    + ", now has " + mutableCopy.size() + " entries");
             setChild(findNodeIndex(serviceName, stateKey), mutableCopy);
             kvInstances.put(stateKey, createReadableKVState(md, mutableCopy));
         }

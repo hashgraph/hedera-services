@@ -212,6 +212,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                     nftsToState.get().put(toNftId, translated);
                                     if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) nftsToState.get()).commit();
                                         ctx.copyAndReleaseOnDiskState(NFTS_KEY);
                                         // And ensure we have the latest writable state
                                         nftsToState.set(ctx.newStates().get(NFTS_KEY));
@@ -256,6 +257,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                     tokenRelsToState.get().put(newPair, translated);
                                     if (numTokenRelInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) tokenRelsToState.get()).commit();
                                         ctx.copyAndReleaseOnDiskState(TOKEN_RELS_KEY);
                                         // And ensure we have the latest writable state
                                         tokenRelsToState.set(ctx.newStates().get(TOKEN_RELS_KEY));
@@ -292,6 +294,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                                     toAcct);
                                     if (numAccountInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) acctsToState.get()).commit();
                                         ctx.copyAndReleaseOnDiskState(ACCOUNTS_KEY);
                                         // And ensure we have the latest writable state
                                         acctsToState.set(ctx.newStates().get(ACCOUNTS_KEY));
