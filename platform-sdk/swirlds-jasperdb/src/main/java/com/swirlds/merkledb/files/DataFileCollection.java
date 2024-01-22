@@ -29,6 +29,7 @@ import static java.util.Collections.singletonList;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -43,7 +44,6 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -773,11 +773,11 @@ public class DataFileCollection<D> implements Snapshotable {
             try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
                 if (keyRange.getMinValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
                     out.writeVarLong(keyRange.getMinValidKey(), false);
                 }
                 if (keyRange.getMaxValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
                     out.writeVarLong(keyRange.getMaxValidKey(), false);
                 }
                 fileOut.flush();

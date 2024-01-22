@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -57,7 +58,6 @@ import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.merkledb.files.hashmap.VirtualKeySetSerializer;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -1015,11 +1015,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
                 if (leafRange.getMinValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
                     out.writeVarLong(leafRange.getMinValidKey(), false);
                 }
                 if (leafRange.getMaxValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
                     out.writeVarLong(leafRange.getMaxValidKey(), false);
                 }
                 fileOut.flush();
