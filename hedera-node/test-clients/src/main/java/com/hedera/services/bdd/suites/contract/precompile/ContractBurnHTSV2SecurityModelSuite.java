@@ -300,7 +300,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER2),
+                        /*Create Signer account with balance of one milion hbars */
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
+                        /*Create fungible token on a treasury account*/
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(initialAmount)
@@ -317,11 +319,13 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                         BURN_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(
                                                 spec.registry().getTokenID(FUNGIBLE_TOKEN)))),
+                               /* Creating new keys of different types and shapes */
                                 newKeyNamed(MULTI_KEY),
                                 newKeyNamed(THRESHOLD_KEY)
                                         .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                                 newKeyNamed(TRESHOLD_KEY_WITH_SIGNER_KEY)
                                         .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
+                                /* Performing a contract call with given params */
                                 contractCall(
                                         BURN_TOKEN,
                                         "burnToken",
@@ -329,8 +333,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                         new long[0])
                                         .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                         .gas(GAS_TO_OFFER)
-                                        .payingWith(TOKEN_TREASURY)
-                                        .signedBy(TOKEN_TREASURY),
+                                        .payingWith(SIGNER)
+                                        .signedBy(SIGNER),
                                 getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount - amountToBurn) //Expectation
                                 //Signer burns
 //                                newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
