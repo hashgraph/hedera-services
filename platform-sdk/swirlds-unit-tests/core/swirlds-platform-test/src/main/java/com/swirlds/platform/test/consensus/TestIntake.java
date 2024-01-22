@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
@@ -39,7 +38,6 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -89,8 +87,7 @@ public class TestIntake implements LoadableFromSignedState {
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
                 consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
-        shadowGraph =
-                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
+        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
