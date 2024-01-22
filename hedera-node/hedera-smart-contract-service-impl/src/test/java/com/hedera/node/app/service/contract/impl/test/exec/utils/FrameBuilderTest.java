@@ -217,7 +217,6 @@ class FrameBuilderTest {
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
-        given(worldUpdater.contractMustBePresent()).willReturn(true);
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
 
         assertThrows(
@@ -241,7 +240,6 @@ class FrameBuilderTest {
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
-        given(worldUpdater.contractMustBePresent()).willReturn(true);
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
 
         final var frame = subject.buildInitialFrameWith(
