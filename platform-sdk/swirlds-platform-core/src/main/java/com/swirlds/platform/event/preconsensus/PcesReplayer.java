@@ -48,27 +48,31 @@ public class PcesReplayer {
 
     private final StandardOutputWire<GossipEvent> eventOutputWire;
 
-    private final Runnable flushSystem;
+    private final Runnable flushIntake;
+    private final Runnable flushTransactionHandling;
 
     private final Supplier<ReservedSignedState> latestImmutableState;
 
     /**
      * Constructor
      *
-     * @param time                 a source of time
-     * @param eventOutputWire      the wire to put events on, to be replayed
-     * @param flushSystem          a runnable that flushes the system
-     * @param latestImmutableState a supplier of the latest immutable state
+     * @param time                     a source of time
+     * @param eventOutputWire          the wire to put events on, to be replayed
+     * @param flushIntake              a runnable that flushes the intake pipeline
+     * @param flushTransactionHandling a runnable that flushes the transaction handling pipeline
+     * @param latestImmutableState     a supplier of the latest immutable state
      */
     public PcesReplayer(
             final @NonNull Time time,
             final @NonNull StandardOutputWire<GossipEvent> eventOutputWire,
-            final @NonNull Runnable flushSystem,
+            final @NonNull Runnable flushIntake,
+            final @NonNull Runnable flushTransactionHandling,
             final @NonNull Supplier<ReservedSignedState> latestImmutableState) {
 
         this.time = Objects.requireNonNull(time);
         this.eventOutputWire = Objects.requireNonNull(eventOutputWire);
-        this.flushSystem = Objects.requireNonNull(flushSystem);
+        this.flushIntake = Objects.requireNonNull(flushIntake);
+        this.flushTransactionHandling = Objects.requireNonNull(flushTransactionHandling);
         this.latestImmutableState = Objects.requireNonNull(latestImmutableState);
     }
 
@@ -167,7 +171,8 @@ public class PcesReplayer {
             throw new UncheckedIOException("error encountered while reading from the PCES", e);
         }
 
-        flushSystem.run();
+        flushIntake.run();
+        flushTransactionHandling.run();
 
         final Duration elapsedTime = Duration.between(start, time.now());
 
