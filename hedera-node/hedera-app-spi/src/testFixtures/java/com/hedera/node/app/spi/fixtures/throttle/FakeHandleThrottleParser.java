@@ -43,9 +43,7 @@ public class FakeHandleThrottleParser implements HandleThrottleParser {
     }
 
     @Override
-    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
-
-    }
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {}
 
     @Nullable
     @Override

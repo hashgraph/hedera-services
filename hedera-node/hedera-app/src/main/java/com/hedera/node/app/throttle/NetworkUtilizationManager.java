@@ -90,7 +90,10 @@ public interface NetworkUtilizationManager {
      * @param consensusTime the consensus time
      * @return whether the transaction should be throttled
      */
-    boolean shouldThrottle(@NonNull final TransactionInfo txnInfo, @NonNull final HederaState state, @NonNull final Instant consensusTime);
+    boolean shouldThrottle(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final HederaState state,
+            @NonNull final Instant consensusTime);
 
     /**
      * Returns a list of snapshots of the current usage of all active throttles.
