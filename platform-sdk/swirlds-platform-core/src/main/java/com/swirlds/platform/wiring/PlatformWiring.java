@@ -48,6 +48,7 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -290,7 +291,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus) {
+            @NonNull final EventDurabilityNexus eventDurabilityNexus,
+            @NonNull final ConsensusHashManager consensusHashManager) {
 
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
@@ -298,6 +300,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
+        issDetectorWiring.bind(consensusHashManager);
 
         // FUTURE WORK: bind all the things!
     }
