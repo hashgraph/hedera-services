@@ -23,7 +23,7 @@ plugins {
 
 description = "Hedera API"
 
-val hapiProtoBranchOrTag = "use-ContractID-in-SlotKey"
+val hapiProtoBranchOrTag = "93a4881fc19d3771f9839f09571afd25c66f2c4d"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 
 if (!gradle.startParameter.isOffline) {
@@ -60,7 +60,7 @@ providers
 providers
     .exec {
         workingDir = hederaProtoDir.asFile
-        commandLine("git", "reset", "--hard", "origin/$hapiProtoBranchOrTag", "-q")
+        commandLine("git", "reset", "--hard", hapiProtoBranchOrTag, "-q")
     }
     .result
     .get()
