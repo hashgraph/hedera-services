@@ -68,8 +68,6 @@ public class TestIntake implements LoadableFromSignedState {
     private final ShadowGraph shadowGraph;
     private final ConsensusOutput output;
 
-    private final ConsensusConfig consensusConfig;
-
     private final EventHasherWiring hasherWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
@@ -81,7 +79,6 @@ public class TestIntake implements LoadableFromSignedState {
     public TestIntake(@NonNull final AddressBook addressBook, @NonNull final ConsensusConfig consensusConfig) {
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
-        this.consensusConfig = consensusConfig;
 
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
@@ -89,7 +86,6 @@ public class TestIntake implements LoadableFromSignedState {
         shadowGraph =
                 new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
-        final NodeId selfId = new NodeId(0);
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();
@@ -202,10 +198,10 @@ public class TestIntake implements LoadableFromSignedState {
         // production.
         orphanBufferWiring
                 .nonAncientEventWindowInput()
-                .put(NonAncientEventWindow.createUsingRoundsNonAncient(
+                .put(new NonAncientEventWindow(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
-                        consensusConfig.roundsNonAncient(),
+                        consensus.getMinRoundGeneration(),
                         AncientMode.GENERATION_THRESHOLD));
         linkerWiring
                 .nonAncientEventWindowInput()
