@@ -97,6 +97,7 @@ public class TokenCreateSpecs extends HapiSuite {
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String ADMIN_KEY = "adminKey";
     private static final String SUPPLY_KEY = "supplyKey";
+    private static final String METADATA_KEY = "metadataKey";
     private static final String AUTO_RENEW = "autoRenew";
     private static final String NAME = "012345678912";
     private static final String CREATE_TXN = "createTxn";
@@ -433,6 +434,8 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationHappyPath() {
         String memo = "JUMP";
+        String metaData = "Token Metadata";
+        String nftMetaData = "Non Fungible Token Metadata";
         String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
         final var pauseKey = "pauseKey";
@@ -446,11 +449,14 @@ public class TokenCreateSpecs extends HapiSuite {
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("wipeKey"),
                         newKeyNamed("feeScheduleKey"),
+                        newKeyNamed(METADATA_KEY),
                         newKeyNamed(pauseKey))
                 .when(
                         tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
+                                .metadataKey(METADATA_KEY)
+                                .metaData(metaData)
                                 .name(saltedName)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
@@ -469,6 +475,8 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate(NON_FUNGIBLE_UNIQUE_FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.FINITE)
+                                .metadataKey(METADATA_KEY)
+                                .metaData(nftMetaData)
                                 .pauseKey(pauseKey)
                                 .initialSupply(0)
                                 .maxSupply(100)
@@ -497,12 +505,14 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.FINITE)
                                 .hasEntityMemo(memo)
                                 .hasName(saltedName)
+                                .hasMetadata(metaData)
                                 .hasTreasury(TOKEN_TREASURY)
                                 .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .hasValidExpiry()
                                 .hasDecimals(1)
                                 .hasAdminKey(PRIMARY)
                                 .hasFreezeKey(PRIMARY)
+                                .hasMetadataKey(METADATA_KEY)
                                 .hasKycKey(PRIMARY)
                                 .hasSupplyKey(PRIMARY)
                                 .hasWipeKey(PRIMARY)
@@ -517,6 +527,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasRegisteredId(NON_FUNGIBLE_UNIQUE_FINITE)
                                 .hasTokenType(NON_FUNGIBLE_UNIQUE)
                                 .hasSupplyType(TokenSupplyType.FINITE)
+                                .hasMetadata(nftMetaData)
                                 .hasPauseKey(PRIMARY)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .hasTotalSupply(0)
