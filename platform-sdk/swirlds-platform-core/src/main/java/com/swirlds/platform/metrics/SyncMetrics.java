@@ -18,7 +18,6 @@ package com.swirlds.platform.metrics;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
@@ -28,7 +27,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -150,7 +148,6 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncSent;
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
-    private final AverageStat indicatorsWaitingForExpiry;
     private final RunningAverageMetric syncFilterTime;
 
     /**
@@ -251,13 +248,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-        indicatorsWaitingForExpiry = new AverageStat(
-                metrics,
-                PLATFORM_CATEGORY,
-                "indicatorsWaitingForExpiry",
-                "the average number of indicators waiting to be expired by the shadowgraph",
-                FORMAT_5_3,
-                AverageStat.WEIGHT_VOLATILE);
 
         permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
@@ -356,16 +346,6 @@ public class SyncMetrics {
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Called by {@link Shadowgraph} to update the number of generations that should be expired but can't be yet due to
-     * reservations.
-     *
-     * @param numGenerations the new number of generations
-     */
-    public void updateIndicatorsWaitingForExpiry(final long numGenerations) { // TODO pull into shadowgraph metrics
-        indicatorsWaitingForExpiry.update(numGenerations);
     }
 
     /**
