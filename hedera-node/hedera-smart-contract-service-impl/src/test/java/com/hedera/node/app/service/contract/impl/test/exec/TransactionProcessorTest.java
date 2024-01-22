@@ -177,6 +177,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
@@ -197,6 +198,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -246,6 +248,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -298,6 +301,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);

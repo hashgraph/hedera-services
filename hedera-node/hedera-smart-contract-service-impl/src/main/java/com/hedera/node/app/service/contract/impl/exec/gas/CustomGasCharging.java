@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -134,6 +135,34 @@ public class CustomGasCharging {
             chargeWithOnlySender(sender, context, worldUpdater, transaction);
             return new GasCharges(intrinsicGas, 0L);
         }
+    }
+
+    /**
+     * Tries to charge gas all of the gas provided for the given transaction based on the pre-fetched sender accountID,
+     * within the given context and world updater.  This is used when transaction are aborted due to an exception check
+     * failure before the transaction has started execution in the EVM.
+     **
+     * <p>Even if there are no gas charges, still returns the intrinsic gas cost of the transaction.
+     *
+     * @param sender  the sender accountID
+     * @param context the context of the transaction, including the network gas price
+     * @param worldUpdater the world updater for the transaction
+     * @param transaction the transaction to charge gas for
+     * @return the result of the gas charging
+     * @throws HandleException if the gas charging fails for any reason
+     */
+    public GasCharges chargeGasForAbortedTransaction(
+            @NonNull final AccountID sender,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaEvmTransaction transaction) {
+        requireNonNull(sender);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+        requireNonNull(transaction);
+
+        worldUpdater.collectFee(sender, transaction.gasCostGiven(context.gasPrice()));
+        return new GasCharges(transaction.gasLimit(), 0L);
     }
 
     private void chargeWithOnlySender(

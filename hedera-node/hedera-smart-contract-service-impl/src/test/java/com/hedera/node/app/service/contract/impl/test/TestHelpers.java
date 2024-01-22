@@ -489,7 +489,8 @@ public class TestHelpers {
             GAS_LIMIT,
             0L,
             0L,
-            ContractCreateTransactionBody.DEFAULT);
+            ContractCreateTransactionBody.DEFAULT,
+            null);
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
@@ -674,6 +675,7 @@ public class TestHelpers {
                 gasLimit,
                 userGasPrice,
                 maxGasAllowance,
+                null,
                 null);
     }
 
@@ -702,7 +704,8 @@ public class TestHelpers {
                 gasLimit,
                 userGasPrice,
                 maxGasAllowance,
-                ContractCreateTransactionBody.DEFAULT);
+                ContractCreateTransactionBody.DEFAULT,
+                null);
     }
 
     public static HederaEvmContext wellKnownContextWith(

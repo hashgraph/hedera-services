@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -76,6 +77,9 @@ class ContextTransactionProcessorTest {
     @Mock
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;
 
+    @Mock
+    CustomGasCharging customGasCharging;
+
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
@@ -90,7 +94,8 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
@@ -119,7 +124,8 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
@@ -148,7 +154,8 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
@@ -176,7 +183,8 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         assertFailsWith(INVALID_ETHEREUM_TRANSACTION, subject::call);
     }
