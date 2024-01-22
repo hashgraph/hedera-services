@@ -95,15 +95,21 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     private VirtualHashListener<K, V> listener;
 
     /**
+     * An instance of {@link Cryptography} used to hash leaves. This should be a static final
+     * field, but it doesn't work very well as platform configs aren't loaded at the time when
+     * this class is initialized. It would result in a cryptography instance with default (and
+     * possibly wrong) configs be used by the hasher. Instead, this field is initialized in
+     * the {@link #hash(LongFunction, Iterator, long, long)} method and used by all hashing
+     * tasks.
+     */
+    private Cryptography cryptography;
+
+    /**
      * Tracks if this virtual hasher has been shut down. If true (indicating that the hasher
      * has been intentionally shut down), then don't log/throw if the rug is pulled from
      * underneath the hashing threads.
      */
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
-
-    private static final Cryptography CRYPTO = CryptographyHolder.get();
-
-    private static final Hash NULL_HASH = CRYPTO.getNullHash();
 
     private static final ForkJoinPool pool = new ForkJoinPool(HASHING_THREAD_COUNT);
 
@@ -236,7 +242,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 assert count.get() == 0;
                 final Hash hash;
                 if (leaf != null) {
-                    hash = CRYPTO.digestSync(leaf);
+                    hash = cryptography.digestSync(leaf);
                     listener.onLeafHashed(leaf);
                     listener.onNodeHashed(path, hash);
                 } else {
@@ -328,6 +334,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         this.hashReader = hashReader;
         this.listener = listener;
+        this.cryptography = CryptographyHolder.get();
+        final Hash NULL_HASH = cryptography.getNullHash();
 
         final int chunkHeight = config.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
@@ -451,6 +459,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     }
 
     public Hash emptyRootHash() {
+        final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
         return ChunkHashTask.hash(ROOT_PATH, NULL_HASH, NULL_HASH);
     }
 }
