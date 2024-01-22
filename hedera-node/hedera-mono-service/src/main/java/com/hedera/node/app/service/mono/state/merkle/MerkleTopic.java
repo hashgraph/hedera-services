@@ -304,6 +304,10 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
         this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
     }
 
+    public int getNumber() {
+        return number;
+    }
+
     @Nullable
     public String getNullableMemo() {
         return memo;
