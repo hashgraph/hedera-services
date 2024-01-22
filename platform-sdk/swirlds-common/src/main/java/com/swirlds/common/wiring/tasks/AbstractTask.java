@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.tasks;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -68,7 +69,11 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      */
     protected void send() {
         if (dependencyCount == null || dependencyCount.decrementAndGet() == 0) {
-            pool.execute(this);
+            if ((Thread.currentThread() instanceof ForkJoinWorkerThread t) && (t.getPool() == pool)) {
+                fork();
+            } else {
+                pool.execute(this);
+            }
         }
     }
 
