@@ -463,6 +463,7 @@ public class SwirldsPlatform implements Platform {
         // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
+        //TODO there should be actions based on returned values for ISSs
         final IssHandler issHandler = new IssHandler(
                 stateConfig,
                 selfId,
@@ -471,7 +472,7 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 appCommunicationComponent,
                 issScratchpad);
-        ConsensusHashManager consensusHashManager = new ConsensusHashManager(
+        final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
                 currentAddressBook,
