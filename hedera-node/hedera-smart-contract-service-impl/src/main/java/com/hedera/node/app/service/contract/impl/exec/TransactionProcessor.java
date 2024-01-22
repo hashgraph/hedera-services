@@ -246,7 +246,6 @@ public class TransactionProcessor {
         }
         if (transaction.isEthereumTransaction()) {
             validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
-            parties.sender().incrementNonce();
         }
         return parties;
     }

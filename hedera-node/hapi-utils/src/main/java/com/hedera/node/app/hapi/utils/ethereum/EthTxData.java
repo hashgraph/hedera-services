@@ -205,6 +205,12 @@ public record EthTxData(
      * @return the effective offered gas price
      */
     public long effectiveOfferedGasPriceInTinybars() {
+
+        // prevent division by zero
+        if (gasLimit == 0) {
+            return 0L;
+        }
+
         return BigInteger.valueOf(Long.MAX_VALUE / gasLimit)
                 .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
                 .longValueExact();
