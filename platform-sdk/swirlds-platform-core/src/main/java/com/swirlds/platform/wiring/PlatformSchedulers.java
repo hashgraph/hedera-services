@@ -17,6 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -33,6 +34,7 @@ import java.util.List;
  * The {@link TaskScheduler}s used by the platform.
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
+ * @param postHashCollectorScheduler                the scheduler for the post hash collector
  * @param internalEventValidatorScheduler           the scheduler for the internal event validator
  * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
  * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
@@ -51,6 +53,7 @@ import java.util.List;
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
+        @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventDeduplicatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
@@ -70,17 +73,33 @@ public record PlatformSchedulers(
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
      *
-     * @param context the platform context
-     * @param model   the wiring model
+     * @param context              the platform context
+     * @param model                the wiring model
+     * @param hashingObjectCounter the object counter for the event hasher and post hash collector
      * @return the instantiated platform schedulers
      */
-    public static PlatformSchedulers create(@NonNull final PlatformContext context, @NonNull final WiringModel model) {
+    public static PlatformSchedulers create(
+            @NonNull final PlatformContext context,
+            @NonNull final WiringModel model,
+            @NonNull final ObjectCounter hashingObjectCounter) {
         final PlatformSchedulersConfig config =
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
-                        .withType(TaskSchedulerType.DIRECT)
+                        .withType(TaskSchedulerType.CONCURRENT)
+                        .withOnRamp(hashingObjectCounter)
+                        .withExternalBackPressure(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
+                // backpressure to the hasher
+                model.schedulerBuilder("postHashCollector")
+                        .withType(TaskSchedulerType.SEQUENTIAL)
+                        .withOffRamp(hashingObjectCounter)
+                        .withExternalBackPressure(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("internalEventValidator")
