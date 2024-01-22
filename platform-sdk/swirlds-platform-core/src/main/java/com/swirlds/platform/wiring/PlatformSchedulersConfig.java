@@ -47,14 +47,14 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation
  *                                                          manager scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
- * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state
- *                                                          file manager scheduler
+ * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file
+ *                                                          manager scheduler
  * @param stateSignerSchedulerType                          the state signer scheduler type
  * @param stateSignerUnhandledCapacity                      number of unhandled tasks allowed in the state signer
  *                                                          scheduler, default is -1 (unlimited)
  * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
- * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus
- *                                                          event writer scheduler
+ * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
+ *                                                          writer scheduler
  * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
  * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
  *                                                          sequencer scheduler
@@ -67,6 +67,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param stateSignatureCollectorSchedulerType              the state signature collector scheduler type
  * @param stateSignatureCollectorUnhandledCapacity          number of unhandled tasks allowed for the state signature
  *                                                          collector
+ * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
+ * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -98,4 +100,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
+        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity) {}

@@ -105,7 +105,6 @@ import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -391,7 +390,7 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
+        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -546,7 +545,13 @@ public class SwirldsPlatform implements Platform {
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
         platformWiring.bind(
-                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
+                eventHasher,
+                signedStateFileManager,
+                stateSigner,
+                pcesReplayer,
+                pcesWriter,
+                eventDurabilityNexus,
+                shadowGraph);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -646,11 +651,8 @@ public class SwirldsPlatform implements Platform {
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PcesSequencer sequencer = new PcesSequencer();
 
-        final List<EventObserver> eventObservers = new ArrayList<>(List.of(
-                new ShadowGraphEventObserver(shadowGraph),
-                consensusRoundHandler,
-                addedEventMetrics,
-                eventIntakeMetrics));
+        final List<EventObserver> eventObservers =
+                new ArrayList<>(List.of(consensusRoundHandler, addedEventMetrics, eventIntakeMetrics));
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
