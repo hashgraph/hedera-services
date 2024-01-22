@@ -44,6 +44,7 @@ import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -68,8 +69,8 @@ class InOrderLinkerTests {
 
     private FakeTime time;
 
-    private NodeId self_id = new NodeId(0);
-    private NodeId other_id = new NodeId(1);
+    private NodeId selfId = new NodeId(0);
+    private NodeId otherId = new NodeId(1);
 
     /**
      * Generates a mock event with the given parameters
@@ -88,8 +89,8 @@ class InOrderLinkerTests {
             @NonNull final Hash selfHash,
             final long selfGeneration,
             final long selfBirthRound,
-            @NonNull final EventDescriptor selfParent,
-            @NonNull final EventDescriptor otherParent,
+            @Nullable final EventDescriptor selfParent,
+            @Nullable final EventDescriptor otherParent,
             @NonNull final Instant selfTimeCreated) {
 
         final EventDescriptor selfDescriptor = new EventDescriptor(selfHash, selfId, selfGeneration, selfBirthRound);
@@ -167,7 +168,7 @@ class InOrderLinkerTests {
 
         time.tick(Duration.ofSeconds(1));
         genesisSelfParent = generateMockEvent(
-                self_id,
+                selfId,
                 randomHash(random),
                 EventConstants.FIRST_GENERATION,
                 ConsensusConstants.ROUND_FIRST,
@@ -178,7 +179,7 @@ class InOrderLinkerTests {
 
         time.tick(Duration.ofSeconds(1));
         genesisOtherParent = generateMockEvent(
-                other_id,
+                otherId,
                 randomHash(random),
                 EventConstants.FIRST_GENERATION,
                 ConsensusConstants.ROUND_FIRST,
@@ -209,7 +210,7 @@ class InOrderLinkerTests {
 
         final Hash child1Hash = randomHash(random);
         final GossipEvent child1 = generateMockEvent(
-                self_id,
+                selfId,
                 child1Hash,
                 minGenNonAncient + 1,
                 minRoundNonAncient + 1,
@@ -243,7 +244,7 @@ class InOrderLinkerTests {
 
         final Hash child2Hash = randomHash(random);
         final GossipEvent child2 = generateMockEvent(
-                self_id,
+                selfId,
                 child2Hash,
                 minGenNonAncient + 1,
                 minRoundNonAncient + 1,
@@ -277,7 +278,7 @@ class InOrderLinkerTests {
 
         final Hash child3Hash = randomHash(random);
         final GossipEvent child3 = generateMockEvent(
-                self_id,
+                selfId,
                 child3Hash,
                 minGenNonAncient + 1,
                 minRoundNonAncient + 1,
@@ -312,7 +313,7 @@ class InOrderLinkerTests {
 
         final Hash child4Hash = randomHash(random);
         final GossipEvent child4 = generateMockEvent(
-                self_id,
+                selfId,
                 child4Hash,
                 minGenNonAncient + 1,
                 minRoundNonAncient + 1,
@@ -335,7 +336,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
         final GossipEvent child = generateMockEvent(
-                self_id, randomHash(random), 4, 1, null, genesisOtherParent.getDescriptor(), time.now());
+                selfId, randomHash(random), 4, 1, null, genesisOtherParent.getDescriptor(), time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -353,7 +354,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
         final GossipEvent child = generateMockEvent(
-                self_id, randomHash(random), 4, 1, genesisSelfParent.getDescriptor(), null, time.now());
+                selfId, randomHash(random), 4, 1, genesisSelfParent.getDescriptor(), null, time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -387,7 +388,7 @@ class InOrderLinkerTests {
         }
 
         final GossipEvent child1 = generateMockEvent(
-                self_id,
+                selfId,
                 randomHash(random),
                 1,
                 1,
@@ -401,7 +402,7 @@ class InOrderLinkerTests {
 
         // barely ancient
         final GossipEvent child2 = generateMockEvent(
-                self_id,
+                selfId,
                 randomHash(random),
                 2,
                 2,
@@ -426,13 +427,7 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration() + 1,
                 genesisSelfParent.getHashedData().getBirthRound());
         final GossipEvent child = generateMockEvent(
-                self_id,
-                randomHash(random),
-                2,
-                1,
-                mismatchedSelfParent,
-                genesisOtherParent.getDescriptor(),
-                time.now());
+                selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -454,13 +449,7 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisSelfParent.getHashedData().getBirthRound() + 1);
         final GossipEvent child = generateMockEvent(
-                self_id,
-                randomHash(random),
-                2,
-                1,
-                mismatchedSelfParent,
-                genesisOtherParent.getDescriptor(),
-                time.now());
+                selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -482,13 +471,7 @@ class InOrderLinkerTests {
                 genesisOtherParent.getGeneration() + 1,
                 genesisOtherParent.getHashedData().getBirthRound());
         final GossipEvent child = generateMockEvent(
-                self_id,
-                randomHash(random),
-                2,
-                1,
-                genesisSelfParent.getDescriptor(),
-                mismatchedOtherParent,
-                time.now());
+                selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -510,13 +493,7 @@ class InOrderLinkerTests {
                 genesisOtherParent.getGeneration(),
                 genesisOtherParent.getHashedData().getBirthRound() + 1);
         final GossipEvent child = generateMockEvent(
-                self_id,
-                randomHash(random),
-                2,
-                1,
-                genesisSelfParent.getDescriptor(),
-                mismatchedOtherParent,
-                time.now());
+                selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -535,7 +512,7 @@ class InOrderLinkerTests {
         final Hash lateParentHash = randomHash(random);
         final long lateParentGeneration = 1;
         final GossipEvent lateParent = generateMockEvent(
-                self_id,
+                selfId,
                 lateParentHash,
                 lateParentGeneration,
                 1,
@@ -545,7 +522,7 @@ class InOrderLinkerTests {
         inOrderLinker.linkEvent(lateParent);
 
         final GossipEvent child = generateMockEvent(
-                self_id,
+                selfId,
                 randomHash(random),
                 2,
                 1,
@@ -570,7 +547,7 @@ class InOrderLinkerTests {
         final Hash lateParentHash = randomHash(random);
         final long lateParentGeneration = 1;
         final GossipEvent lateParent = generateMockEvent(
-                self_id,
+                selfId,
                 lateParentHash,
                 lateParentGeneration,
                 1,
@@ -580,7 +557,7 @@ class InOrderLinkerTests {
         inOrderLinker.linkEvent(lateParent);
 
         final GossipEvent child = generateMockEvent(
-                self_id,
+                selfId,
                 randomHash(random),
                 2,
                 2,

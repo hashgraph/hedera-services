@@ -28,8 +28,8 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -86,7 +86,7 @@ public class InOrderLinker {
     /**
      * A sequence map from event descriptor to event.
      * <p>
-     * The window of this map is shifted when the minimum generation non-ancient is changed, so that only non-ancient
+     * The window of this map is shifted when the minimum non-ancient threshold is changed, so that only non-ancient
      * events are retained.
      */
     private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap;
@@ -154,10 +154,7 @@ public class InOrderLinker {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode());
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             this.parentDescriptorMap =
                     new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
