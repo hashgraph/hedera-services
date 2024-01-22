@@ -42,6 +42,11 @@ public class FakeHandleThrottleParser implements HandleThrottleParser {
         return Collections.emptyList();
     }
 
+    @Override
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+
+    }
+
     @Nullable
     @Override
     public GasLimitDeterministicThrottle gasLimitThrottle() {

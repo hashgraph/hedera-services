@@ -31,6 +31,8 @@ public interface HandleThrottleParser {
     @NonNull
     List<DeterministicThrottle> allActiveThrottles();
 
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
+
     @Nullable
     public GasLimitDeterministicThrottle gasLimitThrottle();
 }

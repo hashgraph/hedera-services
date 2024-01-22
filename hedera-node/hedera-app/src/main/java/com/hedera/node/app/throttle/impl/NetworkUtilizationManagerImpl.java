@@ -16,13 +16,6 @@
 
 package com.hedera.node.app.throttle.impl;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
@@ -42,12 +35,20 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Implementation of {@link NetworkUtilizationManager}  that delegates to injected {@link ThrottleAccumulator} and {@link
@@ -202,8 +203,18 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
         backendThrottle.leakUnusedGasPreviouslyReserved(txnInfo, value);
     }
 
-    public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        final var now = Instant.now();
-        return backendThrottle.shouldThrottle(txnInfo, now, state);
+    @Override
+    public boolean shouldThrottle(@NonNull final TransactionInfo txnInfo, @NonNull final HederaState state, @NonNull final Instant consensusTime) {
+        return backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
+    }
+
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+        return backendThrottle.allActiveThrottles().stream().map(DeterministicThrottle::usageSnapshot).toList();
+    }
+
+    @Override
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        backendThrottle.resetUsageThrottlesTo(snapshots);
     }
 }

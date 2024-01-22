@@ -16,19 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -45,6 +32,7 @@ import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -97,13 +85,28 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The default implementation of {@link HandleContext}.
@@ -913,31 +916,53 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     public boolean shouldThrottleTxn(TransactionInfo txInfo) {
-        return networkUtilizationManager.shouldThrottle(txInfo, current());
+        return networkUtilizationManager.shouldThrottle(txInfo, current(), userTransactionConsensusTime);
+    }
+
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+        return networkUtilizationManager.getUsageSnapshots();
+    }
+
+    @Override
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        networkUtilizationManager.resetUsageThrottlesTo(snapshots);
     }
 
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
         final var childRecords = recordListBuilder.childRecordBuilders();
+        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);
             if (Objects.equals(childRecord.status(), SUCCESS)) {
-                final var tx = childRecord.build().transaction();
-                final var txInfo = new TransactionInfo(
-                        tx, childRecord.transactionBody(), tx.sigMap(), tx.signedTransactionBytes(), functionality);
-
-                if (txInfo.functionality() == CONTRACT_CREATE || txInfo.functionality() == CONTRACT_CALL) {
-                    continue;
+                final var childTx = childRecord.build().transaction();
+                final var childTxBody = childRecord.transactionBody();
+                HederaFunctionality childTxFunctionality;
+                try {
+                    childTxFunctionality = functionOf(childTxBody);
+                } catch (UnknownHederaFunctionality e) {
+                    throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
                 }
 
-                if (shouldThrottleTxn(txInfo)) {
+                final var childTxInfo = new TransactionInfo(
+                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
+                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
+                    continue;
+                }
+                if (snapshotsIfNeeded == null) {
+                    snapshotsIfNeeded = getUsageSnapshots();
+                }
+                if (shouldThrottleTxn(childTxInfo)) {
                     isAllowed = false;
                 }
             }
         }
-
+        if (!isAllowed) {
+            resetUsageThrottlesTo(snapshotsIfNeeded);
+        }
         return isAllowed;
     }
 

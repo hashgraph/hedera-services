@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -43,6 +44,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Predicate;
 
 /**
@@ -676,6 +678,19 @@ public interface HandleContext extends OperationContext {
      */
     @NonNull
     RecordListCheckPoint createRecordListCheckPoint();
+
+    /**
+     * Returns a list of snapshots of the current usage of all active throttles.
+     * @return the active snapshots
+     */
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+
+    /**
+     * Resets the current usage of all active throttles to the given snapshots.
+     *
+     * @param snapshots the snapshots to reset to
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 
     /**
      * Returns whether the current transaction being processed was submitted by this node.

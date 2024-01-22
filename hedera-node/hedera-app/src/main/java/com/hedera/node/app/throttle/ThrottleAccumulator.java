@@ -16,23 +16,6 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
-import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
-import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
-import static com.hedera.node.app.service.token.AliasUtils.isAlias;
-import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -71,6 +54,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -83,9 +70,23 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Keeps track of the amount of usage of different TPS throttle categories and gas, and returns whether a given
@@ -285,6 +286,16 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         activeThrottles.forEach(DeterministicThrottle::resetUsage);
         if (gasThrottle != null) {
             gasThrottle.resetUsage();
+        }
+    }
+
+    /*
+     * Resets the usage for all snapshots.
+     */
+    @Override
+    public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        for (int i = 0, n = activeThrottles.size(); i < n; i++) {
+            activeThrottles.get(i).resetUsageTo(snapshots.get(i));
         }
     }
 

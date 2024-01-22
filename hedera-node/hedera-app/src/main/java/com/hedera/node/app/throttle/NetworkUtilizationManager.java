@@ -17,10 +17,12 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Interface which purpose is to do the work of tracking network utilization (and its impact on
@@ -85,7 +87,21 @@ public interface NetworkUtilizationManager {
      *
      * @param txnInfo the transaction to update the throttle requirements for
      * @param state the current state of the node
+     * @param consensusTime the consensus time
      * @return whether the transaction should be throttled
      */
-    boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state);
+    boolean shouldThrottle(@NonNull final TransactionInfo txnInfo, @NonNull final HederaState state, @NonNull final Instant consensusTime);
+
+    /**
+     * Returns a list of snapshots of the current usage of all active throttles.
+     * @return the active snapshots
+     */
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+
+    /**
+     * Resets the current usage of all active throttles to the given snapshots.
+     *
+     * @param snapshots the snapshots to reset to
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 }
