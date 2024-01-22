@@ -74,6 +74,8 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
@@ -463,14 +465,18 @@ public final class Hedera implements SwirldMain {
             // --------------------- UNIQUE_TOKENS (0)
             final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
             if (uniqTokensFromState != null) {
-                TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = uniqTokensFromState.copy();
+                TOKEN_SERVICE.setNftsFromState(copy);
             }
 
             // --------------------- TOKEN_ASSOCIATIONS (1)
             final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState =
                     state.getChild(TOKEN_ASSOCIATIONS);
             if (tokenRelsFromState != null) {
-                TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = tokenRelsFromState.copy();
+                TOKEN_SERVICE.setTokenRelsFromState(copy);
             }
 
             // --------------------- TOPICS (2)
@@ -480,15 +486,23 @@ public final class Hedera implements SwirldMain {
             }
 
             // --------------------- STORAGE (3)     // only "non-special" files
-            if (state.getChild(STORAGE) != null) {
-                FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
+            final VirtualMap<VirtualBlobKey, VirtualBlobValue> filesFromState = state.getChild(STORAGE);
+            if (filesFromState != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = filesFromState.copy();
+                FILE_SERVICE.setFs(() -> VirtualMapLike.from(copy));
+
+                // We also need to make this available to the contract service, so it can extract contract bytecode
+                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(copy));
             }
             // Note: some files have no metadata, e.g. contract bytecode files
 
             // --------------------- ACCOUNTS (4)
             final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
             if (acctsFromState != null) {
-                TOKEN_SERVICE.setAcctsFromState(acctsFromState);
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = acctsFromState.copy();
+                TOKEN_SERVICE.setAcctsFromState(copy);
             }
 
             // --------------------- TOKENS (5)
@@ -498,6 +512,8 @@ public final class Hedera implements SwirldMain {
             }
 
             // --------------------- NETWORK_CTX (6)
+            // Here we assign the network context, but don't migrate it by itself. These properties have been split out
+            // to various services in the modular code, and will each be migrated in its appropriate service.
             final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
             // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
             // firstConsTimeOfCurrentBlock – needed in blockInfo
@@ -524,8 +540,9 @@ public final class Hedera implements SwirldMain {
             // --------------------- CONTRACT_STORAGE (11)
             final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
             if (contractFromStorage != null) {
-                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(contractFromStorage));
-                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(state.getChild(STORAGE)));
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = contractFromStorage.copy();
+                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(copy));
             }
 
             // --------------------- STAKING_INFO (12)
@@ -549,6 +566,9 @@ public final class Hedera implements SwirldMain {
             if (fromNetworkContext != null) {
                 ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
             }
+
+            // Here we release all mono children so that we don't have a bunch of null routes in state
+            state.addDeserializedChildren(List.of(), 0);
 
             // --------------------- END OF MONO -> MODULAR MIGRATION ---------------------
         }
