@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,14 +67,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@DisplayName("Shadow Graph Tests")
-class ShadowgraphTest {
+@DisplayName("Shadowgraph By Birth Round Tests")
+class ShadowgraphByBirthRoundTests {
 
     private List<IndexedEvent> generatedEvents;
     private HashMap<Hash, Set<Hash>> ancestorsMap;
     private Shadowgraph shadowGraph;
-    private Map<Long, Set<ShadowEvent>> genToShadows;
-    private long maxGen;
+    private Map<Long, Set<ShadowEvent>> birthRoundToShadows;
+    private long maxBirthRound;
     private StandardEventEmitter emitter;
     private AddressBook addressBook;
     private PlatformContext platformContext;
@@ -93,7 +93,7 @@ class ShadowgraphTest {
     public void setup() {
         ancestorsMap = new HashMap<>();
         generatedEvents = new ArrayList<>();
-        genToShadows = new HashMap<>();
+        birthRoundToShadows = new HashMap<>();
     }
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
@@ -115,12 +115,15 @@ class ShadowgraphTest {
                     shadowGraph.isHashInGraph(hash),
                     "Event that was just added to the shadow graph should still be in the shadow graph.");
             generatedEvents.add(event);
-            if (!genToShadows.containsKey(event.getGeneration())) {
-                genToShadows.put(event.getGeneration(), new HashSet<>());
+            if (!birthRoundToShadows.containsKey(event.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD))) {
+                birthRoundToShadows.put(
+                        event.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD), new HashSet<>());
             }
-            genToShadows.get(event.getGeneration()).add(shadowGraph.shadow(event));
-            if (event.getGeneration() > maxGen) {
-                maxGen = event.getGeneration();
+            birthRoundToShadows
+                    .get(event.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD))
+                    .add(shadowGraph.shadow(event));
+            if (event.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) > maxBirthRound) {
+                maxBirthRound = event.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD);
             }
         }
     }
@@ -159,17 +162,21 @@ class ShadowgraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        long expireBelowGen = random.nextInt(10) + 1;
+        long expireBelowBirthRound = random.nextInt(10) + 1;
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
+                0 /* ignored by shadowgraph */,
+                0 /* ignored by shadowgraph */,
+                expireBelowBirthRound,
+                BIRTH_ROUND_THRESHOLD);
 
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
         Set<ShadowEvent> allEvents = shadowGraph.findAncestors(shadowGraph.getTips(), (e) -> true);
         for (ShadowEvent event : allEvents) {
             assertTrue(
-                    event.getEvent().getGeneration() >= expireBelowGen, "Ancestors should not include expired events.");
+                    event.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) >= expireBelowBirthRound,
+                    "Ancestors should not include expired events.");
         }
     }
 
@@ -225,7 +232,7 @@ class ShadowgraphTest {
         initShadowGraph(random, numEvents, numNodes);
 
         ShadowgraphReservation r1 = shadowGraph.reserve();
-        assertEquals(FIRST_GENERATION, r1.getReservedIndicator(), "First reservation should reserve generation 1");
+        assertEquals(ROUND_FIRST, r1.getReservedIndicator(), "First reservation should reserve birth round 1");
         assertEquals(
                 1,
                 r1.getReservationCount(),
@@ -233,9 +240,9 @@ class ShadowgraphTest {
 
         r1.close();
         assertEquals(
-                FIRST_GENERATION,
+                ROUND_FIRST,
                 r1.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
                 r1.getReservationCount(),
@@ -243,7 +250,7 @@ class ShadowgraphTest {
     }
 
     /**
-     * This test verifies multiple reservations of the same generation without any event expiry.
+     * This test verifies multiple reservations of the same birth round without any event expiry.
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
@@ -262,15 +269,15 @@ class ShadowgraphTest {
                 r2,
                 "The second call to reserve() prior to the first being closed should return the same object as the "
                         + "first reservation.");
-        assertEquals(FIRST_GENERATION, r2.getReservedIndicator(), "Second reservation should reserve generation 1");
+        assertEquals(ROUND_FIRST, r2.getReservedIndicator(), "Second reservation should reserve birth round 1");
         assertEquals(2, r2.getReservationCount(), "The second call to reserve() should result in 2 reservations.");
 
         r2.close();
 
         assertEquals(
-                FIRST_GENERATION,
+                ROUND_FIRST,
                 r1.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 1,
                 r1.getReservationCount(),
@@ -279,9 +286,9 @@ class ShadowgraphTest {
         r1.close();
 
         assertEquals(
-                FIRST_GENERATION,
+                ROUND_FIRST,
                 r1.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
                 r1.getReservationCount(),
@@ -289,7 +296,7 @@ class ShadowgraphTest {
     }
 
     /**
-     * This test verifies multiple reservations of the same generation with event expiry.
+     * This test verifies multiple reservations of the same birth round with event expiry.
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
@@ -301,11 +308,14 @@ class ShadowgraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        long expireBelowGen = FIRST_GENERATION + 1;
+        long expireBelowBirthRound = ROUND_FIRST + 1;
 
         ShadowgraphReservation r1 = shadowGraph.reserve();
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
+                0 /* ignored by shadowgraph */,
+                0 /* ignored by shadowgraph */,
+                expireBelowBirthRound,
+                BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
         ShadowgraphReservation r2 = shadowGraph.reserve();
@@ -315,27 +325,27 @@ class ShadowgraphTest {
                 "The call to reserve() after the expire() method is called should not return the same reservation "
                         + "instance.");
         assertEquals(
-                expireBelowGen,
+                expireBelowBirthRound,
                 r2.getReservedIndicator(),
-                "Reservation after call to expire() should reserve the expired generation + 1");
+                "Reservation after call to expire() should reserve the expired birth round + 1");
         assertEquals(
                 1, r2.getReservationCount(), "The first reservation after expire() should result in 1 reservation.");
 
         r2.close();
 
         assertEquals(
-                expireBelowGen,
+                expireBelowBirthRound,
                 r2.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
                 r2.getReservationCount(),
                 "Closing the second reservation should decrement the number of reservations.");
 
         assertEquals(
-                FIRST_GENERATION,
+                ROUND_FIRST,
                 r1.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 1,
                 r1.getReservationCount(),
@@ -344,9 +354,9 @@ class ShadowgraphTest {
         r1.close();
 
         assertEquals(
-                FIRST_GENERATION,
+                ROUND_FIRST,
                 r1.getReservedIndicator(),
-                "The generation should not be affected by a reservation being closed.");
+                "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
                 r1.getReservationCount(),
@@ -363,20 +373,23 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testExpireNoReservations(final int numEvents, final int numNodes) {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        long expireBelowGen = random.nextInt((int) maxGen) + 2;
+        final long expireBelowBirthRound = random.nextInt((int) maxBirthRound) + 2;
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
+                0 /* ignored by shadowgraph */,
+                0 /* ignored by shadowgraph */,
+                expireBelowBirthRound,
+                BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
-        assertEventsBelowGenAreExpired(expireBelowGen);
+        assertEventsBelowBirthRoundAreExpired(expireBelowBirthRound);
     }
 
-    private void assertEventsBelowGenAreExpired(final long expireBelowGen) {
-        genToShadows.forEach((gen, shadowSet) -> {
-            if (gen < expireBelowGen) {
+    private void assertEventsBelowBirthRoundAreExpired(final long expireBelowBirthRound) {
+        birthRoundToShadows.forEach((birthRound, shadowSet) -> {
+            if (birthRound < expireBelowBirthRound) {
                 shadowSet.forEach((shadow) -> {
                     assertNull(
                             shadow.getSelfParent(), "Expired events should have their self parent reference nulled.");
@@ -384,18 +397,18 @@ class ShadowgraphTest {
                             shadow.getOtherParent(), "Expired events should have their other parent reference nulled.");
                     assertFalse(
                             shadowGraph.isHashInGraph(shadow.getEventBaseHash()),
-                            "Events in an expire generation should not be in the shadow graph.");
+                            "Events in an expire birth round should not be in the shadow graph.");
                 });
             } else {
                 shadowSet.forEach(shadow -> assertTrue(
                         shadowGraph.isHashInGraph(shadow.getEventBaseHash()),
-                        "Events in a non-expired generation should be in the shadow graph."));
+                        "Events in a non-expired birth round should be in the shadow graph."));
             }
         });
     }
 
     /**
-     * Tests that event expiry works correctly when there are reservations for generations that should be expired.
+     * Tests that event expiry works correctly when there are reservations for birth rounds that should be expired.
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
@@ -412,18 +425,18 @@ class ShadowgraphTest {
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                FIRST_GENERATION + 1,
-                GENERATION_THRESHOLD));
+                ROUND_FIRST + 1,
+                BIRTH_ROUND_THRESHOLD));
         ShadowgraphReservation r1 = shadowGraph.reserve();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                FIRST_GENERATION + 2,
-                GENERATION_THRESHOLD));
+                ROUND_FIRST + 2,
+                BIRTH_ROUND_THRESHOLD));
         ShadowgraphReservation r2 = shadowGraph.reserve();
 
-        // release the middle reservation to ensure that generations
-        // greater than the lowest reserved generation are not expired.
+        // release the middle reservation to ensure that birth rounds
+        // greater than the lowest reserved birth round are not expired.
         r1.close();
 
         // release the last reservation to ensure that the reservation
@@ -434,21 +447,21 @@ class ShadowgraphTest {
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                FIRST_GENERATION + 2,
-                GENERATION_THRESHOLD));
+                ROUND_FIRST + 2,
+                BIRTH_ROUND_THRESHOLD));
 
-        // No event should have been expired because the first generation is reserved
-        assertEventsBelowGenAreExpired(0);
+        // No event should have been expired because the first birth round is reserved
+        assertEventsBelowBirthRoundAreExpired(0);
 
         r0.close();
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                FIRST_GENERATION + 2,
-                GENERATION_THRESHOLD));
+                ROUND_FIRST + 2,
+                BIRTH_ROUND_THRESHOLD));
 
-        // Now that the reservation is closed, ensure that the events in the below generation 2 are expired
-        assertEventsBelowGenAreExpired(FIRST_GENERATION + 2);
+        // Now that the reservation is closed, ensure that the events below birth round 2 are expired
+        assertEventsBelowBirthRoundAreExpired(ROUND_FIRST + 2);
     }
 
     @Test
@@ -547,19 +560,19 @@ class ShadowgraphTest {
     }
 
     /**
-     * Test that an event with a generation that has been expired from the shadow graph is not added to the graph.
+     * Test that an event with a birth round that has been expired from the shadow graph is not added to the graph.
      */
     @Test
-    void testAddEventWithExpiredGeneration() {
+    void testAddEventWithExpiredBirthRound() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
         shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                FIRST_GENERATION + 1,
-                GENERATION_THRESHOLD));
-        genToShadows
-                .get(FIRST_GENERATION)
+                ROUND_FIRST + 1,
+                BIRTH_ROUND_THRESHOLD));
+        birthRoundToShadows
+                .get(ROUND_FIRST)
                 .forEach(shadow -> assertThrows(
                         ShadowgraphInsertionException.class,
                         () -> shadowGraph.addEvent(shadow.getEvent()),
@@ -595,8 +608,8 @@ class ShadowgraphTest {
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                newEvent.getGeneration(),
-                GENERATION_THRESHOLD);
+                newEvent.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD),
+                BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
         assertDoesNotThrow(() -> shadowGraph.addEvent(newEvent), "Events with expired parents should be added.");
@@ -664,7 +677,8 @@ class ShadowgraphTest {
                     shadowGraph.shadow(generatedEvent), "Shadow graph should not have any events after being cleared.");
         }
         r0 = shadowGraph.reserve();
-        assertEquals(0, r0.getReservedIndicator(), "The first reservation after clearing should reserve generation 0.");
+        assertEquals(
+                0, r0.getReservedIndicator(), "The first reservation after clearing should reserve birth round 0.");
         assertEquals(
                 1, r0.getReservationCount(), "The first reservation after clearing should have a single reservation.");
     }
@@ -699,14 +713,15 @@ class ShadowgraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        long oldestTipGen = Long.MAX_VALUE;
+        long oldestTipBirthRound = Long.MAX_VALUE;
         List<ShadowEvent> tipsToExpire = new ArrayList<>();
         for (ShadowEvent tip : shadowGraph.getTips()) {
-            oldestTipGen = Math.min(oldestTipGen, tip.getEvent().getGeneration());
+            oldestTipBirthRound = Math.min(
+                    oldestTipBirthRound, tip.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD));
         }
 
         for (ShadowEvent tip : shadowGraph.getTips()) {
-            if (tip.getEvent().getGeneration() == oldestTipGen) {
+            if (tip.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) == oldestTipBirthRound) {
                 tipsToExpire.add(tip);
             }
         }
@@ -715,7 +730,10 @@ class ShadowgraphTest {
         assertTrue(numTipsBeforeExpiry > 0, "Shadow graph should have tips after events are added.");
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, oldestTipGen + 1, GENERATION_THRESHOLD);
+                0 /* ignored by shadowgraph */,
+                0 /* ignored by shadowgraph */,
+                oldestTipBirthRound + 1,
+                BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
 
         assertEquals(
@@ -746,8 +764,8 @@ class ShadowgraphTest {
         for (int i = 0; i < numRuns; i++) {
             final List<ShadowEvent> tips = shadowGraph.getTips();
             final Instant start = Instant.now();
-            final Set<ShadowEvent> ancestors =
-                    shadowGraph.findAncestors(tips, s -> s.getEvent().getGeneration() >= 0);
+            final Set<ShadowEvent> ancestors = shadowGraph.findAncestors(
+                    tips, s -> s.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) >= 0);
             final long millis = start.until(Instant.now(), ChronoUnit.MILLIS);
             System.out.printf("Run %d took %d ms\n", i, millis);
 
