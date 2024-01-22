@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
+import com.swirlds.common.wiring.tasks.AbstractTask;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -37,10 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -111,7 +109,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-    private static final ForkJoinPool pool = new ForkJoinPool(HASHING_THREAD_COUNT);
+    private static final ForkJoinPool hashingPool = new ForkJoinPool(HASHING_THREAD_COUNT);
 
     /**
      * Indicate to the virtual hasher that it has been shut down. This method does not interrupt threads, but
@@ -147,41 +145,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
     }
 
-    static class BaseTask extends ForkJoinTask<Void> {
-
-        protected final AtomicInteger count;
-
-        public BaseTask(int n) {
-            this.count = new AtomicInteger(n);
-        }
-
-        @Override
-        public Void getRawResult() {
-            return null;
-        }
-
-        @Override
-        protected void setRawResult(Void value) {
-            // not used
-        }
-
-        @Override
-        protected boolean exec() {
-            return true;
-        }
-
-        void push() {
-            if (count.decrementAndGet() == 0) {
-                if (Thread.currentThread() instanceof ForkJoinWorkerThread) {
-                    fork();
-                } else {
-                    pool.execute(this);
-                }
-            }
-        }
-    }
-
-    class ChunkHashTask extends BaseTask {
+    class ChunkHashTask extends AbstractTask {
 
         private final long path;
 
@@ -195,8 +159,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         // isLeaf is just an optimization: if the task is known to be used as a leaf task,
         // there is no need to allocate an array of hashes that will always be empty
-        ChunkHashTask(long path, int height) {
-            super(1 + (1 << height));
+        ChunkHashTask(final ForkJoinPool pool, final long path, final int height) {
+            super(pool, 1 + (1 << height));
             this.height = height;
             this.path = path;
             this.ins = new Hash[1 << height];
@@ -206,7 +170,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             this.out = out;
             assert path == 0 || Path.getRank(path) - out.height == Path.getRank(out.path)
                     : "setOut " + path + " " + height + " " + out.path;
-            push();
+            send();
         }
 
         void setData(final VirtualLeafRecord<K, V> leaf) {
@@ -217,15 +181,15 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 out.setHash(getIndexInOut(), null);
             } else {
                 this.leaf = leaf;
-                push(); // left hash dependency
-                push(); // right hash dependency
+                send(); // left hash dependency
+                send(); // right hash dependency
             }
         }
 
         void setHash(final int index, final Hash hash) {
             assert index >= 0 && index < (1 << height);
             ins[index] = hash;
-            push();
+            send();
         }
 
         @Override
@@ -239,7 +203,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         @Override
         protected boolean exec() {
             try {
-                assert count.get() == 0;
                 final Hash hash;
                 if (leaf != null) {
                     hash = cryptography.digestSync(leaf);
@@ -345,9 +308,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         listener.onHashingStarted();
 
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
-        ChunkHashTask resultTask = new ChunkHashTask(INVALID_PATH, 1);
+        ChunkHashTask resultTask = new ChunkHashTask(hashingPool, INVALID_PATH, 1);
         int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        ChunkHashTask rootTask = new ChunkHashTask(ROOT_PATH, rootTaskHeight);
+        ChunkHashTask rootTask = new ChunkHashTask(hashingPool, ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -369,7 +332,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             long curPath = leaf.getPath();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {
-                curTask = new ChunkHashTask(curPath, 1);
+                curTask = new ChunkHashTask(hashingPool, curPath, 1);
             }
             curTask.setData(leaf);
 
@@ -401,7 +364,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 }
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
-                    parentTask = new ChunkHashTask(parentPath, parentRankHeights[curRank]);
+                    parentTask = new ChunkHashTask(hashingPool, parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
 
@@ -419,7 +382,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     }
                     ChunkHashTask siblingTask = map.remove(siblingPath);
                     if (siblingTask == null) {
-                        siblingTask = new ChunkHashTask(siblingPath, curTask.height);
+                        siblingTask = new ChunkHashTask(hashingPool, siblingPath, curTask.height);
                     }
                     siblingTask.setOut(parentTask);
                     if ((siblingPath < curPath) && !firstLeaf) {
