@@ -683,9 +683,7 @@ public final class MerkleDb {
         final Path tableConfigFilePbj = dir.resolve(METADATA_FILENAME);
         final Path tableConfigFile = dir.resolve(METADATA_FILENAME_OLD);
         if (Files.exists(tableConfigFilePbj)) {
-            try (InputStream fileIn = Files.newInputStream(tableConfigFilePbj, StandardOpenOption.READ)) {
-                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
-                in.limit(Files.size(tableConfigFilePbj));
+            try (final ReadableStreamingData in = new ReadableStreamingData(tableConfigFilePbj)) {
                 while (in.hasRemaining()) {
                     final int tag = in.readVarInt(false);
                     final int fieldNum = tag >> TAG_FIELD_OFFSET;

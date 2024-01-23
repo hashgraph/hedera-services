@@ -28,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -68,7 +67,6 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -1041,9 +1039,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final Path sourceFile = sourceDir.metadataFile;
             long minValidKey = 0;
             long maxValidKey = 0;
-            try (final InputStream fileIn = Files.newInputStream(sourceFile, StandardOpenOption.READ)) {
-                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
-                in.limit(Files.size(sourceFile));
+            try (final ReadableStreamingData in = new ReadableStreamingData(sourceFile)) {
                 while (in.hasRemaining()) {
                     final int tag = in.readVarInt(false);
                     final int fieldNum = tag >> TAG_FIELD_OFFSET;

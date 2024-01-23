@@ -28,16 +28,12 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_METADATA;
 
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -125,9 +121,7 @@ public class DataFileMetadata {
         byte compactionLevel = 0;
 
         // Read values from the file, skipping all data items
-        try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
-            final ReadableSequentialData in = new ReadableStreamingData(fin);
-            in.limit(Files.size(file));
+        try (final ReadableStreamingData in = new ReadableStreamingData(file)) {
             while (in.hasRemaining()) {
                 final int tag = in.readVarInt(false);
                 final int fieldNum = tag >> TAG_FIELD_OFFSET;

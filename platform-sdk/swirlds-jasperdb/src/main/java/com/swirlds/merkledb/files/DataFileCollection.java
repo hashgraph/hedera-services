@@ -30,7 +30,6 @@ import static java.util.Collections.singletonList;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -48,13 +47,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -856,9 +853,7 @@ public class DataFileCollection<D> implements Snapshotable {
             return false;
         }
         if (loadPbj) {
-            try (final InputStream fileIn = Files.newInputStream(metadataFile, StandardOpenOption.READ)) {
-                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
-                in.limit(Files.size(metadataFile));
+            try (final ReadableStreamingData in = new ReadableStreamingData(metadataFile)) {
                 long minValidKey = 0;
                 long maxValidKey = 0;
                 while (in.hasRemaining()) {
