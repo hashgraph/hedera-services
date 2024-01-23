@@ -118,24 +118,6 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      * Refuses to transfer value.
      *
      * @param amount           the amount to transfer
-     * @param fromNumber the number of the account to transfer from
-     * @param toNumber   the number of the account to transfer to
-     * @param strategy         the {@link VerificationStrategy} to use
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public ResponseCodeEnum transferWithReceiverSigCheck(
-            final long amount,
-            final long fromNumber,
-            final long toNumber,
-            @NonNull final VerificationStrategy strategy) {
-        throw new UnsupportedOperationException("Cannot transfer value in query context");
-    }
-
-    /**
-     * Refuses to transfer value.
-     *
-     * @param amount           the amount to transfer
      * @param fromEntityId the id of the account to transfer from
      * @param toEntityId   the id of the account to transfer to
      * @param strategy         the {@link VerificationStrategy} to use

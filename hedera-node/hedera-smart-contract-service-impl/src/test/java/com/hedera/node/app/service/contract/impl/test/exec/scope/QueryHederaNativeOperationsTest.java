@@ -74,12 +74,14 @@ class QueryHederaNativeOperationsTest {
 
     private AccountID deletedAccount;
 
+    private AccountID fromAccount;
     private AccountID beneficiaryAccount;
 
     @BeforeEach
     void setUp() {
         subject = new QueryHederaNativeOperations(context);
         deletedAccount = AccountID.newBuilder().accountNum(1L).build();
+        fromAccount = AccountID.newBuilder().accountNum(3L).build();
         beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
 
@@ -94,7 +96,8 @@ class QueryHederaNativeOperationsTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.finalizeHollowAccountAsContract(Bytes.EMPTY));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, MOCK_VERIFICATION_STRATEGY));
+                () -> subject.transferWithReceiverSigCheck(
+                        1L, fromAccount, beneficiaryAccount, MOCK_VERIFICATION_STRATEGY));
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.trackSelfDestructBeneficiary(deletedAccount, beneficiaryAccount, frame));

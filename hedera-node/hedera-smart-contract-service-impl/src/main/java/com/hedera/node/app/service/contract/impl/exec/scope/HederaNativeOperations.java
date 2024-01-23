@@ -212,20 +212,6 @@ public interface HederaNativeOperations {
      * to the included {@code VerificationStrategy}.
      *
      * @param amount           the amount to transfer
-     * @param fromEntityNumber the number of the entity to transfer from
-     * @param toEntityNumber   the number of the entity to transfer to
-     * @param strategy         the {@link VerificationStrategy} to use
-     * @return the result of the transfer attempt
-     */
-    ResponseCodeEnum transferWithReceiverSigCheck(
-            long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
-
-    /**
-     * Transfers value from one account or contract to another without creating a record in this {@link HandleHederaOperations},
-     * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
-     * to the included {@code VerificationStrategy}.
-     *
-     * @param amount           the amount to transfer
      * @param fromEntityId the id of the entity to transfer from
      * @param toEntityId   the id of the entity to transfer to
      * @param strategy         the {@link VerificationStrategy} to use

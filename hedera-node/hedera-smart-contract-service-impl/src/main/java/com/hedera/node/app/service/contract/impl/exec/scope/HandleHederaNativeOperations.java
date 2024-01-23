@@ -148,22 +148,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
-            final long fromEntityNumber,
-            final long toEntityNumber,
-            @NonNull final VerificationStrategy strategy) {
-        return transferWithReceiverSigCheck(
-                amount,
-                AccountID.newBuilder().accountNum(fromEntityNumber).build(),
-                AccountID.newBuilder().accountNum(toEntityNumber).build(),
-                strategy);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
-            final long amount,
             final AccountID fromEntityId,
             final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {

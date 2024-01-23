@@ -253,8 +253,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(OK, result);
         verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
@@ -272,8 +274,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(INVALID_SIGNATURE, result);
         verify(tokenServiceApi, never()).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
@@ -290,8 +294,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(OK, result);
         verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
