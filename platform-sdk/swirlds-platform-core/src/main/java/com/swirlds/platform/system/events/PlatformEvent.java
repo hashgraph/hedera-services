@@ -27,8 +27,8 @@ import java.time.Instant;
 @Deprecated
 public interface PlatformEvent extends ConsensusEvent {
     /**
-     * Whether this is a witness event or not. True if either this event's round &gt; selfParent's
-     * round, or there is no self parent.
+     * Whether this is a witness event or not. True if either this event's round &gt; selfParent's round, or there is no
+     * self parent.
      *
      * @return boolean value to tell whether this event is a witness or not
      */
@@ -56,8 +56,7 @@ public interface PlatformEvent extends ConsensusEvent {
     boolean isConsensus();
 
     /**
-     * The community's consensus timestamp for this event if a consensus is reached. Otherwise.
-     * it will be an estimate.
+     * The community's consensus timestamp for this event if a consensus is reached. Otherwise. it will be an estimate.
      *
      * @return the consensus timestamp
      */
@@ -91,6 +90,13 @@ public interface PlatformEvent extends ConsensusEvent {
      * @return This event's generation
      */
     long getGeneration();
+
+    /**
+     * This event's birth round, the creating node's pending consensus round when the event was created.
+     *
+     * @return This event's birth round.
+     */
+    long getBirthRound();
 
     /**
      * The created round of this event, which is the max of parents' created around, plus either 0 or 1.

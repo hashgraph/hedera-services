@@ -200,19 +200,25 @@ public class AddressBookInitializer {
                     "Overriding the address book in the state with the address book from config.txt");
             candidateAddressBook = configAddressBook;
             previousAddressBook = stateAddressBook;
+            // change indicator is true to indicate that the address books need to be updated in the state.
+            addressBookChange = true;
         } else if (initialState.isGenesisState()) {
-            // If this is a genesis state, the state's address book and previous address book will be null.
+            // If this is a genesis state, the state's address book and previous address book may be null.
             // Adopt the config.txt address book.
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
             previousAddressBook = null;
+            // change indicator is true to indicate that the address books need to be updated in the state.
+            addressBookChange = true;
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
             candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
             previousAddressBook = null;
+            // change indicator is false to keep the current and previous address books the same.
+            addressBookChange = false;
         } else {
             // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
@@ -224,19 +230,11 @@ public class AddressBookInitializer {
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
             previousAddressBook = stateAddressBook;
+            // change indicator is true to indicate that the address books need to be updated in the state.
+            addressBookChange = true;
         }
-        // This flag indicates the state needs to be updated with the changes to the address books.
-        addressBookChange = hasAddressBookChanged(initialState, candidateAddressBook, previousAddressBook);
         recordAddressBooks(candidateAddressBook);
         return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
-    }
-
-    private boolean hasAddressBookChanged(
-            @NonNull final SignedState state,
-            @Nullable final AddressBook currentAddressBook,
-            @Nullable final AddressBook previousAddressBook) {
-        return !Objects.equals(state.getState().getPlatformState().getAddressBook(), currentAddressBook)
-                || !Objects.equals(state.getState().getPlatformState().getPreviousAddressBook(), previousAddressBook);
     }
 
     /**
