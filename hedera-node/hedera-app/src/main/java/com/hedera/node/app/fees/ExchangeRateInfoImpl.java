@@ -50,6 +50,6 @@ public class ExchangeRateInfoImpl implements ExchangeRateInfo {
     @NonNull
     @Override
     public ExchangeRate activeRate(@NonNull Instant consensusTime) {
-        return consensusTime.getEpochSecond() > expirationSeconds ? nextRate : currentRate;
+        return consensusTime.getEpochSecond() >= expirationSeconds ? nextRate : currentRate;
     }
 }
