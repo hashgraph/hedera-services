@@ -49,11 +49,16 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
@@ -74,6 +79,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
@@ -82,6 +88,7 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -123,6 +130,69 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
         validator.pureChecks(op);
+    }
+
+    @Override
+    public void warm(@NonNull final WarmupContext context) {
+        requireNonNull(context);
+
+        final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final ReadableNftStore nftStore = context.createStore(ReadableNftStore.class);
+        final ReadableTokenRelationStore tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
+        final CryptoTransferTransactionBody op = context.body().cryptoTransferOrThrow();
+
+        // warm all accounts from the transfer list
+        final TransferList transferList = op.transfersOrElse(TransferList.DEFAULT);
+        transferList.accountAmountsOrElse(emptyList()).parallelStream()
+                .map(AccountAmount::accountID)
+                .filter(Objects::nonNull)
+                .forEach(accountStore::warm);
+
+        // warm all token-data from the token transfer list
+        final List<TokenTransferList> tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        tokenTransfers.parallelStream()
+                .filter(TokenTransferList::hasToken)
+                .filter(TokenTransferList::hasNftTransfers)
+                .forEach(tokenTransferList -> {
+                    final TokenID tokenID = tokenTransferList.tokenOrThrow();
+                    final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
+                    for (final NftTransfer nftTransfer : nftTransfers) {
+                        warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
+                    }
+                });
+    }
+
+    private void warmNftTransfer(
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableNftStore nftStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore,
+            @NonNull final TokenID tokenID,
+            @NonNull final NftTransfer nftTransfer) {
+        // warm sender
+        nftTransfer.ifSenderAccountID(senderAccountID -> {
+            final Account sender = accountStore.getAccountById(senderAccountID);
+            if (sender != null) {
+                sender.ifHeadNftId(nftStore::warm);
+            }
+            tokenRelationStore.warm(senderAccountID, tokenID);
+        });
+
+        // warm receiver
+        nftTransfer.ifReceiverAccountID(receiverAccountID -> {
+            final Account receiver = accountStore.getAccountById(receiverAccountID);
+            if (receiver != null) {
+                receiver.ifHeadTokenId(headTokenID -> tokenRelationStore.warm(receiverAccountID, headTokenID));
+                receiver.ifHeadNftId(nftStore::warm);
+            }
+            tokenRelationStore.warm(receiverAccountID, tokenID);
+        });
+
+        // warm neighboring NFTs
+        final Nft nft = nftStore.get(tokenID, nftTransfer.serialNumber());
+        if (nft != null) {
+            nft.ifOwnerPreviousNftId(nftStore::warm);
+            nft.ifOwnerNextNftId(nftStore::warm);
+        }
     }
 
     @Override
@@ -448,6 +518,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)

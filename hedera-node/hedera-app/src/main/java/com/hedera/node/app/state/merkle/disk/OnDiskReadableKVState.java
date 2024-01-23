@@ -113,4 +113,10 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
         logMapGetSize(getStateKey(), size);
         return size;
     }
+
+    @Override
+    public void warm(@NonNull final K key) {
+        final var k = new OnDiskKey<>(md, key);
+        virtualMap.warm(k);
+    }
 }

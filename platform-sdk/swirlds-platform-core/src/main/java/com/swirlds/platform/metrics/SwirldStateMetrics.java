@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_6;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_6;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.system.PlatformStatNames;
 import com.swirlds.platform.system.SwirldState;
@@ -68,8 +68,6 @@ public class SwirldStateMetrics {
      */
     private final AverageTimeStat preHandleTime;
 
-    private final AverageTimeStat preConsHandleTime;
-
     /**
      * Constructor of {@code SwirldStateMetrics}
      *
@@ -83,12 +81,6 @@ public class SwirldStateMetrics {
         avgConsHandleTime = metrics.getOrCreate(AVG_CONS_HANDLE_TIME_CONFIG);
         transHandledPerSecond = metrics.getOrCreate(TRANS_HANDLED_PER_SECOND_CONFIG);
         avgStateCopyMicros = metrics.getOrCreate(AVG_STATE_COPY_MICROS_CONFIG);
-        preConsHandleTime = new AverageTimeStat(
-                metrics,
-                ChronoUnit.MICROS,
-                INTERNAL_CATEGORY,
-                "preConsHandleMicros",
-                "average time it takes to handle a pre-consensus event from q4 (in microseconds)");
         preHandleTime = new AverageTimeStat(
                 metrics,
                 ChronoUnit.MICROS,
@@ -132,13 +124,6 @@ public class SwirldStateMetrics {
      */
     public void stateCopyMicros(final double micros) {
         avgStateCopyMicros.update(micros);
-    }
-
-    /**
-     * The amount of time it takes to handle a single event from the pre-consensus event queue.
-     */
-    public void preConsensusHandleTime(final long start, final long end) {
-        preConsHandleTime.update(start, end);
     }
 
     /**

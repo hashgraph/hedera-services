@@ -32,24 +32,42 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * made for the reserver.
  * <p>
  * For each input wire, {@link #transform(ReservedSignedState)} will be called once, reserving the state for that input
- * wire. After a reservation is made for each input wire, {@link #cleanup(ReservedSignedState)} will be called once to
+ * wire. After a reservation is made for each input wire, {@link #inputCleanup(ReservedSignedState)} will be called once to
  * release the original reservation.
  *
  * @param name the name of the reserver
  */
 public record SignedStateReserver(@NonNull String name)
         implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public ReservedSignedState transform(@NonNull final ReservedSignedState reservedSignedState) {
         return reservedSignedState.getAndReserve(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void cleanup(@NonNull final ReservedSignedState reservedSignedState) {
+    public void inputCleanup(@NonNull final ReservedSignedState reservedSignedState) {
         reservedSignedState.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void outputCleanup(@NonNull final ReservedSignedState reservedSignedState) {
+        reservedSignedState.close();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public String getName() {

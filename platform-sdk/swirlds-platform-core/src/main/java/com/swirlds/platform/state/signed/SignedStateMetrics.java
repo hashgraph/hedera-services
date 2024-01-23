@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Encapsulates various signed state metrics.
@@ -41,13 +41,6 @@ public class SignedStateMetrics {
             .withUnit("count")
             .withFormat(FORMAT_10_2);
     private final RunningAverageMetric unsignedStates;
-
-    private static final RunningAverageMetric.Config SIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "signedStates")
-            .withDescription("Average Number Of Signed States In the Signed State Manager")
-            .withUnit("count")
-            .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric signedStates;
 
     private static final RunningAverageMetric.Config AVERAGE_TIME_TO_FULLY_SIGN_STATE = new RunningAverageMetric.Config(
                     CATEGORY, "averageTimeToFullySignState")
@@ -142,13 +135,6 @@ public class SignedStateMetrics {
      */
     public RunningAverageMetric getUnsignedStatesMetric() {
         return unsignedStates;
-    }
-
-    /**
-     * Get a metric tracking signed states.
-     */
-    public RunningAverageMetric geSignedStatesMetric() {
-        return signedStates;
     }
 
     /**
@@ -257,6 +243,5 @@ public class SignedStateMetrics {
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);
-        signedStates = metrics.getOrCreate(SIGNED_STATES_CONFIG);
     }
 }

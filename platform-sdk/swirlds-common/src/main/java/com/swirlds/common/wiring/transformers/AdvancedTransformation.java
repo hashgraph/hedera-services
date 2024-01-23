@@ -44,7 +44,15 @@ public interface AdvancedTransformation<A, B> {
      *
      * @param a the original data element
      */
-    void cleanup(@NonNull A a);
+    void inputCleanup(@NonNull A a);
+
+    /**
+     * Called on the transformed data element if it is rejected by a listener. This is possible if offer soldering is
+     * used and the destination declines to take the data.
+     *
+     * @param b the transformed data element
+     */
+    void outputCleanup(@NonNull B b);
 
     /**
      * @return the name of this transformer

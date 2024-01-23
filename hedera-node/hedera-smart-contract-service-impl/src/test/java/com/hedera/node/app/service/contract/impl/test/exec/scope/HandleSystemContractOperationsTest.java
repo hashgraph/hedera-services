@@ -117,7 +117,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void externalizeSuccessfulResultTest() {
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
                 0,
                 org.apache.tuweni.bytes.Bytes.EMPTY,
                 100L,
@@ -147,7 +147,7 @@ class HandleSystemContractOperationsTest {
                         .transactionID(TransactionID.DEFAULT)
                         .build())
                 .build();
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
                 0,
                 org.apache.tuweni.bytes.Bytes.EMPTY,
                 100L,
@@ -169,7 +169,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void externalizeFailedResultTest() {
-        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
                 0,
                 org.apache.tuweni.bytes.Bytes.EMPTY,
                 100L,

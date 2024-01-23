@@ -18,10 +18,10 @@ package com.swirlds.common.metrics.extensions;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
