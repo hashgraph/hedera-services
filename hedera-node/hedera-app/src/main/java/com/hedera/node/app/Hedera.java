@@ -585,7 +585,6 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
-                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
                 switch (platformStatus) {
                     case ACTIVE -> {
@@ -601,9 +600,14 @@ public final class Hedera implements SwirldMain {
                             FREEZING,
                             BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
 
-                    case CATASTROPHIC_FAILURE, FREEZE_COMPLETE -> {
+                    case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
-                        if (wasActive) shutdownGrpcServer();
+                        shutdownGrpcServer();
+                    }
+                    case FREEZE_COMPLETE -> {
+                        logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+                        closeRecordStreams();
+                        shutdownGrpcServer();
                     }
                 }
             });
@@ -635,6 +639,13 @@ public final class Hedera implements SwirldMain {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
         }
+    }
+
+    /**
+     * Called to perform orderly close record streams.
+     */
+    private void closeRecordStreams() {
+        daggerApp.blockRecordManager().close();
     }
 
     /**

@@ -17,8 +17,8 @@
 package com.swirlds.common.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
+import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
