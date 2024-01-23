@@ -16,6 +16,9 @@
 
 package com.swirlds.common.metrics;
 
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.api.MetricsFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

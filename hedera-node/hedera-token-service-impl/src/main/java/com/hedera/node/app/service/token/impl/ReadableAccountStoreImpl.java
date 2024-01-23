@@ -184,4 +184,9 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     public long sizeOfAccountState() {
         return accountState().size();
     }
+
+    @Override
+    public void warm(@NonNull final AccountID accountID) {
+        accountState.warm(accountID);
+    }
 }

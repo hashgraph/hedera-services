@@ -33,7 +33,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -67,7 +67,7 @@ public final class EventCreationManagerFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final IntSupplier getIntakeQueueSize,
+            @NonNull final LongSupplier getIntakeQueueSize,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Supplier<Long> latestReconnectRound) {
 

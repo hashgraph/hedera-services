@@ -30,9 +30,7 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIH
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -143,7 +141,7 @@ public class ShadowGraphSynchronizer {
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor,
@@ -151,7 +149,6 @@ public class ShadowGraphSynchronizer {
             @NonNull final InterruptableRunnable executePreFetchTips) {
 
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(intakeQueue);
 
         this.time = Objects.requireNonNull(time);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
@@ -163,52 +160,12 @@ public class ShadowGraphSynchronizer {
         this.executor = Objects.requireNonNull(executor);
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = Objects.requireNonNull(executePreFetchTips);
-        this.eventHandler = buildEventHandler(platformContext, intakeQueue);
+        this.eventHandler = Objects.requireNonNull(receivedEventHandler);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
-    }
-
-    /**
-     * Construct the event handler for new events. If configured to do so, this handler will also hash events before
-     * passing them down the pipeline.
-     *
-     * @param platformContext the platform context
-     * @param intakeQueue     the event intake queue
-     */
-    @NonNull
-    private Consumer<GossipEvent> buildEventHandler(
-            @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
-
-        Objects.requireNonNull(intakeQueue);
-
-        final boolean hashOnGossipThreads = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .hashOnGossipThreads();
-
-        final Consumer<GossipEvent> wrappedPut = event -> {
-            try {
-                intakeQueue.put(event);
-            } catch (final InterruptedException e) {
-                // should never happen, and we don't have a simple way of recovering from it
-                Thread.currentThread().interrupt();
-            }
-        };
-
-        if (hashOnGossipThreads) {
-            final Cryptography cryptography = platformContext.getCryptography();
-            return event -> {
-                cryptography.digestSync(event.getHashedData());
-                event.buildDescriptor();
-
-                wrappedPut.accept(event);
-            };
-        } else {
-            return wrappedPut;
-        }
     }
 
     /**

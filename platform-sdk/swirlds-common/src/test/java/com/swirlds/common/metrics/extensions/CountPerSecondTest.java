@@ -24,9 +24,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultIntegerPairAccumulator;
 import com.swirlds.common.time.IntegerEpochTime;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
