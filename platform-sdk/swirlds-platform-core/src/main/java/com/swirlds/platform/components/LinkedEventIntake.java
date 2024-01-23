@@ -111,14 +111,12 @@ public class LinkedEventIntake {
 
         if (paused) {
             // If paused, throw everything into the void
-            event.clear();
             return List.of();
         }
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                event.clear();
                 return List.of();
             }
 
