@@ -16,15 +16,18 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -66,13 +69,15 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     private final long firstLeafPath;
     private final long lastLeafPath;
     private List<VirtualLeafRecord<K, V>> leaves;
-    private List<VirtualHashRecord> nodes;
+    private List<VirtualHashRecord> hashes;
 
     // Flushes are initiated from onNodeHashed(). While a flush is in progress, other nodes
     // are still hashed in parallel, so it may happen that enough nodes are hashed to
     // start a new flush, while the previous flush is not complete yet. This flag is
     // protection from that
     private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
+
+    private int reconnectFlushInterval = 0;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -104,8 +109,10 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
     @Override
     public synchronized void onHashingStarted() {
-        nodes = new ArrayList<>();
+        hashes = new ArrayList<>();
         leaves = new ArrayList<>();
+        reconnectFlushInterval =
+                ConfigurationHolder.getConfigData(VirtualMapConfig.class).reconnectFlushInterval();
     }
 
     /**
@@ -113,13 +120,14 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      */
     @Override
     public void onNodeHashed(final long path, final Hash hash) {
+        assert hashes != null && leaves != null : "onNodeHashed called without onHashingStarted";
         final List<VirtualHashRecord> dirtyHashesToFlush;
         final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
         synchronized (this) {
-            nodes.add(new VirtualHashRecord(path, hash));
-            if ((nodes.size() + leaves.size() > 1000000) && !flushInProgress.get()) { // TODO: make it configurable
-                dirtyHashesToFlush = nodes;
-                nodes = new ArrayList<>();
+            hashes.add(new VirtualHashRecord(path, hash));
+            if ((reconnectFlushInterval > 0) && (hashes.size() >= reconnectFlushInterval) && !flushInProgress.get()) {
+                dirtyHashesToFlush = hashes;
+                hashes = new ArrayList<>();
                 dirtyLeavesToFlush = leaves;
                 leaves = new ArrayList<>();
             } else {
@@ -142,15 +150,12 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         final List<VirtualHashRecord> finalNodesToFlush;
         final List<VirtualLeafRecord<K, V>> finalLeavesToFlush;
         synchronized (this) {
-            finalNodesToFlush = nodes;
-            nodes = null;
+            finalNodesToFlush = hashes;
+            hashes = null;
             finalLeavesToFlush = leaves;
             leaves = null;
         }
-        if ((finalNodesToFlush != null)
-                && !finalNodesToFlush.isEmpty()
-                && (finalLeavesToFlush != null)
-                && !finalLeavesToFlush.isEmpty()) {
+        if (!finalNodesToFlush.isEmpty() || !finalLeavesToFlush.isEmpty()) {
             flush(finalNodesToFlush, finalLeavesToFlush);
         }
     }
@@ -158,12 +163,13 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     // Since flushes may take quite some time, this method is called outside synchronized blocks,
     // otherwise all hashing tasks would be blocked on listener calls until flush is completed.
     private void flush(
-            final List<VirtualHashRecord> dirtyHashesToFlush, final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush) {
+            @NonNull final List<VirtualHashRecord> hashesToFlush,
+            @NonNull final List<VirtualLeafRecord<K, V>> leavesToFlush) {
         if (!flushInProgress.compareAndSet(false, true)) {
             throw new IllegalStateException("Cannot start flushing, flush already in progress?");
         }
         try {
-            final long maxPath = dirtyLeavesToFlush.stream()
+            final long maxPath = leavesToFlush.stream()
                     .mapToLong(VirtualLeafRecord::getPath)
                     .max()
                     .orElse(-1);
@@ -172,8 +178,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                 dataSource.saveRecords(
                         firstLeafPath,
                         lastLeafPath,
-                        dirtyHashesToFlush.stream(),
-                        dirtyLeavesToFlush.stream(),
+                        hashesToFlush.stream(),
+                        leavesToFlush.stream(),
                         findLeavesToRemove(maxPath));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
