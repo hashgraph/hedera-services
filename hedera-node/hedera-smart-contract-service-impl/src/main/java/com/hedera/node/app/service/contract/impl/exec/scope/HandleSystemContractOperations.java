@@ -119,18 +119,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     }
 
     @Override
-    public void externalizeResultRemovableChild(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResponseCodeEnum responseStatus,
-            @NonNull Transaction transaction) {
-        requireNonNull(transaction);
-        context.addRemovableChildRecordBuilder(ContractCallRecordBuilder.class)
-                .transaction(transaction)
-                .status(responseStatus)
-                .contractCallResult(result);
-    }
-
-    @Override
     public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
         var functionParameters = tuweniToPbjBytes(input);
         var contractCallBodyBuilder =

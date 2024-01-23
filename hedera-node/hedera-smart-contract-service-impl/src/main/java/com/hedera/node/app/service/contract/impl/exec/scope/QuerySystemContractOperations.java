@@ -80,12 +80,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     public void externalizeResult(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {}
 
-    @Override
-    public void externalizeResultRemovableChild(
-            @NonNull ContractFunctionResult result,
-            @NonNull ResponseCodeEnum responseStatus,
-            @NonNull Transaction transaction) {}
-
     /**
      * {@inheritDoc}
      */
