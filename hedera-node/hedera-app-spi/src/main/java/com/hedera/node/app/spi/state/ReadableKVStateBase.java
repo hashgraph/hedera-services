@@ -140,7 +140,6 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @return Whether it has been read
      */
     protected final boolean hasBeenRead(@NonNull K key) {
-        var keyExistence = readCache.get(key);
-        return keyExistence != null && keyExistence != marker;
+        return readCache.containsKey(key);
     }
 }
