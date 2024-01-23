@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.system.address.AddressBook;
@@ -52,8 +51,6 @@ class RoundHashValidatorTests {
                 Arguments.of(HashValidityStatus.SELF_ISS),
                 Arguments.of(HashValidityStatus.CATASTROPHIC_ISS));
     }
-
-    private static final StateHashValidityTrigger NO_OP_DISAGREEMENT_DISPATCHER = (a, b, c, d) -> {};
 
     record NodeHashInfo(NodeId nodeId, Hash nodeStateHash, long round) {}
 
@@ -259,7 +256,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         boolean decided = false;
 
@@ -305,7 +302,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         boolean decided = false;
 
@@ -349,7 +346,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         boolean decided = false;
 
@@ -399,7 +396,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
             final NodeId nodeId = nodeHashInfo.nodeId;
@@ -433,7 +430,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         long addedWeight = 0;
 
@@ -475,7 +472,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         assertFalse(validator.reportSelfHash(thisNode.nodeStateHash), "should not allow a decision");
 
@@ -520,7 +517,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight());
 
         assertFalse(validator.reportSelfHash(thisNode.nodeStateHash), "should not allow a decision");
 

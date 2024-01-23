@@ -26,6 +26,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -71,7 +72,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
-        @NonNull TaskScheduler<Void> issDetectorScheduler) {
+        @NonNull TaskScheduler<IssNotification> issDetectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model

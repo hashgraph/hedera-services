@@ -21,11 +21,13 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,7 +39,8 @@ public record IssDetectorWiring(
         @NonNull InputWire<ConsensusRound> handleConsensusRound,
         @NonNull InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> handlePostconsensusSignatures,
         @NonNull InputWire<ReservedSignedState> newStateHashed,
-        @NonNull InputWire<ReservedSignedState> overridingState) {
+        @NonNull InputWire<ReservedSignedState> overridingState,
+        @NonNull OutputWire<IssNotification> issNotificationOutput) {
     /**
      * Create a new instance of this wiring.
      *
@@ -46,7 +49,7 @@ public record IssDetectorWiring(
      */
     @NonNull
     public static IssDetectorWiring create(
-            @NonNull final WiringModel model, @NonNull final TaskScheduler<Void> taskScheduler) {
+            @NonNull final WiringModel model, @NonNull final TaskScheduler<IssNotification> taskScheduler) {
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
                         model,
@@ -62,7 +65,8 @@ public record IssDetectorWiring(
                 roundTransformer.getInputWire(),
                 sigInput,
                 taskScheduler.buildInputWire("newStateHashed"),
-                taskScheduler.buildInputWire("overridingState"));
+                taskScheduler.buildInputWire("overridingState"),
+                taskScheduler.getOutputWire());
     }
 
     public void bind(@NonNull final ConsensusHashManager hashManager) {

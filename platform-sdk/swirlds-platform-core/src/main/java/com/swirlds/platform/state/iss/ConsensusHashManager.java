@@ -31,8 +31,6 @@ import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
-import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -103,10 +101,6 @@ public class ConsensusHashManager {
      */
     private final long ignoredRound;
 
-    private final IssHandler issHandler;
-    private final IssMetrics issMetrics;
-    final StateHashValidityTrigger stateHashValidityTrigger;
-
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
@@ -119,7 +113,7 @@ public class ConsensusHashManager {
      * @param ignoredRound                 a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if
      *                                     all rounds should be validated.
      */
-    public ConsensusHashManager(
+    public ConsensusHashManager( //TODO return iss notification
             @NonNull final PlatformContext platformContext,
             final Time time,
             final AddressBook addressBook,
@@ -127,7 +121,7 @@ public class ConsensusHashManager {
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound,
-            final IssHandler issHandler) {
+            final IssHandler issHandler) {//TODO remove this
 
         Objects.requireNonNull(currentSoftwareVersion);
 
@@ -156,12 +150,6 @@ public class ConsensusHashManager {
         if (ignoredRound != DO_NOT_IGNORE_ROUNDS) {
             logger.warn(STARTUP.getMarker(), "No ISS detection will be performed for round {}", ignoredRound);
         }
-        this.issHandler = issHandler;
-        this.issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
-        this.stateHashValidityTrigger = (r, id, nh, ch) -> {
-            issMetrics.stateHashValidityObserver(r, id, nh, ch);
-            issHandler.stateHashValidityObserver(r, id, nh, ch);
-        };
     }
 
     /**
@@ -201,7 +189,7 @@ public class ConsensusHashManager {
         final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
 
-        roundData.put(round, new RoundHashValidator(stateHashValidityTrigger, round, roundWeight));
+        roundData.put(round, new RoundHashValidator(round, roundWeight));
     }
 
     /**
@@ -400,8 +388,6 @@ public class ConsensusHashManager {
                     EXCEPTION.getMarker(),
                     new IssPayload(sb.toString(), round, selfHash.toMnemonic(), consensusHash.toMnemonic(), false));
         }
-
-        issHandler.selfIssObserver(round, selfHash, consensusHash);
     }
 
     /**
@@ -428,9 +414,6 @@ public class ConsensusHashManager {
 
             logger.fatal(EXCEPTION.getMarker(), new IssPayload(sb.toString(), round, selfHash.toMnemonic(), "", true));
         }
-
-        issMetrics.catastrophicIssObserver(round);
-        issHandler.catastrophicIssObserver(round, selfHash);
     }
 
     /**

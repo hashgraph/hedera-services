@@ -86,6 +86,14 @@ public class IssHandler {
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
+    public synchronized void issObserved(@NonNull final IssNotification issNotification){
+        switch (issNotification.getIssType()){
+            case SELF_ISS -> selfIssObserver(issNotification.getRound(), null, null);
+            case OTHER_ISS -> stateHashValidityObserver(issNotification.getRound(), issNotification.getOtherNodeId(), null, null);
+            case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound(), null);
+        }
+    }
+
     /**
      * This method is called whenever any node is observed in disagreement with the consensus hash.
      *

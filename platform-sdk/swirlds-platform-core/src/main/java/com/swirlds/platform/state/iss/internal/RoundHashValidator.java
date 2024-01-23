@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -71,18 +70,15 @@ public class RoundHashValidator {
     /**
      * Create an object that validates this node's hash for a round.
      *
-     * @param stateHashValidityDispatcher
-     * 		a dispatch method should be called when there is a hash disagreement
      * @param round
      * 		the round number
      * @param roundWeight
      * 		the total weight for this round
      */
-    public RoundHashValidator(
-            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long roundWeight) {
+    public RoundHashValidator(final long round, final long roundWeight) {
 
         this.round = round;
-        hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, round, roundWeight);
+        hashFinder = new ConsensusHashFinder(round, roundWeight);
     }
 
     /**
@@ -95,7 +91,7 @@ public class RoundHashValidator {
     /**
      * Get the hash that this node computed for the round if it is known, or null if it is not known.
      */
-    public synchronized Hash getSelfStateHash() {
+    public synchronized Hash getSelfStateHash() {//TODO remove all synchronized
         return selfStateHash;
     }
 

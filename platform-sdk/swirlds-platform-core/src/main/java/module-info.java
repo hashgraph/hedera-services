@@ -101,10 +101,6 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.triggers.error to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.dispatch.triggers.flow to
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.dispatch.triggers.transaction to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to

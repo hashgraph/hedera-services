@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -134,13 +134,6 @@ public class AppCommunicationComponent implements PlatformComponent, IssConsumer
                 reservedSignedState.get().getConsensusTimestamp());
 
         notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
-    }
-
-    @Override
-    public void iss(
-            final long round, @NonNull final IssNotification.IssType issType, @Nullable final NodeId otherNodeId) {
-        final IssNotification notification = new IssNotification(round, issType, otherNodeId);
-        notificationEngine.dispatch(IssListener.class, notification);
     }
 
     /**

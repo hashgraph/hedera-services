@@ -117,6 +117,7 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -155,6 +156,8 @@ import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -462,14 +465,13 @@ public class SwirldsPlatform implements Platform {
         // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
-        //TODO there should be actions based on returned values for ISSs
         final IssHandler issHandler = new IssHandler(
                 stateConfig,
                 selfId,
                 platformStatusManager,
                 this::haltRequested,
                 this::handleFatalError,
-                appCommunicationComponent,
+                null,
                 issScratchpad);
         final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
@@ -698,9 +700,14 @@ public class SwirldsPlatform implements Platform {
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
-
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
+                "issMetrics", new IssMetrics(metrics, currentAddressBook)::issObserved);
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
+                "issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
+                "issHandler", issHandler::issObserved);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
