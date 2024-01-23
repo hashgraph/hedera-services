@@ -157,7 +157,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -475,13 +474,12 @@ public class SwirldsPlatform implements Platform {
                 issScratchpad);
         final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
                 currentAddressBook,
                 epochHash,
                 appVersion,
                 ignorePreconsensusSignatures,
-                roundToIgnore,
-                issHandler);
+                roundToIgnore
+        );
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,

@@ -25,13 +25,9 @@ import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCa
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateRegularNodeHashes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
@@ -43,14 +39,13 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
@@ -59,8 +54,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -84,7 +78,7 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -92,7 +86,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(null, true, true));
+                null);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -104,14 +98,15 @@ class ConsensusHashManagerTests {
                 manager.roundCompleted(round);
                 manager.newStateHashed(mockState(round, roundHash));
             }
-
-            for (final Address address : addressBook) {
-                manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
-                        address.getNodeId(),
-                        new BasicSoftwareVersion(1),
-                        new StateSignatureTransaction(round, mock(Signature.class), roundHash))));
-            }
+            final long r = round;
+            StreamSupport.stream(addressBook.spliterator(), false)
+                    .map(a-> new ScopedSystemTransaction<>(
+                            a.getNodeId(),
+                            new BasicSoftwareVersion(1),
+                            new StateSignatureTransaction(r, mock(Signature.class), roundHash)))
+                    .forEach(t-> manager.handlePostconsensusSignatures(List.of(t)));
         }
+        assertTrue(manager.getIssList().isEmpty(), "there should be no ISS notifications");
     }
 
     @Test
@@ -141,14 +136,12 @@ class ConsensusHashManagerTests {
         int expectedSelfIssCount = 0;
         int expectedCatastrophicIssCount = 0;
         final List<Hash> selfHashes = new ArrayList<>(roundsNonAncient);
-        final List<Hash> consensusHashes = new ArrayList<>(roundsNonAncient);
         for (int round = 0; round < roundsNonAncient; round++) {
             final RoundHashValidatorTests.HashGenerationData data;
 
             if (random.nextDouble() < 2.0 / 3) {
                 // Choose hashes so that there is a valid consensus hash
                 data = generateRegularNodeHashes(random, addressBook, round);
-                consensusHashes.add(data.consensusHash());
 
                 HashValidityStatus expectedStatus = null;
 
@@ -174,7 +167,6 @@ class ConsensusHashManagerTests {
                 // Choose hashes that will result in a catastrophic ISS
                 data = generateCatastrophicNodeHashes(random, addressBook, round);
                 roundData.add(data);
-                consensusHashes.add(null);
                 expectedRoundStatus.add(HashValidityStatus.CATASTROPHIC_ISS);
                 expectedCatastrophicIssCount++;
             }
@@ -189,66 +181,7 @@ class ConsensusHashManagerTests {
             }
         }
 
-        final AtomicBoolean fail = new AtomicBoolean(false);
-        final AtomicInteger issCount = new AtomicInteger(0);
-        final AtomicInteger catastrophicIssCount = new AtomicInteger(0);
-        final Set<Long> observedRounds = new HashSet<>();
-
-        final IssHandler issHandler = mock(IssHandler.class);
-        Mockito.doAnswer(i -> {
-                    final Long round = i.getArgument(0);
-                    final Hash selfStateHash = i.getArgument(1);
-                    final Hash consensusHash = i.getArgument(2);
-                    try {
-
-                        assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
-
-                        final int roundIndex = (int) (long) round;
-                        final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
-
-                        assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
-
-                        if (expectedStatus == HashValidityStatus.SELF_ISS) {
-                            assertEquals(consensusHashes.get(roundIndex), consensusHash, "unexpected consensus hash");
-                            issCount.getAndIncrement();
-                        } else {
-                            fail("invalid status " + expectedStatus);
-                        }
-                    } catch (final Throwable t) {
-                        t.printStackTrace();
-                        fail.set(true);
-                    }
-                    return null;
-                })
-                .when(issHandler)
-                .selfIssObserver(anyLong(), any(), any());
-        Mockito.doAnswer(i -> {
-                    final Long round = i.getArgument(0);
-                    final Hash selfStateHash = i.getArgument(1);
-                    try {
-                        final int roundIndex = (int) (long) round;
-
-                        assertTrue(observedRounds.add(round), "rounds should trigger a notification at most once");
-
-                        final HashValidityStatus expectedStatus = expectedRoundStatus.get(roundIndex);
-
-                        assertEquals(selfHashes.get(roundIndex), selfStateHash, "invalid self hash");
-
-                        if (expectedStatus == HashValidityStatus.CATASTROPHIC_ISS) {
-                            catastrophicIssCount.getAndIncrement();
-                        } else {
-                            fail("invalid status " + expectedStatus);
-                        }
-                    } catch (final Throwable t) {
-                        t.printStackTrace();
-                        fail.set(true);
-                    }
-                    return null;
-                })
-                .when(issHandler)
-                .catastrophicIssObserver(anyLong(), any());
-
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -256,9 +189,9 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                issHandler);
+                null);
 
-        manager.overridingState(mockState(0L, selfHashes.get(0)));
+        manager.overridingState(mockState(0L, selfHashes.getFirst()));
 
         // Start collecting data for rounds.
         for (long round = 1; round < roundsNonAncient; round++) {
@@ -274,7 +207,7 @@ class ConsensusHashManagerTests {
         final List<RoundHashValidatorTests.NodeHashInfo> operations = new ArrayList<>();
         while (!roundData.isEmpty()) {
             final int index = random.nextInt(roundData.size());
-            operations.add(roundData.get(index).nodeList().remove(0));
+            operations.add(roundData.get(index).nodeList().removeFirst());
             if (roundData.get(index).nodeList().isEmpty()) {
                 roundData.remove(index);
             }
@@ -282,26 +215,43 @@ class ConsensusHashManagerTests {
 
         assertEquals(roundsNonAncient * addressBook.getSize(), operations.size(), "unexpected number of operations");
 
-        for (final RoundHashValidatorTests.NodeHashInfo nodeHashInfo : operations) {
-            final NodeId nodeId = nodeHashInfo.nodeId();
-            manager.handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(
-                    nodeId,
-                    new BasicSoftwareVersion(1),
-                    new StateSignatureTransaction(
-                            nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()))));
-        }
+        operations.stream()
+                .map(nhi -> new ScopedSystemTransaction<>(
+                        nhi.nodeId(),
+                        new BasicSoftwareVersion(1),
+                        new StateSignatureTransaction(nhi.round(), mock(Signature.class), nhi.nodeStateHash())))
+                .forEach(t -> manager.handlePostconsensusSignatures(List.of(t)));
 
         // Shifting after completion should have no side effects
         for (long i = roundsNonAncient; i < 2L * roundsNonAncient - 1; i++) {
             manager.roundCompleted(i);
         }
 
-        assertFalse(fail.get(), "exception thrown in ISS callback");
-        assertEquals(expectedSelfIssCount, issCount.get(), "unexpected number of ISS callbacks");
+        assertEquals(expectedSelfIssCount,
+                manager.getIssList().stream().filter(n -> n.getIssType() == IssType.SELF_ISS).count(),
+                "unexpected number of ISS callbacks");
         assertEquals(
                 expectedCatastrophicIssCount,
-                catastrophicIssCount.get(),
+                manager.getIssList().stream().filter(n -> n.getIssType() == IssType.CATASTROPHIC_ISS).count(),
                 "unexpected number of catastrophic ISS callbacks");
+        manager.getIssList().forEach(n->{
+            final IssType expectedType = switch (expectedRoundStatus.get((int) n.getRound())){
+                case SELF_ISS -> IssType.SELF_ISS;
+                case CATASTROPHIC_ISS -> IssType.CATASTROPHIC_ISS;
+                default -> throw new IllegalStateException("Unexpected value: " + expectedRoundStatus.get((int) n.getRound()));
+            };
+            assertEquals(
+                    expectedType,
+                    n.getIssType(),
+                    "Expected status for round %d to be %s but was %s".formatted(
+                            n.getRound(),
+                            expectedRoundStatus.get((int) n.getRound()),
+                            n.getIssType())
+            );
+        });
+        final Set<Long> observedRounds = new HashSet<>();
+        manager.getIssList().forEach(n-> assertTrue(observedRounds.add(n.getRound()), "rounds should trigger a notification at most once"));
+
     }
 
     /**
@@ -351,8 +301,7 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final AtomicInteger issCount = new AtomicInteger();
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -360,7 +309,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(issCount, true, false));
+                null);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -386,7 +335,7 @@ class ConsensusHashManagerTests {
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()))));
         }
 
-        assertEquals(0, issCount.get(), "all data should have been ignored");
+        assertEquals(0, manager.getIssList().size(), "all data should have been ignored");
 
         // Move forward to the next round. Data should no longer be ignored.
         // Use a different data set so we can know if old data was fully ignored.
@@ -403,7 +352,7 @@ class ConsensusHashManagerTests {
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()))));
         }
 
-        assertEquals(1, issCount.get(), "data should not have been ignored");
+        assertEquals(1, manager.getIssList().size(), "data should not have been ignored");
     }
 
     @Test
@@ -425,8 +374,7 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final AtomicInteger issCount = new AtomicInteger();
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -434,7 +382,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(issCount, true, false));
+                null);
 
         // Start collecting data for rounds.
         // After this method, round 0 will be too old and will not be tracked.
@@ -460,7 +408,7 @@ class ConsensusHashManagerTests {
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()))));
         }
 
-        assertEquals(0, issCount.get(), "all data should have been ignored");
+        assertEquals(0, manager.getIssCount(), "all data should have been ignored");
     }
 
     @Test
@@ -482,8 +430,7 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final AtomicInteger issCount = new AtomicInteger();
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -491,7 +438,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(issCount, false, false));
+                null);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -528,7 +475,7 @@ class ConsensusHashManagerTests {
         // Shift the window even though we have not added enough data for a decision
         manager.roundCompleted(roundsNonAncient);
 
-        assertEquals(0, issCount.get(), "there wasn't enough data submitted to observe the ISS");
+        assertEquals(0, manager.getIssCount(), "there wasn't enough data submitted to observe the ISS");
     }
 
     /**
@@ -580,8 +527,7 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final AtomicInteger issCount = new AtomicInteger();
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -589,7 +535,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(issCount, false, true));
+                null);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -629,7 +575,7 @@ class ConsensusHashManagerTests {
         // But we will have added enough to lead to a catastrophic ISS when the timeout is triggered.
         manager.roundCompleted(roundsNonAncient);
 
-        assertEquals(1, issCount.get(), "shifting should have caused an ISS");
+        assertEquals(1, manager.getIssCount(), "shifting should have caused an ISS");
     }
 
     @Test
@@ -651,8 +597,7 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final AtomicInteger issCount = new AtomicInteger();
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -660,7 +605,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS,
-                mockIssHandler(issCount, false, true));
+                null);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -699,7 +644,7 @@ class ConsensusHashManagerTests {
         // Shifting the window a great distance should not trigger the ISS.
         manager.overridingState(mockState(roundsNonAncient + 100L, randomHash(random)));
 
-        assertEquals(0, issCount.get(), "there wasn't enough data submitted to observe the ISS");
+        assertEquals(0, manager.getIssCount(), "there wasn't enough data submitted to observe the ISS");
     }
 
     @Test
@@ -716,7 +661,7 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManager manager = new ConsensusHashManager(
+        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
                 Time.getCurrent(),
                 addressBook,
@@ -724,7 +669,7 @@ class ConsensusHashManagerTests {
                 new BasicSoftwareVersion(1),
                 false,
                 1,
-                mockIssHandler(null, true, true));
+                null);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -752,6 +697,7 @@ class ConsensusHashManagerTests {
                 }
             }
         }
+        assertEquals(0, manager.getIssCount(), "ISS should have been ignored");
     }
 
     private static ReservedSignedState mockState(final long round, final Hash hash) {
@@ -763,33 +709,5 @@ class ConsensusHashManagerTests {
         Mockito.when(ss.getRound()).thenReturn(round);
         Mockito.when(s.getHash()).thenReturn(hash);
         return rs;
-    }
-
-    private static IssHandler mockIssHandler(
-            final AtomicInteger issCounter, final boolean failOnCatastrophicIss, final boolean failOnSelfIss) {
-        final IssHandler issHandler = mock(IssHandler.class);
-        Mockito.doAnswer(i -> {
-                    if (failOnSelfIss) {
-                        fail("unexpected self ISS");
-                    }
-                    if (issCounter != null) {
-                        issCounter.getAndIncrement();
-                    }
-                    return null;
-                })
-                .when(issHandler)
-                .selfIssObserver(anyLong(), any(), any());
-        Mockito.doAnswer(i -> {
-                    if (failOnCatastrophicIss) {
-                        fail("unexpected catastrophic ISS");
-                    }
-                    if (issCounter != null) {
-                        issCounter.getAndIncrement();
-                    }
-                    return null;
-                })
-                .when(issHandler)
-                .catastrophicIssObserver(anyLong(), any());
-        return issHandler;
     }
 }

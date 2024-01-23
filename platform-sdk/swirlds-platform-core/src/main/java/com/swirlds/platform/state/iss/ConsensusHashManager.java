@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -37,6 +36,8 @@ import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -104,7 +105,6 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param time                         provides the current wall clock time
      * @param addressBook                  the address book for the network
      * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
@@ -115,13 +115,11 @@ public class ConsensusHashManager {
      */
     public ConsensusHashManager( //TODO return iss notification
             @NonNull final PlatformContext platformContext,
-            final Time time,
             final AddressBook addressBook,
             final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
-            final long ignoredRound,
-            final IssHandler issHandler) {//TODO remove this
+            final long ignoredRound) {
 
         Objects.requireNonNull(currentSoftwareVersion);
 
@@ -130,9 +128,9 @@ public class ConsensusHashManager {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
-        lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
-        selfIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
-        catastrophicIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
+        lackingSignaturesRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
+        selfIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
+        catastrophicIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
 
         this.addressBook = addressBook;
         this.currentEpochHash = currentEpochHash;
@@ -224,10 +222,11 @@ public class ConsensusHashManager {
      *
      * @param transactions the signature transactions to handle
      */
-    public void handlePostconsensusSignatures(
+    public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         transactions.forEach(
                 t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()));
+        return null;
     }
 
     /**
@@ -298,10 +297,11 @@ public class ConsensusHashManager {
         }
     }
 
-    public void newStateHashed(@NonNull final ReservedSignedState state) {
+    public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
             stateHashedObserver(state.get().getRound(), state.get().getState().getHash());
         }
+        return null;
     }
 
     /**
@@ -331,13 +331,14 @@ public class ConsensusHashManager {
     /**
      * Called when an overriding state is obtained, i.e. via reconnect or state loading.
      */
-    public void overridingState(@NonNull final ReservedSignedState state) {
+    public List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
             roundCompleted(round);
             stateHashedObserver(round, stateHash);
         }
+        return null;
     }
 
     /**
@@ -345,22 +346,27 @@ public class ConsensusHashManager {
      *
      * @param roundValidator the validator for the round
      */
-    private void checkValidity(final RoundHashValidator roundValidator) {
+    private IssNotification checkValidity(final RoundHashValidator roundValidator) {
         final long round = roundValidator.getRound();
 
-        switch (roundValidator.getStatus()) {
-            case VALID -> {
-                // :)
+        return switch (roundValidator.getStatus()) {
+            case VALID -> null; // :)
+            case SELF_ISS -> {
+                handleSelfIss(roundValidator);
+                yield new IssNotification(round, IssType.SELF_ISS, null);//TODO find other ID
             }
-            case SELF_ISS -> handleSelfIss(roundValidator);
-            case CATASTROPHIC_ISS -> handleCatastrophic(roundValidator);
+            case CATASTROPHIC_ISS -> {
+                handleCatastrophic(roundValidator);
+                yield new IssNotification(round, IssType.CATASTROPHIC_ISS, null);//TODO find other ID
+            }
+            //TODO add other node ISS
             case UNDECIDED -> throw new IllegalStateException(
                     "status is undecided, but method reported a decision, round = " + round);
             case LACK_OF_DATA -> throw new IllegalStateException(
                     "a decision that we lack data should only be possible once time runs out, round = " + round);
             default -> throw new IllegalStateException(
                     "unhandled case " + roundValidator.getStatus() + ", round = " + round);
-        }
+        };
     }
 
     /**
