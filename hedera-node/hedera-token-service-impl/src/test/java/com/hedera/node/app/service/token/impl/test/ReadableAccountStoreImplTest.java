@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -249,5 +251,13 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
 
         //noinspection DataFlowIssue
         Assertions.assertThatThrownBy(() -> subject.contains(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void warmWarmsUnderlyingState(@Mock ReadableKVState<AccountID, Account> accounts) {
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(accounts);
+        final var accountStore = new ReadableAccountStoreImpl(readableStates);
+        accountStore.warm(id);
+        verify(accounts).warm(id);
     }
 }

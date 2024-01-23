@@ -19,14 +19,11 @@ package com.swirlds.platform.test.sync;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
@@ -206,19 +203,15 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync(((GossipEvent) e).getHashedData()));
+        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync((e).getHashedData()));
     }
 
     /**
      * Creates a new instance of {@link ShadowgraphSynchronizer} with the current {@link SyncNode} settings and returns
      * it.
      */
-    public ShadowgraphSynchronizer getSynchronizer() throws InterruptedException {
+    public ShadowgraphSynchronizer getSynchronizer() {
         final Consumer<GossipEvent> eventHandler = event -> {
-            if (event.getHashedData().getHash() == null) {
-                throw new IllegalStateException("expected event to be hashed on the gossip thread");
-            }
-
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
@@ -229,15 +222,14 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
-        final QueueThread<GossipEvent> intakeQueueThread = mock(QueueThread.class);
+        // The original sync tests are incompatible with event filtering.
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("sync.filterLikelyDuplicates", false)
+                .getOrCreateConfig();
 
-        doAnswer((invocation) -> {
-                    final GossipEvent event = invocation.getArgument(0);
-                    eventHandler.accept(event);
-                    return null;
-                })
-                .when(intakeQueueThread)
-                .put(any());
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowgraphSynchronizer(
@@ -246,7 +238,7 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                intakeQueueThread,
+                eventHandler,
                 syncManager,
                 mock(IntakeEventCounter.class),
                 executor,
