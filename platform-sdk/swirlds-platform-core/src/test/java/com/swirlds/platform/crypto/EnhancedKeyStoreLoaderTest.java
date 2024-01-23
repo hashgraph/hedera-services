@@ -16,6 +16,12 @@
 
 package com.swirlds.platform.crypto;
 
+import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
+import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -24,6 +30,12 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.resource.ResourceLoader;
 import com.swirlds.platform.util.BootstrapUtils;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStoreException;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,19 +44,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyStoreException;
-import java.util.Map;
-import java.util.Set;
-
-import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
-import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * A suite of unit tests to verify the functionality of the {@link EnhancedKeyStoreLoader} class.
@@ -79,8 +78,12 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-1")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-2")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-valid")).exists().isNotEmptyDirectory();
-        assertThat(testDataDirectory.resolve("enhanced-invalid-case-1")).exists().isNotEmptyDirectory();
-        assertThat(testDataDirectory.resolve("enhanced-invalid-case-2")).exists().isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
+                .exists()
+                .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
                 .exists()
                 .isNotEmptyFile();
@@ -100,7 +103,8 @@ class EnhancedKeyStoreLoaderTest {
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
     @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid"})
-    void keyStoreLoaderPositiveTest(final String directoryName) throws IOException, KeyLoadingException, KeyStoreException {
+    void keyStoreLoaderPositiveTest(final String directoryName)
+            throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
         final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));

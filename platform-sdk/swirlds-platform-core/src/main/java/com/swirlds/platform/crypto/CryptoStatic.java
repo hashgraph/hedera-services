@@ -316,8 +316,10 @@ public final class CryptoStatic {
      * @return map of key stores
      * @throws KeyStoreException   if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      * @throws KeyLoadingException in an issue occurs while loading keys and certificates
+     * @deprecated use {@link EnhancedKeyStoreLoader} instead.
      */
     @NonNull
+    @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
             @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
