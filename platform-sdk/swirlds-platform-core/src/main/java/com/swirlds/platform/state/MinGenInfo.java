@@ -34,7 +34,7 @@ public record MinGenInfo(long round, long minimumGeneration) {
     /**
      * The maximum permissible size of a list of {@link MinGenInfo} lists as deserialized by
      * {@link #deserializeList(SerializableDataInputStream)}. Is an upper bound for
-     * {@link com.swirlds.platform.consensus.ConsensusConfig#roundsNonAncient()}, choises for this config that exceed
+     * {@link com.swirlds.platform.consensus.ConsensusConfig#roundsNonAncient()}, choices for this config that exceed
      * this value will result in an exception being thrown when deserializeList is called.
      */
     public static int MAX_MINGEN_INFO_SIZE = 32;
