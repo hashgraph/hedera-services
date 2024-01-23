@@ -434,10 +434,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         contractMustBePresent = false;
     }
 
-    public boolean contractMustBePresent() {
-        return contractMustBePresent;
-    }
-
     /**
      * {@inheritDoc}
      */

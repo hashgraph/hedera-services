@@ -87,7 +87,6 @@ class CustomCallOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
             given(frame.isStatic()).willReturn(true);
-            given(updater.contractMustBePresent()).willReturn(false);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected =
@@ -113,7 +112,6 @@ class CustomCallOperationTest {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
             given(addressChecks.isPresent(EIP_1014_ADDRESS, frame)).willReturn(true);
             given(frame.isStatic()).willReturn(true);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected =
@@ -153,8 +151,10 @@ class CustomCallOperationTest {
     void withNoValueRejectsMissingAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            frameUtils
+                    .when(() -> FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags))
+                    .thenReturn(true);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);
@@ -181,8 +181,10 @@ class CustomCallOperationTest {
     void withoutImplicitCreationEnabledRejectsMissingAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            frameUtils
+                    .when(() -> FrameUtils.contractRequired(frame, TestHelpers.EIP_1014_ADDRESS, featureFlags))
+                    .thenReturn(true);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);
