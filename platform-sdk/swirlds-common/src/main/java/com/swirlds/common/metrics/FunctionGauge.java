@@ -20,6 +20,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -41,8 +42,8 @@ public interface FunctionGauge<T> extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return "GAUGE";
+    default MetricType getMetricType() {
+        return MetricType.GAUGE;
     }
 
     /**

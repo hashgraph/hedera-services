@@ -25,6 +25,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
@@ -45,8 +46,8 @@ public interface StatEntry extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return "STAT_ENTRY";
+    default MetricType getMetricType() {
+        return MetricType.STAT_ENTRY;
     }
 
     /**

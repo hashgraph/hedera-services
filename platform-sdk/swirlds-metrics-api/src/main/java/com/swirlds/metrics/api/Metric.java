@@ -78,7 +78,7 @@ public interface Metric {
      *
      * @return the metric type
      */
-    String getMetricType();
+    MetricType getMetricType();
 
     /**
      * The data-type of the {@code Metric}

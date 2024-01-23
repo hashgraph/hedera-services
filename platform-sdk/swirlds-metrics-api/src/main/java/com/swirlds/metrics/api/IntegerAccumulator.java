@@ -40,8 +40,8 @@ public interface IntegerAccumulator extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return MetricTypes.ACCUMULATOR;
+    default MetricType getMetricType() {
+        return MetricType.ACCUMULATOR;
     }
 
     /**

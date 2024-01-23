@@ -25,6 +25,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
@@ -39,8 +40,8 @@ public interface RunningAverageMetric extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return "RUNNING_AVERAGE";
+    default MetricType getMetricType() {
+        return MetricType.RUNNING_AVERAGE;
     }
 
     /**

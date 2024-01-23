@@ -25,6 +25,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
@@ -41,8 +42,8 @@ public interface SpeedometerMetric extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return "SPEEDOMETER";
+    default MetricType getMetricType() {
+        return MetricType.SPEEDOMETER;
     }
 
     /**

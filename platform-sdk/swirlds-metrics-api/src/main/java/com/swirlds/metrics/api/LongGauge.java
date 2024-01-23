@@ -34,8 +34,8 @@ public interface LongGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return MetricTypes.GAUGE;
+    default MetricType getMetricType() {
+        return MetricType.GAUGE;
     }
 
     /**

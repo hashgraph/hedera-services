@@ -22,7 +22,7 @@ import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.MetricTypes;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -38,8 +38,8 @@ public interface DurationGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return MetricTypes.GAUGE;
+    default MetricType getMetricType() {
+        return MetricType.GAUGE;
     }
 
     /**

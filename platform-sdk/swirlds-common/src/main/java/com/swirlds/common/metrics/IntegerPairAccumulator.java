@@ -20,6 +20,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -47,8 +48,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
     };
 
     @Override
-    default String getMetricType() {
-        return "ACCUMULATOR";
+    default MetricType getMetricType() {
+        return MetricType.ACCUMULATOR;
     }
 
     /**

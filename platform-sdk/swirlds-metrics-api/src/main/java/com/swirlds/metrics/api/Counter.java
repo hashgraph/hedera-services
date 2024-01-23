@@ -34,8 +34,8 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default String getMetricType() {
-        return MetricTypes.COUNTER;
+    default MetricType getMetricType() {
+        return MetricType.COUNTER;
     }
 
     /**

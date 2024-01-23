@@ -26,6 +26,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.metrics.api.MetricType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -67,8 +68,8 @@ class IntegerPairAccumulatorTest {
         }
 
         @Override
-        public String getMetricType() {
-            return "ACCUMULATOR";
+        public MetricType getMetricType() {
+            return MetricType.ACCUMULATOR;
         }
 
         @Override
