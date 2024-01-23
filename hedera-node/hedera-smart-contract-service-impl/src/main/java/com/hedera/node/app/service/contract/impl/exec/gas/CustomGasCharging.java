@@ -138,20 +138,17 @@ public class CustomGasCharging {
     }
 
     /**
-     * Tries to charge gas all of the gas provided for the given transaction based on the pre-fetched sender accountID,
+     * Tries to charge intrinsic gas for the given transaction based on the pre-fetched sender accountID,
      * within the given context and world updater.  This is used when transaction are aborted due to an exception check
      * failure before the transaction has started execution in the EVM.
-     **
-     * <p>Even if there are no gas charges, still returns the intrinsic gas cost of the transaction.
      *
      * @param sender  the sender accountID
      * @param context the context of the transaction, including the network gas price
      * @param worldUpdater the world updater for the transaction
      * @param transaction the transaction to charge gas for
-     * @return the result of the gas charging
      * @throws HandleException if the gas charging fails for any reason
      */
-    public GasCharges chargeGasForAbortedTransaction(
+    public void chargeGasForAbortedTransaction(
             @NonNull final AccountID sender,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
@@ -161,8 +158,9 @@ public class CustomGasCharging {
         requireNonNull(worldUpdater);
         requireNonNull(transaction);
 
-        worldUpdater.collectFee(sender, transaction.gasCostGiven(context.gasPrice()));
-        return new GasCharges(transaction.gasLimit(), 0L);
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
+
+        worldUpdater.collectFee(sender, intrinsicGas);
     }
 
     private void chargeWithOnlySender(

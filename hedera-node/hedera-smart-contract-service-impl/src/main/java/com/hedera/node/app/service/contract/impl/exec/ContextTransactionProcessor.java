@@ -135,7 +135,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         } catch (HandleException e) {
             if (context.body().hasContractCall()) {
                 // Return a HederaEvmTransaction that represents the error in order to charge fees to the sender
-                return hevmTransactionFactory.fromException(context.body().contractCallOrThrow(), e);
+                return hevmTransactionFactory.fromContractCallException(
+                        context.body().contractCallOrThrow(), e);
             }
             throw e;
         }

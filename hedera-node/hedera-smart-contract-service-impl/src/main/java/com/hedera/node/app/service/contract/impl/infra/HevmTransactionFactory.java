@@ -244,7 +244,7 @@ public class HevmTransactionFactory {
      * @param exception the {@link Exception} to wrap
      * @return the  {@link HederaEvmTransaction} containing the exception
      */
-    public HederaEvmTransaction fromException(
+    public HederaEvmTransaction fromContractCallException(
             @NonNull final ContractCallTransactionBody body, HandleException exception) {
         return new HederaEvmTransaction(
                 AccountID.DEFAULT,

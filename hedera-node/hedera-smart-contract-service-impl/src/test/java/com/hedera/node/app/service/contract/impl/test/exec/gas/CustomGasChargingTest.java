@@ -377,6 +377,17 @@ class CustomGasChargingTest {
         verify(worldUpdater).collectFee(RELAYER_ID, relayerGasCost);
     }
 
+    @Test
+    void chargeGasForAbortedTransaction() {
+        givenWellKnownIntrinsicGasCost();
+        subject.chargeGasForAbortedTransaction(
+                SENDER_ID,
+                wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                wellKnownHapiCall());
+        verify(worldUpdater).collectFee(SENDER_ID, TestHelpers.INTRINSIC_GAS);
+    }
+
     private void givenWellKnownIntrinsicGasCost() {
         givenWellKnownIntrinsicGasCost(false);
     }
