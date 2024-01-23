@@ -2271,7 +2271,10 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someErc721IsApprovedForAllScenariosPass", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "someErc721IsApprovedForAllScenariosPass",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)

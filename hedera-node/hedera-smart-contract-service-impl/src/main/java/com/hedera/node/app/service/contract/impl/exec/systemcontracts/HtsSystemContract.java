@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -108,16 +110,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
 
                 if (responseCode == SUCCESS) {
-                    final var output = pricedResult.fullResult().result().getOutput();
-                    // don't externalize if result state is revert or exceptional halt
-                    if (pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT)
-                            || pricedResult
-                                    .fullResult()
-                                    .result()
-                                    .getState()
-                                    .equals(MessageFrame.State.EXCEPTIONAL_HALT)) {
-                        return pricedResult.fullResult();
-                    }
                     enhancement
                             .systemOperations()
                             .externalizeResult(
@@ -157,6 +149,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     private static FullResult haltHandleException(final HandleException handleException, long remainingGas) {
         if (handleException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
             return haltResult(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS, remainingGas);
+        }
+        if (handleException.getStatus().equals(INVALID_TOKEN_ID)) {
+            return haltResult(HederaExceptionalHaltReason.NOT_SUPPORTED, remainingGas);
         }
         throw handleException;
     }

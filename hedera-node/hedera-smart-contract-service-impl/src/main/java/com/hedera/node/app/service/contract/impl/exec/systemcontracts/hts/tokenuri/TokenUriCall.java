@@ -16,18 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -51,12 +47,6 @@ public class TokenUriCall extends AbstractNftViewCall {
      */
     @Override
     protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
-        requireNonNull(token);
-        // #10568 - We add this check to match mono behavior
-        if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            return haltResult(HederaExceptionalHaltReason.INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
-        }
-
         String metadata;
         if (nft != null) {
             metadata = new String(nft.metadata().toByteArray());
@@ -65,13 +55,5 @@ public class TokenUriCall extends AbstractNftViewCall {
         }
         return successResult(
                 TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
-    }
-
-    @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
-        requireNonNull(token);
-        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
-
-        return resultOfViewingNft(token, nft);
     }
 }

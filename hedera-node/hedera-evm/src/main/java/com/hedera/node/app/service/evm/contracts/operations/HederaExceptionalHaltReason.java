@@ -55,8 +55,6 @@ public class HederaExceptionalHaltReason {
     public static final ExceptionalHaltReason INVALID_FEE_SUBMITTED = HederaExceptionalHalt.INVALID_FEE_SUBMITTED;
 
     public static final ExceptionalHaltReason NOT_SUPPORTED = HederaExceptionalHalt.NOT_SUPPORTED;
-    public static final ExceptionalHaltReason INVALID_NFT_ID = HederaExceptionalHalt.INVALID_NFT_ID;
-    public static final ExceptionalHaltReason INVALID_TOKEN_ID = HederaExceptionalHalt.INVALID_TOKEN_ID;
 
     enum HederaExceptionalHalt implements ExceptionalHaltReason {
         INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
@@ -68,10 +66,7 @@ public class HederaExceptionalHaltReason {
         ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
         FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
         NOT_SUPPORTED("Not supported."),
-        INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call."),
-
-        INVALID_NFT_ID("Invalid NFT id."),
-        INVALID_TOKEN_ID("Invalid token id.");
+        INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call.");
 
         final String description;
 

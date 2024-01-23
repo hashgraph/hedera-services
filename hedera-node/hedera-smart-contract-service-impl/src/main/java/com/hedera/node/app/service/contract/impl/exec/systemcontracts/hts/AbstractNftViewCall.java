@@ -16,15 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -49,12 +50,12 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
-        if (nft == null) {
-            return haltResult(HederaExceptionalHaltReason.INVALID_NFT_ID, gasCalculator.viewGasRequirement());
-        } else {
-            return resultOfViewingNft(token, nft);
+        // match mono - HTSPrecompiledContract#checkNFT
+        if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TOKEN_ID);
         }
+        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
+        return resultOfViewingNft(token, nft);
     }
 
     /**
