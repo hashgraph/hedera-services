@@ -51,6 +51,7 @@ import java.util.List;
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
+ * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -70,7 +71,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
-        @NonNull TaskScheduler<Void> shadowgraphScheduler) {
+        @NonNull TaskScheduler<Void> shadowgraphScheduler,
+        @NonNull TaskScheduler<ConsensusRound> consensusRoundHandlerScheduler,
+        @NonNull TaskScheduler<Void> eventStreamManagerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -204,6 +207,22 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("shadowgraph")
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("consensusRoundHandler")
+                        .withType(config.consensusRoundHandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.consensusRoundHandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder()
+                                .withUnhandledTaskMetricEnabled(true)
+                                .withBusyFractionMetricsEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("eventStreamManager")
+                        .withType(config.eventStreamManagerSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventStreamManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
                         .build()

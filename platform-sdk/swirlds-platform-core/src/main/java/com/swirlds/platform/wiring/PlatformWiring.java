@@ -23,6 +23,8 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -47,9 +49,11 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -58,9 +62,11 @@ import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -95,11 +101,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-
-    /**
-     * The object counter that spans the event hasher and the post hash collector.
-     */
-    private final ObjectCounter hashingObjectCounter;
+    private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
+    private final EventStreamManagerWiring eventStreamManagerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -115,7 +118,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
         // This counter is the on-ramp for the event hasher, and the off-ramp for the post hash collector.
-        hashingObjectCounter = new BackpressureObjectCounter(
+        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
                 "hashingObjectCounter",
                 platformContext
                         .getConfiguration()
@@ -146,8 +149,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
-
         shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
+        consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
+        eventStreamManagerWiring = EventStreamManagerWiring.create(schedulers.eventStreamManagerScheduler());
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -160,7 +164,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 linkedEventIntakeWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
-                stateSignatureCollectorWiring);
+                stateSignatureCollectorWiring,
+                consensusRoundHandlerWiring);
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
@@ -222,6 +227,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
         linkedEventIntakeWiring.keystoneEventSequenceNumberOutput().solderTo(pcesWriterWiring.flushRequestInputWire());
+        linkedEventIntakeWiring.consensusRoundOutput().solderTo(consensusRoundHandlerWiring.roundInput());
+        linkedEventIntakeWiring.consensusEventsOutput().solderTo(eventStreamManagerWiring.eventsInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
@@ -282,6 +289,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
      * @param stateSignatureCollector the signed state manager to bind
+     * @param consensusRoundHandler   the consensus round handler to bind
+     * @param eventStreamManager      the event stream manager to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -300,7 +309,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateSignatureCollector stateSignatureCollector) {
+            @NonNull final StateSignatureCollector stateSignatureCollector,
+            @NonNull final ConsensusRoundHandler consensusRoundHandler,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -319,6 +330,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.bind(eventCreationManager);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
+        consensusRoundHandlerWiring.bind(consensusRoundHandler);
+        eventStreamManagerWiring.bind(eventStreamManager);
     }
 
     /**
@@ -463,6 +476,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Update the running hash for all components that need it.
+     *
+     * @param runningHashUpdate the object containing necessary information to update the running hash
+     */
+    public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
+        eventStreamManagerWiring.runningHashUpdateInput().inject(runningHashUpdate);
+        consensusRoundHandlerWiring.runningHashUpdateInput().inject(runningHashUpdate);
+    }
+
+    /**
      * Inject a new non-ancient event window into all components that need it.
      * <p>
      * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
@@ -483,6 +506,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void flushIntakePipeline() {
         platformCoordinator.flushIntakePipeline();
+    }
+
+    /**
+     * Flush the consensus round handler.
+     */
+    public void flushConsensusRoundHandler() {
+        consensusRoundHandlerWiring.flushRunnable().run();
     }
 
     /**

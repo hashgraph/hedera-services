@@ -17,7 +17,6 @@
 package com.hedera.node.app.state.logging;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandler.THREAD_CONS_NAME;
 
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -61,7 +60,8 @@ public final class TransactionStateLogger {
     /** The logger we are using for Transaction State log */
     private static final Logger logger = LogManager.getLogger(TransactionStateLogger.class);
     /** The name of the handle transaction thread */
-    private static final String HANDLE_THREAD_NAME = "<" + PLATFORM_THREAD_POOL_NAME + ": " + THREAD_CONS_NAME;
+    // TODO fix this
+    private static final String HANDLE_THREAD_NAME = "<" + PLATFORM_THREAD_POOL_NAME + ": " + "TODO FIX THIS";
 
     /**
      * Log the start of a round if it contains any non-system transactions.

@@ -122,7 +122,7 @@ public class ConsensusHandlingMetrics {
 
     /**
      * @return the cycle timing stat that keeps track of how much time is spent in various parts of {@link
-     *        ConsensusRoundHandler#consensusRound(ConsensusRound)}
+     *        ConsensusRoundHandler#handleConsensusRound(ConsensusRound)}
      */
     public CycleTimingStat getConsCycleStat() {
         return consensusCycleTiming;
@@ -130,7 +130,7 @@ public class ConsensusHandlingMetrics {
 
     /**
      * @return the cycle timing stat that keeps track of how much time is spent creating a new signed state in {@link
-     *        ConsensusRoundHandler#consensusRound(ConsensusRound)}
+     *        ConsensusRoundHandler#handleConsensusRound(ConsensusRound)}
      */
     public CycleTimingStat getNewSignedStateCycleStat() {
         return newSignedStateCycleTiming;

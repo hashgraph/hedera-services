@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -34,6 +35,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -71,7 +73,9 @@ class PlatformWiringTests {
                 mock(PcesSequencer.class),
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
-                mock(StateSignatureCollector.class));
+                mock(StateSignatureCollector.class),
+                mock(ConsensusRoundHandler.class),
+                mock(EventStreamManager.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

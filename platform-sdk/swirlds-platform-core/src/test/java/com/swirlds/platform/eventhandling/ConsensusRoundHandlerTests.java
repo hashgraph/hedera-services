@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -114,8 +112,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
-                getStaticThreadManager(),
-                selfId,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,
@@ -128,10 +124,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final int numRounds = 500;
         final ConsensusRound round = mock(ConsensusRound.class);
 
-        // Start the consensus handler and add events to the queue for it to handle
-        consensusRoundHandler.start();
         for (int i = 0; i < numRounds; i++) {
-            consensusRoundHandler.consensusRound(round);
+            consensusRoundHandler.handleConsensusRound(round);
         }
 
         // Make the separate thread invoke clear()
@@ -150,8 +144,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         assertTrue(
                 numEventsHandled.get() < maxRoundsInBuffer * 2,
                 "Consensus handler should not enter another doWork() cycle after prepareForReconnect() is called");
-
-        assertEquals(0, consensusRoundHandler.getRoundsInQueue(), "Consensus queue should be empty");
     }
 
     /**
@@ -161,7 +153,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     void testConsensusEventStream() {
         final SwirldState swirldState = new DummySwirldState();
         initConsensusHandler(swirldState);
-        testEventStream(eventStreamManager, consensusRoundHandler::consensusRound);
+        testEventStream(eventStreamManager, consensusRoundHandler::handleConsensusRound);
     }
 
     /**
@@ -211,8 +203,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
-                getStaticThreadManager(),
-                selfId,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,
@@ -221,6 +211,5 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
-        consensusRoundHandler.start();
     }
 }

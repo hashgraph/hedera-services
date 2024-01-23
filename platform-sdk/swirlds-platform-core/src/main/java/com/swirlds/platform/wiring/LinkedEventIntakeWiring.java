@@ -35,6 +35,8 @@ import java.util.List;
  * @param eventInput                        the input wire for events to be added to the hashgraph
  * @param pauseInput                        the input wire for pausing the linked event intake
  * @param consensusRoundOutput              the output wire for consensus rounds
+ * @param consensusEventsOutput             the output wire for consensus events, transformed from the consensus round
+ *                                          output
  * @param nonAncientEventWindowOutput       the output wire for the {@link NonAncientEventWindow}. This output is
  *                                          transformed from the consensus round output
  * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
@@ -44,6 +46,7 @@ public record LinkedEventIntakeWiring(
         @NonNull InputWire<EventImpl> eventInput,
         @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
+        @NonNull OutputWire<List<EventImpl>> consensusEventsOutput,
         @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
         @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
         @NonNull Runnable flushRunnable) {
@@ -62,10 +65,9 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
                 taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
+                consensusRoundOutput.buildTransformer("getEvents", "events", ConsensusRound::getConsensusEvents),
                 consensusRoundOutput.buildTransformer(
-                        "getNonAncientEventWindow",
-                        "rounds",
-                        consensusRound -> consensusRound.getNonAncientEventWindow()),
+                        "getNonAncientEventWindow", "rounds", ConsensusRound::getNonAncientEventWindow),
                 taskScheduler.buildSecondaryOutputWire(),
                 taskScheduler::flush);
     }
