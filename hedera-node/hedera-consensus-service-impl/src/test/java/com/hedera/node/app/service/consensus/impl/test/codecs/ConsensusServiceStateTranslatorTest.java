@@ -26,6 +26,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.swirlds.merkle.map.MerkleMap;
@@ -136,6 +137,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
     }
 
     private void assertMatch(MerkleTopic expected, MerkleTopic actual) {
+        assertEquals(expected.getKey(), actual.getKey());
         assertEquals(expected.getMemo(), actual.getMemo());
         assertEquals(expected.getAdminKey(), actual.getAdminKey());
         assertEquals(expected.getSubmitKey(), actual.getSubmitKey());
@@ -150,6 +152,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
     private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getExpectedMonoTopic() {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
+        merkleTopic.setKey(EntityNum.fromLong(topicId.topicNum()));
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
                 new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
@@ -172,6 +175,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
     private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getExpectedMonoTopicNoKeys() {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
+        merkleTopic.setKey(EntityNum.fromLong(topicId.topicNum()));
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
                 new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
@@ -190,6 +194,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
             com.hedera.node.app.service.mono.legacy.core.jproto.JKey submitKey) {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
+        merkleTopic.setKey(EntityNum.fromLong(topicId.topicNum()));
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
                 new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
