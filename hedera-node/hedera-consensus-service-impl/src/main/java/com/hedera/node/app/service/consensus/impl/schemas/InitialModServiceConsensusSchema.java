@@ -68,7 +68,7 @@ public class InitialModServiceConsensusSchema extends Schema {
             ConsensusServiceStateTranslator.migrateFromMerkleToPbj(fs, ts);
             if (ts.isModified()) ((WritableKVStateBase) ts).commit();
 
-            log.info("BBM: finished consensus");
+            log.info("BBM: finished consensus service migration");
         } else {
             log.warn("BBM: no consensus 'from' state found");
         }

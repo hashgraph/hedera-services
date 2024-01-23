@@ -164,7 +164,7 @@ public class InitialModFileGenesisSchema extends Schema {
         if (fss != null && fss.get() != null) {
             var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
-            logger.info("BBM: running file migration...");
+            logger.info("BBM: Running file service migration...");
             var allFileIds = extractFileIds(fss.get());
             var migratedFileIds = new ArrayList<Long>();
             allFileIds.forEach(fromFileIdRaw -> {
@@ -184,7 +184,7 @@ public class InitialModFileGenesisSchema extends Schema {
 
             if (ts.isModified()) ((WritableKVStateBase) ts).commit();
 
-            logger.info("BBM:finished file migration. Migrated files: " + migratedFileIds);
+            logger.info("BBM: finished file service migration. Migrated fileIds are : " + migratedFileIds);
         } else {
             logger.warn("BBM: no file 'from' state found");
         }
