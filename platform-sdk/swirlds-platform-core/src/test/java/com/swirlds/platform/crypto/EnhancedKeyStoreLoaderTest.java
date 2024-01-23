@@ -46,6 +46,9 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+/**
+ * A suite of unit tests to verify the functionality of the {@link EnhancedKeyStoreLoader} class.
+ */
 @Execution(ExecutionMode.CONCURRENT)
 class EnhancedKeyStoreLoaderTest {
 
@@ -61,6 +64,10 @@ class EnhancedKeyStoreLoaderTest {
         Files.move(tempDir, testDataDirectory, REPLACE_EXISTING);
     }
 
+    /**
+     * The purpose of this test is to validate the test data directory structure and the correctness of the
+     * {@link BeforeEach} temporary directory setup. This test is not designed to test the key store loader.
+     */
     @Test
     @DisplayName("Validate Test Data")
     void validateTestDataDirectory() {
@@ -81,6 +88,15 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("settings.txt")).exists().isNotEmptyFile();
     }
 
+    /**
+     * The Positive tests are designed to test the case where the key store loader is able to scan the key directory,
+     * load all public and private keys, pass the verification process, and inject the keys into the address book.
+     *
+     * @param directoryName the directory name containing the test data being used to cover a given test case.
+     * @throws IOException         if an I/O error occurs during test setup.
+     * @throws KeyLoadingException if an error occurs while loading the keys; this should never happen.
+     * @throws KeyStoreException   if an error occurs while loading the keys; this should never happen.
+     */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
     @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid"})
@@ -119,6 +135,13 @@ class EnhancedKeyStoreLoaderTest {
         }
     }
 
+    /**
+     * The Negative Type 1 tests are designed to test the case where the key store loader is able to scan the key
+     * directory, but one or more public keys are either corrupt or missing.
+     *
+     * @param directoryName the directory name containing the test data being used to cover a given test case.
+     * @throws IOException if an I/O error occurs during test setup.
+     */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Negative Type 1 Test")
     @ValueSource(strings = {"legacy-invalid-case-1", "hybrid-invalid-case-1", "enhanced-invalid-case-1"})
@@ -136,6 +159,13 @@ class EnhancedKeyStoreLoaderTest {
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 
+    /**
+     * The Negative Type 2 tests are designed to test the case where the key store loader is able to scan the key
+     * directory, but one or more private keys are either corrupt or missing.
+     *
+     * @param directoryName the directory name containing the test data being used to cover a given test case.
+     * @throws IOException if an I/O error occurs during test setup.
+     */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Negative Type 2 Test")
     @ValueSource(strings = {"legacy-invalid-case-2", "hybrid-invalid-case-2", "enhanced-invalid-case-2"})
@@ -153,6 +183,14 @@ class EnhancedKeyStoreLoaderTest {
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 
+    /**
+     * A helper method used to load the {@code settings.txt} configuration file and override the default key directory
+     * path with the provided key directory path.
+     *
+     * @param keyDirectory the key directory path to use.
+     * @return a fully initialized configuration object with the key path overridden.
+     * @throws IOException if an I/O error occurs while loading the configuration file.
+     */
     private Configuration configure(final Path keyDirectory) throws IOException {
         ConfigurationBuilder builder = ConfigurationBuilder.create();
         ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
@@ -163,6 +201,11 @@ class EnhancedKeyStoreLoaderTest {
         return builder.build();
     }
 
+    /**
+     * A helper method used to load the {@code config.txt} configuration file and extract the address book.
+     *
+     * @return the fully initialized address book.
+     */
     private AddressBook addressBook() {
         return loadConfigFile(testDataDirectory.resolve("config.txt")).getAddressBook();
     }
