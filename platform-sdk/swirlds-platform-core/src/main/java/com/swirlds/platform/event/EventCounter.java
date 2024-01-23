@@ -48,16 +48,16 @@ public class EventCounter {
     }
 
     /**
-     * Called when an event is created
+     * Called when an event is linked.
      */
-    public static void eventCreated() {
+    public static void incrementLinkedEventCount() {
         numEventsInMemory.incrementAndGet();
     }
 
     /**
-     * Called when an event is cleared, to decrement the count of how many uncleared events are in memory
+     * Called when a linked event is cleared, to decrement the count of how many uncleared events are in memory
      */
-    public static void eventCleared() {
+    public static void decrementLinkedEventCount() {
         numEventsInMemory.decrementAndGet();
     }
 
