@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.platform.DefaultRunningAverageMetric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;

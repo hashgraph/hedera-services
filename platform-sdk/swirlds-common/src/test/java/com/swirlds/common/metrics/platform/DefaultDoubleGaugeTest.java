@@ -16,17 +16,17 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.metrics.DoubleGauge;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

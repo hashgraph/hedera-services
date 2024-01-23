@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_5_3;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.stats.AverageStat;

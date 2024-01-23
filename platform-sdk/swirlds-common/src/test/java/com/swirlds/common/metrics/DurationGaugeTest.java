@@ -16,18 +16,18 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.DataType.FLOAT;
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.metrics.MetricType.GAUGE;
+import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.metrics.api.MetricType;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,7 @@ class DurationGaugeTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(GAUGE);
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.GAUGE);
     }
 
     @Test

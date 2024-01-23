@@ -25,7 +25,7 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
