@@ -946,14 +946,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
                 }
 
-                final var childTxInfo = new TransactionInfo(
-                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
                 if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
                     continue;
                 }
                 if (snapshotsIfNeeded == null) {
                     snapshotsIfNeeded = getUsageSnapshots();
                 }
+
+                final var childTxInfo = new TransactionInfo(
+                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
                 if (shouldThrottleTxn(childTxInfo)) {
                     isAllowed = false;
                 }
