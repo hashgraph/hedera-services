@@ -18,19 +18,27 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.state.WritableKVState;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -162,5 +170,15 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         // Assert the NFT is removed
         assertNull(writableNftStore.get(nftToRemove));
+    }
+
+    @Test
+    void warmWarmsUnderlyingState(@Mock WritableKVState<NftID, Nft> nfts) {
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(nfts);
+        final var nftStore = new WritableNftStore(writableStates);
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
+        nftStore.warm(id);
+        verify(nfts).warm(id);
     }
 }

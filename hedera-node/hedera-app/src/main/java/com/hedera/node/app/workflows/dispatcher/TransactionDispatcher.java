@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WarmupContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -100,12 +101,12 @@ public class TransactionDispatcher {
      * @param context the context of the warmup workflow
      * @throws NullPointerException if {@code context} is {@code null}
      */
-    public void dispatchWarmup(@NonNull final PreHandleContext context) {
+    public void dispatchWarmup(@NonNull final WarmupContext context) {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         try {
             final var handler = getHandler(context.body());
-            handler.warmUp(context);
+            handler.warm(context);
         } catch (UnsupportedOperationException ex) {
             // do nothing, the handler should have been used before we reach this point
         }
