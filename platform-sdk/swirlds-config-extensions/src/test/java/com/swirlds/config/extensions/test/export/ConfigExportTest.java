@@ -18,7 +18,8 @@ package com.swirlds.config.extensions.test.export;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.config.api.ConfigData;
+import com.ext.swirlds.config.extensions.test.ConfigExportTestConstants.ConfigExportTestRecord;
+import com.ext.swirlds.config.extensions.test.ConfigExportTestConstants.PrefixedConfigExportTestRecord;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.export.ConfigExport;
@@ -69,9 +70,4 @@ class ConfigExportTest {
                         .matches("^unmappedProperty, anotherNotPresentValue\\s*\\[NOT USED IN RECORD]$"));
     }
 
-    @ConfigData
-    public record ConfigExportTestRecord(String property) {}
-
-    @ConfigData("prefix")
-    public record PrefixedConfigExportTestRecord(String property) {}
 }
