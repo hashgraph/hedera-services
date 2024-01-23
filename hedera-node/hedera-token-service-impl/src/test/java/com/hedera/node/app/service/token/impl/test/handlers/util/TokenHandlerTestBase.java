@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -84,6 +85,8 @@ public class TokenHandlerTestBase {
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
+    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
+    protected final Key metadataKey = Key.DEFAULT;
     protected final String tokenSymbol = "TT";
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
@@ -218,7 +221,9 @@ public class TokenHandlerTestBase {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                Collections.emptyList(),
+                metadata,
+                metadataKey);
     }
 
     protected Token createToken() {

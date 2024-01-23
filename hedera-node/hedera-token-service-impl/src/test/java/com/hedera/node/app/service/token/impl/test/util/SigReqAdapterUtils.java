@@ -111,6 +111,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
+    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
 
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
@@ -429,6 +430,8 @@ public class SigReqAdapterUtils {
                 token.isPaused(),
                 token.accountsAreFrozenByDefault(),
                 token.accountsAreFrozenByDefault(),
-                pbjFees);
+                pbjFees,
+                Bytes.wrap(new byte[] {0}),
+                Key.DEFAULT);
     }
 }

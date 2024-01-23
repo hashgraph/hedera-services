@@ -23,7 +23,7 @@ plugins {
 
 description = "Hedera API"
 
-val hapiProtoBranchOrTag = "add-first-cons-of-current-block-to-info"
+val hapiProtoBranchOrTag = "metadata-hips-646-657-765"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 
 if (!gradle.startParameter.isOffline) {

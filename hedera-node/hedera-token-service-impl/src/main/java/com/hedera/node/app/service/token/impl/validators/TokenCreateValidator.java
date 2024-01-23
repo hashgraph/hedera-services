@@ -127,7 +127,8 @@ public class TokenCreateValidator {
                 op.hasSupplyKey(), op.supplyKey(),
                 op.hasFreezeKey(), op.freezeKey(),
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey());
+                op.hasPauseKey(), op.pauseKey(),
+                op.hasMetadataKey(), op.metadataKey());
         // validate custom fees length
         validateTrue(
                 op.customFeesOrElse(emptyList()).size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);

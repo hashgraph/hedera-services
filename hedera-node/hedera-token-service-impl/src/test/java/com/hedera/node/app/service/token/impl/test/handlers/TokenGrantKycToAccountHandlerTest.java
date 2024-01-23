@@ -38,6 +38,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -62,6 +63,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -157,7 +159,9 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 false,
                 false,
                 false,
-                Collections.emptyList());
+                Collections.emptyList(),
+                Bytes.wrap(new byte[] {0}),
+                Key.DEFAULT);
         final var readableState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(TokenID.newBuilder().tokenNum(tokenNum).build(), storedToken)
                 .build();

@@ -125,7 +125,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final Key treasuryKey = C_COMPLEX_KEY;
+    protected final Key treasuryKey = A_COMPLEX_KEY;
+    protected final Key metadataKey = Key.DEFAULT;
     protected final Key EMPTY_KEYLIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     /* ---------- Node IDs */
@@ -290,6 +291,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
+    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
     protected final long expirationTime = 1_234_567L;
     protected final long autoRenewSecs = 100L;
     protected static final long payerBalance = 10_000L;
@@ -816,7 +818,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                customFees);
+                customFees,
+                metadata,
+                metadataKey);
     }
 
     protected Token givenValidNonFungibleToken(boolean hasKyc) {
