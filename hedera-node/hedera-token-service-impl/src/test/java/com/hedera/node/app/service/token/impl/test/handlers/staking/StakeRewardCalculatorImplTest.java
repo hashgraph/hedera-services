@@ -82,11 +82,8 @@ class StakeRewardCalculatorImplTest {
 
     @Test
     void zeroRewardsForDeletedNodeStakeInfo() {
-        final var reward = subject.computeRewardFromDetails(
-                Account.newBuilder().build(),
-                stakingNodeInfo.copyBuilder().deleted(true).build(),
-                321,
-                123);
+        final var stakingInfo = StakingNodeInfo.newBuilder().deleted(true).build();
+        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), stakingInfo, 321, 123);
         assertEquals(0, reward);
     }
 
