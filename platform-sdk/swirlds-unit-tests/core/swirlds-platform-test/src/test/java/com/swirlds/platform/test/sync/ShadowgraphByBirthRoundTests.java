@@ -47,8 +47,6 @@ import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,7 +60,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -387,8 +384,8 @@ class ShadowgraphByBirthRoundTests {
 
         final long expireBelowBirthRound = random.nextInt((int) maxBirthRound) + 2;
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                1 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
+                1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateNonExpiredEventWindow(eventWindow);
@@ -687,7 +684,7 @@ class ShadowgraphByBirthRoundTests {
         }
         r0 = shadowGraph.reserve();
         assertEquals(
-                0, r0.getReservedIndicator(), "The first reservation after clearing should reserve birth round 0.");
+                1, r0.getReservedIndicator(), "The first reservation after clearing should reserve birth round 1.");
         assertEquals(
                 1, r0.getReservationCount(), "The first reservation after clearing should have a single reservation.");
     }
@@ -749,44 +746,5 @@ class ShadowgraphByBirthRoundTests {
                 numTipsBeforeExpiry - tipsToExpire.size(),
                 shadowGraph.getTips().size(),
                 "Shadow graph tips should be included in expiry.");
-    }
-
-    @Test
-    @Disabled("It does not make sense to run this test in CCI since the outcome can vary depending on the load."
-            + "The purpose of this test is to tune the performance of this method by running the test locally.")
-    void findAncestorsPerformance() throws ShadowgraphInsertionException {
-        final int numEvents = 200_000;
-        final int numNodes = 21;
-        final int numRuns = 10;
-
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
-        for (int i = 0; i < numEvents; i++) {
-            shadowGraph.addEvent(emitter.emitEvent());
-        }
-
-        long millisMin = Integer.MAX_VALUE;
-        for (int i = 0; i < numRuns; i++) {
-            final List<ShadowEvent> tips = shadowGraph.getTips();
-            final Instant start = Instant.now();
-            final Set<ShadowEvent> ancestors = shadowGraph.findAncestors(
-                    tips, s -> s.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) >= 0);
-            final long millis = start.until(Instant.now(), ChronoUnit.MILLIS);
-            System.out.printf("Run %d took %d ms\n", i, millis);
-
-            millisMin = Math.min(millis, millisMin);
-        }
-        double eventsPerSec = numEvents / (millisMin / 1000d);
-
-        System.out.println("Min time taken: " + millisMin);
-        System.out.printf("Events/sec: %,.3f\n", eventsPerSec);
-
-        assertTrue(
-                eventsPerSec > 5_000_000,
-                "this was the performance of this test the last time it was run on a Dell Precision 5540");
     }
 }
