@@ -51,7 +51,7 @@ public record DifferingEntries(
             return FirstEncounteredDifference.FIRST_IS_MISSING;
         } else if (secondEntry == null) {
             return FirstEncounteredDifference.SECOND_IS_MISSING;
-        } else if (firstEntry.consensusTime() != secondEntry.consensusTime()) {
+        } else if (!firstEntry.consensusTime().equals(secondEntry.consensusTime())) {
             return FirstEncounteredDifference.CONSENSUS_TIME_MISMATCH;
         } else if (!firstEntry.parts().wrapper().equals(secondEntry.parts().wrapper())) {
             return FirstEncounteredDifference.TRANSACTION_MISMATCH;

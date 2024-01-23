@@ -16,15 +16,20 @@
 
 package com.hedera.services.rcdiff;
 
+import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.CONSENSUS_TIME_MISMATCH;
+import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
 
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
+import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
@@ -34,6 +39,15 @@ public class RcDiff implements Callable<Integer> {
         int rc = new CommandLine(new RcDiff()).execute(args);
         System.exit(rc);
     }
+
+    @CommandLine.Spec
+    CommandLine.Model.CommandSpec spec;
+
+    @CommandLine.Option(
+            names = {"-m", "--max-diffs-to-export"},
+            paramLabel = "max diffs to export",
+            defaultValue = "10")
+    Long maxDiffsToExport;
 
     @CommandLine.Option(
             names = {"-e", "--expected-stream"},
@@ -53,13 +67,33 @@ public class RcDiff implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        final var diffs = findDifferencesBetweenV6(expectedStreamsLoc, actualStreamsLoc, null);
+        throwOnInvalidCommandLine();
+        final OrderedComparison.RecordDiffSummarizer recordDiffSummarizer = (a, b) -> {
+            try {
+                exactMatch(a, b, () -> "");
+            } catch (Throwable t) {
+                return t.getMessage();
+            }
+            throw new AssertionError("No difference to summarize");
+        };
+        final var diffs = findDifferencesBetweenV6(expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer);
         if (diffs.isEmpty()) {
             System.out.println("These streams are identical ☺️");
             return 0;
         } else {
             dumpDiffs(diffs);
             return 1;
+        }
+    }
+
+    private void throwOnInvalidCommandLine() {
+        if (actualStreamsLoc == null) {
+            throw new picocli.CommandLine.ParameterException(
+                    spec.commandLine(), "Please specify an actual stream location");
+        }
+        if (expectedStreamsLoc == null) {
+            throw new picocli.CommandLine.ParameterException(
+                    spec.commandLine(), "Please specify an expected stream location");
         }
     }
 
@@ -82,6 +116,17 @@ public class RcDiff implements Callable<Integer> {
                 .append(") ----\n");
         if (diff.summary() != null) {
             sb.append(diff.summary()).append("\n");
+        }
+        if (firstEncounteredDifference == CONSENSUS_TIME_MISMATCH) {
+            sb.append("➡️  Expected ")
+                    .append(Objects.requireNonNull(diff.firstEntry()).consensusTime())
+                    .append(" but was ")
+                    .append(Objects.requireNonNull(diff.secondEntry()).consensusTime());
+        } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH) {
+            sb.append("➡️  Expected ")
+                    .append(Objects.requireNonNull(diff.firstEntry()).transactionRecord())
+                    .append(" but was ")
+                    .append(Objects.requireNonNull(diff.secondEntry()).transactionRecord());
         }
         return sb.toString();
     }
