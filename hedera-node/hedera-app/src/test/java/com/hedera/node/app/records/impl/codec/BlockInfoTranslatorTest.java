@@ -95,11 +95,11 @@ class BlockInfoTranslatorTest {
                 .array();
         return BlockInfo.newBuilder()
                 .lastBlockNumber(5L)
-                .firstConsTimeOfLastBlock(CONSENSUS_TIME)
+                .firstConsTimeOfCurrentBlock(CONSENSUS_TIME)
                 .blockHashes(Bytes.wrap(result));
     }
 
     private BlockInfo.Builder getExpectedBlockInfoWithoutTime() {
-        return getBaseExpectedBlockInfo().firstConsTimeOfLastBlock((Timestamp) null);
+        return getBaseExpectedBlockInfo().firstConsTimeOfCurrentBlock((Timestamp) null);
     }
 }
