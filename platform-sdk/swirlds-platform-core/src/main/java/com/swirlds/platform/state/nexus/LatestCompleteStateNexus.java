@@ -18,7 +18,6 @@ package com.swirlds.platform.state.nexus;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig;

@@ -69,5 +69,4 @@ class ConfigExportTest {
                 .anySatisfy(value -> assertThat(value)
                         .matches("^unmappedProperty, anotherNotPresentValue\\s*\\[NOT USED IN RECORD]$"));
     }
-
 }
