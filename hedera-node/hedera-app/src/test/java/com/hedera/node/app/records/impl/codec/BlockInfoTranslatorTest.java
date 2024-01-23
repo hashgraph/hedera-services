@@ -58,11 +58,17 @@ class BlockInfoTranslatorTest {
     }
 
     @Test
-    void createBlockInfoFromMerkleNetworkContextWithEmptyTime() throws IOException {
+    void createBlockInfoFromMerkleNetworkContextWithEmptyFirstCurrentBlockTime() throws IOException {
         subject.setFirstConsTimeOfCurrentBlock(null);
+        subject.setConsensusTimeOfLastHandledTxn(
+                Instant.ofEpochSecond(CONSENSUS_TIME.seconds(), CONSENSUS_TIME.nanos()));
         final BlockInfo blockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(subject);
 
-        assertEquals(getExpectedBlockInfoWithoutTime().build(), blockInfo);
+        assertEquals(
+                getExpectedBlockInfoWithoutCurrentBlockTime()
+                        .consTimeOfLastHandledTxn(CONSENSUS_TIME)
+                        .build(),
+                blockInfo);
     }
 
     @Test
@@ -99,7 +105,7 @@ class BlockInfoTranslatorTest {
                 .blockHashes(Bytes.wrap(result));
     }
 
-    private BlockInfo.Builder getExpectedBlockInfoWithoutTime() {
+    private BlockInfo.Builder getExpectedBlockInfoWithoutCurrentBlockTime() {
         return getBaseExpectedBlockInfo().firstConsTimeOfCurrentBlock((Timestamp) null);
     }
 }
