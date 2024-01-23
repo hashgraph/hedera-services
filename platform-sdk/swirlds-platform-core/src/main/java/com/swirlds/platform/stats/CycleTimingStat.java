@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats;
 
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;

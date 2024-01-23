@@ -24,13 +24,13 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.metrics.platform.DefaultCounter;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.File;
