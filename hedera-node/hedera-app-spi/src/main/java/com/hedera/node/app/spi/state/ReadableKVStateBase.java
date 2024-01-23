@@ -74,7 +74,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
             markRead(key, value);
         }
         final var value = readCache.get(key);
-        return (value == marker) ?  null : value;
+        return (value == marker) ? null : value;
     }
 
     /**
@@ -126,9 +126,8 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @param value The value
      */
     protected final void markRead(@NonNull K key, @Nullable V value) {
-        if (value == null) readCache.put(key, (V)marker);
-        else  readCache.put(key, value);
-
+        if (value == null) readCache.put(key, (V) marker);
+        else readCache.put(key, value);
     }
 
     /**
