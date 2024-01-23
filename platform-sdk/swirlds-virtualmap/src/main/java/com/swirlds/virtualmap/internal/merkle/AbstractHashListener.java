@@ -139,17 +139,20 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
     @Override
     public void onHashingCompleted() {
-        boolean needFinalFlush = false;
+        final List<VirtualHashRecord> finalNodesToFlush;
+        final List<VirtualLeafRecord<K, V>> finalLeavesToFlush;
         synchronized (this) {
-            if (!nodes.isEmpty() || !leaves.isEmpty()) {
-                needFinalFlush = true;
-            }
+            finalNodesToFlush = nodes;
+            nodes = null;
+            finalLeavesToFlush = leaves;
+            leaves = null;
         }
-        if (needFinalFlush) {
-            flush(nodes, leaves);
+        if ((finalNodesToFlush != null)
+                && !finalNodesToFlush.isEmpty()
+                && (finalLeavesToFlush != null)
+                && !finalLeavesToFlush.isEmpty()) {
+            flush(finalNodesToFlush, finalLeavesToFlush);
         }
-        nodes = null;
-        leaves = null;
     }
 
     // Since flushes may take quite some time, this method is called outside synchronized blocks,

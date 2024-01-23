@@ -263,11 +263,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             if (path == 0) {
                 return 0;
             }
-            long outPath = out.path;
-            for (int i = 0; i < out.height; i++) {
-                outPath = Path.getLeftChildPath(outPath);
-            }
-            return (int) (path - outPath);
+            final long firstInPathInOut = Path.getLeftGrandChildPath(out.path, out.height);
+            return (int) (path - firstInPathInOut);
         }
     }
 
@@ -357,11 +354,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     break;
                 }
 
-                final int parentRank = curRank - parentRankHeights[curRank];
-                long parentPath = curPath;
-                for (int i = 0; i < curRank - parentRank; i++) {
-                    parentPath = Path.getParentPath(parentPath);
-                }
+                final long parentPath = Path.getGrandParentPath(curPath, parentRankHeights[curRank]);
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
                     parentTask = new ChunkHashTask(hashingPool, parentPath, parentRankHeights[curRank]);
