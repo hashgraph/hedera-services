@@ -38,7 +38,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,17 +47,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
-import com.hedera.node.app.fees.ExchangeRateInfoImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
@@ -71,6 +66,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.Scenarios;
@@ -112,7 +108,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -1258,65 +1253,28 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Nested
     @DisplayName("Requesting exchange rate info")
     final class ExchangeRateInfoTest {
-        private static final TimestampSeconds DEFAULT_CONSENSUS_NOW_TIMESTAMP = TimestampSeconds.newBuilder()
-                .seconds(DEFAULT_CONSENSUS_NOW.getEpochSecond())
-                .build();
-        private static final TimestampSeconds DEFAULT_CONSENSUS_NOW_PLUS_ONE_TIMESTAMP = DEFAULT_CONSENSUS_NOW_TIMESTAMP
-                .copyBuilder()
-                .seconds(DEFAULT_CONSENSUS_NOW.getEpochSecond() + 1)
-                .build();
 
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testExchangeRateInfo() {
+        @Mock
+        private ExchangeRateInfo exchangeRateInfo;
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup() {
             when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
                             .build());
-            final var exchangeRateInfo = mock(ExchangeRateInfoImpl.class);
             when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
 
-            final var context = createContext(defaultTransactionBody());
+            context = createContext(defaultTransactionBody());
+        }
 
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void testExchangeRateInfo() {
             assertSame(exchangeRateInfo, context.exchangeRateInfo());
-        }
-
-        @Test
-        void expirationLessThanConsensusTime() {
-            final var rateSet = newDefaultConsensusNowRateSet();
-            final var subject = new ExchangeRateInfoImpl(rateSet);
-
-            final var result = subject.activeRate(DEFAULT_CONSENSUS_NOW.minusSeconds(1));
-            Assertions.assertThat(result.expirationTime()).isEqualTo(DEFAULT_CONSENSUS_NOW_TIMESTAMP);
-        }
-
-        @Test
-        void expirationEqualToConsensusTime() {
-            final var rateSet = newDefaultConsensusNowRateSet();
-            final var subject = new ExchangeRateInfoImpl(rateSet);
-
-            final var result = subject.activeRate(DEFAULT_CONSENSUS_NOW);
-            Assertions.assertThat(result.expirationTime()).isEqualTo(DEFAULT_CONSENSUS_NOW_PLUS_ONE_TIMESTAMP);
-        }
-
-        @Test
-        void expirationGreaterThanConsensusTime() {
-            final var rateSet = newDefaultConsensusNowRateSet();
-            final var subject = new ExchangeRateInfoImpl(rateSet);
-
-            final var result = subject.activeRate(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
-            Assertions.assertThat(result.expirationTime()).isEqualTo(DEFAULT_CONSENSUS_NOW_PLUS_ONE_TIMESTAMP);
-        }
-
-        private static ExchangeRateSet newDefaultConsensusNowRateSet() {
-            final var currentRate = ExchangeRate.newBuilder()
-                    .expirationTime(ExchangeRateInfoTest.DEFAULT_CONSENSUS_NOW_TIMESTAMP)
-                    .build();
-            final var nextRate = ExchangeRate.newBuilder()
-                    .expirationTime(ExchangeRateInfoTest.DEFAULT_CONSENSUS_NOW_PLUS_ONE_TIMESTAMP)
-                    .build();
-            return new ExchangeRateSet(currentRate, nextRate);
         }
     }
 }
