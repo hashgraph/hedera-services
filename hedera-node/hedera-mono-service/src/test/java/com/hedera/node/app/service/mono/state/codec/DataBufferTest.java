@@ -18,8 +18,10 @@ package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,8 +40,8 @@ class DataBufferTest {
     @Test
     void skipBytes() {
         final var subject = BufferedData.wrap(ByteBuffer.wrap(new byte[] {}));
-        final var skipped = subject.skip(32L);
-        assertEquals(0, skipped);
+        // See https://github.com/hashgraph/pbj/pull/163 for more context
+        assertThrows(BufferUnderflowException.class, () -> subject.skip(32L));
     }
 
     @Test
