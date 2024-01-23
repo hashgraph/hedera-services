@@ -320,7 +320,10 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var decimalsTxn = "decimalsTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("getErc20TokenDecimals", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "getErc20TokenDecimals",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -369,7 +372,8 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var supplyTxn = "supplyTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("getErc20TotalSupply", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "getErc20TotalSupply", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -880,7 +884,10 @@ public class ERCPrecompileSuite extends HapiSuite {
     final HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
-        return defaultHapiSpec("getErc20TokenDecimalsFromErc721TokenFails", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "getErc20TokenDecimalsFromErc721TokenFails",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -2522,7 +2529,10 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
-        return defaultHapiSpec("getErc721IsApprovedForAll", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "getErc721IsApprovedForAll",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
