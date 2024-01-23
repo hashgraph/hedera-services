@@ -149,6 +149,7 @@ public class HandleWorkflow {
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final CacheWarmer cacheWarmer;
 
     @Inject
     public HandleWorkflow(
@@ -172,7 +173,8 @@ public class HandleWorkflow {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final CacheWarmer cacheWarmer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -199,6 +201,7 @@ public class HandleWorkflow {
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
         ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
+        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
     }
 
     /**
@@ -215,6 +218,9 @@ public class HandleWorkflow {
 
         // log start of round to transaction state log
         logStartRound(round);
+
+        // warm the cache
+        cacheWarmer.warm(state, round);
 
         // handle each event in the round
         for (final ConsensusEvent event : round) {

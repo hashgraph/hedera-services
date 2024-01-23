@@ -23,15 +23,19 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.LongSupplier;
 
 /**
  * Wiring for the {@link EventHasher}.
  *
- * @param eventInput  the input wire for events to be hashed
- * @param eventOutput the output wire for hashed events
+ * @param eventInput                   the input wire for events to be hashed
+ * @param eventOutput                  the output wire for hashed events
+ * @param unprocessedTaskCountSupplier the supplier for the number of unprocessed tasks
  */
 public record EventHasherWiring(
-        @NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull OutputWire<GossipEvent> eventOutput,
+        @NonNull LongSupplier unprocessedTaskCountSupplier) {
     /**
      * Create a new instance of this wiring.
      *
@@ -39,7 +43,10 @@ public record EventHasherWiring(
      * @return the new wiring instance
      */
     public static EventHasherWiring create(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
-        return new EventHasherWiring(taskScheduler.buildInputWire("events to hash"), taskScheduler.getOutputWire());
+        return new EventHasherWiring(
+                taskScheduler.buildInputWire("events to hash"),
+                taskScheduler.getOutputWire(),
+                taskScheduler::getUnprocessedTaskCount);
     }
 
     /**

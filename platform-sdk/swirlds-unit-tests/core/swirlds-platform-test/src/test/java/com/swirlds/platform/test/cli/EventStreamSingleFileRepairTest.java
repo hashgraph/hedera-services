@@ -28,7 +28,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
@@ -41,10 +40,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -115,15 +111,6 @@ class EventStreamSingleFileRepairTest {
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }
-        // get consensus info
-        final long roundToReportFrom = rounds.size() / 2;
-        final int numConsensusEvents = rounds.stream()
-                .filter(r -> r.getRoundNum() >= roundToReportFrom)
-                .mapToInt(ConsensusRound::getNumEvents)
-                .sum();
-        final List<EventImpl> lastRound =
-                Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
-        final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
         // write event stream
         StreamUtils.writeRoundsToStream(tmpDir, new RandomSigner(random), eventStreamWindowSize, rounds);

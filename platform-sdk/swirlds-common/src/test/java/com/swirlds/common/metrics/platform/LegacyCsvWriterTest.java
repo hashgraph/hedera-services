@@ -16,23 +16,15 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_3_1;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_3_1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.BasicConfig_;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
@@ -40,6 +32,14 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Files;

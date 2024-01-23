@@ -17,20 +17,20 @@
 package com.swirlds.platform.metrics;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_13_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_0;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_17_1;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_13_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_0;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_17_1;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_5_3;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
