@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -34,13 +33,12 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
@@ -63,7 +61,6 @@ public class Issue2319Spec extends HapiSuite {
         });
     }
 
-    @Order(2)
     @HapiTest
     final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
@@ -90,7 +87,6 @@ public class Issue2319Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
-    @Order(1)
     @HapiTest
     final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
@@ -115,29 +111,17 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy(GENESIS));
     }
 
-    @Order(3)
-    //    @Disabled
-    @HapiTest
+    // This test modifies the key of a system account and all further tests are unable to sign with this account
+    @Disabled
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
-
-        final Key[] originalExchangeRateControlKey = {null};
+        var pemLoc = "<PEM>";
 
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc).name("persistent").passphrase(passphrase),
+                        keyFromPem(pemLoc).name("persistent").passphrase("<SECReT>"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            final var exchangeRateControlInfo = getAccountInfo(EXCHANGE_RATE_CONTROL);
-                            allRunFor(spec, exchangeRateControlInfo);
-                            originalExchangeRateControlKey[0] = exchangeRateControlInfo
-                                    .getResponse()
-                                    .getCryptoGetInfo()
-                                    .getAccountInfo()
-                                    .getKey();
-                        }),
-                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
+                .when(cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
                 .then(
                         cryptoUpdate(EXCHANGE_RATE_CONTROL)
                                 .payingWith(SYSTEM_ADMIN)
@@ -150,14 +134,11 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoUpdate(EXCHANGE_RATE_CONTROL)
                                 .payingWith("civilian")
                                 .signedBy("civilian", GENESIS, "persistent")
-                                .receiverSigRequired(true),
-                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false),
-                        withOpContext((spec, opLog) -> {
-                            cryptoUpdate(EXCHANGE_RATE_CONTROL).key(originalExchangeRateControlKey[0].toString());
-                        }));
+                                .receiverSigRequired(true)
+                                .hasPrecheck(AUTHORIZATION_FAILED),
+                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
     }
 
-    @Order(4)
     @HapiTest
     final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
