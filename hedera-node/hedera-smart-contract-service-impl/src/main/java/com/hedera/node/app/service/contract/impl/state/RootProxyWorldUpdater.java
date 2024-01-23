@@ -102,7 +102,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
         context().ifPresent(context -> {
             final var creationCapacityIsAvailable =
-                    context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+                    !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
             validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
         });
 

@@ -937,7 +937,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);
             if (Objects.equals(childRecord.status(), SUCCESS)) {
-                final var childTx = childRecord.build().transaction();
+                final var childTx = childRecord.transaction();
                 final var childTxBody = childRecord.transactionBody();
                 HederaFunctionality childTxFunctionality;
                 try {
