@@ -108,6 +108,7 @@ public class StakingRewardsHelper {
      * Decrease pending rewards on the network staking rewards store by the given amount.
      * Once we pay reward to an account, the pending rewards on the network should be
      * reduced by that amount, since they no more need to be paid.
+     * If the node is deleted, we do not decrease the pending rewards on the network, and on the node.
      *
      * @param stakingInfoStore
      * @param stakingRewardsStore The store to write to for updated values
@@ -153,7 +154,8 @@ public class StakingRewardsHelper {
     /**
      * Increase pending rewards on the network staking rewards store by the given amount.
      * This is called in EndOdStakingPeriod when we calculate the pending rewards on the network
-     * to be paid in next staking period
+     * to be paid in next staking period. Whne the node is deleted, we do not increase the pending rewards
+     * on the network, and on the node.
      *
      * @param stakingRewardsStore The store to write to for updated values
      * @param amount              The amount to increase by
@@ -169,6 +171,7 @@ public class StakingRewardsHelper {
         long nodePendingRewards = currStakingInfo.pendingRewards();
         long newNetworkPendingRewards;
         long newNodePendingRewards;
+        // Only increase the pending rewards if the node is not deleted
         if (!currStakingInfo.deleted()) {
             newNetworkPendingRewards = currentPendingRewards + amount;
             newNodePendingRewards = nodePendingRewards + amount;
@@ -195,7 +198,8 @@ public class StakingRewardsHelper {
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newNetworkPendingRewards).build());
 
-        // Update the individual node pending node rewards
+        // Update the individual node pending node rewards. If the node is deleted the pending rewards
+        // should be zero
         return currStakingInfo
                 .copyBuilder()
                 .pendingRewards(newNodePendingRewards)

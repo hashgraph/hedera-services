@@ -23,7 +23,7 @@ plugins {
 
 description = "Hedera API"
 
-val hapiProtoBranchOrTag = "add-pending-rewards-per-node"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 
 if (!gradle.startParameter.isOffline) {

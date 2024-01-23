@@ -177,6 +177,10 @@ public final class EventRecoveryWorkflow {
                     "Finished reapplying transactions, writing state to {}",
                     resultingStateDirectory);
 
+            // Make one more copy to force the state in recoveredState to be immutable.
+            final State mutableStateCopy =
+                    recoveredState.state().get().getState().copy();
+
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
                     platformContext,
                     selfId,
@@ -204,6 +208,7 @@ public final class EventRecoveryWorkflow {
             mutableFile.close();
 
             recoveredState.state().close();
+            mutableStateCopy.release();
 
             logger.info(STARTUP.getMarker(), "Recovery process completed");
         }

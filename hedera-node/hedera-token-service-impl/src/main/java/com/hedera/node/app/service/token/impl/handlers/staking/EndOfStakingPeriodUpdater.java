@@ -155,7 +155,6 @@ public class EndOfStakingPeriodUpdater {
                     nodePendingRewards,
                     oldStakeRewardStart,
                     newStakeRewardStart);
-            // In the future when node is deleted we should not update the total pendingRewards on the network.
             currStakingInfo = stakeRewardsHelper.increasePendingRewardsBy(
                     stakingRewardsStore, nodePendingRewards, currStakingInfo);
 
@@ -180,8 +179,13 @@ public class EndOfStakingPeriodUpdater {
             // stake(rewarded + non-rewarded) of the node is greater than maxStake, stakingInfo's stake field is set to
             // maxStake.So, there is no need to clamp the stake value here. Sum of all stakes can be used to calculate
             // the weight.
-            final var updatedWeight =
-                    calculateWeightFromStake(stakingInfo.stake(), newTotalStakedStart, sumOfConsensusWeights);
+            final int updatedWeight;
+            if (!stakingInfo.deleted()) {
+                updatedWeight =
+                        calculateWeightFromStake(stakingInfo.stake(), newTotalStakedStart, sumOfConsensusWeights);
+            } else {
+                updatedWeight = 0;
+            }
             final var oldWeight = stakingInfo.weight();
             stakingInfo = stakingInfo.copyBuilder().weight(updatedWeight).build();
             log.info(
