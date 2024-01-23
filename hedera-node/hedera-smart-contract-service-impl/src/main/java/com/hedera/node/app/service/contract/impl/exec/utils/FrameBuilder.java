@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -155,9 +156,11 @@ public class FrameBuilder {
             @NonNull final FeatureFlags featureFlags,
             @NonNull final Configuration config) {
         Code code = CodeV0.EMPTY_CODE;
-        if (canLoadCodeFromAccount(transaction, worldUpdater)) {
+        final var contractId = transaction.contractIdOrThrow();
+
+        if (canLoadCodeFromAccount(transaction, worldUpdater, contractId, config, featureFlags)) {
             final var account = worldUpdater.getHederaAccount(to);
-            if (account == null && worldUpdater.contractMustBePresent()) {
+            if (account == null && contractMustBePresent(config, featureFlags, contractId)) {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
             } else {
                 code = account.getEvmCode();
@@ -172,10 +175,13 @@ public class FrameBuilder {
     }
 
     private boolean canLoadCodeFromAccount(
-            @NonNull final HederaEvmTransaction transaction, @NonNull final HederaWorldUpdater worldUpdater) {
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final ContractID contractId,
+            @NonNull final Configuration config,
+            @NonNull final FeatureFlags featureFlags) {
         requireNonNull(transaction);
         requireNonNull(worldUpdater);
-        final var contractId = transaction.contractIdOrThrow();
 
         // If the contract is deleted, never load code from it.
         final var contract = worldUpdater
@@ -187,6 +193,15 @@ public class FrameBuilder {
             return false;
         }
 
-        return worldUpdater.getHederaAccount(contractId) != null || worldUpdater.contractMustBePresent();
+        return worldUpdater.getHederaAccount(contractId) != null
+                || contractMustBePresent(config, featureFlags, contractId);
+    }
+
+    private boolean contractMustBePresent(
+            @NonNull final Configuration config,
+            @NonNull final FeatureFlags featureFlags,
+            @NonNull final ContractID contractID) {
+        final var possiblyGrandFatheredEntityNumOf = contractID.hasContractNum() ? contractID.contractNum() : null;
+        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(config, possiblyGrandFatheredEntityNumOf);
     }
 }

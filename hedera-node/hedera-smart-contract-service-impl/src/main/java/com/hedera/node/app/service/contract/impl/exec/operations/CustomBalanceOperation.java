@@ -17,9 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
@@ -32,11 +33,15 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 
 public class CustomBalanceOperation extends BalanceOperation {
     private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     public CustomBalanceOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            @NonNull final FeatureFlags featureFlags) {
         super(gasCalculator);
         this.addressChecks = addressChecks;
+        this.featureFlags = featureFlags;
     }
 
     @Override
@@ -50,7 +55,7 @@ public class CustomBalanceOperation extends BalanceOperation {
                 return new OperationResult(cost(true), null);
             }
             // Otherwise continue to enforce existence checks for backward compatibility
-            if (proxyUpdaterFor(frame).contractMustBePresent() && !addressChecks.isPresent(address, frame)) {
+            if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

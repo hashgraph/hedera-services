@@ -299,6 +299,4 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * This is to improve Ethereum equivalence.
      */
     void setContractNotRequired();
-
-    boolean contractMustBePresent();
 }

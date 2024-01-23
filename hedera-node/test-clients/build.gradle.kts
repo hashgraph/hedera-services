@@ -230,6 +230,28 @@ val yahCliJar =
         }
     }
 
+configurations { create("rcdiffConfig") { extendsFrom(configurations.runtimeClasspath.get()) } }
+
+dependencies {
+    // Example: Add a dependency to your custom configuration
+    "rcdiffConfig"("info.picocli:picocli:4.6.3")
+}
+
+val rcdiffJar =
+    tasks.register<ShadowJar>("rcdiffJar") {
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+
+        archiveFileName.set("rcdiff.jar")
+        configurations = listOf(project.configurations.getByName("rcdiffConfig"))
+
+        manifest {
+            attributes(
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Multi-Release" to "true"
+            )
+        }
+    }
+
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
@@ -256,6 +278,19 @@ val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
         group = "build"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
+    }
+
+val cleanRcdiff =
+    tasks.register<Delete>("cleanRcdiff") {
+        group = "build"
+        delete(File(project.file("rcdiff"), "rcdiff.jar"))
+    }
+
+val copyRcdiff =
+    tasks.register<Copy>("copyRcdiff") {
+        group = "copy"
+        from(rcdiffJar)
+        into(project.file("rcdiff"))
     }
 
 val copyYahCli =

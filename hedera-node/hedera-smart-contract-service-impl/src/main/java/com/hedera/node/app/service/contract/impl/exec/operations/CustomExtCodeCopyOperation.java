@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
@@ -41,11 +42,15 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
     private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     public CustomExtCodeCopyOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            @NonNull final FeatureFlags featureFlags) {
         super(gasCalculator);
         this.addressChecks = addressChecks;
+        this.featureFlags = featureFlags;
     }
 
     @Override
@@ -62,7 +67,7 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
                 return new OperationResult(cost(frame, memOffset, numBytes, true), null);
             }
             // Otherwise the address must be present
-            if (proxyUpdaterFor(frame).contractMustBePresent() && !addressChecks.isPresent(address, frame)) {
+            if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(
                         cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
