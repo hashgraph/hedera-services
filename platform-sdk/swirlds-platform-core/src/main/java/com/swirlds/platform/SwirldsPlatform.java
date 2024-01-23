@@ -104,9 +104,7 @@ import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -392,21 +390,9 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
+        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
-        final LatestEventTipsetTracker latestEventTipsetTracker;
-        final boolean enableEventFiltering = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .filterLikelyDuplicates();
-        if (enableEventFiltering) {
-            latestEventTipsetTracker =
-                    new LatestEventTipsetTracker(time, currentAddressBook, selfId, eventConfig.getAncientMode());
-        } else {
-            latestEventTipsetTracker = null;
-        }
 
         this.keysAndCerts = keysAndCerts;
 
@@ -555,10 +541,17 @@ public class SwirldsPlatform implements Platform {
                 time,
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
+                this::waitUntilTransactionHandlingThreadIsNotBusy,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
         platformWiring.bind(
-                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
+                eventHasher,
+                signedStateFileManager,
+                stateSigner,
+                pcesReplayer,
+                pcesWriter,
+                eventDurabilityNexus,
+                shadowGraph);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -658,11 +651,8 @@ public class SwirldsPlatform implements Platform {
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PcesSequencer sequencer = new PcesSequencer();
 
-        final List<EventObserver> eventObservers = new ArrayList<>(List.of(
-                new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
-                consensusRoundHandler,
-                addedEventMetrics,
-                eventIntakeMetrics));
+        final List<EventObserver> eventObservers =
+                new ArrayList<>(List.of(consensusRoundHandler, addedEventMetrics, eventIntakeMetrics));
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
@@ -694,7 +684,6 @@ public class SwirldsPlatform implements Platform {
                 consensusRef::get,
                 eventObserverDispatcher,
                 shadowGraph,
-                latestEventTipsetTracker,
                 intakeEventCounter,
                 platformWiring.getKeystoneEventSequenceNumberOutput());
 
@@ -756,7 +745,6 @@ public class SwirldsPlatform implements Platform {
                 appVersion,
                 epochHash,
                 shadowGraph,
-                latestEventTipsetTracker,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
@@ -776,7 +764,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .useBirthRoundAncientThreshold()));
+                        .getAncientMode()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -793,8 +781,14 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                    initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
+            // We only load non-ancient events during start up, so the initial non-expired event window will be
+            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
+            // the non-expired event window will continue to expand until it reaches its full size.
+            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+                    initialState.getRound(),
+                    initialMinimumGenerationNonAncient,
+                    initialMinimumGenerationNonAncient,
+                    AncientMode.getAncientMode(platformContext)));
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
@@ -829,6 +823,18 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
+    }
+
+    /**
+     * Wait until the consensus round handler is not busy.
+     */
+    private void waitUntilTransactionHandlingThreadIsNotBusy() {
+        try {
+            consensusRoundHandler.waitUntilNotBusy();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted waiting for transaction handling thread to not be busy", e);
+        }
     }
 
     /**
@@ -978,8 +984,12 @@ public class SwirldsPlatform implements Platform {
                     .inject(new AddressBookUpdate(
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                    signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
+
+            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+                    signedState.getRound(),
+                    signedState.getMinRoundGeneration(),
+                    signedState.getMinRoundGeneration(),
+                    AncientMode.getAncientMode(platformContext)));
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 

@@ -7,8 +7,10 @@ open module com.swirlds.platform.test {
     requires com.swirlds.config.api.test.fixtures;
     requires com.swirlds.config.api;
     requires com.swirlds.metrics.api;
+    requires com.swirlds.logging;
     requires com.swirlds.test.framework;
     requires java.desktop;
+    requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
     requires org.mockito;
     requires static com.github.spotbugs.annotations;
