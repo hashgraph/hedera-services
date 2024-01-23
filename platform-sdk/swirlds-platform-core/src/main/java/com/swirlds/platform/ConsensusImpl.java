@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -145,11 +146,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
     private final ConsensusConfig config;
-    /**
-     * Indicates if an event's status of ancient should be determined by birthRound (true) or generation (false)
-     * FUTURE WORK: Delete this variable and its initialization when we switch to permanently using birthRound.
-     */
-    private final boolean useBirthRoundForAncient;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -192,18 +188,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private boolean migrationMode = false;
 
     /**
+     * The ancient mode used to determine if an event is ancient or not.
+     */
+    private AncientMode ancientMode;
+
+    /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
      * @param addressBook the global address book, which never changes
-     * @param useBirthRoundForAncient indicates if we should compare birthRound for determining ancient.
+     * @param ancientMode describes how we are currently computing "ancientness" of events
      */
     public ConsensusImpl(
             @NonNull final ConsensusConfig config,
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook,
-            final boolean useBirthRoundForAncient) {
+            @NonNull final AncientMode ancientMode) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -212,7 +213,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
-        this.useBirthRoundForAncient = useBirthRoundForAncient;
+        this.ancientMode = Objects.requireNonNull(ancientMode);
     }
 
     @Override
@@ -660,19 +661,26 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 lastConsensusTime = ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             }
         }
+
+        // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
+        // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
+        final long previousRoundNonAncient = 0;
+        final long previousRoundNonExpired = 0;
+
+        final long nonAncientThreshold = ancientMode.selectIndicator(
+                getMinGenerationNonAncient(),
+                Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
+
+        final long nonExpiredThreshold = ancientMode.selectIndicator(
+                getMinRoundGeneration(),
+                Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
+
         return new ConsensusRound(
                 addressBook,
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
-                // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
-                // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
-                // production.
-                NonAncientEventWindow.createUsingRoundsNonAncient(
-                        decidedRoundNumber,
-                        getMinGenerationNonAncient(),
-                        config.roundsNonAncient(),
-                        AncientMode.GENERATION_THRESHOLD),
+                new NonAncientEventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

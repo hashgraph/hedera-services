@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.shadowgraph;
+package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,19 +36,14 @@ import org.apache.logging.log4j.Logger;
 public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRoundObserver {
     private static final Logger logger = LogManager.getLogger(ShadowGraphEventObserver.class);
     private final ShadowGraph shadowGraph;
-    private final LatestEventTipsetTracker latestEventTipsetTracker;
 
     /**
      * Constructor.
      *
      * @param shadowGraph              the {@link ShadowGraph} to update
-     * @param latestEventTipsetTracker the {@link LatestEventTipsetTracker} to update, or null if this feature is not
-     *                                 enabled
      */
-    public ShadowGraphEventObserver(
-            @NonNull final ShadowGraph shadowGraph, @Nullable final LatestEventTipsetTracker latestEventTipsetTracker) {
+    public ShadowGraphEventObserver(@NonNull final ShadowGraph shadowGraph) {
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.latestEventTipsetTracker = latestEventTipsetTracker;
     }
 
     /**
@@ -57,7 +53,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        shadowGraph.expireBelow(consensusRound.getGenerations().getMinRoundGeneration());
+        shadowGraph.updateNonExpiredEventWindow(consensusRound.getNonAncientEventWindow());
     }
 
     /**
@@ -75,9 +71,6 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
                     "failed to add event {} to shadow graph",
                     EventStrings.toMediumString(event),
                     e);
-        }
-        if (latestEventTipsetTracker != null) {
-            latestEventTipsetTracker.addEvent(event);
         }
     }
 }
