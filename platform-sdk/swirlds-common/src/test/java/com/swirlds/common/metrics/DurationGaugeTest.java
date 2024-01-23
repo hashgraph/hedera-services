@@ -27,6 +27,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.metrics.api.MetricType;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,7 @@ class DurationGaugeTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo("GAUGE");
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.GAUGE);
     }
 
     @Test

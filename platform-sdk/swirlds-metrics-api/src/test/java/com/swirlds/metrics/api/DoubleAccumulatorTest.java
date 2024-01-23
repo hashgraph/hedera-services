@@ -78,7 +78,7 @@ class DoubleAccumulatorTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo("ACCUMULATOR");
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.ACCUMULATOR);
     }
 
     @Test

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import com.swirlds.metrics.api.MetricType;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
@@ -177,7 +178,7 @@ class StatEntryTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo("STAT_ENTRY");
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.STAT_ENTRY);
     }
 
     @Test

@@ -73,7 +73,7 @@ class DoubleGaugeTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo("GAUGE");
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.GAUGE);
     }
 
     @Test

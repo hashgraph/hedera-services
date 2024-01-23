@@ -76,7 +76,7 @@ class CounterTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo("COUNTER");
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.COUNTER);
     }
 
     @Test
