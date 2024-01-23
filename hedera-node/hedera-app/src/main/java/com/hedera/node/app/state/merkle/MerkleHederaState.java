@@ -113,7 +113,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private static final long CLASS_ID = 0x2de3ead3caf06392L;
     // Uncomment the following class ID to run a mono -> modular state migration
     // NOTE: also change class ID of ServicesState
-    // private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    //    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
 
@@ -562,7 +562,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
          * @return The found node
          */
         @NonNull
-        private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
+        MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
             final var index =
                     findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
             if (index == -1) {
@@ -637,6 +637,20 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 @NonNull final String serviceName, @NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             super(stateMetadata);
             this.serviceName = requireNonNull(serviceName);
+        }
+
+        /**
+         * Copies and releases the {@link VirtualMap} for the given state key. This ensures
+         * data is continually flushed to disk
+         *
+         * @param stateKey the state key
+         */
+        public void copyAndReleaseVirtualMap(@NonNull final String stateKey) {
+            final var md = stateMetadata.get(stateKey);
+            final VirtualMap<?, ?> virtualMap = (VirtualMap<?, ?>) findNode(md);
+            final var mutableCopy = virtualMap.copy();
+            setChild(findNodeIndex(serviceName, stateKey), mutableCopy);
+            kvInstances.put(stateKey, createReadableKVState(md, mutableCopy));
         }
 
         @NonNull
