@@ -585,8 +585,6 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
-                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
-                final var wasFreeze = platformStatus == PlatformStatus.FREEZING;
                 platformStatus = notification.getNewStatus();
                 switch (platformStatus) {
                     case ACTIVE -> {
@@ -604,14 +602,12 @@ public final class Hedera implements SwirldMain {
 
                     case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
-                        if (wasActive) shutdownGrpcServer();
+                        shutdownGrpcServer();
                     }
                     case FREEZE_COMPLETE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
                         closeRecordStreams();
-                        if (wasActive || wasFreeze) {
-                            shutdownGrpcServer();
-                        }
+                        shutdownGrpcServer();
                     }
                 }
             });
