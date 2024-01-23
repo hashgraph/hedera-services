@@ -33,6 +33,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
@@ -42,10 +44,12 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,6 +61,7 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -67,6 +72,7 @@ import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.jcajce.JceInputDecryptorProviderBuilder;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
+import org.bouncycastle.util.encoders.DecoderException;
 
 public class EnhancedKeyStoreLoader {
     private static final String MSG_NODE_ID_NON_NULL = "nodeId must not be null";
@@ -122,6 +128,12 @@ public class EnhancedKeyStoreLoader {
      * The list of {@link NodeId}s which must have a private key loaded.
      */
     private final Set<NodeId> localNodes;
+
+    static {
+        if (Arrays.stream(Security.getProviders()).noneMatch(p -> p instanceof BouncyCastleProvider)) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     /**
      * Constructs a new {@link EnhancedKeyStoreLoader} instance.
@@ -306,9 +318,32 @@ public class EnhancedKeyStoreLoader {
             final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, nodeAlias);
             final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, nodeAlias);
 
+            if (sigCert == null) {
+                throw new KeyLoadingException("No signing certificate found for node %s [ alias = %s ]"
+                        .formatted(nodeId, nodeAlias));
+            }
+
+            if (agrCert == null) {
+                throw new KeyLoadingException("No agreement certificate found for node %s [ alias = %s ]"
+                        .formatted(nodeId, nodeAlias));
+            }
+
             if (localNodes.contains(nodeId)) {
-                final KeyPair sigKeyPair = new KeyPair(sigCert.getPublicKey(), sigPrivateKeys.get(nodeId));
-                final KeyPair agrKeyPair = new KeyPair(agrCert.getPublicKey(), agrPrivateKeys.get(nodeId));
+                final PrivateKey sigPrivateKey = sigPrivateKeys.get(nodeId);
+                final PrivateKey agrPrivateKey = agrPrivateKeys.get(nodeId);
+
+                if (sigPrivateKey == null) {
+                    throw new KeyLoadingException("No signing private key found for node %s [ alias = %s ]"
+                            .formatted(nodeId, nodeAlias));
+                }
+
+                if (agrPrivateKey == null) {
+                    throw new KeyLoadingException("No agreement private key found for node %s [ alias = %s ]"
+                            .formatted(nodeId, nodeAlias));
+                }
+
+                final KeyPair sigKeyPair = new KeyPair(sigCert.getPublicKey(), sigPrivateKey);
+                final KeyPair agrKeyPair = new KeyPair(agrCert.getPublicKey(), agrPrivateKey);
 
                 final KeysAndCerts kc = new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
 
@@ -605,7 +640,8 @@ public class EnhancedKeyStoreLoader {
         Objects.requireNonNull(location, MSG_LOCATION_NON_NULL);
         Objects.requireNonNull(entryType, MSG_ENTRY_TYPE_NON_NULL);
 
-        try (final PEMParser parser = new PEMParser(Files.newBufferedReader(location))) {
+        try (final PEMParser parser =
+                new PEMParser(new InputStreamReader(Files.newInputStream(location), StandardCharsets.UTF_8))) {
             Object entry = null;
 
             while ((entry = parser.readObject()) != null) {
@@ -620,7 +656,7 @@ public class EnhancedKeyStoreLoader {
             }
 
             return extractEntityOfType(entry, entryType);
-        } catch (IOException e) {
+        } catch (IOException | DecoderException e) {
             throw new KeyLoadingException(
                     "Unable to read enhanced store [ fileName = %s ]".formatted(location.getFileName()), e);
         }
