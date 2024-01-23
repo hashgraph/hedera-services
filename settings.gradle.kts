@@ -89,6 +89,8 @@ include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
+include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
+
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")

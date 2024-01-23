@@ -19,11 +19,12 @@ package com.hedera.node.app.service.token.impl.test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -44,17 +45,22 @@ class ReadableTokenRelationStoreImplTest {
     private static final AccountID ACCOUNT_20_ID =
             AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
+    private static final EntityIDPair KEY = EntityIDPair.newBuilder()
+            .accountId(ACCOUNT_20_ID)
+            .tokenId(TOKEN_10_ID)
+            .build();
+
     @Mock
     private ReadableStates states;
 
     @Mock
-    private ReadableKVState<EntityNumPair, TokenRelation> tokenRelState;
+    private ReadableKVState<EntityIDPair, TokenRelation> tokenRelState;
 
     private ReadableTokenRelationStoreImpl subject;
 
     @BeforeEach
     void setUp() {
-        given(states.<EntityNumPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
         subject = new ReadableTokenRelationStoreImpl(states);
@@ -94,5 +100,14 @@ class ReadableTokenRelationStoreImplTest {
 
         final var result = subject.sizeOfState();
         Assertions.assertThat(result).isEqualTo(expectedSize);
+    }
+
+    @Test
+    void warmWarmsUnderlyingState(@Mock ReadableKVState<EntityIDPair, TokenRelation> tokenRelations) {
+        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+                .willReturn(tokenRelations);
+        final var tokenRelationStore = new ReadableTokenRelationStoreImpl(states);
+        tokenRelationStore.warm(ACCOUNT_20_ID, TOKEN_10_ID);
+        verify(tokenRelations).warm(KEY);
     }
 }

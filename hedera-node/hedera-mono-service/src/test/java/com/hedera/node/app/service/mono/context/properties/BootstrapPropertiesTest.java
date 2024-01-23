@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
@@ -341,6 +342,7 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
             entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
             entry(ACCOUNTS_STORE_ON_DISK, true),
+            entry(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION, true),
             entry(ACCOUNTS_TREASURY, 2L),
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),

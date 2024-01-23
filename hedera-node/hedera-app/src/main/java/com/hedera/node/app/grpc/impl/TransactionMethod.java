@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
