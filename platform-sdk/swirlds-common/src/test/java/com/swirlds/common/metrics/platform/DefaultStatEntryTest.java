@@ -16,11 +16,11 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.DataType.STRING;
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.DataType.STRING;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,12 +31,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.function.Consumer;

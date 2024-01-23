@@ -39,11 +39,14 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -73,6 +76,8 @@ class CryptoDeleteTransitionLogicTest {
     private SigImpactHistorian sigImpactHistorian;
     private TransactionContext txnCtx;
     private SignedTxnAccessor accessor;
+    private AliasManager aliasManager;
+    private GlobalDynamicProperties globalDynamicProperties;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -86,10 +91,13 @@ class CryptoDeleteTransitionLogicTest {
         ledger = mock(HederaLedger.class);
         accessor = mock(SignedTxnAccessor.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
+        aliasManager = mock(AliasManager.class);
+        globalDynamicProperties = mock(GlobalDynamicProperties.class);
 
         given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-        subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx);
+        subject = new CryptoDeleteTransitionLogic(
+                ledger, sigImpactHistorian, txnCtx, aliasManager, globalDynamicProperties);
     }
 
     @Test
@@ -154,6 +162,26 @@ class CryptoDeleteTransitionLogicTest {
         verify(txnCtx).recordBeneficiaryOfDeleted(target.getAccountNum(), payer.getAccountNum());
         verify(txnCtx).setStatus(SUCCESS);
         verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
+    }
+
+    @Test
+    void followsHappyPathWithAliasDeletion() {
+        final var targetAsByteString = target.toByteString();
+        givenValidTxnCtx();
+        given(globalDynamicProperties.releaseAliasAfterDeletion()).willReturn(true);
+        given(ledger.alias(target)).willReturn(targetAsByteString);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(ledger).delete(target, payer);
+        verify(txnCtx).recordBeneficiaryOfDeleted(target.getAccountNum(), payer.getAccountNum());
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
+        verify(ledger).clearAlias(target);
+        verify(aliasManager).unlink(targetAsByteString);
+        verify(sigImpactHistorian).markAliasChanged(targetAsByteString);
     }
 
     @Test
@@ -265,6 +293,7 @@ class CryptoDeleteTransitionLogicTest {
                 .build();
         given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(ledger.alias(target)).willReturn(ByteString.EMPTY);
     }
 
     private void givenDeleteTxnMissingTarget() {

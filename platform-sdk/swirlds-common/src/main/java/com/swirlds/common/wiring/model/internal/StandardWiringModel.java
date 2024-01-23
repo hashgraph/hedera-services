@@ -21,7 +21,6 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
@@ -34,6 +33,7 @@ import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
