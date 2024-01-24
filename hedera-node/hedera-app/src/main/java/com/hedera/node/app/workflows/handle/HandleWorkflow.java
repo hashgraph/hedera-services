@@ -248,6 +248,8 @@ public class HandleWorkflow {
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
+                    System.out.println("Outer possible catastrophe");
+                    e.printStackTrace();
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
