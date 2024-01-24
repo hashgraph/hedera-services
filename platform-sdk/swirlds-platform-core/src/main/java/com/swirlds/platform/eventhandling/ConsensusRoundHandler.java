@@ -151,7 +151,6 @@ public class ConsensusRoundHandler {
 
         final RunningAverageMetric avgStateToHashSignDepth =
                 platformContext.getMetrics().getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
-
         platformContext.getMetrics().addUpdater(() -> {
             avgStateToHashSignDepth.update(stateHashSignQueue.size());
         });
@@ -255,9 +254,7 @@ public class ConsensusRoundHandler {
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all of its needed data for this
-     * round, with the exception of the running event hash. Wait until transactions are handled before updating this.
-     * This makes it less likely that we will have to wait for the hash to be computed.
+     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all needed data for this round.
      *
      * @param round the consensus round
      */

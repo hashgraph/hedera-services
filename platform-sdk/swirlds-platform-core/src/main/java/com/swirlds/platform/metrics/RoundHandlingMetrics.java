@@ -42,9 +42,9 @@ public class RoundHandlingMetrics {
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
                     INTERNAL_CATEGORY, "consensusTimeDeviation")
-            .withDescription("The difference between the consensus time of the round currently being handled and this" +
-                    " node's wall clock time. Positive values mean that this node's clock is behind the consensus" +
-                    "time, negative values mean that it's ahead.")
+            .withDescription("The difference between the consensus time of the round currently being handled and this"
+                    + " node's wall clock time. Positive values mean that this node's clock is behind the consensus"
+                    + "time, negative values mean that it's ahead.")
             .withUnit("milliseconds");
     private final LongGauge consensusTimeDeviation;
 
