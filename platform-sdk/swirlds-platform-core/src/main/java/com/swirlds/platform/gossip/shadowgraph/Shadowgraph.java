@@ -167,7 +167,7 @@ public class Shadowgraph implements Clearable {
 
     /**
      * Increase the reservation count for the ancient indicator currently held by {@code expireBelow}. A reservation
-     * prevents events that have an ancient indicator not less than the threshold from being expired unlinked.
+     * prevents events that have an ancient indicator not less than the threshold from being unlinked.
      *
      * @return the reservation instance, must be closed when the reservation is no longer needed
      */
