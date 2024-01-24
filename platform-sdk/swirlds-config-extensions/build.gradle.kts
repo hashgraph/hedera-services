@@ -22,5 +22,6 @@ plugins {
 
 testModuleInfo {
     requires("com.swirlds.common")
+    runtimeOnly("com.swirlds.config.impl")
     requires("org.junit.jupiter.api")
 }
