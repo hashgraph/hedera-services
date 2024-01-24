@@ -18,7 +18,9 @@ package com.hedera.services.bdd.suites.streaming;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordStreams;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -29,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 
-    private static final String PATH_TO_LOCAL_STREAMS = "build/hapi-test/node%d/data/recordStreams";
+    private static final String PATH_TO_LOCAL_STREAMS = "../data/recordstreams";
 
     public static void main(String... args) {
         new RecordStreamValidation().runSuiteSync();
@@ -45,7 +47,15 @@ public class RecordStreamValidation extends HapiSuite {
     final HapiSpec recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
-        return defaultHapiSpec("RecordStreamSanityChecks").given().when().then(verifyRecordStreams(pathToStreams::get));
+        return defaultHapiSpec("RecordStreamSanityChecks")
+                .given(withOpContext((spec, opLog) -> {
+                    HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
+                    if (ciProps.has("recordStreamsDir")) {
+                        pathToStreams.set(ciProps.get("recordStreamsDir"));
+                    }
+                }))
+                .when()
+                .then(verifyRecordStreams(pathToStreams::get));
     }
 
     @Override

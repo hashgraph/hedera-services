@@ -66,7 +66,7 @@ public class RecordStreamVerification extends UtilOp {
                 .collect(groupingBy(
                         this::basename,
                         mapping(
-                                (Path p) -> Path.of(p.toFile().getAbsolutePath().replace(".gz", "") + "_sig")
+                                (Path p) -> Path.of(p.toFile().getAbsolutePath() + "_sig")
                                         .toFile(),
                                 filtering(File::exists, toList()))));
         checkOverallValidity(sigFilesAvail, verifier);
@@ -149,7 +149,7 @@ public class RecordStreamVerification extends UtilOp {
         return accounts.stream()
                 .map(this::recordsDirFor)
                 .flatMap(this::uncheckedWalk)
-                .filter(path -> path.toString().endsWith(".rcd.gz"))
+                .filter(path -> path.toString().endsWith(".rcd"))
                 .map(this::basename)
                 .collect(toSet());
     }
@@ -167,10 +167,7 @@ public class RecordStreamVerification extends UtilOp {
     }
 
     private String recordsDirFor(String account) {
-        int accountNum = Integer.parseInt(account.substring(account.length() - 1));
-        int nodeNum = accountNum - 3;
-        String template = baseDir.get() + "/record%s";
-        return String.format(template, nodeNum, account);
+        return String.format("%s/record%s", baseDir.get(), account);
     }
 
     private NodeAddressBook downloadBook(HapiSpec spec) throws Exception {

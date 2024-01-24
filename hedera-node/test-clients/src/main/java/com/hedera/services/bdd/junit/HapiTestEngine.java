@@ -462,9 +462,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 new TransactionBodyValidator(),
                 new ExpiryRecordsValidator(),
                 new BalanceReconciliationValidator(),
-                new TokenReconciliationValidator()
-                /*new GeneralRecordStreamValidator()*/
-                );
+                new TokenReconciliationValidator());
 
         public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
             super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");
