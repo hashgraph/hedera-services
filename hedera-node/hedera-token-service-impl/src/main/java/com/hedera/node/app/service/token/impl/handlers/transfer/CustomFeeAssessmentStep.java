@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -241,7 +242,16 @@ public class CustomFeeAssessmentStep {
     private CryptoTransferTransactionBody changedInputTxn(
             final CryptoTransferTransactionBody op, final AssessmentResult result) {
         final var copy = op.copyBuilder();
-        final var changedFungibleTokenTransfers = result.getMutableInputTokenAdjustments();
+        // Update transfer list
+        final var changedHbarTransfers =
+                result.getMutableInputBalanceAdjustments().get(HBAR_TOKEN_ID);
+        final TransferList.Builder transferList = TransferList.newBuilder();
+        final List<AccountAmount> hbarList = getRevisedAdjustments(
+                op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList()), changedHbarTransfers);
+        copy.transfers(transferList.accountAmounts(hbarList).build());
+
+        // Update token transfer lists
+        final var changedFungibleTokenTransfers = result.getMutableInputBalanceAdjustments();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
         for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var token = xfers.token();
@@ -253,20 +263,7 @@ public class CustomFeeAssessmentStep {
                 final var adjustsHere = xfers.transfersOrThrow();
                 final var includedNetNewChanges = postAssessmentBalances.size() > adjustsHere.size();
                 if (includedNetNewChanges || balancesChangedBetween(adjustsHere, postAssessmentBalances)) {
-                    final List<AccountAmount> newTransfers = new ArrayList<>(adjustsHere.size());
-                    // First re-use the original transaction body to preserve any approvals or decimals that were set
-                    for (final var aa : adjustsHere) {
-                        final var newAmount = postAssessmentBalances.getOrDefault(aa.accountID(), aa.amount());
-                        newTransfers.add(aa.copyBuilder().amount(newAmount).build());
-                        postAssessmentBalances.remove(aa.accountID());
-                    }
-                    // Add any net-new custom fee adjustments (e.g. credits to fee collectors)
-                    for (final var entry : postAssessmentBalances.entrySet()) {
-                        newTransfers.add(AccountAmount.newBuilder()
-                                .accountID(entry.getKey())
-                                .amount(entry.getValue())
-                                .build());
-                    }
+                    final List<AccountAmount> newTransfers = getRevisedAdjustments(adjustsHere, postAssessmentBalances);
                     tokenTransferLists.add(
                             xfers.copyBuilder().transfers(newTransfers).build());
                 } else {
@@ -276,6 +273,26 @@ public class CustomFeeAssessmentStep {
         }
         copy.tokenTransfers(tokenTransferLists);
         return copy.build();
+    }
+
+    @NonNull
+    private static List<AccountAmount> getRevisedAdjustments(
+            final List<AccountAmount> adjustsHere, final Map<AccountID, Long> newBalances) {
+        final List<AccountAmount> newTransfers = new ArrayList<>(adjustsHere.size());
+        // First re-use the original transaction body to preserve any approvals or decimals that were set
+        for (final var aa : adjustsHere) {
+            final var newAmount = newBalances.getOrDefault(aa.accountID(), aa.amount());
+            newTransfers.add(aa.copyBuilder().amount(newAmount).build());
+            newBalances.remove(aa.accountID());
+        }
+        // Add any net-new custom fee adjustments (e.g. credits to fee collectors)
+        for (final var entry : newBalances.entrySet()) {
+            newTransfers.add(AccountAmount.newBuilder()
+                    .accountID(entry.getKey())
+                    .amount(entry.getValue())
+                    .build());
+        }
+        return newTransfers;
     }
 
     private boolean balancesChangedBetween(

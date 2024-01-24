@@ -112,7 +112,7 @@ public class EventMetadata implements Clearable {
             return;
         }
         cleared = true;
-        EventCounter.eventCleared();
+        EventCounter.decrementLinkedEventCount();
         selfParent = null;
         otherParent = null;
         clearMetadata();

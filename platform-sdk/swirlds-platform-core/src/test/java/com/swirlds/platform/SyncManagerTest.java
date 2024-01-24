@@ -59,7 +59,6 @@ class SyncManagerTest {
         public TransactionPool transactionPool;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
-        public DummyEventQueue eventQueue;
         public Configuration configuration;
 
         public SyncManagerTestData() {
@@ -82,10 +81,10 @@ class SyncManagerTest {
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
-            eventQueue = new DummyEventQueue(hashgraph);
+
             syncManager = new SyncManagerImpl(
                     platformContext,
-                    eventQueue,
+                    hashgraph::getEventIntakeQueueSize,
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,

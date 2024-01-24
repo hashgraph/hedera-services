@@ -17,12 +17,12 @@
 package com.hedera.node.app.utils;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import java.util.Random;
 import java.util.concurrent.Executors;
 

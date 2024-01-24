@@ -50,6 +50,7 @@ import java.util.List;
  * @param eventDurabilityNexusScheduler             the scheduler for the event durability nexus
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
+ * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -68,7 +69,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
-        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler) {
+        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
+        @NonNull TaskScheduler<Void> shadowgraphScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -195,6 +197,13 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("stateSignatureCollector")
                         .withType(config.stateSignatureCollectorSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("shadowgraph")
+                        .withType(config.shadowgraphSchedulerType())
+                        .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
                         .build()

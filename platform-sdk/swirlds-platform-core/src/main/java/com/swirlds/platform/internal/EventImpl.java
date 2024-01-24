@@ -28,7 +28,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -156,8 +155,6 @@ public class EventImpl extends EventMetadata
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
-
-        EventCounter.eventCreated();
 
         setDefaultValues();
 
@@ -540,6 +537,12 @@ public class EventImpl extends EventMetadata
     @Override
     public long getGeneration() {
         return baseEvent.getHashedData().getGeneration();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long getBirthRound() {
+        return baseEvent.getHashedData().getBirthRound();
     }
 
     /**

@@ -47,7 +47,7 @@ public final class GenerateConsensus {
     public static Deque<ConsensusRound> generateConsensusRounds(
             final int numNodes, final int numEvents, final long seed) {
         final List<EventSource<?>> eventSources = new ArrayList<>();
-        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(true)));
+        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(false)));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
         final TestIntake intake = new TestIntake(
                 generator.getAddressBook(),
