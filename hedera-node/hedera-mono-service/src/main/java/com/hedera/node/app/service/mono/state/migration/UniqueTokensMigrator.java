@@ -83,6 +83,9 @@ public class UniqueTokensMigrator {
         LOG.info("Migrated {} unique tokens", count.get());
     }
 
+    /**
+     * Do the transform from mono-service's unique tokens to modular-service's unique tokens
+     */
     public static void migrateFromUniqueTokenVirtualMap(
             @NonNull VirtualMapLike<UniqueTokenKey, UniqueTokenValue> fromState,
             @NonNull WritableKVState<NftID, Nft> toState) {

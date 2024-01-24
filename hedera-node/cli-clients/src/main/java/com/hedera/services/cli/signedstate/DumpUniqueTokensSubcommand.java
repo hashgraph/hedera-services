@@ -320,7 +320,7 @@ public class DumpUniqueTokensSubcommand {
             try {
                 uniquesStore
                         .virtualMap()
-                        .extractVirtualMapDataC(
+                        .extractVirtualMapData(
                                 getStaticThreadManager(),
                                 p -> {
                                     keys.add(UniqueNFTId.from(p.left()));
@@ -350,7 +350,6 @@ public class DumpUniqueTokensSubcommand {
         final var uniquesStore = getMigratedUniques();
         final var r = new HashMap<UniqueNFTId, UniqueNFT>();
 
-        System.out.println("MIGRATING!!!");
         uniquesStore.keys().forEachRemaining(key -> {
             final var id = UniqueNFTId.from(key);
             final var nft = UniqueNFT.from(uniquesStore.get(key));

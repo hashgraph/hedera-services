@@ -306,10 +306,6 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "Emit a summary information")
                     final boolean emitSummary,
             @Option(
-                            names = {"-k", "--slots"},
-                            description = "Emit the slot/value pairs for each contract's store")
-                    final boolean withSlots,
-            @Option(
                             names = {"--migrate"},
                             description =
                                     "migrate from mono-service representation to modular-service representation (before dump)")
