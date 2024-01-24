@@ -158,7 +158,12 @@ public class CustomGasCharging {
         requireNonNull(worldUpdater);
         requireNonNull(transaction);
 
+        final var senderAccount = worldUpdater.getHederaAccount(sender);
+        requireNonNull(senderAccount);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
+        validateTrue(
+                senderAccount.getBalance().toLong() >= gasCostGiven(intrinsicGas, context.gasPrice()),
+                INSUFFICIENT_PAYER_BALANCE);
 
         worldUpdater.collectFee(sender, gasCostGiven(intrinsicGas, context.gasPrice()));
     }

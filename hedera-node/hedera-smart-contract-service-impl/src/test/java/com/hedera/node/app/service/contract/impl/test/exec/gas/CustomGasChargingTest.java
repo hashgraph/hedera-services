@@ -380,6 +380,8 @@ class CustomGasChargingTest {
     @Test
     void chargeGasForAbortedTransaction() {
         givenWellKnownIntrinsicGasCost();
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(sender);
+        given(sender.getBalance()).willReturn(Wei.of(100_000_000));
         subject.chargeGasForAbortedTransaction(
                 SENDER_ID,
                 wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator),
