@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 public abstract class AbstractMetricAdapter implements MetricAdapter {
     private static final Logger log = LogManager.getLogger(AbstractMetricAdapter.class);
     protected final PrometheusEndpoint.AdapterType adapterType;
-    private final @NonNull CommonMetricValues values;
+    private final @NonNull ConvertedMetricValues values;
 
     private final AtomicInteger referenceCount = new AtomicInteger();
 
@@ -56,8 +56,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
             @NonNull final Metric metric,
             final boolean unitless) {
         this.adapterType = Objects.requireNonNull(adapterType, "adapterType must not be null");
-        this.values = new CommonMetricValues(unitless, Objects.requireNonNull(metric, "metric must not be null"));
-        this.values.checkAgainst(metric);
+        this.values = new ConvertedMetricValues(unitless, metric);
     }
 
     protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> T setCommonValues(
@@ -75,24 +74,40 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         return referenceCount.decrementAndGet();
     }
 
-    /**
-     * A holder for all metric common values. It can be created out of a {@code Metric} and naming rule conversions will
-     * be performed according to {@link NameConverter}
-     */
-    private record CommonMetricValues(
-            boolean unitless,
-            @NonNull String subSystem,
-            @NonNull String name,
-            @NonNull String unit,
-            @NonNull String help) {
 
-        private CommonMetricValues(boolean unitless, @NonNull Metric metric) {
-            this(
-                    unitless,
-                    fix(metric.getCategory()),
-                    fix(metric.getName()),
-                    fix(metric.getUnit()),
-                    metric.getDescription());
+    /**
+     * A holder for common metric values supporting automatic naming rules conversions. Instances of this class are
+     * created based on a {@code Metric}, and naming rules conversions will be applied to the category, name, and unit
+     * fields according to {@link NameConverter}.
+     *
+     * <p>
+     * The class facilitates the creation of Prometheus-compatible metric values by storing the fixed and converted
+     * category, name, unit, and help fields.
+     * </p>
+     */
+    private static class ConvertedMetricValues {
+        private final boolean unitless;
+
+        @NonNull
+        private final String subSystem;
+
+        @NonNull
+        private final String name;
+
+        @NonNull
+        private final String unit;
+
+        @NonNull
+        private final String help;
+
+        private ConvertedMetricValues(boolean unitless, final @NonNull Metric metric) {
+            Objects.requireNonNull(metric, "metric must not be null");
+            this.unitless = unitless;
+            this.subSystem = fix(metric.getCategory());
+            this.name = fix(metric.getName());
+            this.unit = fix(metric.getUnit());
+            this.help = metric.getDescription();
+            verifyMetricNamingComponents(metric);
         }
 
         <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> T fill(
@@ -102,12 +117,16 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         }
 
         /**
-         * Verifies if there was any modification performed to the values that would result in a change of the metric
-         * name in the underlying system.
+         * identifies changes in the metrics name components (category, name, and unit). If a change is detected, error
+         * log statements with the purpose of failing JRS are generated to inform developers that adjustments to the
+         * metric name may be required.
+         * </p>
+         * It is not throwing exceptions in order to minimize the possibility for runtime errors produced by
+         * non-critical misconfigurations
          *
-         * @param metric the values to check against
+         * @param metric the metric to check against
          */
-        void checkAgainst(Metric metric) {
+        private void verifyMetricNamingComponents(@NonNull Metric metric) {
             if (!Objects.equals(this.subSystem, metric.getCategory())) {
                 log.error(
                         EXCEPTION.getMarker(),
