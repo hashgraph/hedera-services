@@ -160,7 +160,7 @@ public class CustomGasCharging {
 
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
 
-        worldUpdater.collectFee(sender, intrinsicGas);
+        worldUpdater.collectFee(sender, gasCostGiven(intrinsicGas, context.gasPrice()));
     }
 
     private void chargeWithOnlySender(
@@ -200,5 +200,13 @@ public class CustomGasCharging {
         worldUpdater.collectFee(relayer.hederaId(), relayerGasCost);
         worldUpdater.collectFee(sender.hederaId(), senderGasCost);
         return relayerGasCost;
+    }
+
+    public long gasCostGiven(final long gasCharge, final long gasPrice) {
+        try {
+            return Math.multiplyExact(gasCharge, gasPrice);
+        } catch (ArithmeticException ignore) {
+            return Long.MAX_VALUE;
+        }
     }
 }
