@@ -109,7 +109,7 @@ public class InitialModServiceContractSchema extends Schema {
             log.info("BBM: finished migrating contract storage");
 
             log.info("BBM: migrating contract bytecode...");
-            final WritableKVState<EntityNumber, Bytecode> bytecodeTs =
+            final WritableKVState<ContractID, Bytecode> bytecodeTs =
                     ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
             final var migratedContractNums = new ArrayList<Integer>();
             try {
@@ -134,8 +134,8 @@ public class InitialModServiceContractSchema extends Schema {
                                             wrappedContents = Bytes.wrap(contents);
                                         }
                                         bytecodeTs.put(
-                                                EntityNumber.newBuilder()
-                                                        .number(contractId)
+                                                ContractID.newBuilder()
+                                                        .contractNum(contractId)
                                                         .build(),
                                                 Bytecode.newBuilder()
                                                         .code(wrappedContents)
