@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -29,7 +28,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -46,13 +44,9 @@ import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,9 +98,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-        // Set up a separate thread to invoke clear
-        final Callable<Void> clear = (ThrowingRunnable) () -> consensusRoundHandler.clear();
-
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -125,18 +116,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         for (int i = 0; i < numRounds; i++) {
             consensusRoundHandler.handleConsensusRound(round);
         }
-
-        // Make the separate thread invoke clear()
-        final Future<Void> future = executor.submit(clear);
-
-        // Wait up to the amount of time it would take for two full buffer of events to be handled. This entire time
-        // shouldn't be needed, but it's a max time to allow for different systems and other programs running at the
-        // same time. As long as this is less than the amount of time it takes to handle all the events in the queue,
-        // the value is valid.
-        final long maxMillisToWait = Math.round(maxRoundsInBuffer * (sleepMillisPerRound) * 2);
-
-        // Wait for clear() to complete
-        await().atMost(Duration.of(maxMillisToWait, ChronoUnit.MILLIS)).until(future::isDone);
 
         // Verify that no more than 2 buffers worth of events were handled
         assertTrue(

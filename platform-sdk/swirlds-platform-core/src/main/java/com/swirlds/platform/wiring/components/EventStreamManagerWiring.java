@@ -25,14 +25,29 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
-// todo do we need to flush
+/**
+ * The wiring for the {@link EventStreamManager}
+ *
+ * @param eventsInput            the input wire for consensus events
+ * @param runningHashUpdateInput the input wire to update the running hash upon reconnect or restart
+ * @param flushRunnable          the runnable to flush the task scheduler
+ */
 public record EventStreamManagerWiring(
         @NonNull InputWire<List<EventImpl>> eventsInput,
-        @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput) {
+        @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
+        @NonNull Runnable flushRunnable) {
 
+    /**
+     * Create a new wiring object
+     *
+     * @param taskScheduler the task scheduler to use
+     * @return the new wiring object
+     */
     public static EventStreamManagerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new EventStreamManagerWiring(
-                taskScheduler.buildInputWire("events"), taskScheduler.buildInputWire("running hash update"));
+                taskScheduler.buildInputWire("events"),
+                taskScheduler.buildInputWire("running hash update"),
+                taskScheduler::flush);
     }
 
     /**

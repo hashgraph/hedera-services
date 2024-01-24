@@ -154,6 +154,8 @@ public class ConsensusRoundHandler {
                 .roundsNonAncient();
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
 
+        // Future work: This metric should be moved to a suitable component once the stateHashSignQueue is migrated
+        // to the framework
         final RunningAverageMetric avgStateToHashSignDepth =
                 platformContext.getMetrics().getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
         platformContext.getMetrics().addUpdater(() -> {
@@ -165,7 +167,7 @@ public class ConsensusRoundHandler {
      * Loads data from a SignedState, this is used on startup to load events and the running hash that have been
      * previously saved on disk
      *
-     * @param runningHashUpdate the signed state to load
+     * @param runningHashUpdate the update to the running hash
      */
     public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
         consensusEventsRunningHash = new RunningHash(runningHashUpdate.runningEventHash());

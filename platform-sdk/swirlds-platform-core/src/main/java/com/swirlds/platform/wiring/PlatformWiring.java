@@ -71,6 +71,7 @@ import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
+import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,6 +104,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ShadowgraphWiring shadowgraphWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final EventStreamManagerWiring eventStreamManagerWiring;
+    private final RunningHashUpdaterWiring runningHashUpdaterWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -152,6 +154,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         eventStreamManagerWiring = EventStreamManagerWiring.create(schedulers.eventStreamManagerScheduler());
+        runningHashUpdaterWiring = RunningHashUpdaterWiring.create(schedulers.runningHashUpdateScheduler());
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -165,7 +168,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
-                consensusRoundHandlerWiring);
+                consensusRoundHandlerWiring,
+                eventStreamManagerWiring);
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
@@ -235,6 +239,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
+
+        runningHashUpdaterWiring
+                .runningHashUpdateOutput()
+                .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
+        runningHashUpdaterWiring.runningHashUpdateOutput().solderTo(eventStreamManagerWiring.runningHashUpdateInput());
     }
 
     /**
@@ -481,8 +490,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param runningHashUpdate the object containing necessary information to update the running hash
      */
     public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
-        eventStreamManagerWiring.runningHashUpdateInput().inject(runningHashUpdate);
-        consensusRoundHandlerWiring.runningHashUpdateInput().inject(runningHashUpdate);
+        runningHashUpdaterWiring.runningHashUpdateInput().inject(runningHashUpdate);
     }
 
     /**

@@ -21,6 +21,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
@@ -49,6 +50,7 @@ public class PlatformCoordinator {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
+    private final EventStreamManagerWiring eventStreamManagerWiring;
 
     /**
      * Constructor
@@ -65,6 +67,7 @@ public class PlatformCoordinator {
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
+     * @param eventStreamManagerWiring               the event stream manager wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -78,7 +81,8 @@ public class PlatformCoordinator {
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
-            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring) {
+            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
+            @NonNull final EventStreamManagerWiring eventStreamManagerWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -92,6 +96,7 @@ public class PlatformCoordinator {
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
+        this.eventStreamManagerWiring = Objects.requireNonNull(eventStreamManagerWiring);
     }
 
     /**
@@ -133,6 +138,7 @@ public class PlatformCoordinator {
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
+        eventStreamManagerWiring.flushRunnable().run();
 
         // Phase 3: clear
         // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
