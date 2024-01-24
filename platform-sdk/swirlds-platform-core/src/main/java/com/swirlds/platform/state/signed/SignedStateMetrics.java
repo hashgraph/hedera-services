@@ -70,7 +70,7 @@ public class SignedStateMetrics {
     private final SpeedometerMetric statesSignedPerSecond;
 
     private static final SpeedometerMetric.Config STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(CATEGORY, "stateSignaturesGathered/sec")
+            new SpeedometerMetric.Config(CATEGORY, "stateSignaturesGathered_per_sec")
                     .withDescription("the number of state signatures gathered from other nodes per second")
                     .withFormat(FORMAT_16_2)
                     .withUnit("hz");

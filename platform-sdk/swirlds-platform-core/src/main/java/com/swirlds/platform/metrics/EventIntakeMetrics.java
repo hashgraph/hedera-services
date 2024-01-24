@@ -36,7 +36,7 @@ import java.util.Objects;
  */
 public class EventIntakeMetrics implements StaleEventObserver {
     private static final SpeedometerMetric.Config DUPLICATE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "dupEv/sec")
+                    INTERNAL_CATEGORY, "dupEv_per_sec")
             .withDescription("number of events received per second that are already known")
             .withFormat(FORMAT_14_2);
     private final SpeedometerMetric duplicateEventsPerSecond;

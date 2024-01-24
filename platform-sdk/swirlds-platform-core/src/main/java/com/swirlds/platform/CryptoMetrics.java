@@ -127,15 +127,15 @@ public final class CryptoMetrics {
                     CATEGORY, "SigSliceSz")
             .withDescription("average signature slice size")
             .withFormat(FORMAT_11_3);
-    private static final SpeedometerMetric.Config SIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(CATEGORY, "Sig/sec")
+    private static final SpeedometerMetric.Config SIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(CATEGORY, "Sig_per_sec")
             .withDescription("number of signature verifications per second (complete)")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_VALID_PER_SEC_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "Sig_per_sec")
+                    CATEGORY, "SigVal_per_sec")
             .withDescription("number of valid signatures per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_INVALID_PER_SEC_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigVal_per_sec")
+                    CATEGORY, "SigInval_per_sec")
             .withDescription("number of invalid signatures per second")
             .withFormat(FORMAT_11_3);
     private static final RunningAverageMetric.Config AVG_SIG_INTAKE_QUEUE_DEPTH_CONFIG =
