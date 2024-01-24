@@ -76,9 +76,8 @@ public final class InitialModServiceScheduleSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         if (fs != null) {
-            log.info("BBM: doing schedule migration");
-
-            log.info("BBM: doing schedule by id");
+            log.info("BBM: Starting schedule migration");
+            log.info("BBM: Starting schedule by id migration");
             final WritableKVState<ScheduleID, Schedule> schedulesById =
                     ctx.newStates().get(SCHEDULES_BY_ID_KEY);
             fs.byId().forEachNode((entityNumVirtualKey, scheduleVirtualValue) -> {
@@ -95,9 +94,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
                 }
             });
             if (schedulesById.isModified()) ((WritableKVStateBase) schedulesById).commit();
-            log.info("BBM: finished schedule by id");
+            log.info("BBM: finished schedule by id migration");
 
-            log.info("BBM: doing schedule by expiration");
+            log.info("BBM: doing schedule by expiration migration");
             final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration =
                     ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
             fs.byExpirationSecond()
@@ -138,9 +137,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         }
                     });
             if (schedulesByExpiration.isModified()) ((WritableKVStateBase) schedulesByExpiration).commit();
-            log.info("BBM: finished schedule by expiration");
+            log.info("BBM: finished schedule by expiration migration");
 
-            log.info("BBM: doing schedule by equality");
+            log.info("BBM: doing schedule by equality migration");
             final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
             fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> {
@@ -166,9 +165,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         ScheduleList.newBuilder().schedules(schedules).build());
             });
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
-            log.info("BBM: finished schedule by equality");
+            log.info("BBM: finished schedule by equality migration");
 
-            log.info("BBM: finished schedule migration");
+            log.info("BBM: finished schedule service migration migration");
         } else {
             log.warn("BBM: no schedule 'from' state found");
         }

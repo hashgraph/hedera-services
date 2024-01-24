@@ -86,18 +86,19 @@ public class EntityIdService implements Service {
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
                     final var entityNum = config.firstUserEntity() - 1;
-                    log.info("Setting entity id to " + entityNum);
+                    log.info("Setting initial entity id to " + entityNum);
                     entityIdState.put(new EntityNumber(entityNum));
                 }
 
                 if (fs > -1) {
-                    log.info("BBM: Setting entity id to " + fs);
+                    log.info("BBM: Setting initial entity id to " + fs);
                     entityIdState.put(new EntityNumber(fs - 1));
                 } else {
                     log.warn("BBM: no entity ID 'from' state found");
                 }
 
-                // Usually we unassign the 'from' state here, but in this case there's no need because the only field is
+                // Usually we un-assign the 'from' state here, but in this case there's no need because the only field
+                // is
                 // a copied long
             }
         });

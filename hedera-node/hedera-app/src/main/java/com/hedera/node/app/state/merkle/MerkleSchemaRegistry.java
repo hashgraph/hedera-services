@@ -167,11 +167,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         logger.info(
-                "Migrating service {} from {} to {} with {} applicable schemas",
+                "Migrating {} applicable schemas for service {} from {} to {}",
+                () -> schemasToApply.size(),
                 () -> serviceName,
                 () -> HapiUtils.toString(previousVersion),
-                () -> HapiUtils.toString(currentVersion),
-                () -> schemasToApply.size());
+                () -> HapiUtils.toString(currentVersion));
         final var restartInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
@@ -243,8 +243,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisRecordsBuilder,
                     handleThrottling,
                     entityIdStore);
+            logger.info(
+                    "{} service {} for schema {}",
+                    restartInsteadOfMigrate ? "Restarting" : "Migrating",
+                    serviceName,
+                    schema);
             if (restartInsteadOfMigrate) {
-                logger.info("Restarting service {} for schema {}", serviceName, schema);
                 schema.restart(migrationContext);
             } else {
                 logger.info("Migrating service {} for schema {}", serviceName, schema);

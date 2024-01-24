@@ -85,7 +85,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -95,7 +94,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -1829,7 +1827,7 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     final HapiSpec specialAccountsBalanceCheck() {
         return defaultHapiSpec("SpecialAccountsBalanceCheck")
-                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS))
+                .given()
                 .when()
                 .then(IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
                         .mapToObj(i -> getAccountBalance("0.0." + i).logged())
