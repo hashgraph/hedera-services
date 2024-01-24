@@ -16,15 +16,15 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.metrics.MetricType.STAT_ENTRY;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import com.swirlds.metrics.api.MetricType;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
@@ -178,7 +178,7 @@ class StatEntryTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(STAT_ENTRY);
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.STAT_ENTRY);
     }
 
     @Test

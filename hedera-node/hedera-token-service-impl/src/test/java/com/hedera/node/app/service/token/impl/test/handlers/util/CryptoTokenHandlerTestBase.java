@@ -704,6 +704,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .weight(200)
                 .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
+                .pendingRewards(1000000)
                 .build();
         node1Info = StakingNodeInfo.newBuilder()
                 .nodeNumber(1)
@@ -716,6 +717,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .weight(300)
                 .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
+                .pendingRewards(1000000)
                 .build();
     }
 

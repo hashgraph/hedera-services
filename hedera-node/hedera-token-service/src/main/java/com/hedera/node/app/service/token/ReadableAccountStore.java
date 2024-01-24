@@ -98,4 +98,13 @@ public interface ReadableAccountStore {
     }
 
     long sizeOfAccountState();
+
+    /**
+     * Warms the system by preloading an account into memory
+     *
+     * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+     *
+     * @param accountID the account id
+     */
+    default void warm(@NonNull final AccountID accountID) {}
 }

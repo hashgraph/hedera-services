@@ -81,6 +81,13 @@ class StakeRewardCalculatorImplTest {
     }
 
     @Test
+    void zeroRewardsForDeletedNodeStakeInfo() {
+        final var stakingInfo = StakingNodeInfo.newBuilder().deleted(true).build();
+        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), stakingInfo, 321, 123);
+        assertEquals(0, reward);
+    }
+
+    @Test
     void delegatesEpochSecondAtStartOfPeriod() {
         given(stakePeriodManager.epochSecondAtStartOfPeriod(123)).willReturn(456L);
         assertEquals(456L, subject.epochSecondAtStartOfPeriod(123));

@@ -161,7 +161,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
      * Whether we should overwrite an existing record file on disk, because we are doing recovery.
      * (If false, this class just skips any record files that already exist.)
      */
-    private final boolean overwriteFilesDuringRecovery;
+    private final boolean isEventStreamRecovery;
 
     /**
      * The functional that will be used to try to delete a file; we only have this as a field so
@@ -181,14 +181,14 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
             final RecordStreamType streamType,
             final String sidecarDirPath,
             final int maxSidecarFileSize,
-            final boolean overwriteFilesDuringRecovery,
+            final boolean isEventStreamRecovery,
             @NonNull final Predicate<File> tryDeletion,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
-        this.overwriteFilesDuringRecovery = overwriteFilesDuringRecovery;
+        this.isEventStreamRecovery = isEventStreamRecovery;
         this.tryDeletion = tryDeletion;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -233,7 +233,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                             : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             final var fileExists = recordFile.exists() && !recordFile.isDirectory();
-            if (fileExists && !overwriteFilesDuringRecovery) {
+            if (fileExists && !isEventStreamRecovery) {
                 LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", recordFileNameShort);
             } else {
                 if (fileExists && !tryDeletion.test(recordFile)) {
@@ -323,7 +323,17 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
 
                 // if this line is reached, record file has been created successfully, so create its
                 // signature
-                createSignatureFileFor(protoRecordFile, uncompressedRecordFilePath);
+                try {
+                    createSignatureFileFor(protoRecordFile, uncompressedRecordFilePath);
+                } catch (UnsupportedOperationException e) {
+                    // Normally we don't need to be able to sign record files during
+                    // event stream recovery since the most common use case is ad-hoc
+                    // investigation of node behavior; but for any other init trigger, it
+                    // is critical to surface this exception
+                    if (!isEventStreamRecovery) {
+                        throw e;
+                    }
+                }
             }
         }
     }
