@@ -48,6 +48,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -61,6 +62,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.GossipEventWindowNexusWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -95,6 +97,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
+    private final GossipEventWindowNexusWiring gossipEventWindowNexusWiring;
 
     /**
      * The object counter that spans the event hasher and the post hash collector.
@@ -165,6 +168,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
+        gossipEventWindowNexusWiring = GossipEventWindowNexusWiring.create(model);
 
         wire();
     }
@@ -193,6 +197,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.nonExpiredEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(gossipEventWindowNexusWiring.eventWindowInput(), INJECT);
     }
 
     /**
@@ -282,6 +287,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
      * @param stateSignatureCollector the signed state manager to bind
+     * @param gossipEventWindowNexus  the gossip event window nexus to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -300,7 +306,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateSignatureCollector stateSignatureCollector) {
+            @NonNull final StateSignatureCollector stateSignatureCollector,
+            @NonNull final GossipEventWindowNexus gossipEventWindowNexus) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -319,6 +326,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.bind(eventCreationManager);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
+        gossipEventWindowNexusWiring.bind(gossipEventWindowNexus);
     }
 
     /**
@@ -476,6 +484,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        gossipEventWindowNexusWiring.eventWindowInput().inject(nonAncientEventWindow);
     }
 
     /**

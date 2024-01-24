@@ -101,6 +101,7 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
+import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -675,6 +676,8 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
+        final GossipEventWindowNexus gossipEventWindowNexus = new GossipEventWindowNexus(platformContext);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -692,7 +695,8 @@ public class SwirldsPlatform implements Platform {
                 sequencer,
                 eventCreationManager,
                 swirldStateManager,
-                stateSignatureCollector);
+                stateSignatureCollector,
+                gossipEventWindowNexus);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
