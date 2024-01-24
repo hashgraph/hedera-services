@@ -40,10 +40,10 @@ public class ConsensusServiceStateTranslator {
         // Utility class
     }
 
-    @NonNull
     /**
      * Migrates the state of the consensus service from the merkle state to the pbj state.
      */
+    @NonNull
     public static void migrateFromMerkleToPbj(
             com.swirlds.merkle.map.MerkleMap<
                             com.hedera.node.app.service.mono.utils.EntityNum,
@@ -54,13 +54,15 @@ public class ConsensusServiceStateTranslator {
                 .forEachNode(new PutConvertedTopic(appTopics));
     }
 
-    @NonNull
     /**
      * Migrates the state of the consensus service from the pbj state to the merkle state.
      */
+    @NonNull
     public static Topic stateToPbj(@NonNull com.hedera.node.app.service.mono.state.merkle.MerkleTopic monoTopic) {
         requireNonNull(monoTopic);
         final var topicBuilder = new Topic.Builder();
+        topicBuilder.topicId(
+                TopicID.newBuilder().topicNum(monoTopic.getKey().longValue()).build());
         topicBuilder.memo(monoTopic.getMemo());
         if (monoTopic.hasAdminKey()) topicBuilder.adminKey(PbjConverter.asPbjKey(monoTopic.getAdminKey()));
         if (monoTopic.hasSubmitKey()) topicBuilder.submitKey(PbjConverter.asPbjKey(monoTopic.getSubmitKey()));
@@ -71,17 +73,14 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
-        topicBuilder.topicId(TopicID.newBuilder()
-                .topicNum(monoTopic.getAutoRenewAccountId().num())
-                .build());
 
         return topicBuilder.build();
     }
 
-    @NonNull
     /**
      * Migrates the state of the consensus service from the pbj state to the merkle state.
      */
+    @NonNull
     public static com.hedera.node.app.service.mono.state.merkle.MerkleTopic pbjToState(
             @NonNull TopicID topicID, @NonNull ReadableTopicStore readableTopicStore) {
         requireNonNull(topicID);
@@ -90,10 +89,10 @@ public class ConsensusServiceStateTranslator {
         return pbjToState(optionalFile.orElseThrow(() -> new IllegalArgumentException("Topic not found")));
     }
 
-    @NonNull
     /**
      * Migrates the state of the consensus service from the pbj state to the merkle state.
      */
+    @NonNull
     public static com.hedera.node.app.service.mono.state.merkle.MerkleTopic pbjToState(@NonNull Topic topic) {
         requireNonNull(topic);
         final com.hedera.node.app.service.mono.state.merkle.MerkleTopic monoTopic =
@@ -109,6 +108,7 @@ public class ConsensusServiceStateTranslator {
                         com.hedera.node.app.service.mono.state.submerkle.EntityId.fromPbjAccountId(
                                 topic.autoRenewAccountId()),
                         new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
+        monoTopic.setKey(EntityNum.fromTopicId(topic.topicId()));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());

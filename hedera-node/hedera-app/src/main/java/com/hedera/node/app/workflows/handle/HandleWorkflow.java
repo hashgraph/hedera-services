@@ -85,6 +85,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -147,6 +148,8 @@ public class HandleWorkflow {
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final CacheWarmer cacheWarmer;
 
     @Inject
     public HandleWorkflow(
@@ -169,7 +172,9 @@ public class HandleWorkflow {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final CacheWarmer cacheWarmer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -192,7 +197,11 @@ public class HandleWorkflow {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
+        ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
+        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
     }
 
     /**
@@ -209,6 +218,9 @@ public class HandleWorkflow {
 
         // log start of round to transaction state log
         logStartRound(round);
+
+        // warm the cache
+        cacheWarmer.warm(state, round);
 
         // handle each event in the round
         for (final ConsensusEvent event : round) {
@@ -389,7 +401,8 @@ public class HandleWorkflow {
                     consensusNow,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    synchronizedThrottleAccumulator);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -543,6 +556,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);

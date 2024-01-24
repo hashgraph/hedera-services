@@ -74,7 +74,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -87,6 +86,7 @@ import org.junit.jupiter.api.Tag;
 public class Evm46ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
+    private static final long FIRST_NONEXISTENT_CONTRACT_NUM = 4303224382569680425L;
     private static final String NAME = "name";
     private static final String ERC_721_ABI = "ERC721ABI";
     private static final String NON_EXISTING_MIRROR_ADDRESS = "0000000000000000000000000000000000123456";
@@ -366,7 +366,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(withOpContext((spec, op) -> allRunFor(
                         spec,
-                        contractCall(INTERNAL_CALLER_CONTRACT, SELFDESTRUCT, mirrorAddrWith(new Random().nextLong()))
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        SELFDESTRUCT,
+                                        mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM))
                                 .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
                                 .via(INNER_TXN)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))))
@@ -587,7 +590,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
-                                mirrorAddrWith(new Random().nextLong()))
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 1))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN))
                 .then(getTxnRecord(INNER_TXN)
@@ -631,7 +634,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
-                                nonMirrorAddrWith(new Random().nextLong()))
+                                nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 2))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN))
                 .then(getTxnRecord(INNER_TXN)
@@ -670,7 +673,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(contractCall(
-                                INTERNAL_CALLER_CONTRACT, TRANSFER_TO_FUNCTION, mirrorAddrWith(new Random().nextLong()))
+                                INTERNAL_CALLER_CONTRACT,
+                                TRANSFER_TO_FUNCTION,
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 3))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
                         .via(INNER_TXN)
                         .hasKnownStatus(INVALID_ALIAS_KEY))
@@ -713,7 +718,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 TRANSFER_TO_FUNCTION,
-                                nonMirrorAddrWith(new Random().nextLong()))
+                                nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 4))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
                         .payingWith(CUSTOM_PAYER)
                         .via(INNER_TXN)
@@ -759,7 +764,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(INTERNAL_CALLER_CONTRACT, SEND_TO_FUNCTION, mirrorAddrWith(new Random().nextLong()))
+                .when(contractCall(
+                                INTERNAL_CALLER_CONTRACT,
+                                SEND_TO_FUNCTION,
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 5))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
                         .via(INNER_TXN)
                         .hasKnownStatus(INVALID_ALIAS_KEY))
@@ -866,7 +874,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_WITH_VALUE_TO_FUNCTION,
-                                mirrorAddrWith(new Random().nextLong()))
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 6))
                         .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
                         .via(INNER_TXN)
                         .hasKnownStatus(INVALID_ALIAS_KEY))
@@ -913,7 +921,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
                                         CALL_WITH_VALUE_TO_FUNCTION,
-                                        nonMirrorAddrWith(new Random().nextLong()))
+                                        nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 7))
                                 .payingWith(CUSTOM_PAYER)
                                 .gas(NOT_ENOUGH_GAS_LIMIT_FOR_CREATION)
                                 .via("transferWithLowGasLimit"))
@@ -938,7 +946,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
                                         CALL_WITH_VALUE_TO_FUNCTION,
-                                        nonMirrorAddrWith(new Random().nextLong()))
+                                        nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 8))
                                 .payingWith(CUSTOM_PAYER)
                                 .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
                                 .via("transferWithEnoughGasLimit"))
@@ -1034,7 +1042,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 STATIC_CALL_EXTERNAL_FUNCTION,
-                                mirrorAddrWith(new Random().nextLong()))
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 9))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN)
                         .hasKnownStatus(SUCCESS))
@@ -1142,7 +1150,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 DELEGATE_CALL_EXTERNAL_FUNCTION,
-                                mirrorAddrWith(new Random().nextLong()))
+                                mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 10))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN)
                         .hasKnownStatus(SUCCESS))

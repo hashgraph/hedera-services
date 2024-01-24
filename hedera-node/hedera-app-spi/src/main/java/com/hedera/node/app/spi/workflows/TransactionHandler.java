@@ -59,7 +59,7 @@ public interface TransactionHandler {
      * @param context the {@link PreHandleContext} which collects all information
      * @throws NullPointerException if {@code context} is {@code null}
      */
-    default void warmUp(@NonNull final PreHandleContext context) {}
+    default void warm(@NonNull final WarmupContext context) {}
 
     /**
      * Calculates the fees for a transaction

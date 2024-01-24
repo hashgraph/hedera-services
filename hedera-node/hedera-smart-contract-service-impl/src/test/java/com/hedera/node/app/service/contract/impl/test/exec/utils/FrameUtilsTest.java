@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.se
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_CALLERS_CONFIG;
@@ -36,7 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils;
@@ -52,6 +55,7 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -83,6 +87,9 @@ class FrameUtilsTest {
 
     @Mock
     private WorldUpdater worldUpdater;
+
+    @Mock
+    private FeatureFlags featureFlags;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -260,6 +267,38 @@ class FrameUtilsTest {
     void okIfFrameHasNoTracker() {
         given(frame.getMessageFrameStack()).willReturn(stack);
         assertNull(accessTrackerFor(frame));
+    }
+
+    @Test
+    void checkContractRequired() {
+        givenNonInitialFrame();
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        assertTrue(FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags));
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
+    }
+
+    @Test
+    void checkContractRequiredLongZero() {
+        givenNonInitialFrame();
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        assertTrue(FrameUtils.contractRequired(frame, NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS, featureFlags));
+        verify(featureFlags)
+                .isAllowCallsToNonContractAccountsEnabled(
+                        DEFAULT_CONFIG,
+                        NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS
+                                .toUnsignedBigInteger()
+                                .longValueExact());
+    }
+
+    @Test
+    void checkContractRequiredLongZeroTooBig() {
+        givenNonInitialFrame();
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        assertTrue(FrameUtils.contractRequired(frame, Address.fromHexString("0xFFFFFFFFFFFFFFFF"), featureFlags));
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
     }
 
     void givenNonInitialFrame() {

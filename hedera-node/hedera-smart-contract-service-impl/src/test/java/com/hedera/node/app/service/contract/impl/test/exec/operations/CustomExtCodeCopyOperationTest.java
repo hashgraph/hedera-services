@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,7 +73,7 @@ class CustomExtCodeCopyOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
+        subject = new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Test
@@ -89,8 +90,10 @@ class CustomExtCodeCopyOperationTest {
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            frameUtils
+                    .when(() -> FrameUtils.contractRequired(any(), any(), any()))
+                    .thenReturn(true);
             final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -125,11 +128,8 @@ class CustomExtCodeCopyOperationTest {
     void hasNormalBehaviorForUserAccount() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-            given(addressChecks.isPresent(Address.fromHexString("0x123"), frame))
-                    .willReturn(true);
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
             given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
