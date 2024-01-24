@@ -30,8 +30,6 @@ public abstract class PlatformStatNames {
     public static final String MULTI_TIPS_PER_SYNC = "multiTips/sync";
     /** the number of tips per sync at the start of each sync */
     public static final String TIPS_PER_SYNC = "tips/sync";
-    /** the average number of generations that should be expired but cannot yet due to reservations. */
-    public static final String GENS_WAITING_FOR_EXPIRY = "gensWaitingForExpiry";
     /** the ratio of rejected sync to accepted syncs over time. */
     public static final String REJECTED_SYNC_RATIO = "rejectedSyncRatio";
 

@@ -331,10 +331,8 @@ public class ClassicTransfersDecoder {
             final long amount,
             final IsApproval isApproval) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        accountAmounts.add(credit(to, amount));
         accountAmounts.add(debit(from, amount, isApproval));
-        accountAmounts.sort(Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR));
-
+        accountAmounts.add(credit(to, amount));
         return TokenTransferList.newBuilder()
                 .token(tokenId)
                 .transfers(accountAmounts)

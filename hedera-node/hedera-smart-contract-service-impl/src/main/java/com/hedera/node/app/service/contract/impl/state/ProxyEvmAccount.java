@@ -46,32 +46,32 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * in a context where writes are allowed.
  */
 public class ProxyEvmAccount extends AbstractMutableEvmAccount {
-    protected final long number;
+    protected final AccountID accountID;
     protected final EvmFrameState state;
 
-    public ProxyEvmAccount(final long number, @NonNull final EvmFrameState state) {
+    public ProxyEvmAccount(final AccountID accountID, @NonNull final EvmFrameState state) {
         this.state = state;
-        this.number = number;
+        this.accountID = accountID;
     }
 
     @Override
     public Address getAddress() {
-        return state.getAddress(number);
+        return state.getAddress(accountID);
     }
 
     @Override
     public com.hedera.hapi.node.state.token.Account toNativeAccount() {
-        return state.getNativeAccount(number);
+        return state.getNativeAccount(accountID);
     }
 
     @Override
     public long getNonce() {
-        return state.getNonce(number);
+        return state.getNonce(accountID);
     }
 
     @Override
     public Wei getBalance() {
-        return state.getBalance(number);
+        return state.getBalance(accountID);
     }
 
     @Override
@@ -81,37 +81,37 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public @NonNull Bytes getCode() {
-        return state.getCode(number);
+        return state.getCode(hederaContractId());
     }
 
     @Override
     public @NonNull Hash getCodeHash() {
-        return state.getCodeHash(number);
+        return state.getCodeHash(hederaContractId());
     }
 
     @Override
     public @NonNull UInt256 getStorageValue(@NonNull final UInt256 key) {
-        return state.getStorageValue(number, key);
+        return state.getStorageValue(hederaContractId(), key);
     }
 
     @Override
     public @NonNull UInt256 getOriginalStorageValue(@NonNull final UInt256 key) {
-        return state.getOriginalStorageValue(number, key);
+        return state.getOriginalStorageValue(hederaContractId(), key);
     }
 
     @Override
     public void setNonce(final long value) {
-        state.setNonce(number, value);
+        state.setNonce(accountID.accountNumOrElse(AccountID.DEFAULT.accountNum()), value);
     }
 
     @Override
     public void setCode(@NonNull final Bytes code) {
-        state.setCode(number, code);
+        state.setCode(hederaContractId(), code);
     }
 
     @Override
     public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
-        state.setStorageValue(number, key, value);
+        state.setStorageValue(hederaContractId(), key, value);
     }
 
     // --- Hedera-specific methods ---
@@ -125,12 +125,14 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public @NonNull AccountID hederaId() {
-        return AccountID.newBuilder().accountNum(number).build();
+        return accountID;
     }
 
     @Override
     public @NonNull ContractID hederaContractId() {
-        return ContractID.newBuilder().contractNum(number).build();
+        return ContractID.newBuilder()
+                .contractNum(accountID.accountNumOrThrow())
+                .build();
     }
 
     @Override
@@ -144,7 +146,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return the number of treasury titles held by this account
      */
     public int numTreasuryTitles() {
-        return state.getNumTreasuryTitles(number);
+        return state.getNumTreasuryTitles(accountID);
     }
 
     /**
@@ -153,7 +155,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return the number of positive token balances held by this account
      */
     public int numPositiveTokenBalances() {
-        return state.getNumPositiveTokenBalances(number);
+        return state.getNumPositiveTokenBalances(accountID);
     }
 
     /**
@@ -162,7 +164,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return if the account is a contract
      */
     public boolean isContract() {
-        return state.isContract(number);
+        return state.isContract(accountID);
     }
 
     /**

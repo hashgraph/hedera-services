@@ -777,6 +777,7 @@ public final class Hedera implements SwirldMain {
                     case FREEZE_COMPLETE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
                         closeRecordStreams();
+                        System.out.println("Closed record streams");
                         shutdownGrpcServer();
                     }
                 }
