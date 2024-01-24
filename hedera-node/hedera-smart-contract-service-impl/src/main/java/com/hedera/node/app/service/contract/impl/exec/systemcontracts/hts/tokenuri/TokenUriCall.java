@@ -43,14 +43,6 @@ public class TokenUriCall extends AbstractNftViewCall {
         super(gasCalculator, enhancement, token, serialNo);
     }
 
-    @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
-        requireNonNull(token);
-        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
-
-        return resultOfViewingNft(token, nft);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -64,5 +56,13 @@ public class TokenUriCall extends AbstractNftViewCall {
         }
         return successResult(
                 TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
+    }
+
+    @Override
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+        requireNonNull(token);
+        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
+
+        return resultOfViewingNft(token, nft);
     }
 }
