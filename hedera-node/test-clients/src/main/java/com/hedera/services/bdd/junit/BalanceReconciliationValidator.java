@@ -16,12 +16,10 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEngine.runSpec;
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.records.BalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import java.lang.reflect.InvocationTargetException;
@@ -29,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.platform.commons.support.ReflectionSupport;
 
 /**
  * This validator "reconciles" the hbar balances of all accounts and contract between the record
@@ -66,20 +63,7 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
         getExpectedBalanceFrom(recordsWithSidecars);
         System.out.println("Expected balances: " + expectedBalances);
 
-        // First, create an instance of the HapiSuite class (the class that owns this method).
-        final var suite = new BalanceValidation(expectedBalances, accountClassifier);
-        // Second, get the method
-        final var testMethod = ReflectionSupport.findMethod(BalanceValidation.class, "validateBalances")
-                .get();
-        // Third, call the method to get the HapiSpec
-        testMethod.setAccessible(true);
-        final var spec = (HapiSpec) testMethod.invoke(suite);
-        spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
-        final var result = suite.runSpecSync(spec, env.getNodes());
-        // Fourth, report the result. YAY!!
-        if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
-            throw new AssertionError();
-        }
+        runSpec(env, new BalanceValidation(expectedBalances, accountClassifier), "validateBalances");
     }
 
     private void getExpectedBalanceFrom(final List<RecordWithSidecars> recordsWithSidecars) {

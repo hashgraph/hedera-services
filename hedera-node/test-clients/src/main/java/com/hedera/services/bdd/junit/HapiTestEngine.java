@@ -458,11 +458,13 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
 
         private static final List<RecordStreamValidator> validators = List.of(
-                new BalanceReconciliationValidator(),
                 new BlockNoValidator(),
+                new TransactionBodyValidator(),
                 new ExpiryRecordsValidator(),
-                new TokenReconciliationValidator(),
-                new TransactionBodyValidator());
+                new BalanceReconciliationValidator(),
+                new TokenReconciliationValidator()
+                /*new GeneralRecordStreamValidator()*/
+                );
 
         public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
             super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");
@@ -482,22 +484,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         @Override
         public HapiTestEngineExecutionContext execute(
                 HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
+            final var env = context.getEnv();
             // run closing time specs
-            // First, create an instance of the HapiSuite class (the class that owns this method).
-            final var suite = new ClosingTime();
-            // Second, get the method
-            final var testMethod = ReflectionSupport.findMethod(
-                            ClosingTime.class, "closeLastStreamFileWithNoBalanceImpact")
-                    .get();
-            // Third, call the method to get the HapiSpec
-            testMethod.setAccessible(true);
-            final var spec = (HapiSpec) testMethod.invoke(suite);
-            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
-            final var result = suite.runSpecSync(spec, context.getEnv().getNodes());
-            // Fourth, report the result. YAY!!
-            if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
-                throw new AssertionError();
-            }
+            runSpec(env, new ClosingTime(), "closeLastStreamFileWithNoBalanceImpact");
 
             // read record stream data
             var recordLocs = hapiTestStreamLocs();
@@ -525,7 +514,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                             // The validator will complete silently if no errors are
                             // found
                             v.validateFiles(streamData.files());
-                            v.validateRecordsAndSidecarsHapi(context.getEnv(), streamData.records());
+                            v.validateRecordsAndSidecarsHapi(env, streamData.records());
                             return Stream.empty();
                         } catch (final Throwable t) {
                             return Stream.of(t);
@@ -547,6 +536,22 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
             }
             return locs;
+        }
+    }
+
+    public static void runSpec(HapiTestEnv env, HapiSuite suite, String specName)
+            throws InvocationTargetException, IllegalAccessException {
+        // Get the method
+        final var testMethod =
+                ReflectionSupport.findMethod(suite.getClass(), specName).get();
+        // Call the method to get the HapiSpec
+        testMethod.setAccessible(true);
+        final var spec = (HapiSpec) testMethod.invoke(suite);
+        spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+        final var result = suite.runSpecSync(spec, env.getNodes());
+        // Report the result. YAY!!
+        if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
+            throw new AssertionError(spec.getName() + ": " + spec.getCause());
         }
     }
 
