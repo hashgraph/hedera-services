@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,33 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtual.merkle.reconnect;
+package com.swirlds.merkle.test.fixtures;
 
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
-import com.swirlds.virtualmap.VirtualMap;
 
 /**
  * Imitates a virtual map. Useful for spoofing the virtual map tree structure during a reconnect test.
  */
 public class FakeVirtualMap extends PartialBinaryMerkleInternal implements MerkleInternal {
+
+    /**
+     * Used for serialization.
+     */
+    public static final long CLASS_ID = 0xb881f3704885e854L;
+
+    public static class ClassVersion {
+        public static final int ORIGINAL = 1;
+    }
+
     @Override
     public long getClassId() {
-        return VirtualMap.CLASS_ID;
+        return CLASS_ID;
     }
 
     @Override
     public int getVersion() {
-        return VirtualMap.ClassVersion.ORIGINAL;
+        return ClassVersion.ORIGINAL;
     }
 
     @Override
