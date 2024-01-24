@@ -83,7 +83,8 @@ public final class CryptoMetrics {
                     CATEGORY, "DigBatches_per_sec")
             .withDescription("average: digest batches created per second")
             .withFormat(FORMAT_11_3);
-    private static final SpeedometerMetric.Config DIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(CATEGORY, "Dig_per_sec")
+    private static final SpeedometerMetric.Config DIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(
+                    CATEGORY, "Dig_per_sec")
             .withDescription("number of digests per second (complete)")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_WORK_PULSE_PER_SECOND_CONFIG = new SpeedometerMetric.Config(

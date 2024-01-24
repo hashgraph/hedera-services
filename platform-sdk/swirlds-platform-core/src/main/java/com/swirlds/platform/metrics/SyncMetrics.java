@@ -186,7 +186,11 @@ public class SyncMetrics {
         avgEventsPerSyncSent = new AverageAndMax(
                 metrics, PLATFORM_CATEGORY, "ev_per_syncS", "number of events sent per successful sync", FORMAT_8_1);
         avgEventsPerSyncRec = new AverageAndMax(
-                metrics, PLATFORM_CATEGORY, "ev_per_syncR", "number of events received per successful sync", FORMAT_8_1);
+                metrics,
+                PLATFORM_CATEGORY,
+                "ev_per_syncR",
+                "number of events received per successful sync",
+                FORMAT_8_1);
 
         syncGenerationDiff = new AverageStat(
                 metrics,

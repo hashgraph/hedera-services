@@ -89,7 +89,9 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "storeMillis_per_round",
                                         "average time to add consensus round events to signed state storage"),
-                                Pair.of("hashMillis_per_round", "average time spent hashing the consensus round events"),
+                                Pair.of(
+                                        "hashMillis_per_round",
+                                        "average time spent hashing the consensus round events"),
                                 Pair.of("buildStateMillis", "average time spent building a signed state"),
                                 Pair.of(
                                         "forSigCleanMillis",

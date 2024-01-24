@@ -83,7 +83,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * The name of the thread that handles consensus events
      */
-    public static final String THREAD_CONS_NAME = "thread-cons"; //TODO: what to do with thread naming. It gives name to the thread but also to the metric associated to the thread, should we have the same constraint than for metric?
+    public static final String THREAD_CONS_NAME = "thread-cons";
+    // TODO: what to do with thread naming. It gives name to the thread but also to the metric
+    //  associated to the thread, should we have the same constraint than for metric?
 
     /**
      * The class responsible for all interactions with the swirld state
