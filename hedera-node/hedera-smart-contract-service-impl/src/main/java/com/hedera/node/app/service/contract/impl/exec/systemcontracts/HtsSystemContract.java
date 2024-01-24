@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
@@ -34,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
