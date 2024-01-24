@@ -166,7 +166,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
-        final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
+        logger.info(
+                "Migrating {} applicable schemas for service {} from {} to {}",
+                () -> schemasToApply.size(),
+                () -> serviceName,
+                () -> HapiUtils.toString(previousVersion),
+                () -> HapiUtils.toString(currentVersion));
+        final var restartInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -180,11 +186,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
+            logger.info("Creating states for {}", schema.statesToCreate());
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
                     .forEach(def -> {
                         final var stateKey = def.stateKey();
-                        logger.debug("Creating state {} for {}", stateKey, serviceName);
+                        logger.info("Creating state {} for {}", stateKey, serviceName);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
@@ -236,7 +243,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisRecordsBuilder,
                     handleThrottling,
                     entityIdStore);
-            if (updateInsteadOfMigrate) {
+            logger.info(
+                    "{} service {} for schema {}",
+                    restartInsteadOfMigrate ? "Restarting" : "Migrating",
+                    serviceName,
+                    schema);
+            if (restartInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);

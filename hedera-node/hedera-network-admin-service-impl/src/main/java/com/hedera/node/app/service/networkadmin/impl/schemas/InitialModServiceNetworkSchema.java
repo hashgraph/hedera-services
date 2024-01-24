@@ -22,6 +22,8 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the network service
@@ -30,7 +32,9 @@ import java.util.Set;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceNetworkSchema extends Schema {
-    public InitialModServiceNetworkSchema(SemanticVersion version) {
+    private static final Logger log = LogManager.getLogger(InitialModServiceNetworkSchema.class);
+
+    public InitialModServiceNetworkSchema(@NonNull final SemanticVersion version) {
         super(version);
     }
 
@@ -41,5 +45,7 @@ public class InitialModServiceNetworkSchema extends Schema {
     }
 
     @Override
-    public void migrate(@NonNull MigrationContext ctx) {}
+    public void migrate(@NonNull final MigrationContext ctx) {
+        log.info("BBM: no actions required for network service");
+    }
 }
