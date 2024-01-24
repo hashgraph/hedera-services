@@ -21,7 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -48,7 +48,7 @@ public class LinkedEventIntake {
     /**
      * Stores events, expires them, provides event lookup methods
      */
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
@@ -85,7 +85,7 @@ public class LinkedEventIntake {
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
         this.time = Objects.requireNonNull(time);
@@ -170,7 +170,7 @@ public class LinkedEventIntake {
      */
     private void handleStale(final long previousGenerationNonAncient) {
         // find all events that just became ancient and did not reach consensus, these events will be considered stale
-        final Collection<EventImpl> staleEvents = shadowGraph.findByGeneration(
+        final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
                 previousGenerationNonAncient,
                 consensusSupplier.get().getMinGenerationNonAncient(),
                 LinkedEventIntake::isNotConsensus);

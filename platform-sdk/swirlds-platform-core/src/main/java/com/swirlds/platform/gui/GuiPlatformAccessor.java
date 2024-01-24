@@ -19,7 +19,7 @@ package com.swirlds.platform.gui;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.system.events.PlatformEvent;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Deprecated(forRemoval = true)
 public final class GuiPlatformAccessor {
 
-    private final Map<NodeId, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
+    private final Map<NodeId, Shadowgraph> shadowGraphs = new ConcurrentHashMap<>();
     private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestImmutableStateComponents = new ConcurrentHashMap<>();
@@ -66,7 +66,7 @@ public final class GuiPlatformAccessor {
      * @param nodeId      the ID of the node
      * @param shadowGraph the shadow graph
      */
-    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final ShadowGraph shadowGraph) {
+    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final Shadowgraph shadowGraph) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
         shadowGraphs.put(nodeId, shadowGraph);
@@ -79,7 +79,7 @@ public final class GuiPlatformAccessor {
      * @return the shadow graph
      */
     @Nullable
-    public ShadowGraph getShadowGraph(@NonNull NodeId nodeId) {
+    public Shadowgraph getShadowGraph(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return shadowGraphs.getOrDefault(nodeId, null);
     }

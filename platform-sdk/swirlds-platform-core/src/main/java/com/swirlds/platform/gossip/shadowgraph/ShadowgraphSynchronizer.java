@@ -63,38 +63,43 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
+ * The goal of the ShadowgraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
  * the same events in the graph. This process is called a sync.
  * <p>
  * This instance can be called by multiple threads at the same time. To avoid accidental concurrency issues, all the
  * variables in this class are final. The ones that are used for storing information about an ongoing sync are method
  * local.
  */
-public class ShadowGraphSynchronizer {
+public class ShadowgraphSynchronizer {
 
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The shadow graph manager to use for this sync
      */
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
+
     /**
      * Number of member nodes in the network for this sync
      */
     private final int numberOfNodes;
+
     /**
      * All sync stats
      */
     private final SyncMetrics syncMetrics;
+
     /**
      * provides the current consensus instance, a supplier is used because this instance will change after a reconnect,
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
+
     /**
      * consumes events received by the peer
      */
     private final Consumer<GossipEvent> eventHandler;
+
     /**
      * manages sync related decisions
      */
@@ -110,10 +115,12 @@ public class ShadowGraphSynchronizer {
      * executes tasks in parallel
      */
     private final ParallelExecutor executor;
+
     /**
      * if set to true, send and receive initial negotiation bytes at the start of the sync
      */
     private final boolean sendRecInitBytes;
+
     /**
      * executed before fetching the tips from the shadowgraph for the second time in phase 3
      */
@@ -134,10 +141,9 @@ public class ShadowGraphSynchronizer {
      */
     private final Duration nonAncestorFilterThreshold;
 
-    public ShadowGraphSynchronizer(
+    public ShadowgraphSynchronizer(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -150,7 +156,7 @@ public class ShadowGraphSynchronizer {
 
         Objects.requireNonNull(platformContext);
 
-        this.time = Objects.requireNonNull(time);
+        this.time = platformContext.getTime();
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
@@ -200,7 +206,7 @@ public class ShadowGraphSynchronizer {
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
         final List<EventImpl> sendList;
-        try (final GenerationReservation reservation = shadowGraph.reserve()) {
+        try (final ShadowgraphReservation reservation = shadowGraph.reserve()) {
             connection.initForSync();
 
             timing.start();
@@ -213,7 +219,7 @@ public class ShadowGraphSynchronizer {
 
             // the generation we reserved is our minimum round generation
             // the ShadowGraph guarantees it won't be expired until we release it
-            final Generations myGenerations = getGenerations(reservation.getGeneration());
+            final Generations myGenerations = getGenerations(reservation.getReservedIndicator());
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE generation numbers & tip hashes
             final TheirTipsAndGenerations theirTipsAndGenerations = readWriteParallel(

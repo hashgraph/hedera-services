@@ -232,7 +232,6 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                         otherParentEvent == null ? 0 : otherParentEvent.getGeneration(),
                         latestSelfEvent == null ? 0 : latestSelfEvent.getGeneration())
                 + 1;
-        ;
 
         event = RandomEventUtils.randomEventWithTimestamp(
                 random,
