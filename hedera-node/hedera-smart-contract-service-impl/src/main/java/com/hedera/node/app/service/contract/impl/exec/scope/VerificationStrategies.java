@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -58,6 +59,9 @@ public class VerificationStrategies {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
         return new ActiveContractVerificationStrategy(
-                contractNum, tuweniToPbjBytes(sender), requiresDelegatePermission, UseTopLevelSigs.NO);
+                ContractID.newBuilder().contractNum(contractNum).build(),
+                tuweniToPbjBytes(sender),
+                requiresDelegatePermission,
+                UseTopLevelSigs.NO);
     }
 }

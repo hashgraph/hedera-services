@@ -43,6 +43,7 @@ import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtil
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -196,7 +197,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ? new EitherOrVerificationStrategy(
                         verificationStrategy,
                         new ActiveContractVerificationStrategy(
-                                legacyActivation.contractNum(),
+                                ContractID.newBuilder()
+                                        .contractNum(legacyActivation.contractNum())
+                                        .build(),
                                 legacyActivation.pbjAddress(),
                                 false,
                                 UseTopLevelSigs.NO))
