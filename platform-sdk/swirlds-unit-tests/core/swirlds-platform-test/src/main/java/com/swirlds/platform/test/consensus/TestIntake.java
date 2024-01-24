@@ -53,6 +53,7 @@ import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -135,15 +136,19 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
+        final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
+
         hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        linkedEventIntakeWiring
+        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        linkedEventIntakeWiring
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 
