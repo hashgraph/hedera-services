@@ -113,7 +113,7 @@ public class DumpTopicsSubcommand {
             @Nullable EntityId autoRenewAccountId) {
         Topic(@NonNull final MerkleTopic topic) {
             this(
-                    topic.getNumber(),
+                    topic.getKey().intValue(),
                     topic.getMemo(),
                     topic.getExpirationTimestamp(),
                     topic.isDeleted(),
