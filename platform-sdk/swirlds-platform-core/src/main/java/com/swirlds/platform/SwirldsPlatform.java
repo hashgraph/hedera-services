@@ -779,11 +779,21 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
+        final Clearable clearStateHashSignQueue = () -> {
+            // wait until the queue is empty, but don't discard any tasks
+            ReservedSignedState signedState = stateHashSignQueue.poll();
+            while (signedState != null) {
+                signedState.close();
+                signedState = stateHashSignQueue.poll();
+            }
+        };
+
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
+                        Pair.of(clearStateHashSignQueue, "stateHashSignQueue"),
                         Pair.of(transactionPool, "transactionPool")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {

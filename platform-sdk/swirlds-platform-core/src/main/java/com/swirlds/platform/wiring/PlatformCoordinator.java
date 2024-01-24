@@ -132,6 +132,7 @@ public class PlatformCoordinator {
         // Flush everything remaining in the intake pipeline out into the void.
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
+        consensusRoundHandlerWiring.flushRunnable().run();
 
         // Phase 3: clear
         // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
@@ -142,7 +143,7 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.flushRunnable().run();
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        consensusRoundHandlerWiring.flushRunnable().run();
+        stateSignatureCollectorWiring.flush();
 
         // Phase 4: unpause
         // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.

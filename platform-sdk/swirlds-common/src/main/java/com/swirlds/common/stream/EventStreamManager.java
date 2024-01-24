@@ -47,9 +47,6 @@ import org.apache.logging.log4j.Logger;
  * runningHash for consensus Events.
  */
 public class EventStreamManager<T extends StreamAligned & Timestamped & RunningHashable & SerializableHashable> {
-    /**
-     * use this for all logging, as controlled by the optional data/log4j2.xml file
-     */
     private static final Logger logger = LogManager.getLogger(EventStreamManager.class);
 
     /**
@@ -128,7 +125,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                     signer,
                     // when event streaming is started after reconnect, or at state recovering,
                     // startWriteAtCompleteWindow should be set to be true; when event streaming is started after
-                    // restart, it should be set to be false */
+                    // restart, it should be set to be false
                     false,
                     EventStreamType.getInstance());
 

@@ -161,15 +161,6 @@ public class ConsensusRoundHandler {
         });
     }
 
-    public void clear() {
-        // todo figure out where to do this
-        ReservedSignedState signedState = stateHashSignQueue.poll();
-        while (signedState != null) {
-            signedState.close();
-            signedState = stateHashSignQueue.poll();
-        }
-    }
-
     /**
      * Loads data from a SignedState, this is used on startup to load events and the running hash that have been
      * previously saved on disk
