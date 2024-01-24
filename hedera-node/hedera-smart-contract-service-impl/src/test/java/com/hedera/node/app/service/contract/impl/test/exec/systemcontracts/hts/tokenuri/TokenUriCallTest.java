@@ -35,6 +35,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
 class TokenUriCallTest extends HtsCallTestBase {
+    public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
     private TokenUriCall subject;
 
     @Test
@@ -64,8 +65,13 @@ class TokenUriCallTest extends HtsCallTestBase {
         // when
         final var result = subject.execute().fullResult().result();
         // then
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_NFT_ID), result.getOutput());
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(TokenUriTranslator.TOKEN_URI
+                        .getOutputs()
+                        .encodeElements(URI_QUERY_NON_EXISTING_TOKEN_ERROR)
+                        .array()),
+                result.getOutput());
     }
 
     @Test
