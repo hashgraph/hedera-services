@@ -25,7 +25,6 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.MetricNamingRules;
 import com.swirlds.metrics.api.Metrics;
 import java.util.Collection;
 import java.util.Collections;
@@ -182,9 +181,7 @@ public class DefaultMetrics implements PlatformMetrics {
         Metric metric = metricMap.get(key);
         if (metric == null) {
             // no metric registered, therefore we will try to register it now
-            // before anything else, validate
-            MetricNamingRules.getInstance().validate(config);
-            // then we try to reserve the category and name
+            // before anything else, we try to reserve the category and name
             if (!metricKeyRegistry.register(selfId, key, config.getResultClass())) {
                 throw new IllegalStateException(String.format(
                         "A different metric with the category '%s' and name '%s' was already registered",
