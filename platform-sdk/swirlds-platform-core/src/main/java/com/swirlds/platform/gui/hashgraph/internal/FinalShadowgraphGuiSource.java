@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.system.address.AddressBook;
 
 /**
- * A {@link ShadowgraphGuiSource} where the {@link ShadowGraph} is set in the constructor and never changes
+ * A {@link ShadowgraphGuiSource} where the {@link Shadowgraph} is set in the constructor and never changes
  */
 public class FinalShadowgraphGuiSource implements ShadowgraphGuiSource {
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
     private final AddressBook addressBook;
 
-    public FinalShadowgraphGuiSource(final ShadowGraph shadowGraph, final AddressBook addressBook) {
+    public FinalShadowgraphGuiSource(final Shadowgraph shadowGraph, final AddressBook addressBook) {
         this.shadowGraph = shadowGraph;
         this.addressBook = addressBook;
     }
@@ -37,7 +37,7 @@ public class FinalShadowgraphGuiSource implements ShadowgraphGuiSource {
     }
 
     @Override
-    public ShadowGraph getShadowGraph() {
+    public Shadowgraph getShadowGraph() {
         return shadowGraph;
     }
 }
