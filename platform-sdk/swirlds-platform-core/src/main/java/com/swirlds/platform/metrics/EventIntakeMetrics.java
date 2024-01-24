@@ -42,7 +42,7 @@ public class EventIntakeMetrics implements StaleEventObserver {
     private final SpeedometerMetric duplicateEventsPerSecond;
 
     private static final RunningAverageMetric.Config AVG_DUPLICATE_PERCENT_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "dupEv%")
+                    PLATFORM_CATEGORY, "dupEvPercent")
             .withDescription("percentage of events received that are already known")
             .withFormat(FORMAT_10_2);
     private final RunningAverageMetric avgDuplicatePercent;

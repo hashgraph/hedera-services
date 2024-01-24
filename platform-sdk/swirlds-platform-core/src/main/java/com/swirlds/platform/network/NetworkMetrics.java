@@ -47,7 +47,7 @@ public class NetworkMetrics {
             .withDescription("average time for a round trip message between 2 computers (in milliseconds)")
             .withFormat(FloatFormats.FORMAT_7_0);
     private static final SpeedometerMetric.Config BYTES_PER_SECOND_SENT_CONFIG = new SpeedometerMetric.Config(
-                    Metrics.INTERNAL_CATEGORY, "bytes/sec_sent")
+                    Metrics.INTERNAL_CATEGORY, "bytes_per_sec_sent")
             .withDescription("number of bytes sent per second over the network (total for this member)")
             .withFormat(FloatFormats.FORMAT_16_2);
     private static final RunningAverageMetric.Config AVG_CONNS_CREATED_CONFIG = new RunningAverageMetric.Config(

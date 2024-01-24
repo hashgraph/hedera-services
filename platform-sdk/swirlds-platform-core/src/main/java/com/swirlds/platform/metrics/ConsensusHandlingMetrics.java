@@ -80,16 +80,16 @@ public class ConsensusHandlingMetrics {
                         "consRound",
                         List.of(
                                 Pair.of(
-                                        "keystoneFlushMillis/round",
+                                        "keystoneFlushMillis_per_round",
                                         "average time to flush a round's keystone event to disk"),
                                 Pair.of(
-                                        "dataPropMillis/round",
+                                        "dataPropMillis_per_round",
                                         "average time to propagate consensus data to transactions"),
                                 Pair.of("handleMillis/round", "average time to handle a consensus round"),
                                 Pair.of(
-                                        "storeMillis/round",
+                                        "storeMillis_per_round",
                                         "average time to add consensus round events to signed state storage"),
-                                Pair.of("hashMillis/round", "average time spent hashing the consensus round events"),
+                                Pair.of("hashMillis_per_round", "average time spent hashing the consensus round events"),
                                 Pair.of("buildStateMillis", "average time spent building a signed state"),
                                 Pair.of(
                                         "forSigCleanMillis",
@@ -111,7 +111,7 @@ public class ConsensusHandlingMetrics {
         avgEventsPerRound = new AverageAndMax(
                 metrics,
                 INTERNAL_CATEGORY,
-                "events/round",
+                "events_per_round",
                 "average number of events in a consensus round",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);

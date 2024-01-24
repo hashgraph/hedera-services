@@ -63,7 +63,7 @@ public class SignedStateMetrics {
     private final Counter totalNeverSignedDiskStates;
 
     private static final SpeedometerMetric.Config STATES_SIGNED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "statesSigned/sec")
+                    CATEGORY, "sstatesSigned_per_sec")
             .withDescription("the number of states completely signed per second")
             .withFormat(FORMAT_16_2)
             .withUnit("hz");
