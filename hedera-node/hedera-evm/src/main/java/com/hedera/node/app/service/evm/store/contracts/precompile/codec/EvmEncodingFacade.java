@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -186,6 +187,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetFungibleTokenInfoFailure(final ResponseCodeEnum status, final EvmTokenInfo tokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+                .withStatus(status.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
+    }
+
     public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
@@ -198,6 +207,16 @@ public class EvmEncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .withNftTokenInfo(nonFungibleTokenInfo)
+                .build();
+    }
+
+    public Bytes encodeGetNonFungibleTokenInfoFailure(
+            final ResponseCodeEnum status, final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                .withStatus(status.getNumber())
                 .withTokenInfo(tokenInfo)
                 .withNftTokenInfo(nonFungibleTokenInfo)
                 .build();

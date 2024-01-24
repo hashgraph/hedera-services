@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -70,6 +71,29 @@ public class EvmTokenInfo {
         this.maxSupply = maxSupply;
         this.decimals = decimals;
         this.expiry = expiry;
+    }
+
+    public EvmTokenInfo() {
+        this.ledgerId = new byte[0];
+        this.name = "";
+        this.symbol = "";
+        this.memo = "";
+        this.treasury = Address.ZERO;
+        this.supplyType = 0;
+        this.deleted = false;
+        this.totalSupply = 0;
+        this.maxSupply = 0;
+        this.decimals = 0;
+        this.expiry = 0;
+        this.customFees = new ArrayList<>();
+        this.adminKey = new EvmKey();
+        this.kycKey = new EvmKey();
+        this.freezeKey = new EvmKey();
+        this.wipeKey = new EvmKey();
+        this.supplyKey = new EvmKey();
+        this.feeScheduleKey = new EvmKey();
+        this.pauseKey = new EvmKey();
+        this.autoRenewAccount = Address.ZERO;
     }
 
     public void setCustomFees(List<CustomFee> customFees) {

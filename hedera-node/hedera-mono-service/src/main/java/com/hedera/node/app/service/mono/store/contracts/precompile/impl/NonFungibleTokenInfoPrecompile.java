@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -75,6 +77,13 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
         validateTrue(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
         return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        final var tokenInfo = new EvmTokenInfo();
+        final var nonFungibleTokenInfo = new EvmNftInfo();
+        return evmEncoder.encodeGetNonFungibleTokenInfoFailure(status, tokenInfo, nonFungibleTokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {
