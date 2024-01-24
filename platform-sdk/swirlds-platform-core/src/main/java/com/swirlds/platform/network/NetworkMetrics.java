@@ -108,7 +108,7 @@ public class NetworkMetrics {
             avgBytePerSecSent.put(
                     nodeId,
                     metrics.getOrCreate(new SpeedometerMetric.Config(
-                                    BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
+                                    BPSS_CATEGORY, String.format("bytes_per_sec_sent_%02d", nodeId.id()))
                             .withDescription(String.format("bytes per second sent to node %02d", nodeId.id()))
                             .withFormat(FloatFormats.FORMAT_16_2)));
             disconnectFrequency.put(
@@ -117,7 +117,7 @@ public class NetworkMetrics {
                             metrics,
                             new CountPerSecond.Config(
                                             Metrics.PLATFORM_CATEGORY,
-                                            String.format("disconnects/sec_%02d", nodeId.id()))
+                                            String.format("disconnects_per_sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of disconnects per second from node %02d", nodeId.id()))
                                     .withFormat(FloatFormats.FORMAT_10_0)));

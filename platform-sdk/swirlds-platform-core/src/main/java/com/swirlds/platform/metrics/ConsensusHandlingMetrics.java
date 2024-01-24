@@ -85,7 +85,7 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "dataPropMillis_per_round",
                                         "average time to propagate consensus data to transactions"),
-                                Pair.of("handleMillis/round", "average time to handle a consensus round"),
+                                Pair.of("handleMillis_per_round", "average time to handle a consensus round"),
                                 Pair.of(
                                         "storeMillis_per_round",
                                         "average time to add consensus round events to signed state storage"),
