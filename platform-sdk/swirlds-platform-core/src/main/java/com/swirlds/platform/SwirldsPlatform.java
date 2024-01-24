@@ -44,7 +44,6 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
@@ -61,6 +60,7 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
@@ -233,13 +233,6 @@ public class SwirldsPlatform implements Platform {
      * new state is created, before it is hashed.
      */
     private final SignedStateNexus latestImmutableState = new LockFreeStateNexus();
-
-    private final QueueThread<GossipEvent> intakeQueue;
-
-    /**
-     * Validates events and passes valid events further down the intake pipeline.
-     */
-    private final InterruptableConsumer<GossipEvent> intakeHandler;
 
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
@@ -544,24 +537,6 @@ public class SwirldsPlatform implements Platform {
                 this::waitUntilTransactionHandlingThreadIsNotBusy,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
-        platformWiring.bind(
-                eventHasher,
-                signedStateFileManager,
-                stateSigner,
-                pcesReplayer,
-                pcesWriter,
-                eventDurabilityNexus,
-                shadowGraph);
-
-        // Load the minimum generation into the pre-consensus event writer
-        final List<SavedStateInfo> savedStates =
-                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
-        if (!savedStates.isEmpty()) {
-            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState =
-                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
-            platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
-        }
 
         components.add(stateManagementComponent);
 
@@ -633,8 +608,6 @@ public class SwirldsPlatform implements Platform {
                         .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                         .build());
 
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
                 threadManager,
@@ -695,36 +668,41 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 appVersion,
                 transactionPool,
-                this::getIntakeQueueSize,
+                platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
-        platformWiring.bindIntake(
+        platformWiring.wireExternalComponents(
+                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
+
+        platformWiring.bind(
+                eventHasher,
                 internalEventValidator,
                 eventDeduplicator,
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
                 linkedEventIntake,
-                eventCreationManager,
+                signedStateFileManager,
+                stateSigner,
+                pcesReplayer,
+                pcesWriter,
+                eventDurabilityNexus,
+                shadowGraph,
                 sequencer,
+                eventCreationManager,
                 swirldStateManager,
                 stateSignatureCollector);
 
-        intakeHandler = platformWiring.getEventInput()::put;
-
-        intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
-                .setNodeId(selfId)
-                .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("event-intake")
-                .setHandler(intakeHandler)
-                .setCapacity(eventConfig.eventIntakeQueueSize())
-                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
-                .build());
-
-        platformWiring.wireExternalComponents(
-                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
+        // Load the minimum generation into the pre-consensus event writer
+        final List<SavedStateInfo> savedStates =
+                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
+        }
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
@@ -747,7 +725,8 @@ public class SwirldsPlatform implements Platform {
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,
-                intakeQueue,
+                platformWiring.getEventInput()::put,
+                platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
@@ -808,7 +787,6 @@ public class SwirldsPlatform implements Platform {
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -835,15 +813,6 @@ public class SwirldsPlatform implements Platform {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted waiting for transaction handling thread to not be busy", e);
         }
-    }
-
-    /**
-     * Get the current size of the intake queue. Helper method to break a circular dependency.
-     *
-     * @return the current size of the intake queue
-     */
-    private int getIntakeQueueSize() {
-        return intakeQueue.size();
     }
 
     /**

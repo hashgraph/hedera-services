@@ -48,7 +48,7 @@ public class TestService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         schemas.forEach(registry::register);
     }
 

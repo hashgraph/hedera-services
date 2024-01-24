@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**

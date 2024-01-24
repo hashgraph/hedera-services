@@ -214,6 +214,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private PlatformState platformState;
 
+    @Mock
+    private CacheWarmer cacheWarmer;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -288,7 +291,8 @@ class HandleWorkflowTest extends AppTestBase {
                 authorizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                scheduleExpirationHook);
+                scheduleExpirationHook,
+                cacheWarmer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -315,7 +319,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -338,7 +343,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -361,7 +367,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -384,7 +391,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -407,7 +415,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -430,7 +439,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -453,7 +463,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -476,7 +487,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -499,7 +511,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -522,7 +535,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -545,7 +559,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -568,7 +583,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -591,7 +607,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -614,7 +631,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -637,7 +655,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -660,7 +679,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -683,7 +703,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -706,7 +727,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         null,
                         synchronizedThrottleAccumulator,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -729,7 +751,8 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         null,
-                        scheduleExpirationHook))
+                        scheduleExpirationHook,
+                        cacheWarmer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -752,6 +775,31 @@ class HandleWorkflowTest extends AppTestBase {
                         authorizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator,
+                        null,
+                        cacheWarmer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        genesisRecordsTimeHook,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        childRecordFinalizer,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        platformStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer,
+                        networkUtilizationManager,
+                        synchronizedThrottleAccumulator,
+                        scheduleExpirationHook,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -783,6 +831,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, platformState, round);
 
         // then
+        verify(cacheWarmer).warm(any(), any());
         verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
