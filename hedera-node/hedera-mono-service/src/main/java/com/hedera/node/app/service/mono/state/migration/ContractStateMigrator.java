@@ -454,7 +454,7 @@ public class ContractStateMigrator {
 
     /** Convert int[] to byte[] and then to Bytes. If argument is null or 0-length then return `Bytes.EMPTY`. */
     @NonNull
-    static Bytes bytesFromInts(@Nullable final int[] ints) {
+    public static Bytes bytesFromInts(@Nullable final int[] ints) {
         if (ints == null) return Bytes.EMPTY;
         if (ints.length == 0) return Bytes.EMPTY;
 
