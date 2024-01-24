@@ -304,12 +304,30 @@ public class DumpStateCommand extends AbstractCommand {
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit a summary information")
-                    final boolean emitSummary) {
+                    final boolean emitSummary,
+            @Option(
+                            names = {"-k", "--slots"},
+                            description = "Emit the slot/value pairs for each contract's store")
+                    final boolean withSlots,
+            @Option(
+                            names = {"--migrate"},
+                            description =
+                                    "migrate from mono-service representation to modular-service representation (before dump)")
+                    final boolean withMigration,
+            @Option(
+                            names = {"--validate-migration"},
+                            description = "validate the migrated contract store")
+                    final boolean withValidationOfMigration) {
         Objects.requireNonNull(uniquesPath);
         init();
         System.out.println("=== unique NFTs ===");
         DumpUniqueTokensSubcommand.doit(
-                parent.signedState, uniquesPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+                parent.signedState,
+                uniquesPath,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                withMigration ? WithMigration.YES : WithMigration.NO,
+                withValidationOfMigration ? WithValidation.YES : WithValidation.NO,
+                parent.verbosity);
         finish();
     }
 

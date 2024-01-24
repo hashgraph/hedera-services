@@ -16,23 +16,36 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.services.cli.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.google.common.collect.ComparisonChain;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
-import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.memory.InMemoryKey;
+import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -43,16 +56,23 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Dump all unique (serial-numbered) tokens, from a signed state file, to a text file, in deterministic order. */
+/**
+ * Dump all unique (serial-numbered) tokens, from a signed state file, to a text file, in deterministic order.
+ */
 @SuppressWarnings({"java:S106"})
 // S106: "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpUniqueTokensSubcommand {
+    private SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
+
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path uniquesPath,
             @NonNull final EmitSummary emitSummary,
+            @NonNull final DumpStateCommand.WithMigration withMigration,
+            @NonNull final DumpStateCommand.WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
-        new DumpUniqueTokensSubcommand(state, uniquesPath, emitSummary, verbosity).doit();
+        new DumpUniqueTokensSubcommand(state, uniquesPath, emitSummary, withMigration, withValidation, verbosity)
+                .doit();
     }
 
     @NonNull
@@ -67,14 +87,24 @@ public class DumpUniqueTokensSubcommand {
     @NonNull
     final EmitSummary emitSummary;
 
+    @NonNull
+    final DumpStateCommand.WithMigration withMigration;
+
+    @NonNull
+    final DumpStateCommand.WithValidation withValidation;
+
     DumpUniqueTokensSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path uniquesPath,
             @NonNull final EmitSummary emitSummary,
+            @NonNull final DumpStateCommand.WithMigration withMigration,
+            @NonNull final DumpStateCommand.WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
         this.state = state;
         this.uniquesPath = uniquesPath;
         this.emitSummary = emitSummary;
+        this.withMigration = withMigration;
+        this.withValidation = withValidation;
         this.verbosity = verbosity;
     }
 
@@ -83,7 +113,8 @@ public class DumpUniqueTokensSubcommand {
         System.out.printf(
                 "=== %d unique tokens (%s) ===%n",
                 uniquesStore.size(), uniquesStore.isVirtual() ? "virtual" : "merkle");
-        final var uniques = gatherUniques(uniquesStore);
+        final var uniques =
+                (withMigration == DumpStateCommand.WithMigration.NO) ? gatherUniques() : gatherMigratedUniques();
         System.out.printf("    %d unique tokens gathered%n", uniques.size());
 
         int reportSize;
@@ -104,6 +135,10 @@ public class DumpUniqueTokensSubcommand {
 
         static UniqueNFTId from(@NonNull final EntityNumPair enp) {
             return new UniqueNFTId(enp.getHiOrderAsLong(), enp.getLowOrderAsLong());
+        }
+
+        static UniqueNFTId from(@NonNull final NftID id) {
+            return new UniqueNFTId(id.tokenId().tokenNum(), id.serialNumber());
         }
 
         @Override
@@ -152,12 +187,31 @@ public class DumpUniqueTokensSubcommand {
                     mut.getPrev(),
                     mut.getNext());
         }
+
+        static UniqueNFT from(@NonNull final Nft nft) {
+            return new UniqueNFT(
+                    EntityId.fromPbjAccountId(nft.ownerId()),
+                    EntityId.fromPbjAccountId(nft.spenderId()),
+                    new RichInstant(nft.mintTime().seconds(), nft.mintTime().nanos()),
+                    null != nft.metadata() ? nft.metadata().toByteArray() : EMPTY_BYTES,
+                    NftNumPair.fromLongs(
+                            nft.ownerPreviousNftId().tokenId().tokenNum(),
+                            nft.ownerPreviousNftId().serialNumber()),
+                    NftNumPair.fromLongs(
+                            nft.ownerNextNftId().tokenId().tokenNum(),
+                            nft.ownerNextNftId().serialNumber()));
+        }
     }
 
     void reportSummary(@NonNull final Writer writer, @NonNull final Map<UniqueNFTId, UniqueNFT> uniques) {
+        final var validationSummary = withValidation == DumpStateCommand.WithValidation.NO ? "" : "validated ";
+        final var migrationSummary = withMigration == DumpStateCommand.WithMigration.NO
+                ? ""
+                : "(with %smigration)".formatted(validationSummary);
+
         final var relatedEntityCounts = RelatedEntities.countRelatedEntities(uniques);
-        writer.writeln("=== %7d unique tokens (%d owned by treasury accounts)"
-                .formatted(uniques.size(), relatedEntityCounts.ownedByTreasury()));
+        writer.writeln("=== %7d unique tokens (%d owned by treasury accounts) %s"
+                .formatted(uniques.size(), relatedEntityCounts.ownedByTreasury(), migrationSummary));
         writer.writeln("    %7d null owners, %7d null or missing spenders"
                 .formatted(
                         uniques.size()
@@ -179,7 +233,9 @@ public class DumpUniqueTokensSubcommand {
         }
     }
 
-    /** String that separates all fields in the CSV format */
+    /**
+     * String that separates all fields in the CSV format
+     */
     static final String FIELD_SEPARATOR = ";";
 
     // Need to move this to a common location (copied here from DumpTokensSubcommand)
@@ -220,9 +276,10 @@ public class DumpUniqueTokensSubcommand {
     }
 
     // spotless:off
-    @NonNull static List<Pair<String,BiConsumer<FieldBuilder,UniqueNFT>>> fieldFormatters = List.of(
+    @NonNull
+    static List<Pair<String, BiConsumer<FieldBuilder, UniqueNFT>>> fieldFormatters = List.of(
             Pair.of("owner", getFieldFormatter(UniqueNFT::owner, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("spender",getFieldFormatter(UniqueNFT::spender, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("spender", getFieldFormatter(UniqueNFT::spender, ThingsToStrings::toStringOfEntityId)),
             Pair.of("creationTime", getFieldFormatter(UniqueNFT::creationTime, ThingsToStrings::toStringOfRichInstant)),
             Pair.of("metadata", getFieldFormatter(UniqueNFT::metadata, getMaybeStringifyByteString(FIELD_SEPARATOR))),
             Pair.of("prev", getFieldFormatter(UniqueNFT::previous, Object::toString)),
@@ -252,7 +309,8 @@ public class DumpUniqueTokensSubcommand {
     }
 
     @NonNull
-    Map<UniqueNFTId, UniqueNFT> gatherUniques(@NonNull final UniqueTokenMapAdapter uniquesStore) {
+    Map<UniqueNFTId, UniqueNFT> gatherUniques() {
+        final var uniquesStore = state.getUniqueNFTTokens();
         final var r = new HashMap<UniqueNFTId, UniqueNFT>();
         if (uniquesStore.isVirtual()) {
             // world of VirtualMapLike<UniqueTokenKey, UniqueTokenValue>
@@ -286,5 +344,45 @@ public class DumpUniqueTokensSubcommand {
                     .forEach((key, value) -> r.put(UniqueNFTId.from(key), UniqueNFT.from(value)));
         }
         return r;
+    }
+
+    Map<UniqueNFTId, UniqueNFT> gatherMigratedUniques() {
+        final var uniquesStore = getMigratedUniques();
+        final var r = new HashMap<UniqueNFTId, UniqueNFT>();
+
+        System.out.println("MIGRATING!!!");
+        uniquesStore.keys().forEachRemaining(key -> {
+            final var id = UniqueNFTId.from(key);
+            final var nft = UniqueNFT.from(uniquesStore.get(key));
+            r.put(id, nft);
+        });
+
+        return r;
+    }
+
+    WritableKVState<NftID, Nft> getMigratedUniques() {
+        final var uniquesStore = state.getUniqueNFTTokens();
+        final var expectedSize = Math.toIntExact(uniquesStore.size());
+
+        // TODO: do we need this???
+        final var uniquesSchema = new InitialModServiceTokenSchema(null, null, null, null, null, CURRENT_VERSION);
+        final var uniquesSchemas = uniquesSchema.statesToCreate();
+
+        final var uniquesStateDefinition = uniquesSchemas.stream()
+                .filter(sd -> sd.stateKey().equals(TOKENS_KEY))
+                .findFirst()
+                .orElseThrow();
+        final var uniqueSchemaMetadata = new StateMetadata<>(TokenService.NAME, uniquesSchema, uniquesStateDefinition);
+        final var uniquesMerkeMap = new NonAtomicReference<MerkleMap<InMemoryKey<NftID>, InMemoryValue<NftID, Nft>>>(
+                new MerkleMap<>(expectedSize));
+
+        final var toStore = new NonAtomicReference<WritableKVState<NftID, Nft>>(
+                new InMemoryWritableKVState<>(uniqueSchemaMetadata, uniquesMerkeMap.get()));
+
+        if (uniquesStore.isVirtual()) {
+            UniqueTokensMigrator.migrateFromUniqueTokenVirtualMap(uniquesStore.virtualMap(), toStore.get());
+        }
+
+        return toStore.get();
     }
 }

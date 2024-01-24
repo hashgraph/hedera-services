@@ -17,16 +17,26 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -71,6 +81,68 @@ public class UniqueTokensMigrator {
 
         initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapRef.get());
         LOG.info("Migrated {} unique tokens", count.get());
+    }
+
+    public static void migrateFromUniqueTokenVirtualMap(
+            @NonNull VirtualMapLike<UniqueTokenKey, UniqueTokenValue> fromState,
+            @NonNull WritableKVState<NftID, Nft> toState) {
+
+        // TODO: parallelize? Thread-safe?
+        try {
+            fromState.extractVirtualMapData(
+                    getStaticThreadManager(),
+                    entry -> {
+                        final var monoId = entry.left();
+                        final var monoNft = entry.right();
+                        final var id = NftID.newBuilder()
+                                .tokenId(TokenID.newBuilder().tokenNum(monoId.getNum()))
+                                .serialNumber(monoId.getTokenSerial())
+                                .build();
+                        final var nft = Nft.newBuilder()
+                                .nftId(id)
+                                .metadata(Bytes.wrap(monoNft.getMetadata()))
+                                .mintTime(Timestamp.newBuilder()
+                                        .seconds(monoNft.getCreationTime().getSeconds())
+                                        .nanos(monoNft.getCreationTime().getNanos()))
+                                .ownerId(AccountID.newBuilder()
+                                        .shardNum(monoNft.getOwner().shard())
+                                        .realmNum(monoNft.getOwner().realm())
+                                        .accountNum(monoNft.getOwnerAccountNum()))
+                                .ownerNextNftId(NftID.newBuilder()
+                                        .tokenId(TokenID.newBuilder()
+                                                .shardNum(monoNft.getNext()
+                                                        .nftId()
+                                                        .shard())
+                                                .realmNum(monoNft.getNext()
+                                                        .nftId()
+                                                        .realm())
+                                                .tokenNum(monoNft.getNext()
+                                                        .nftId()
+                                                        .num()))
+                                        .serialNumber(monoNft.getNext().serialNum()))
+                                .ownerPreviousNftId(NftID.newBuilder()
+                                        .tokenId(TokenID.newBuilder()
+                                                .shardNum(monoNft.getPrev()
+                                                        .nftId()
+                                                        .shard())
+                                                .realmNum(monoNft.getPrev()
+                                                        .nftId()
+                                                        .realm())
+                                                .tokenNum(monoNft.getPrev()
+                                                        .nftId()
+                                                        .num()))
+                                        .serialNumber(monoNft.getPrev().serialNum()))
+                                .spenderId(AccountID.newBuilder()
+                                        .shardNum(monoNft.getSpender().shard())
+                                        .realmNum(monoNft.getSpender().realm())
+                                        .accountNum(monoNft.getSpender().num()))
+                                .build();
+                        toState.put(id, nft);
+                    },
+                    8); // TODO: don't hardcode
+        } catch (final InterruptedException ex) {
+            System.out.println("Exception");
+        }
     }
 
     private UniqueTokensMigrator() {
