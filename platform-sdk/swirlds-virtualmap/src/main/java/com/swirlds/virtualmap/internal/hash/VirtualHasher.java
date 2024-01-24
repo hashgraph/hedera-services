@@ -88,7 +88,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
     /**
      * A listener to notify about hashing events. This listener is stored in a class field to
-     * acoid passing it as an arg to every hashing task.
+     * avoid passing it as an arg to every hashing task.
      */
     private VirtualHashListener<K, V> listener;
 
@@ -297,6 +297,30 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         this.cryptography = CryptographyHolder.get();
         final Hash NULL_HASH = cryptography.getNullHash();
 
+        // Algo v6. This version is task based, where every task is responsible for hashing a small
+        // chunk of the tree. Tasks are running in a fork-join pool, which is shared across all
+        // virtual maps.
+
+        // A chunk is a small sub-tree, which is identified by a path and a height. Chunks of
+        // height 1 contain three nodes: one node and two its children. Chunks of height 2 contain
+        // seven nodes: a node, two its children, and four grand children. Chunk path is the path
+        // of the top-level node in the chunk.
+
+        // Each chunk is processed in a separate task. Tasks have dependencies. Once all task
+        // dependencies are met, the task is scheduled for execution in the pool. Each task
+        // has N input dependencies, where N is the number of nodes at the lowest chunk rank,
+        // i.e. 2^height. Every input depenency is either set to a hash from another task,
+        // or a null value, which indicates that the input hash needs not to be recalculated,
+        // but loaded from disk. A special case of a task is leaf tasks, they are all of
+        // height 1, both input dependencies are null, but they are given a leaf instead. For
+        // these tasks, the hash is calculaded based on leaf content rather than based on input
+        // hashes.
+
+        // All tasks also have an output dependency, also a task. When a hash for the task's chunk
+        // is calculated, it is set as a input dependency of that task. Output dependency value
+        // may not be null.
+
+        // Default chunk height, from config
         final int chunkHeight = CONFIG.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
@@ -304,7 +328,12 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // Let the listener know we have started hashing.
         listener.onHashingStarted();
 
+        // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
+        // The result task. It is never executed, but used as an output dependency for
+        // the root task below. When the root task is done executing, that is it produced
+        // a root hash, this hash is set as an input dependency for this result task, where
+        // it's read and returned in the end of this method
         ChunkHashTask resultTask = new ChunkHashTask(HASHING_POOL, INVALID_PATH, 1);
         int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
         ChunkHashTask rootTask = new ChunkHashTask(HASHING_POOL, ROOT_PATH, rootTaskHeight);
@@ -315,14 +344,30 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         final long[] stack = new long[lastLeafRank + 1];
         Arrays.fill(stack, INVALID_PATH);
 
-        final int[] parentRankHeights = new int[256];
+        // Tasks may have different heights. The root task has a default height. If the whole
+        // virtual tree has fewer ranks than the default height, the root task will cover all
+        // the tree (almost all, see comments below about leaf task heights)
+        final int[] parentRankHeights = new int[256]; // assuming there may be no more than 256 ranks in the tree
         parentRankHeights[0] = 1;
         for (int i = 1; i <= firstLeafRank; i++) {
             parentRankHeights[i] = Math.min((i - 1) % chunkHeight + 1, i);
         }
+        // Leaf tasks are different. All of them are of height 1, which means 3 dependencies:
+        // output (parent task to set the leaf hash to) and two inputs (both are null, both are
+        // met when a task is given a leaf). Besides that, if last leaf rank is not the same as
+        // the first leaf rank, then all parent tasks for last leaf rank leaf tasks also are
+        // of height 1
         if (firstLeafRank != lastLeafRank) {
             parentRankHeights[lastLeafRank] = 1;
         }
+
+        // Iterate over all dirty leaves one by one. For every leaf, create a new task, if not
+        // created. Then look up for a parent task. If it's created, it must not be executed yet,
+        // as one of the inputs is this dirty leaf task. If the parent task is not created,
+        // create it here.
+
+        // For the created leaf task, set the leaf as an input. Together with the parent task
+        // it completes all task dependencies, so the task is executed.
 
         while (sortedDirtyLeaves.hasNext()) {
             VirtualLeafRecord<K, V> leaf = sortedDirtyLeaves.next();
@@ -333,14 +378,25 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             }
             curTask.setData(leaf);
 
+            // The next step is to iterate over parent tasks, until an already created task
+            // is met (e.g. the root task). For every parent task, check all already created
+            // tasks at the same (parent) rank using "stack". This array contains the left
+            // most path to the right of the last task processed at the rank. All tasks at
+            // the rank between "stack" and the current parent are guaranteed to be clear,
+            // since dirty leaves are sorted in path order. All such tasks are set "null"
+            // input dependency, which is propagated to their parent (output) tasks.
+
             while (true) {
                 final int curRank = Path.getRank(curPath);
                 final int chunkWidth = 1 << parentRankHeights[curRank];
+                // If some tasks have been created at this rank, they can now be marked as
+                // clean. No dirty leaves in the remaining stream may affect these tasks
                 if (stack[curRank] != INVALID_PATH) {
                     long curStackPath = stack[curRank];
                     final long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
                     final long curStackChunkNoInRank = (curStackPath - firstPathInRank) / chunkWidth;
                     final long lastPathInCurStackChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth - 1;
+                    // Process all tasks starting from "stack" path to the end of the chunk
                     while (curStackPath < Math.min(curPath, lastPathInCurStackChunk)) {
                         final ChunkHashTask t = map.remove(curStackPath);
                         assert t != null;
@@ -350,6 +406,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     stack[curRank] = INVALID_PATH;
                 }
 
+                // If the out is already set at this rank, all parent tasks and siblings are already
+                // processed, so break the loop
                 if (curTask.out != null) {
                     break;
                 }
@@ -360,6 +418,14 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     parentTask = new ChunkHashTask(HASHING_POOL, parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
+
+                // For every task on the route to the root, check its siblings within the same
+                // chunk. If a sibling is to the right, create a task for it, but not schedule yet
+                // (there may be a dirty leaf for it later in the stream). If a sibling is to the
+                // left, it may be marked as clean unless this is the very first dirty leaf. For
+                // this very first dirty leaf siblings to the left may not be marked clean, there
+                // may be dirty leaves on the last leaf rank that would contribute to these
+                // siblings. In this case, just create the tasks and store them to the map
 
                 final long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
                 final long chunkNoInRank = (curPath - firstPathInRank) / chunkWidth;
@@ -373,16 +439,22 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         parentTask.setHash((int) (siblingPath - firstSiblingPath), NULL_HASH);
                         continue;
                     }
+                    // Get or create the sibling task
                     ChunkHashTask siblingTask = map.remove(siblingPath);
                     if (siblingTask == null) {
                         siblingTask = new ChunkHashTask(HASHING_POOL, siblingPath, curTask.height);
                     }
+                    // Set sibling task output to the same parent
                     siblingTask.setOut(parentTask);
+                    // Mark the sibling as clean if: it's to the left AND this is not the very first leaf
                     if ((siblingPath < curPath) && !firstLeaf) {
                         siblingTask.setData(null);
                     } else {
                         map.put(siblingPath, siblingTask);
                     }
+                    // Now update the stack to the first sibling to the right. When the next node
+                    // at the same rank is processed, all tasks starting from this sibling are
+                    // guaranteed to be clean
                     if ((curPath != lastSiblingPath) && !firstLeaf) {
                         stack[curRank] = curPath + 1;
                     }
@@ -393,6 +465,13 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             }
             firstLeaf = false;
         }
+        // After all dirty nodes are processed along with routes to the root, there may still be
+        // tasks in the map. These tasks were created, but not scheduled as their input dependencies
+        // aren't set yet. Examples are: tasks to the right of the sibling in "stack" created as a
+        // result of walking from the last leaf on the first leaf rank to the root; similar tasks
+        // created during walking from the last leaf on the last leaf rank to the root; sibling
+        // tasks to the left of the very first route to the root. There are no more dirty leaves,
+        // all these tasks may be marked as clean now
         map.forEach((path, task) -> task.setData(null));
         map.clear();
 

@@ -169,7 +169,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
             throw new IllegalStateException("Cannot start flushing, flush already in progress?");
         }
         try {
-            final long maxPath = leavesToFlush.stream()
+            final long maxPath = leavesToFlush.parallelStream()
                     .mapToLong(VirtualLeafRecord::getPath)
                     .max()
                     .orElse(-1);
