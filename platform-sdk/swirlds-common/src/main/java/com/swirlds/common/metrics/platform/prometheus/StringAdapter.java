@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
@@ -54,10 +53,10 @@ public class StringAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public StringAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType, metric);
+        super(adapterType, metric, true);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Info.Builder builder = fill(new Info.Builder());
+        final Info.Builder builder = setCommonValues(new Info.Builder());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

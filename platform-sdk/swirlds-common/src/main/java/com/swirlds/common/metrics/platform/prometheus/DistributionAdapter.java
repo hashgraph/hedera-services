@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
@@ -58,7 +57,7 @@ public class DistributionAdapter extends AbstractMetricAdapter {
         super(adapterType, metric);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Gauge.Builder builder = fill(new Gauge.Builder());
+        final Gauge.Builder builder = setCommonValues(new Gauge.Builder());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL, TYPE_LABEL);
         } else {
