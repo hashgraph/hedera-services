@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -39,6 +38,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,8 +80,9 @@ public class InitialModServiceContractSchema extends Schema {
             log.info("BBM: migrating contract service");
 
             log.info("BBM: migrating contract k/v storage...");
-            final WritableKVState<SlotKey, SlotValue> toState =
-                    ctx.newStates().get(InitialModServiceContractSchema.STORAGE_KEY);
+            final var toState = new AtomicReference<>(
+                    ctx.newStates().<SlotKey, SlotValue>get(InitialModServiceContractSchema.STORAGE_KEY));
+            final var numSlotInsertions = new AtomicLong();
             try {
                 storageFromState.extractVirtualMapData(
                         AdHocThreadManager.getStaticThreadManager(),
@@ -96,20 +98,27 @@ public class InitialModServiceContractSchema extends Schema {
                                     .previousKey(bytesFromInts(contractVal.getExplicitPrevKey()))
                                     .nextKey(bytesFromInts((contractVal.getExplicitNextKey())))
                                     .build();
-                            toState.put(key, value);
+                            toState.get().put(key, value);
+                            if (numSlotInsertions.incrementAndGet() % 10_000 == 0) {
+                                // Make sure we are flushing data to disk as we go
+                                ((WritableKVStateBase) toState.get()).commit();
+                                ctx.copyAndReleaseOnDiskState(STORAGE_KEY);
+                                // And ensure we have the latest writable state
+                                toState.set(ctx.newStates().get(STORAGE_KEY));
+                            }
                         },
                         1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            if (toState.isModified()) ((WritableKVStateBase) toState).commit();
+            if (toState.get().isModified()) ((WritableKVStateBase) toState.get()).commit();
 
             log.info("BBM: finished migrating contract storage");
 
             log.info("BBM: migrating contract bytecode...");
-            final WritableKVState<ContractID, Bytecode> bytecodeTs =
-                    ctx.newStates().get(InitialModServiceContractSchema.BYTECODE_KEY);
+            final var bytecodeTs = new AtomicReference<>(ctx.newStates().<ContractID, Bytecode>get(BYTECODE_KEY));
+            final var numBytecodeInsertions = new AtomicLong();
             final var migratedContractNums = new ArrayList<Integer>();
             try {
                 contractBytecodeFromState
@@ -132,13 +141,22 @@ public class InitialModServiceContractSchema extends Schema {
                                                     + contractId);
                                             wrappedContents = Bytes.wrap(contents);
                                         }
-                                        bytecodeTs.put(
-                                                ContractID.newBuilder()
-                                                        .contractNum(contractId)
-                                                        .build(),
-                                                Bytecode.newBuilder()
-                                                        .code(wrappedContents)
-                                                        .build());
+                                        bytecodeTs
+                                                .get()
+                                                .put(
+                                                        ContractID.newBuilder()
+                                                                .contractNum(contractId)
+                                                                .build(),
+                                                        Bytecode.newBuilder()
+                                                                .code(wrappedContents)
+                                                                .build());
+                                        if (numBytecodeInsertions.incrementAndGet() % 10_000 == 0) {
+                                            // Make sure we are flushing data to disk as we go
+                                            ((WritableKVStateBase) bytecodeTs.get()).commit();
+                                            ctx.copyAndReleaseOnDiskState(BYTECODE_KEY);
+                                            // And ensure we have the latest writable state
+                                            bytecodeTs.set(ctx.newStates().get(BYTECODE_KEY));
+                                        }
                                         migratedContractNums.add(contractId);
                                     }
                                 },
@@ -150,7 +168,7 @@ public class InitialModServiceContractSchema extends Schema {
             log.info(
                     "BBM: finished migrating contract bytecode. Number of migrated contracts: " + migratedContractNums);
 
-            if (bytecodeTs.isModified()) ((WritableKVStateBase) bytecodeTs).commit();
+            if (bytecodeTs.get().isModified()) ((WritableKVStateBase) bytecodeTs.get()).commit();
 
             log.info("BBM: contract migration finished");
         } else {
