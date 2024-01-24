@@ -29,6 +29,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -254,7 +255,10 @@ public class HapiUtils {
      * @param version The version to convert
      * @return The string representation
      */
-    public static String toString(@NonNull final SemanticVersion version) {
+    public static String toString(@Nullable final SemanticVersion version) {
+        if (version == null) {
+            return "<NONE>";
+        }
         var baseVersion = new StringBuilder("v");
         baseVersion
                 .append(version.major())

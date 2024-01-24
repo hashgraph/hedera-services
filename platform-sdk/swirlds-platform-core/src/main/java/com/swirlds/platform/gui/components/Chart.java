@@ -19,9 +19,9 @@ package com.swirlds.platform.gui.components;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import com.swirlds.metrics.api.Metric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.Dimension;
