@@ -17,9 +17,9 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 /**
- * An exception thrown by {@link ShadowGraph} when an event cannot be added to the shadow graph.
+ * An exception thrown by {@link Shadowgraph} when an event cannot be added to the shadow graph.
  */
-public class ShadowGraphInsertionException extends RuntimeException {
+public class ShadowgraphInsertionException extends RuntimeException {
 
     private final InsertableStatus status;
 
@@ -32,7 +32,7 @@ public class ShadowGraphInsertionException extends RuntimeException {
      * @param status
      * 		the status of the event insertion
      */
-    public ShadowGraphInsertionException(final String message, final InsertableStatus status) {
+    public ShadowgraphInsertionException(final String message, final InsertableStatus status) {
         super(message);
         this.status = status;
     }
