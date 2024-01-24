@@ -117,7 +117,6 @@ import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.AddedEventMetrics;
-import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -609,8 +608,6 @@ public class SwirldsPlatform implements Platform {
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
-                eventStreamManager,
                 stateHashSignQueue,
                 eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,

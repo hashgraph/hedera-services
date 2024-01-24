@@ -113,8 +113,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                consensusHandlingMetrics,
-                eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
                 mock(StatusActionSubmitter.class),
@@ -204,8 +202,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                consensusHandlingMetrics,
-                eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
                 mock(StatusActionSubmitter.class),
