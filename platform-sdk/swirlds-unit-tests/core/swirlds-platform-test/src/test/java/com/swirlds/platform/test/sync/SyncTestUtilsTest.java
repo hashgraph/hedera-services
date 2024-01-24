@@ -58,7 +58,7 @@ class SyncTestUtilsTest {
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(0, 1, 0, GENERATION_THRESHOLD);
 
         final Predicate<ShadowEvent> unknownNonAncient =
-                SyncUtils.unknownNonAncient(knownSet, eventWindow, eventWindow);
+                SyncUtils.unknownNonAncient(knownSet, eventWindow, eventWindow, GENERATION_THRESHOLD);
 
         assertFalse(unknownNonAncient.test(e1), "e1 is both ancient and known, should be false");
         assertFalse(unknownNonAncient.test(e2), "e2 is ancient, should be false");

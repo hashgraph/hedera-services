@@ -69,13 +69,13 @@ public final class SyncUtils {
     private SyncUtils() {}
 
     /**
-     * Write the tips and generations to the peer. This is the first data exchanged during a sync (after protocol
-     * negotiation). The complementary function to {@link #readTheirTipsAndGenerations(Connection, int)}.
+     * Send the tips and event window to the peer. This is the first data exchanged during a sync (after protocol
+     * negotiation). The complementary function to {@link #readTheirTipsAndEventWindow(Connection, int, AncientMode)}.
      *
      * @param connection  the connection to write to
-     * @param eventWindow the generations to write
+     * @param eventWindow the event window to write
      * @param tips        the tips to write
-     * @return a {@link Callable} that writes the tips and generations
+     * @return a {@link Callable} that writes the tips and event window
      */
     public static Callable<Void> writeMyTipsAndEventWindow(
             @NonNull final Connection connection,
@@ -104,19 +104,19 @@ public final class SyncUtils {
     }
 
     /**
-     * Read the tips and generations from the peer. This is the first data exchanged during a sync (after protocol
+     * Read the tips and event window from the peer. This is the first data exchanged during a sync (after protocol
      * negotiation). The complementary function to
      * {@link #writeMyTipsAndEventWindow(Connection, NonAncientEventWindow, List)}.
      *
      * @param connection    the connection to read from
      * @param numberOfNodes the number of nodes in the network
-     * @return a {@link Callable} that reads the tips and generations
+     * @param ancientMode   the current ancient mode
+     * @return a {@link Callable} that reads the tips and event window
      */
-    public static Callable<TheirTipsAndEventWindow> readTheirTipsAndGenerations(
-            final Connection connection, final int numberOfNodes) {
+    public static Callable<TheirTipsAndEventWindow> readTheirTipsAndEventWindow(
+            final Connection connection, final int numberOfNodes, @NonNull final AncientMode ancientMode) {
         return () -> {
-            final NonAncientEventWindow eventWindow =
-                    deserializeEventWindow(connection.getDis(), AncientMode.GENERATION_THRESHOLD); // TODO
+            final NonAncientEventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
 
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
@@ -428,24 +428,27 @@ public final class SyncUtils {
     }
 
     /**
-     * Returns a predicate that determines if a {@link ShadowEvent}'s generation is non-ancient for the peer and greater
-     * than this node's minimum non-expired generation, and is not already known.
+     * Returns a predicate that determines if a {@link ShadowEvent}'s ancient indicator is non-ancient for the peer and
+     * greater than this node's minimum non-expired threshold, and is not already known.
      *
      * @param knownShadows     the {@link ShadowEvent}s that are already known and should therefore be rejected by the
      *                         predicate
      * @param myEventWindow    the event window of this node
      * @param theirEventWindow the event window of the peer node
+     * @param ancientMode      the current ancient mode
      * @return the predicate
      */
     @NonNull
     public static Predicate<ShadowEvent> unknownNonAncient(
             @NonNull final Collection<ShadowEvent> knownShadows,
             @NonNull final NonAncientEventWindow myEventWindow,
-            @NonNull final NonAncientEventWindow theirEventWindow) {
+            @NonNull final NonAncientEventWindow theirEventWindow,
+            @NonNull final AncientMode ancientMode) {
 
         final long minimumSearchThreshold =
                 Math.max(myEventWindow.getExpiredThreshold(), theirEventWindow.getAncientThreshold());
-        return s -> s.getEvent().getGeneration() >= minimumSearchThreshold && !knownShadows.contains(s);
+        return s -> s.getEvent().getBaseEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold
+                && !knownShadows.contains(s);
     }
 
     /**
@@ -482,9 +485,13 @@ public final class SyncUtils {
     }
 
     /**
+     * Performs a topological sort on the given list of events (i.e. where parents always come before their children).
+     *
      * @param sendList The list of events to sort.
      */
-    static void sort(final List<EventImpl> sendList) {
+    static void sort(@NonNull final List<EventImpl> sendList) {
+        // Note: regardless of ancient mode, sorting uses generations and not birth rounds.
+        //       Sorting by generations yields a list in topological order, sorting by birth rounds does not.
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 

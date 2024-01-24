@@ -22,7 +22,7 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKno
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getTheirTipsIHave;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readEventsINeed;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readMyTipsTheyHave;
-import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readTheirTipsAndGenerations;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readTheirTipsAndEventWindow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.sendEventsTheyNeed;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeMyTipsAndEventWindow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIHave;
@@ -33,7 +33,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -129,6 +131,11 @@ public class ShadowgraphSynchronizer {
     private final Duration nonAncestorFilterThreshold;
 
     /**
+     * The current ancient mode.
+     */
+    private final AncientMode ancientMode;
+
+    /**
      * Constructs a new ShadowgraphSynchronizer.
      *
      * @param platformContext        the platform context
@@ -168,6 +175,11 @@ public class ShadowgraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
     }
 
     /**
@@ -207,16 +219,14 @@ public class ShadowgraphSynchronizer {
 
             timing.start();
 
-            // Step 1: each peer tells the other about its tips and generations
+            // Step 1: each peer tells the other about its tips and event windows
 
-            // the generation we reserved is our minimum round generation
-            // the ShadowGraph guarantees it won't be expired until we release it
-            final NonAncientEventWindow myWindow = gossipEventWindowNexus.getEventWindow();
+            final NonAncientEventWindow myWindow = getEventWindow(reservation.getReservedIndicator());
 
             final List<ShadowEvent> myTips = getTips();
-            // READ and WRITE generation numbers & tip hashes
+            // READ and WRITE event windows numbers & tip hashes
             final TheirTipsAndEventWindow theirTipsAndEventWindow = readWriteParallel(
-                    readTheirTipsAndGenerations(connection, numberOfNodes),
+                    readTheirTipsAndEventWindow(connection, numberOfNodes, ancientMode),
                     writeMyTipsAndEventWindow(connection, myWindow, myTips),
                     connection);
             timing.setTimePoint(1);
@@ -263,6 +273,24 @@ public class ShadowgraphSynchronizer {
 
         return sendAndReceiveEvents(
                 connection, timing, sendList, syncConfig.syncKeepalivePeriod(), syncConfig.maxSyncTime());
+    }
+
+    /**
+     * Get the event window to use for a sync. We can't directly use the event window returned by the
+     * {@link GossipEventWindowNexus} due to the legacy shadowgraph reservation pattern.
+     *
+     * @param reservedExpirationThreshold the reserved expiration threshold
+     * @return the event window to use for a sync
+     */
+    @NonNull
+    private NonAncientEventWindow getEventWindow(final long reservedExpirationThreshold) {
+        final NonAncientEventWindow currentWindow = gossipEventWindowNexus.getEventWindow();
+
+        return new NonAncientEventWindow(
+                currentWindow.getLatestConsensusRound(),
+                currentWindow.getAncientThreshold(),
+                reservedExpirationThreshold,
+                currentWindow.getAncientMode());
     }
 
     @NonNull
@@ -325,7 +353,7 @@ public class ShadowgraphSynchronizer {
 
         // add to knownSet all the ancestors of each known event
         final Set<ShadowEvent> knownAncestors = shadowGraph.findAncestors(
-                knownSet, SyncUtils.unknownNonAncient(knownSet, myEventWindow, theirEventWindow));
+                knownSet, SyncUtils.unknownNonAncient(knownSet, myEventWindow, theirEventWindow, ancientMode));
 
         // since knownAncestors is a lot bigger than knownSet, it is a lot cheaper to add knownSet to knownAncestors
         // then vice versa
@@ -335,7 +363,7 @@ public class ShadowgraphSynchronizer {
 
         // predicate used to search for events to send
         final Predicate<ShadowEvent> knownAncestorsPredicate =
-                SyncUtils.unknownNonAncient(knownAncestors, myEventWindow, theirEventWindow);
+                SyncUtils.unknownNonAncient(knownAncestors, myEventWindow, theirEventWindow, ancientMode);
 
         // in order to get the peer the latest events, we get a new set of tips to search from
         final List<ShadowEvent> myNewTips = shadowGraph.getTips();
