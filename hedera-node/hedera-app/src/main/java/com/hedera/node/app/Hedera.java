@@ -581,9 +581,12 @@ public final class Hedera implements SwirldMain {
         //noinspection ConstantValue
         assert platformState != null : "Platform should never pass a null platform state";
         logger.info(
-                "Initializing Hedera state with trigger {} and previous version {}",
+                "Initializing Hedera state with trigger {} and previous version {} instance of {}",
                 () -> trigger,
-                () -> previousVersion == null ? "<NONE>" : previousVersion);
+                () -> previousVersion == null ? "<NONE>" : previousVersion,
+                () -> previousVersion == null
+                        ? "<NONE>"
+                        : previousVersion.getClass().getName());
 
         // We do not support downgrading from one version to an older version.
         final HederaSoftwareVersion deserializedVersion;
@@ -599,11 +602,7 @@ public final class Hedera implements SwirldMain {
         } else {
             deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
         }
-
-        // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
-        // This instance should never change on us, once it has been set
-        assert this.platform == null || this.platform == platform : "Platform should never change once set";
-        this.platform = platform;
+        logger.info("Deserialized version is {}, version {}", deserializedVersion, version);
 
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
@@ -611,10 +610,8 @@ public final class Hedera implements SwirldMain {
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state);
-                case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect(state, deserializedVersion);
-                    // We exited from this method early if we were recovering from an event stream.
-                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
@@ -662,6 +659,7 @@ public final class Hedera implements SwirldMain {
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
+        logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
