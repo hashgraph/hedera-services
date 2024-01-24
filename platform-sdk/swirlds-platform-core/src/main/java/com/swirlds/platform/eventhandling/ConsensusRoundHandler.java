@@ -64,6 +64,11 @@ public class ConsensusRoundHandler {
     private static final Logger logger = LogManager.getLogger(ConsensusRoundHandler.class);
 
     /**
+     * The name of the thread that handles transactions. For the sake of the app, to allow logging.
+     */
+    public static final String TRANSACTION_HANDLING_THREAD_NAME = "<scheduler consensusRoundHandler>";
+
+    /**
      * The class responsible for all interactions with the swirld state
      */
     private final SwirldStateManager swirldStateManager;
