@@ -35,11 +35,13 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,8 +74,13 @@ class InternalEventValidatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        // Adding the configuration to use the birth round as the ancient threshold for testing.
+        // The conditions where it is false is covered by the case where it is set to true.
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
+                        .getOrCreateConfig())
+                .build();
 
         final Time time = new FakeTime();
 
