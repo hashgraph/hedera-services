@@ -34,10 +34,13 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @SuppressWarnings("rawtypes")
 @Singleton
 public class CongestionThrottleService implements Service {
+    private static final Logger log = LogManager.getLogger(CongestionThrottleService.class);
     public static final String NAME = "CongestionThrottleService";
     public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
@@ -49,7 +52,7 @@ public class CongestionThrottleService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
@@ -63,6 +66,7 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
+                log.info("Migrating congestion throttle state");
                 final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
                 byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
 
@@ -89,6 +93,10 @@ public class CongestionThrottleService implements Service {
 
                 final var congestionLevelStartsState = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
                 congestionLevelStartsState.put(CongestionLevelStarts.DEFAULT);
+
+                log.info("Finished migrating congestion throttle state");
+
+                log.info("BBM: no actions needed for congestion throttle service");
             }
         });
     }

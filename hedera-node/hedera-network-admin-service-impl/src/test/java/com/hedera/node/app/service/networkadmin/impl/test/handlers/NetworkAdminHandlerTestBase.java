@@ -48,8 +48,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -203,7 +203,7 @@ public class NetworkAdminHandlerTestBase {
         final var state = new FakeHederaState();
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry, Service.RELEASE_045_VERSION);
+        svc.registerSchemas(registry, TestSchema.CURRENT_VERSION);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);

@@ -71,4 +71,8 @@ public class FilteredWritableStates extends FilteredReadableStates implements Wr
 
         return delegate.getQueue(stateKey);
     }
+
+    public WritableStates getDelegate() {
+        return delegate;
+    }
 }

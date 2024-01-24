@@ -29,11 +29,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class NetworkServiceImpl implements NetworkService {
 
     @Override
-    public void registerSchemas(final @NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(networkSchema(version));
     }
 
-    private Schema networkSchema(final SemanticVersion version) {
+    private Schema networkSchema(@NonNull final SemanticVersion version) {
         return new InitialModServiceNetworkSchema(version);
     }
 }
