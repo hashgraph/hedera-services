@@ -92,7 +92,7 @@ public class EntityIdService implements Service {
 
                 if (fs > -1) {
                     log.info("BBM: Setting entity id to " + fs);
-                    entityIdState.put(new EntityNumber(fs));
+                    entityIdState.put(new EntityNumber(fs - 1));
                 } else {
                     log.warn("BBM: no entity ID 'from' state found");
                 }

@@ -31,6 +31,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /** Provides helpers to compare and analyze record streams. */
 public class OrderedComparison {
@@ -48,6 +50,7 @@ public class OrderedComparison {
      * @param firstStreamDir the first record stream
      * @param secondStreamDir the second record stream
      * @param recordDiffSummarizer if present, a summarizer for record diffs
+     * @param fileNameObserver if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
      * @throws IOException if any of the record stream files cannot be read or parsed
      * @throws IllegalArgumentException if the directories contain misaligned record streams
@@ -55,10 +58,21 @@ public class OrderedComparison {
     public static List<DifferingEntries> findDifferencesBetweenV6(
             @NonNull final String firstStreamDir,
             @NonNull final String secondStreamDir,
-            @Nullable RecordDiffSummarizer recordDiffSummarizer)
+            @Nullable final RecordDiffSummarizer recordDiffSummarizer,
+            @Nullable final Consumer<String> fileNameObserver)
             throws IOException {
-        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir);
-        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir);
+        final Predicate<String> watchingPredicate = f -> {
+            if (fileNameObserver != null) {
+                fileNameObserver.accept(f);
+            }
+            return true;
+        };
+        System.out.println("Parsing stream @ " + firstStreamDir);
+        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, watchingPredicate);
+        System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
+        System.out.println("Parsing stream @ " + secondStreamDir);
+        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, watchingPredicate);
+        System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
         return diff(firstEntries, secondEntries, recordDiffSummarizer);
     }
 

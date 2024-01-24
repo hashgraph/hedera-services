@@ -17,7 +17,6 @@
 package com.hedera.services.rcdiff;
 
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.CONSENSUS_TIME_MISMATCH;
-import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
 
@@ -76,7 +75,8 @@ public class RcDiff implements Callable<Integer> {
             }
             throw new AssertionError("No difference to summarize");
         };
-        final var diffs = findDifferencesBetweenV6(expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer);
+        final var diffs = findDifferencesBetweenV6(
+                expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer, System.out::println);
         if (diffs.isEmpty()) {
             System.out.println("These streams are identical ☺️");
             return 0;
@@ -122,11 +122,6 @@ public class RcDiff implements Callable<Integer> {
                     .append(Objects.requireNonNull(diff.firstEntry()).consensusTime())
                     .append(" but was ")
                     .append(Objects.requireNonNull(diff.secondEntry()).consensusTime());
-        } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH) {
-            sb.append("➡️  Expected ")
-                    .append(Objects.requireNonNull(diff.firstEntry()).transactionRecord())
-                    .append(" but was ")
-                    .append(Objects.requireNonNull(diff.secondEntry()).transactionRecord());
         }
         return sb.toString();
     }

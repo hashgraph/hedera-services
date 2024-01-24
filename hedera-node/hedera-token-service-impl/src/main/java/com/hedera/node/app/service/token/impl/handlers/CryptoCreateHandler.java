@@ -215,6 +215,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(context);
         final var txnBody = context.body();
         final var op = txnBody.cryptoCreateAccountOrThrow();
+        System.out.println("About to handle creation of " + op);
         final var accountStore = context.writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created. Currently, this check is being done in
@@ -245,6 +246,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var createdAccountID = accountCreated.accountIdOrThrow();
         final var recordBuilder = context.recordBuilder(CryptoCreateRecordBuilder.class);
         recordBuilder.accountID(createdAccountID);
+        System.out.println("Created - " + createdAccountID);
 
         // Put if any new alias is associated with the account into account store
         final var alias = op.alias();

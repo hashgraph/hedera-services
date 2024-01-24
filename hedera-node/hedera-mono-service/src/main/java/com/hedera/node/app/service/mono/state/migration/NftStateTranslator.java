@@ -47,8 +47,14 @@ public final class NftStateTranslator {
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
         builder.nftId(nftNumPairToNftID(nftIdPair));
 
-        builder.ownerId(PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId()))
-                .spenderId(PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId()))
+        final var maybeOwner = merkleUniqueToken.getOwner().num() != 0
+                ? PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId())
+                : null;
+        final var maybeSpender = merkleUniqueToken.getSpender().num() != 0
+                ? PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId())
+                : null;
+        builder.ownerId(maybeOwner)
+                .spenderId(maybeSpender)
                 .mintTime(Timestamp.newBuilder()
                         .seconds(merkleUniqueToken.getCreationTime().getSeconds())
                         .nanos(merkleUniqueToken.getCreationTime().getNanos())
