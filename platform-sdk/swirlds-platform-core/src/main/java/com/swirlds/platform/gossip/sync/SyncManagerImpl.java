@@ -16,20 +16,19 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.FREEZE;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,8 +41,11 @@ public class SyncManagerImpl implements FallenBehindManager {
 
     private final EventConfig eventConfig;
 
-    /** the event intake queue */
-    private final BlockingQueue<GossipEvent> intakeQueue;
+    /**
+     * Supplies the event intake queue size.
+     */
+    private final LongSupplier intakeQueueSizeSupplier;
+
     /** This object holds data on how nodes are connected to each other. */
     private final FallenBehindManager fallenBehindManager;
 
@@ -55,16 +57,18 @@ public class SyncManagerImpl implements FallenBehindManager {
     /**
      * Creates a new SyncManager
      *
-     * @param platformContext    the platform context
-     * @param intakeQueue        the event intake queue
+     * @param platformContext         the platform context
+     * @param intakeQueueSizeSupplier a supplier for the size of the event intake queue
+     * @param fallenBehindManager     the fallen behind manager
+     * @param eventConfig             the event config
      */
     public SyncManagerImpl(
             @NonNull final PlatformContext platformContext,
-            @NonNull final BlockingQueue<GossipEvent> intakeQueue,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final EventConfig eventConfig) {
 
-        this.intakeQueue = Objects.requireNonNull(intakeQueue);
+        this.intakeQueueSizeSupplier = Objects.requireNonNull(intakeQueueSizeSupplier);
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.eventConfig = Objects.requireNonNull(eventConfig);
@@ -97,7 +101,7 @@ public class SyncManagerImpl implements FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        final int intakeQueueSize = intakeQueue.size();
+        final long intakeQueueSize = intakeQueueSizeSupplier.getAsLong();
         if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
             return false;
         }
@@ -116,7 +120,7 @@ public class SyncManagerImpl implements FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        return intakeQueue.size() <= eventConfig.eventIntakeQueueThrottleSize();
+        return intakeQueueSizeSupplier.getAsLong() <= eventConfig.eventIntakeQueueThrottleSize();
     }
 
     /**

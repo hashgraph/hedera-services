@@ -25,7 +25,6 @@ public final class CryptoConstants {
     public static final int HASH_SIZE_BYTES = 48; // 384 bits (= 3*128)
     // size (in bits) of a public or private key
     public static final int SIG_KEY_SIZE_BITS = 3072;
-    public static final int ENC_KEY_SIZE_BITS = 384; // 3*128 bits
     public static final int AGR_KEY_SIZE_BITS = 384; // 3*128 bits
     // max number of bytes in a signature
     // this might be as high as 16+2*ceiling(KEY_SIZE_BITS/8), but is 8 less than that here
@@ -35,11 +34,8 @@ public final class CryptoConstants {
     // the algorithms and providers to use (AGR is key agreement, ENC is encryption, SIG is signatures)
     public static final String AGR_TYPE = "EC";
     public static final String AGR_PROVIDER = "SunEC";
-    public static final String ENC_TYPE = "EC";
-    public static final String ENC_PROVIDER = "SunEC";
     public static final String SIG_TYPE1 = "RSA"; // or SHA384withRSA
     public static final String SIG_PROVIDER = getBCProviderName();
-    public static final String SUN_RSA_SIGN_PROVIDER = "SunRsaSign";
     public static final String SIG_TYPE2 = "SHA384withRSA"; // or RSA
     /** this is the only TLS protocol we will allow */
     public static final String TLS_SUITE = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384";

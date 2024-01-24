@@ -80,6 +80,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
@@ -187,7 +189,8 @@ public class InitialModServiceTokenSchema extends Schema {
 
             // ---------- NFTs
             log.info("BBM: doing nfts...");
-            var nftsToState = ctx.newStates().<NftID, Nft>get(NFTS_KEY);
+            final var nftsToState = new AtomicReference<>(ctx.newStates().<NftID, Nft>get(NFTS_KEY));
+            final var numNftInsertions = new AtomicLong();
             try {
                 VirtualMapLike.from(nftsFs)
                         .extractVirtualMapData(
@@ -204,18 +207,27 @@ public class InitialModServiceTokenSchema extends Schema {
                                     var fromNft2 = new MerkleUniqueToken(
                                             fromNft.getOwner(), fromNft.getMetadata(), fromNft.getCreationTime());
                                     var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
-                                    nftsToState.put(toNftId, translated);
+                                    nftsToState.get().put(toNftId, translated);
+                                    if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
+                                        // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) nftsToState.get()).commit();
+                                        ctx.copyAndReleaseOnDiskState(NFTS_KEY);
+                                        // And ensure we have the latest writable state
+                                        nftsToState.set(ctx.newStates().get(NFTS_KEY));
+                                    }
                                 },
                                 1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            if (nftsToState.isModified()) ((WritableKVStateBase) nftsToState).commit();
+            if (nftsToState.get().isModified()) ((WritableKVStateBase) nftsToState.get()).commit();
             log.info("BBM: finished nfts");
 
             // ---------- Token Rels/Associations
             log.info("BBM: doing token rels...");
-            var tokenRelsToState = ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY);
+            final var numTokenRelInsertions = new AtomicLong();
+            final var tokenRelsToState =
+                    new AtomicReference<>(ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY));
             try {
                 VirtualMapLike.from(trFs)
                         .extractVirtualMapData(
@@ -238,18 +250,27 @@ public class InitialModServiceTokenSchema extends Schema {
                                                     .tokenNum(key.getLowOrderAsLong())
                                                     .build())
                                             .build();
-                                    tokenRelsToState.put(newPair, translated);
+                                    tokenRelsToState.get().put(newPair, translated);
+                                    if (numTokenRelInsertions.incrementAndGet() % 10_000 == 0) {
+                                        // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) tokenRelsToState.get()).commit();
+                                        ctx.copyAndReleaseOnDiskState(TOKEN_RELS_KEY);
+                                        // And ensure we have the latest writable state
+                                        tokenRelsToState.set(ctx.newStates().get(TOKEN_RELS_KEY));
+                                    }
                                 },
                                 1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            if (tokenRelsToState.isModified()) ((WritableKVStateBase) tokenRelsToState).commit();
+            if (tokenRelsToState.get().isModified()) ((WritableKVStateBase) tokenRelsToState.get()).commit();
             log.info("BBM: finished token rels");
 
             // ---------- Accounts
             log.info("BBM: doing accounts");
-            var acctsToState = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
+
+            final var numAccountInsertions = new AtomicLong();
+            final var acctsToState = new AtomicReference<>(ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY));
             try {
                 VirtualMapLike.from(acctsFs)
                         .extractVirtualMapData(
@@ -258,17 +279,26 @@ public class InitialModServiceTokenSchema extends Schema {
                                     var acctNum = entry.left().asEntityNum().longValue();
                                     var fromAcct = entry.right();
                                     var toAcct = AccountStateTranslator.accountFromOnDiskAccount(fromAcct);
-                                    acctsToState.put(
-                                            AccountID.newBuilder()
-                                                    .accountNum(acctNum)
-                                                    .build(),
-                                            toAcct);
+                                    acctsToState
+                                            .get()
+                                            .put(
+                                                    AccountID.newBuilder()
+                                                            .accountNum(acctNum)
+                                                            .build(),
+                                                    toAcct);
+                                    if (numAccountInsertions.incrementAndGet() % 10_000 == 0) {
+                                        // Make sure we are flushing data to disk as we go
+                                        ((WritableKVStateBase) acctsToState.get()).commit();
+                                        ctx.copyAndReleaseOnDiskState(ACCOUNTS_KEY);
+                                        // And ensure we have the latest writable state
+                                        acctsToState.set(ctx.newStates().get(ACCOUNTS_KEY));
+                                    }
                                 },
                                 1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            if (acctsToState.isModified()) ((WritableKVStateBase) acctsToState).commit();
+            if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
             log.info("BBM: finished accts");
 
             // ---------- Tokens

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
@@ -24,8 +23,9 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -107,37 +107,37 @@ public class InternalEventValidator {
 
         this.nullHashedDataAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullHashedData")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithNullHashedData")
                         .withDescription("Events that had null hashed data")
                         .withUnit("events"));
         this.nullUnhashedDataAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullUnhashedData")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithNullUnhashedData")
                         .withDescription("Events that had null unhashed data")
                         .withUnit("events"));
         this.tooManyTransactionBytesAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithTooManyTransactionBytes")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithTooManyTransactionBytes")
                         .withDescription("Events that had more transaction bytes than permitted")
                         .withUnit("events"));
         this.inconsistentSelfParentAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentSelfParent")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithInconsistentSelfParent")
                         .withDescription("Events that had an internal self-parent inconsistency")
                         .withUnit("events"));
         this.inconsistentOtherParentAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentOtherParent")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithInconsistentOtherParent")
                         .withDescription("Events that had an internal other-parent inconsistency")
                         .withUnit("events"));
         this.identicalParentsAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithIdenticalParents")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithIdenticalParents")
                         .withDescription("Events with identical self-parent and other-parent hash")
                         .withUnit("events"));
         this.invalidGenerationAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidGeneration")
+                .getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "eventsWithInvalidGeneration")
                         .withDescription("Events with an invalid generation")
                         .withUnit("events"));
     }

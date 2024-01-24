@@ -44,6 +44,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -84,7 +88,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class TokenInfoHTSSuite extends HapiSuite {
 
@@ -162,7 +166,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec happyPathGetTokenInfo() {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("HappyPathGetTokenInfo")
+        return defaultHapiSpec(
+                        "HappyPathGetTokenInfo",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -257,7 +265,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
     final HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
+        return defaultHapiSpec(
+                        "HappyPathGetFungibleTokenInfo",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -353,7 +365,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
+        return defaultHapiSpec(
+                        "HappyPathGetNonFungibleTokenInfo",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -462,7 +478,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec getInfoOnDeletedFungibleTokenWorks() {
-        return defaultHapiSpec("getInfoOnDeletedFungibleTokenWorks")
+        return defaultHapiSpec(
+                        "getInfoOnDeletedFungibleTokenWorks",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -508,7 +528,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec getInfoOnInvalidFungibleTokenFails() {
-        return defaultHapiSpec("getInfoOnInvalidFungibleTokenFails")
+        return defaultHapiSpec(
+                        "getInfoOnInvalidFungibleTokenFails",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -552,7 +576,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("getInfoOnDeletedNonFungibleTokenFails")
+        return defaultHapiSpec(
+                        "getInfoOnDeletedNonFungibleTokenFails",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -595,7 +623,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails")
+        return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -648,7 +676,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec happyPathGetTokenCustomFees() {
-        return defaultHapiSpec("HappyPathGetTokenCustomFees")
+        return defaultHapiSpec(
+                        "HappyPathGetTokenCustomFees",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -706,7 +738,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
     final HapiSpec happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("HappyPathGetNonFungibleTokenCustomFees")
+        return defaultHapiSpec(
+                        "HappyPathGetNonFungibleTokenCustomFees",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(NFT_OWNER),

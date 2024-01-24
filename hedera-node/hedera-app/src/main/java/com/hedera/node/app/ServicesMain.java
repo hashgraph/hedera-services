@@ -25,8 +25,6 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.utility.FileUtils;
@@ -152,23 +150,9 @@ public class ServicesMain implements SwirldMain {
                 .withSource(SystemPropertiesConfigSource.getInstance());
 
         SoftwareVersion version = hedera.getSoftwareVersion();
-        if (version instanceof HederaSoftwareVersion v) {
-            var newProtoVersion = com.hederahashgraph.api.proto.java.SemanticVersion.newBuilder();
-            newProtoVersion
-                    .setMajor(v.getServicesVersion().major())
-                    .setMinor(v.getServicesVersion().minor())
-                    .setPatch(v.getServicesVersion().patch())
-                    .build();
-            var newServicesVersion = com.hederahashgraph.api.proto.java.SemanticVersion.newBuilder();
-            newServicesVersion
-                    .setMajor(v.getServicesVersion().major())
-                    .setMinor(v.getServicesVersion().minor())
-                    .setPatch(v.getServicesVersion().patch())
-                    .build();
-            version = new SerializableSemVers(newProtoVersion.build(), newServicesVersion.build());
-        }
+        logger.info("Starting node {} with version {}", selfId, version);
         final PlatformBuilder builder = new PlatformBuilder(
-                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId)
+                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId)
                 .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
