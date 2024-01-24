@@ -27,7 +27,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -95,7 +95,7 @@ public final class GossipFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,

@@ -26,21 +26,25 @@ import java.util.List;
 /**
  * Records the minimum event generation for particular rounds
  *
- * @param round
- * 		the round number
- * @param minimumGeneration
- * 		the minimum event generation for a given round
+ * @param round             the round number
+ * @param minimumGeneration the minimum event generation for a given round
  */
 public record MinGenInfo(long round, long minimumGeneration) {
+
+    /**
+     * The maximum permissible size of a list of {@link MinGenInfo} lists as deserialized by
+     * {@link #deserializeList(SerializableDataInputStream)}. Is an upper bound for
+     * {@link com.swirlds.platform.consensus.ConsensusConfig#roundsNonAncient()}, choices for this config that exceed
+     * this value will result in an exception being thrown when deserializeList is called.
+     */
+    public static int MAX_MINGEN_INFO_SIZE = 32;
+
     /**
      * Serialize a list of {@link MinGenInfo} objects
      *
-     * @param minGenInfo
-     * 		the list of {@link MinGenInfo} objects to serialize
-     * @param out
-     * 		the stream to write to
-     * @throws IOException
-     * 		thrown if an IO error occurs
+     * @param minGenInfo the list of {@link MinGenInfo} objects to serialize
+     * @param out        the stream to write to
+     * @throws IOException thrown if an IO error occurs
      */
     public static void serializeList(
             @NonNull final List<MinGenInfo> minGenInfo, @NonNull final SerializableDataOutputStream out)
@@ -55,14 +59,16 @@ public record MinGenInfo(long round, long minimumGeneration) {
     /**
      * Deserialize a list of {@link MinGenInfo} objects
      *
-     * @param in
-     * 		the stream to read from
+     * @param in the stream to read from
      * @return the list of {@link MinGenInfo} objects
-     * @throws IOException
-     * 		thrown if an IO error occurs
+     * @throws IOException thrown if an IO error occurs
      */
     public static List<MinGenInfo> deserializeList(@NonNull final SerializableDataInputStream in) throws IOException {
         final int minGenInfoSize = in.readInt();
+        if (minGenInfoSize > MAX_MINGEN_INFO_SIZE) {
+            throw new IOException("Deserializing a list of MinGenInfo objects with size " + minGenInfoSize
+                    + " exceeds the maximum permissible size of " + MAX_MINGEN_INFO_SIZE);
+        }
         final List<MinGenInfo> minGenInfo = new ArrayList<>(minGenInfoSize);
         for (int i = 0; i < minGenInfoSize; i++) {
             minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
