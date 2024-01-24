@@ -29,7 +29,7 @@ import static java.util.Collections.singletonList;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -43,18 +43,15 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -773,11 +770,11 @@ public class DataFileCollection<D> implements Snapshotable {
             try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
                 if (keyRange.getMinValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
                     out.writeVarLong(keyRange.getMinValidKey(), false);
                 }
                 if (keyRange.getMaxValidKey() != 0) {
-                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
+                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
                     out.writeVarLong(keyRange.getMaxValidKey(), false);
                 }
                 fileOut.flush();
@@ -856,9 +853,7 @@ public class DataFileCollection<D> implements Snapshotable {
             return false;
         }
         if (loadPbj) {
-            try (final InputStream fileIn = Files.newInputStream(metadataFile, StandardOpenOption.READ)) {
-                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
-                in.limit(Files.size(metadataFile));
+            try (final ReadableStreamingData in = new ReadableStreamingData(metadataFile)) {
                 long minValidKey = 0;
                 long maxValidKey = 0;
                 while (in.hasRemaining()) {
