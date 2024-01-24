@@ -946,7 +946,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
                 }
 
-                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
+                if (functionality == CONTRACT_CREATE || functionality == CONTRACT_CALL) {
                     continue;
                 }
                 if (snapshotsIfNeeded == null) {
