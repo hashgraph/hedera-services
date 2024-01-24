@@ -8,4 +8,4 @@ else
   ACTUAL_LOC=$2
 fi
 
-java -jar rcdiff.jar -e $EXPECTED_LOC -a $ACTUAL_LOC
+java -jar rcdiff.jar -e $EXPECTED_LOC -a $ACTUAL_LOC -m 1000

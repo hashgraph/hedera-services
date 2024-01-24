@@ -17,6 +17,7 @@
 package com.hedera.services.rcdiff;
 
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.CONSENSUS_TIME_MISMATCH;
+import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
 
@@ -126,6 +127,9 @@ public class RcDiff implements Callable<Integer> {
                     .append(Objects.requireNonNull(diff.firstEntry()).consensusTime())
                     .append(" but was ")
                     .append(Objects.requireNonNull(diff.secondEntry()).consensusTime());
+        } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH) {
+            sb.append("\nFor body,\n")
+                    .append(Objects.requireNonNull(diff.firstEntry()).body());
         }
         return sb.toString();
     }
