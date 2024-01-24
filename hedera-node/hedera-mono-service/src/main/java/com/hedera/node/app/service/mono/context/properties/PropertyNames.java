@@ -75,6 +75,7 @@ public class PropertyNames {
 
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
+    public static final String ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION = "accounts.releaseAliasAfterDeletion";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";

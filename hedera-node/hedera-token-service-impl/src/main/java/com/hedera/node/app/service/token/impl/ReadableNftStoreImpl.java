@@ -58,4 +58,9 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
     public long sizeOfState() {
         return nftState.size();
     }
+
+    @Override
+    public void warm(@NonNull final NftID nftID) {
+        nftState.warm(nftID);
+    }
 }

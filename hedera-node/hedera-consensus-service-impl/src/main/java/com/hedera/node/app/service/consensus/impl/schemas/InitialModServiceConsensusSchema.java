@@ -16,14 +16,24 @@
 
 package com.hedera.node.app.service.consensus.impl.schemas;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the consensus service
@@ -32,13 +42,37 @@ import java.util.Set;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceConsensusSchema extends Schema {
-    public InitialModServiceConsensusSchema(SemanticVersion version) {
+    private static final Logger log = LogManager.getLogger(InitialModServiceConsensusSchema.class);
+    private MerkleMap<EntityNum, MerkleTopic> fs;
+
+    public InitialModServiceConsensusSchema(@NonNull final SemanticVersion version) {
         super(version);
     }
 
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.inMemory(ConsensusServiceImpl.TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
+        return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
+    }
+
+    public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
+        this.fs = fs;
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        if (fs != null) {
+            log.info("BBM: running consensus migration...");
+
+            var ts = ctx.newStates().<TopicID, Topic>get(TOPICS_KEY);
+            ConsensusServiceStateTranslator.migrateFromMerkleToPbj(fs, ts);
+            if (ts.isModified()) ((WritableKVStateBase) ts).commit();
+
+            log.info("BBM: finished consensus service migration");
+        } else {
+            log.warn("BBM: no consensus 'from' state found");
+        }
+
+        fs = null;
     }
 }

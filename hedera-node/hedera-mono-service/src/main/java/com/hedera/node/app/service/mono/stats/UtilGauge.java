@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.metrics.api.DoubleGauge;
 import java.util.function.DoubleSupplier;
 
 public record UtilGauge(DoubleSupplier valueSource, DoubleGauge.Config config, NonAtomicReference<DoubleGauge> gauge) {}

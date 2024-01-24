@@ -23,7 +23,7 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 
 /**
  * Prevents event creations when the system is stressed and unable to keep up with its work load.
@@ -35,7 +35,7 @@ public class BackpressureRule implements EventCreationRule {
      */
     private final int eventIntakeThrottle;
 
-    private final IntSupplier eventIntakeQueueSize;
+    private final LongSupplier eventIntakeQueueSize;
 
     /**
      * Constructor.
@@ -44,7 +44,7 @@ public class BackpressureRule implements EventCreationRule {
      * @param eventIntakeQueueSize provides the size of the event intake queue
      */
     public BackpressureRule(
-            @NonNull final PlatformContext platformContext, @NonNull final IntSupplier eventIntakeQueueSize) {
+            @NonNull final PlatformContext platformContext, @NonNull final LongSupplier eventIntakeQueueSize) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
@@ -59,7 +59,7 @@ public class BackpressureRule implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        return eventIntakeQueueSize.getAsInt() < eventIntakeThrottle;
+        return eventIntakeQueueSize.getAsLong() < eventIntakeThrottle;
     }
 
     /**
