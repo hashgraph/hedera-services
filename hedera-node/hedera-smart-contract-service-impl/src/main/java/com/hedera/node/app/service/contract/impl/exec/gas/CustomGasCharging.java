@@ -161,11 +161,12 @@ public class CustomGasCharging {
         final var senderAccount = worldUpdater.getHederaAccount(sender);
         requireNonNull(senderAccount);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
-        validateTrue(
-                senderAccount.getBalance().toLong() >= gasCostGiven(intrinsicGas, context.gasPrice()),
-                INSUFFICIENT_PAYER_BALANCE);
-
-        worldUpdater.collectFee(sender, gasCostGiven(intrinsicGas, context.gasPrice()));
+        // If for some reason the account does not have enough to pay the intrinsic gas cost, then charge the entire
+        // balance
+        final var fee = Math.min(
+                gasCostGiven(intrinsicGas, context.gasPrice()),
+                senderAccount.getBalance().toLong());
+        worldUpdater.collectFee(sender, fee);
     }
 
     private void chargeWithOnlySender(

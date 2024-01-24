@@ -99,6 +99,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         assertEthTxDataValidIfApplicable();
 
         // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
+        // if an exception occurs during a ContractCall, charge fees to the sender and return a CallOutcome reflecting
+        // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
         if (hevmTransaction.isException()) {
             return chargeFeesAndReturnOutcome(hevmTransaction);
@@ -143,9 +145,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     }
 
     private CallOutcome chargeFeesAndReturnOutcome(HederaEvmTransaction hevmTransaction) {
-        // if there was an exception while creating the HederaEvmTransaction and the transaction is a ContractCall
+        // If there was an exception while creating the HederaEvmTransaction and the transaction is a ContractCall
         // charge fees to the sender and return a CallOutcome reflecting the error.
-        // This HederaEvmTransaction is only created if the transaction is a ContractCall
         final var senderId = context.body().transactionIDOrThrow().accountIDOrThrow();
         gasCharging.chargeGasForAbortedTransaction(senderId, hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
         rootProxyWorldUpdater.commit();
