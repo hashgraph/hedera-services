@@ -125,7 +125,9 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
         synchronized (this) {
             hashes.add(new VirtualHashRecord(path, hash));
-            if ((reconnectFlushInterval > 0) && (hashes.size() >= reconnectFlushInterval) && !flushInProgress.get()) {
+            if ((reconnectFlushInterval > 0)
+                    && (hashes.size() >= reconnectFlushInterval)
+                    && flushInProgress.compareAndSet(false, true)) {
                 dirtyHashesToFlush = hashes;
                 hashes = new ArrayList<>();
                 dirtyLeavesToFlush = leaves;
@@ -156,6 +158,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
             leaves = null;
         }
         if (!finalNodesToFlush.isEmpty() || !finalLeavesToFlush.isEmpty()) {
+            assert !flushInProgress.get() : "Flush must not be in progress when hashing is complete";
+            flushInProgress.set(true);
             flush(finalNodesToFlush, finalLeavesToFlush);
         }
     }
@@ -165,9 +169,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     private void flush(
             @NonNull final List<VirtualHashRecord> hashesToFlush,
             @NonNull final List<VirtualLeafRecord<K, V>> leavesToFlush) {
-        if (!flushInProgress.compareAndSet(false, true)) {
-            throw new IllegalStateException("Cannot start flushing, flush already in progress?");
-        }
+        assert flushInProgress.get() : "Flush in progress flag must be set";
         try {
             final long maxPath = leavesToFlush.parallelStream()
                     .mapToLong(VirtualLeafRecord::getPath)
