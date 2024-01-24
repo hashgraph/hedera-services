@@ -200,9 +200,9 @@ public class TokenCreateValidator {
     }
 
     /**
-     * Validate the metadata size for token create operations.
-     * @param metaData The metadata of the tokens to create.
-     * @param maxMetadataBytes The max metadata size for token create based on config.
+     * Validate the number of bytes of metadata being set for the token to be created.
+     * @param metaData The metadata of the created token.
+     * @param maxMetadataBytes The maximum number of bytes allowed for metadata to be set on the token.
      */
     private void validateMetaData(final Bytes metaData, final int maxMetadataBytes) {
         validateTrue(metaData.toByteArray().length <= maxMetadataBytes, METADATA_TOO_LONG);

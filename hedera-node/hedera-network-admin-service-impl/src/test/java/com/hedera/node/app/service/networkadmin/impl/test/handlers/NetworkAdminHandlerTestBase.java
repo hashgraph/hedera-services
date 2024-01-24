@@ -114,8 +114,8 @@ public class NetworkAdminHandlerTestBase {
     protected final long expirationTime = 1_234_567L;
     protected final String memo = "test memo";
 
-    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
-    protected final Key metadataKey = Key.DEFAULT;
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
+    protected final Key metadataKey = null;
 
     protected MapReadableKVState<AccountID, Account> readableAccounts;
     protected MapReadableKVState<TokenID, Token> readableTokenState;

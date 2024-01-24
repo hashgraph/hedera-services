@@ -291,7 +291,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
-    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final long expirationTime = 1_234_567L;
     protected final long autoRenewSecs = 100L;
     protected static final long payerBalance = 10_000L;

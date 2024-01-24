@@ -112,7 +112,7 @@ public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
-    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
 
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);

@@ -83,7 +83,7 @@ public class TokenHandlerTestBase {
     protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Bytes metadata = Bytes.wrap(new byte[] {0});
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final Key metadataKey = Key.DEFAULT;
     protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
