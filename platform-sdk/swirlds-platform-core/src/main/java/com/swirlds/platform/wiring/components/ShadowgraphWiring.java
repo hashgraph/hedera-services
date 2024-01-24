@@ -20,12 +20,12 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph}.
+ * Wiring for the {@link Shadowgraph}.
  *
  * @param eventInput                 the input wire for events to be added to the shadow graph
  * @param nonExpiredEventWindowInput the input wire for the non-expired event window
@@ -55,7 +55,7 @@ public record ShadowgraphWiring(
      *
      * @param shadowgraph the shadow graph to bind
      */
-    public void bind(@NonNull final ShadowGraph shadowgraph) {
+    public void bind(@NonNull final Shadowgraph shadowgraph) {
         ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
         ((BindableInputWire<NonAncientEventWindow, Void>) nonExpiredEventWindowInput)
                 .bind(shadowgraph::updateNonExpiredEventWindow);
