@@ -59,8 +59,7 @@ public interface StakingRewardsApi {
             final long currentStakePeriod,
             final long stakePeriodStart) {
         requireNonNull(account);
-        log.info("NodeStakingInfo", nodeStakingInfo);
-        if (nodeStakingInfo == null) {
+        if (nodeStakingInfo == null || nodeStakingInfo.deleted()) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.rewardSumHistory();

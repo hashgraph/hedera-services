@@ -794,7 +794,9 @@ public final class PbjConverter {
         return SemanticVersion.newBuilder()
                 .major(v.getMajor())
                 .minor(v.getMinor())
+                .pre(v.getPre())
                 .patch(v.getPatch())
+                .build(v.getBuild())
                 .build();
     }
 
