@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -33,6 +35,7 @@ import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,6 +62,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final ScheduleProcessing scheduleProcessing;
     private final RecordStreaming recordStreaming;
     private final RecordCache recordCache;
+    private final InitTrigger initTrigger;
 
     @Inject
     public StandardProcessLogic(
@@ -74,7 +78,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final ExecutionTimeTracker executionTimeTracker,
             final RecordStreaming recordStreaming,
             final StateView workingView,
-            final RecordCache recordCache) {
+            final RecordCache recordCache,
+            @NonNull final InitTrigger initTrigger) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
@@ -88,6 +93,7 @@ public class StandardProcessLogic implements ProcessLogic {
         this.recordStreaming = recordStreaming;
         this.workingView = workingView;
         this.recordCache = recordCache;
+        this.initTrigger = requireNonNull(initTrigger);
     }
 
     @Override
@@ -100,7 +106,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             // Check if the transaction is submitted by a version before the deployed version.
             // If so, return and set the status on the receipt to BUSY
-            if (SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(softwareVersion)) {
+            if (initTrigger != EVENT_STREAM_RECOVERY
+                    && SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(softwareVersion)) {
                 recordCache.setStaleTransaction(
                         accessor.getPayer(), accessor, platformTxn.getConsensusTimestamp(), submittingMember);
                 return;

@@ -262,7 +262,7 @@ class SerializableSemVersTest {
     }
 
     @Test
-    void canOnlyCompareIfDeserializedAndToOwnType() {
+    void canOnlyCompareIfDeserialized() {
         final var services = semVerWith(1, 1, 0, null, null);
         final var proto = semVerWith(1, 0, 1, null, null);
 
@@ -273,9 +273,16 @@ class SerializableSemVersTest {
         assertThrows(IllegalStateException.class, () -> firstUnpreparedSubject.compareTo(mockVersion));
         secondUnpreparedSubject.setServices(null);
         assertThrows(IllegalStateException.class, () -> secondUnpreparedSubject.compareTo(mockVersion));
-        final var preparedSubject =
-                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
-        assertThrows(IllegalArgumentException.class, () -> preparedSubject.compareTo(mockVersion));
+    }
+
+    @Test
+    void differentTypeIsSortedBefore() {
+        final var services = semVerWith(1, 1, 0, null, null);
+        final var proto = semVerWith(1, 0, 1, null, null);
+
+        final var mockVersion = mock(SoftwareVersion.class);
+        final var subject = new SerializableSemVers(proto, services);
+        assertEquals(-1, subject.compareTo(mockVersion));
     }
 
     private static SemanticVersion semVerWith(
