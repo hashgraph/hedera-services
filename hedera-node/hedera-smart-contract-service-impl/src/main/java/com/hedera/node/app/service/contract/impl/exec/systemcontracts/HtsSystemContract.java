@@ -153,9 +153,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         if (handleException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
             return haltResult(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS, remainingGas);
         }
-        if (handleException.getStatus().equals(INVALID_TOKEN_ID)) {
-            return haltResult(HederaExceptionalHaltReason.NOT_SUPPORTED, remainingGas);
-        }
         throw handleException;
     }
 }
