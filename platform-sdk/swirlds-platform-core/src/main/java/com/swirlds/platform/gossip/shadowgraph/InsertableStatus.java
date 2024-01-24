@@ -17,7 +17,7 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 /**
- * A status representing the ability of the {@link ShadowGraph} to insert an event.
+ * A status representing the ability of the {@link Shadowgraph} to insert an event.
  */
 public enum InsertableStatus {
     /** The event can be inserted into the shadow graph. */
