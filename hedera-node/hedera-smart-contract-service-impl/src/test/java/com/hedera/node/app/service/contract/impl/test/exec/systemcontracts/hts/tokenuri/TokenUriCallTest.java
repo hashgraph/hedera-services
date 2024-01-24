@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokenuri;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -54,11 +56,22 @@ class TokenUriCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void revertsWhenTokenIsNotERC721() {
+    void revertsWithMissingNft() {
+        // given
+        subject = new TokenUriCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN.tokenId().tokenNum(), NFT_SERIAL_NO))
+                .willReturn(null);
+        // when
+        final var result = subject.execute().fullResult().result();
+        // then
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_NFT_ID), result.getOutput());
+    }
+
+    @Test
+    void haltWhenTokenIsNotERC721() {
         // given
         subject = new TokenUriCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, NFT_SERIAL_NO);
-        given(nativeOperations.getNft(FUNGIBLE_TOKEN.tokenId().tokenNum(), NFT_SERIAL_NO))
-                .willReturn(null);
 
         // when
         final var result = subject.execute().fullResult().result();
@@ -66,7 +79,7 @@ class TokenUriCallTest extends HtsCallTestBase {
         // then
         assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
         assertEquals(
-                HederaExceptionalHaltReason.INVALID_TOKEN_ID,
+                HederaExceptionalHaltReason.NOT_SUPPORTED,
                 result.getHaltReason().get());
     }
 }

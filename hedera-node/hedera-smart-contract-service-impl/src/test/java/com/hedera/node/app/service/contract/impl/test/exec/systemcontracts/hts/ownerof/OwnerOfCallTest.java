@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.ownerof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
@@ -59,9 +61,22 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_NFT_ID), result.getOutput());
+    }
+
+    @Test
+    void haltWhenTokenIsNotERC721() {
+        // given
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+
+        // when
+        final var result = subject.execute().fullResult().result();
+
+        // then
         assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
         assertEquals(
-                HederaExceptionalHaltReason.INVALID_NFT_ID,
+                HederaExceptionalHaltReason.NOT_SUPPORTED,
                 result.getHaltReason().get());
     }
 

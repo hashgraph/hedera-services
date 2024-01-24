@@ -34,14 +34,14 @@ class DecimalsCallTest extends HtsCallTestBase {
     private DecimalsCall subject;
 
     @Test
-    void revertsWithNonfungibleToken() {
+    void haltWithNonfungibleToken() {
         subject = new DecimalsCall(mockEnhancement(), gasCalculator, NON_FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
         assertEquals(
-                HederaExceptionalHaltReason.INVALID_TOKEN_ID,
+                HederaExceptionalHaltReason.NOT_SUPPORTED,
                 result.getHaltReason().get());
     }
 
