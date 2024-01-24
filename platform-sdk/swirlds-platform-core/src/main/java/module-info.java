@@ -138,7 +138,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
-    exports com.swirlds.platform.event.future;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;

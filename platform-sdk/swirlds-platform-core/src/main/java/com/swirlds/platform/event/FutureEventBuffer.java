@@ -114,8 +114,13 @@ public class FutureEventBuffer {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         final List<GossipEvent> events = new ArrayList<>();
-        futureEvents.shiftWindow(
-                eventWindow.pendingConsensusRound(), (round, roundEvents) -> events.addAll(roundEvents));
+        futureEvents.shiftWindow(eventWindow.pendingConsensusRound(), (round, roundEvents) -> {
+            for (final GossipEvent event : roundEvents) {
+                if (!eventWindow.isAncient(event)) {
+                    events.add(event);
+                }
+            }
+        });
 
         bufferedEventCount.addAndGet(-events.size());
         return events;
