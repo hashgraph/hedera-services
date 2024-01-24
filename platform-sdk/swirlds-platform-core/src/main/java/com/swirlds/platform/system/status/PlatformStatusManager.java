@@ -75,10 +75,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
 
         this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform")
-                .setThreadName("status-state-machine")
-                // TODO: what to do with thread naming. It gives name to the thread but
-                //  also to the metric associated to the thread, should we have the same
-                //  constraint than for metric?
+                .setThreadName("status_state_machine")
                 .setHandler(this::processStatusAction)
                 .setIdleCallback(this::triggerTimeElapsed)
                 .setBatchHandledCallback(this::triggerTimeElapsed)
