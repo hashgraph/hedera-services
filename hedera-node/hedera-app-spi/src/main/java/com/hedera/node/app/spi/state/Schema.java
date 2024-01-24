@@ -42,7 +42,7 @@ public abstract class Schema implements Comparable<Schema> {
      *
      * @param version The version of this schema
      */
-    protected Schema(@NonNull SemanticVersion version) {
+    protected Schema(@NonNull final SemanticVersion version) {
         this.version = Objects.requireNonNull(version);
     }
 
