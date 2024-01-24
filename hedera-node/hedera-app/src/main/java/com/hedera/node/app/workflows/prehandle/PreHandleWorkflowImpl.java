@@ -296,8 +296,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             dispatcher.dispatchPureChecks(txBody);
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
-            // Finally, let the transaction handler do warm up of other state it may want to use later
-            dispatcher.dispatchWarmup(context);
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature

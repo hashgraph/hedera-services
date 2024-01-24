@@ -21,9 +21,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import edu.umd.cs.findbugs.annotations.NonNull;

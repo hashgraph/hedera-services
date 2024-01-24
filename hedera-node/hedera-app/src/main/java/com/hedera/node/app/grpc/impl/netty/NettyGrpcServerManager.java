@@ -29,7 +29,7 @@ import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.types.Profile;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.Server;

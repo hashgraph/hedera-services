@@ -52,11 +52,6 @@ public class LinkedEventIntake {
 
     private final EventIntakeMetrics metrics;
     private final Time time;
-    /**
-     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
-     * for determining Ancient.
-     */
-    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -83,9 +78,6 @@ public class LinkedEventIntake {
      * @param consensusSupplier                 provides the current consensus instance
      * @param dispatcher                        invokes event related callbacks
      * @param shadowGraph                       tracks events in the hashgraph
-     *
-     * @param intakeEventCounter                tracks the number of events from each peer that are currently in
-     *                                          the intake pipeline
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
@@ -96,7 +88,6 @@ public class LinkedEventIntake {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
