@@ -130,6 +130,10 @@ on:
       snyk-token:
         description: "The Snyk access token is used by Snyk to analyze the code for vulnerabilities "
         required: false
+      codacy-project-token:
+        description: "The Codacy project token used to report code coverage."
+        required: false
+
 defaults:
   run:
     shell: bash
@@ -473,6 +477,12 @@ jobs:
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
+
+      - name: Publish to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java $(find . -name 'jacoco*.xml' -printf '-r %p ')
 
       - name: Publish Test Reports
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
