@@ -26,14 +26,11 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -42,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -75,15 +73,15 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             // check for INVALID_TOKEN_NFT_SERIAL_NUMBER
             final var nft = nativeOperations().getNft(token.tokenNum(), amount.longValue());
             if (nft == null) {
-                return externalizeAndRevert(INVALID_TOKEN_NFT_SERIAL_NUMBER, body, frame);
+                return externalizeAndRevert(INVALID_TOKEN_NFT_SERIAL_NUMBER, body);
             }
             // check for INVALID_ALLOWANCE_SPENDER_ID
             if (spenderAccount == null && spender.accountNum() != 0) {
-                return externalizeAndRevert(INVALID_ALLOWANCE_SPENDER_ID, body, frame);
+                return externalizeAndRevert(INVALID_ALLOWANCE_SPENDER_ID, body);
             }
             // check for SENDER_DOES_NOT_OWN_NFT_SERIAL_NO
             if (!senderId.equals(getOwnerId()) && !senderHasAllowance()) {
-                return externalizeAndRevert(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, body, frame);
+                return externalizeAndRevert(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, body);
             }
         }
 
@@ -112,42 +110,19 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         }
     }
 
-    private PricedResult externalizeAndRevert(ResponseCodeEnum response, TransactionBody body, MessageFrame frame) {
+    private PricedResult externalizeAndRevert(ResponseCodeEnum response, TransactionBody body) {
         var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
         var revertResult = FullResult.revertResult(response, gasRequirement);
         var result = gasOnly(revertResult, response, false);
-
         var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
         var encodedRc = ReturnTypes.encodedRc(response).array();
+        var contractFunctionResult = contractFunctionResultFailedForProto(
+                gasRequirement, response.protoName(), contractID, Bytes.wrap(encodedRc));
+        enhancement
+                .systemOperations()
+                .externalizeResult(
+                        contractFunctionResult, response, SingleTransactionRecordBuilder.transactionWith(body));
 
-        // match mono record structure
-        if (response.equals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)) {
-            var contractFunctionResult = successResultOfZeroValueTraceable(
-                    gasRequirement,
-                    org.apache.tuweni.bytes.Bytes.wrap(encodedRc),
-                    frame.getRemainingGas(),
-                    frame.getInputData(),
-                    senderId);
-            contractFunctionResult = contractFunctionResult
-                    .copyBuilder()
-                    .errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName())
-                    .build();
-            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-            final var signedTransaction =
-                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-            final var transaction = Transaction.newBuilder()
-                    .signedTransactionBytes(signedTransactionBytes)
-                    .build();
-
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(contractFunctionResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
-        } else {
-            var contractFunctionResult = contractFunctionResultFailedForProto(
-                    gasRequirement, response.protoName(), contractID, Bytes.wrap(encodedRc));
-            enhancement.systemOperations().externalizeResult(contractFunctionResult, response);
-        }
         return result;
     }
 }

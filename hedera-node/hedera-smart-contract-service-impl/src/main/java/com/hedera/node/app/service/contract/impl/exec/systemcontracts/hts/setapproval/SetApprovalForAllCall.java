@@ -108,17 +108,11 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
     public @NonNull PricedResult execute(final MessageFrame frame) {
         final var result = execute();
 
-        if (isSuccess(result)) {
+        if (result.responseCode().equals(ResponseCodeEnum.SUCCESS)) {
             frame.addLog(getLogForSetApprovalForAll(token));
         }
 
         return result;
-    }
-
-    private boolean isSuccess(PricedResult result) {
-        return result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)
-                && (!result.responseCode().equals(INVALID_ALLOWANCE_SPENDER_ID)
-                        && !result.responseCode().equals(INVALID_TOKEN_ID));
     }
 
     private Log getLogForSetApprovalForAll(final Address logger) {
