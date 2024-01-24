@@ -251,7 +251,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             if (restartInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
-                logger.info("Migrating service {} for schema {}", serviceName, schema);
                 schema.migrate(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
@@ -294,7 +293,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var ver = schema.getVersion();
             if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
                 applicableSchemas.add(schema);
-                logger.info("Schema {} is applicable for service {}", schema, serviceName);
             }
         }
         return applicableSchemas;

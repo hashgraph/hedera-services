@@ -103,7 +103,6 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
@@ -124,6 +123,7 @@ import org.apache.logging.log4j.Logger;
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
 public class HandleWorkflow {
+
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
@@ -248,8 +248,6 @@ public class HandleWorkflow {
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
-                    System.out.println("Outer possible catastrophe");
-                    e.printStackTrace();
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -336,8 +334,6 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                System.out.println("Bad transaction from creator " + creator + " ("
-                        + CommonUtils.hex(platformTxn.getContents()) + ")");
                 logger.error("Bad transaction from creator {}", creator);
                 return;
             }

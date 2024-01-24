@@ -297,9 +297,9 @@ public class InitialModServiceTokenSchema extends Schema {
                                         acctsToState.set(ctx.newStates().get(ACCOUNTS_KEY));
                                     }
                                     if (toAcct.alias().length() > 0) {
-                                        aliasesState.get().put(
-                                                new ProtoBytes(toAcct.alias()),
-                                                toAcct.accountIdOrThrow());
+                                        aliasesState
+                                                .get()
+                                                .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
                                         if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
                                             // Make sure we are flushing data to disk as we go
                                             ((WritableKVStateBase) aliasesState.get()).commit();

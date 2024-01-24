@@ -128,8 +128,8 @@ public class RcDiff implements Callable<Integer> {
                     .append(Objects.requireNonNull(diff.firstEntry()).consensusTime())
                     .append(" but was ")
                     .append(Objects.requireNonNull(diff.secondEntry()).consensusTime());
-        } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH ||
-                firstEncounteredDifference == TRANSACTION_MISMATCH) {
+        } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH
+                || firstEncounteredDifference == TRANSACTION_MISMATCH) {
             sb.append("\nFor body,\n")
                     .append(Objects.requireNonNull(diff.firstEntry()).body());
         }

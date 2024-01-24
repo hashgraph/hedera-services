@@ -77,6 +77,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         if (fs != null) {
             log.info("BBM: Starting schedule migration");
+
             log.info("BBM: Starting schedule by id migration");
             final WritableKVState<ScheduleID, Schedule> schedulesById =
                     ctx.newStates().get(SCHEDULES_BY_ID_KEY);
