@@ -74,7 +74,6 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         return referenceCount.decrementAndGet();
     }
 
-
     /**
      * A holder for common metric values supporting automatic naming rules conversions. Instances of this class are
      * created based on a {@code Metric}, and naming rules conversions will be applied to the category, name, and unit
