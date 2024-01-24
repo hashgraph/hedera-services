@@ -26,7 +26,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -37,7 +37,10 @@ import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.system.PlatformStatNames;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
+
+// TODO rename all metrics that reference generations!
 
 /**
  * Interface to update relevant sync statistics
@@ -253,13 +256,13 @@ public class SyncMetrics {
     }
 
     /**
-     * Supplies the generation numbers of a sync for statistics
+     * Supplies the event window numbers of a sync for statistics
      *
-     * @param self  generations of our graph at the start of the sync
-     * @param other generations of their graph at the start of the sync
+     * @param self  event window of our graph at the start of the sync
+     * @param other event window of their graph at the start of the sync
      */
-    public void generations(final GraphGenerations self, final GraphGenerations other) {
-        syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
+    public void eventWindow(@NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+        syncGenerationDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
     /**

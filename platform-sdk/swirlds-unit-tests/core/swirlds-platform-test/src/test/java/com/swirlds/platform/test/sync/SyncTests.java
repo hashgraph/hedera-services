@@ -264,8 +264,6 @@ public class SyncTests {
         executor.setGraphCustomization((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
             listener.setSaveGeneratedEvents(true);
-            caller.setSendRecInitBytes(false);
-            listener.setSendRecInitBytes(false);
         });
 
         executor.execute();

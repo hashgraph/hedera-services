@@ -728,7 +728,7 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
-                consensusRef,
+                gossipEventWindowNexus,
                 platformWiring.getEventInput()::put,
                 platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 swirldStateManager,

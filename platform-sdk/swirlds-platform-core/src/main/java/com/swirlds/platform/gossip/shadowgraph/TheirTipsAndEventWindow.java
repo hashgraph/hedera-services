@@ -17,43 +17,39 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * The tips and generations of the sync peer. This is the first thing sent/received during a sync (after protocol
+ * The tips and event window of the sync peer. This is the first thing sent/received during a sync (after protocol
  * negotiation).
  */
-public final class TheirTipsAndGenerations {
-    private static final TheirTipsAndGenerations SYNC_REJECTED_RESPONSE = new TheirTipsAndGenerations(null, null);
+public final class TheirTipsAndEventWindow {
 
-    private final Generations generations;
+    private final NonAncientEventWindow eventWindow;
     private final List<Hash> tips;
 
-    private TheirTipsAndGenerations(final Generations generations, final List<Hash> tips) {
-        this.generations = generations;
+    private TheirTipsAndEventWindow(@NonNull final NonAncientEventWindow eventWindow, @NonNull final List<Hash> tips) {
+        this.eventWindow = eventWindow;
         this.tips = tips;
     }
 
-    public static TheirTipsAndGenerations create(final Generations generations, final List<Hash> tips) {
+    @NonNull
+    public static TheirTipsAndEventWindow create(
+            @NonNull final NonAncientEventWindow generations, @NonNull final List<Hash> tips) {
         Objects.requireNonNull(generations, "generations cannot be null");
         Objects.requireNonNull(tips, "tips cannot be null");
-        return new TheirTipsAndGenerations(generations, tips);
+        return new TheirTipsAndEventWindow(generations, tips);
     }
 
-    public static TheirTipsAndGenerations syncRejected() {
-        return SYNC_REJECTED_RESPONSE;
-    }
-
-    public Generations getGenerations() {
-        return generations;
+    @NonNull
+    public NonAncientEventWindow getEventWindow() {
+        return eventWindow;
     }
 
     public List<Hash> getTips() {
         return tips;
-    }
-
-    public boolean isSyncRejected() {
-        return this == SYNC_REJECTED_RESPONSE;
     }
 }

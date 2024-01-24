@@ -24,7 +24,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -42,7 +41,6 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -72,7 +70,7 @@ public final class GossipFactory {
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
-     * @param consensusRef                  a pointer to consensus
+     * @param gossipEventWindowNexus        provides the latest event window
      * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
@@ -97,7 +95,7 @@ public final class GossipFactory {
             @Nullable final Hash epochHash,
             @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final AtomicReference<Consensus> consensusRef,
+            @NonNull final GossipEventWindowNexus gossipEventWindowNexus,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -119,7 +117,7 @@ public final class GossipFactory {
         Objects.requireNonNull(appVersion);
         Objects.requireNonNull(shadowGraph);
         Objects.requireNonNull(emergencyRecoveryManager);
-        Objects.requireNonNull(consensusRef);
+        Objects.requireNonNull(gossipEventWindowNexus);
         Objects.requireNonNull(receivedEventHandler);
         Objects.requireNonNull(intakeQueueSizeSupplier);
         Objects.requireNonNull(swirldStateManager);
@@ -160,7 +158,7 @@ public final class GossipFactory {
                     epochHash,
                     shadowGraph,
                     emergencyRecoveryManager,
-                    consensusRef,
+                    gossipEventWindowNexus,
                     receivedEventHandler,
                     intakeQueueSizeSupplier,
                     swirldStateManager,

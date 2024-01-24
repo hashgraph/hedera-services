@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -30,6 +31,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
@@ -75,7 +77,6 @@ public class SyncNode {
     private boolean saveGeneratedEvents;
     private boolean shouldAcceptSync = true;
     private boolean reconnected = false;
-    private boolean sendRecInitBytes = true;
 
     private long oldestGeneration;
 
@@ -231,19 +232,22 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
+        final GossipEventWindowNexus gossipEventWindowNexus = mock(GossipEventWindowNexus.class);
+        when(gossipEventWindowNexus.getEventWindow())
+                .thenReturn(new NonAncientEventWindow(
+                        0, this.getConsensus().getMinGenerationNonAncient(), 0, GENERATION_THRESHOLD));
+
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowgraphSynchronizer(
                 platformContext,
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
-                this::getConsensus,
+                gossipEventWindowNexus,
                 eventHandler,
                 syncManager,
                 mock(IntakeEventCounter.class),
-                executor,
-                sendRecInitBytes,
-                () -> {});
+                executor);
     }
 
     /**
@@ -340,14 +344,6 @@ public class SyncNode {
 
     public void setSleepAfterEventReadMillis(final int sleepAfterEventReadMillis) {
         this.sleepAfterEventReadMillis.set(sleepAfterEventReadMillis);
-    }
-
-    public boolean isSendRecInitBytes() {
-        return sendRecInitBytes;
-    }
-
-    public void setSendRecInitBytes(final boolean sendRecInitBytes) {
-        this.sendRecInitBytes = sendRecInitBytes;
     }
 
     public void setSynchronizerReturn(final Boolean value) {
