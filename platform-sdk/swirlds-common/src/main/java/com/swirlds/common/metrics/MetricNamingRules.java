@@ -18,6 +18,8 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Predicate;
@@ -28,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This is a simple rule engine for naming rules on the metric api.
  * It can be expended adding more {@code Rule} instances to the enum.
- * Each rule applies over a {@link MetricConfig} and determines if the metric offends the rule or not.
+ * Each rule applies over a {@link com.swirlds.metrics.api.MetricConfig} and determines if the metric offends the rule or not.
  * In case of offending, it is logged using {@code EXCEPTION#getMarker} so JRS validators will fail.
  */
 public final class MetricNamingRules {
