@@ -116,7 +116,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -125,10 +124,6 @@ import org.apache.logging.log4j.Logger;
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
 public class HandleWorkflow {
-    private static final AtomicInteger NUM_HAPI_TXNS_HANDLED = new AtomicInteger();
-    private static final Instant INTERESTING_TIME = Instant.parse("2024-01-16T21:15:05.587561003Z");
-    private static final Instant FIRST_TIME_TO_LOG = INTERESTING_TIME.minusMillis(10);
-    private static final Instant LAST_TIME_TO_LOG = INTERESTING_TIME.plusMillis(10);
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
@@ -291,7 +286,6 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        NUM_HAPI_TXNS_HANDLED.getAndIncrement();
         // Setup record builder list
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
@@ -337,12 +331,6 @@ public class HandleWorkflow {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
             final var transactionInfo = preHandleResult.txInfo();
-            if (consensusNow.isAfter(FIRST_TIME_TO_LOG) && consensusNow.isBefore(LAST_TIME_TO_LOG)) {
-                System.out.println(
-                        "BBM " + NUM_HAPI_TXNS_HANDLED.getAndIncrement() + ": handleUserTransaction: consensusNow = "
-                                + consensusNow
-                                + " --- " + transactionInfo);
-            }
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement

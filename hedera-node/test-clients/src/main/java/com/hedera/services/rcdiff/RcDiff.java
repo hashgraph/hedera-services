@@ -100,7 +100,11 @@ public class RcDiff implements Callable<Integer> {
     private void dumpDiffs(@NonNull final List<DifferingEntries> diffs) {
         try {
             Files.write(
-                    Paths.get(diffsLoc), diffs.stream().map(this::readableDiff).toList());
+                    Paths.get(diffsLoc),
+                    diffs.stream()
+                            .map(this::readableDiff)
+                            .limit(maxDiffsToExport)
+                            .toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

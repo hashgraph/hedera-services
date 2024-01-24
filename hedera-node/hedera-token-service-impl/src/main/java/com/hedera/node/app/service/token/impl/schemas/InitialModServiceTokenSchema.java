@@ -208,6 +208,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                     var fromNft = entry.right();
                                     var fromNft2 = new MerkleUniqueToken(
                                             fromNft.getOwner(), fromNft.getMetadata(), fromNft.getCreationTime());
+                                    fromNft2.setKey(nftId.toEntityNumPair());
                                     var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
                                     nftsToState.get().put(toNftId, translated);
                                     if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
