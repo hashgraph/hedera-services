@@ -27,7 +27,9 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -79,6 +81,8 @@ public class InternalEventValidator {
     private final LongAccumulator identicalParentsAccumulator;
     private final LongAccumulator invalidGenerationAccumulator;
     private final LongAccumulator invalidBirthRoundAccumulator;
+
+    private final AncientMode ancientMode;
 
     /**
      * Constructor
@@ -150,6 +154,11 @@ public class InternalEventValidator {
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidBirthRound")
                         .withDescription("Events with an invalid birth round")
                         .withUnit("events"));
+
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
     }
 
     /**
@@ -222,7 +231,7 @@ public class InternalEventValidator {
                 inconsistentSelfParentAccumulator.update(1);
                 return false;
             }
-            if (selfParent.getBirthRound() < ROUND_FIRST) {
+            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && selfParent.getBirthRound() < ROUND_FIRST) {
                 inconsistentSelfParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has self parent with birth round less than the ROUND_FIRST. self-parent birth round: %s"
