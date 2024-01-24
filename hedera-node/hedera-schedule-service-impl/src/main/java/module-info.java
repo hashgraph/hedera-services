@@ -17,6 +17,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
     requires org.apache.logging.log4j;
+    requires org.eclipse.collections.api;
 
     exports com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.schedule.impl.handlers;
