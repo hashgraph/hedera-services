@@ -148,19 +148,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
-            final long fromEntityNumber,
-            final long toEntityNumber,
+            final AccountID fromEntityId,
+            final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
-        final var to = requireNonNull(getAccount(toEntityNumber));
+        final var to = requireNonNull(getAccount(toEntityId));
         final var signatureTest = strategy.asSignatureTestIn(context);
         if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
             return INVALID_SIGNATURE;
         }
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.transferFromTo(
-                AccountID.newBuilder().accountNum(fromEntityNumber).build(),
-                AccountID.newBuilder().accountNum(toEntityNumber).build(),
-                amount);
+        tokenServiceApi.transferFromTo(fromEntityId, toEntityId, amount);
         return OK;
     }
 
@@ -169,12 +166,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackSelfDestructBeneficiary(
-            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
+            final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        selfDestructBeneficiariesFor(frame)
-                .addBeneficiaryForDeletedAccount(
-                        AccountID.newBuilder().accountNum(deletedNumber).build(),
-                        AccountID.newBuilder().accountNum(beneficiaryNumber).build());
+        selfDestructBeneficiariesFor(frame).addBeneficiaryForDeletedAccount(deletedId, beneficiaryId);
     }
 
     @Override

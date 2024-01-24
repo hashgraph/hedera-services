@@ -91,6 +91,9 @@ public class VirtualHasherTestBase extends VirtualTestBase {
                 final VirtualHashRecord internal = ds.getInternal(path);
                 assert internal != null;
                 ds.setInternal(new VirtualHashRecord(path));
+                if (path == 0) {
+                    break;
+                }
                 path = Path.getParentPath(path);
             }
         });

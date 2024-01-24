@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -31,18 +31,18 @@ public interface ContractStateStore {
     /**
      * Returns the {@link Bytecode} for the given contract number.
      *
-     * @param contractNumber the contract number to get the {@link Bytecode} for
+     * @param contractID the contract id to get the {@link Bytecode} for
      * @return the {@link Bytecode} for the given contract number
      */
-    Bytecode getBytecode(@NonNull EntityNumber contractNumber);
+    Bytecode getBytecode(@NonNull ContractID contractID);
 
     /**
      * Puts the given {@link Bytecode} for the given contract number.
      *
-     * @param contractNumber the contract number to put the {@link Bytecode} for
+     * @param contractID the contract id to put the {@link Bytecode} for
      * @param code the {@link Bytecode} to put
      */
-    void putBytecode(@NonNull EntityNumber contractNumber, @NonNull Bytecode code);
+    void putBytecode(@NonNull ContractID contractID, @NonNull Bytecode code);
 
     /**
      * Removes the given {@link SlotKey}.

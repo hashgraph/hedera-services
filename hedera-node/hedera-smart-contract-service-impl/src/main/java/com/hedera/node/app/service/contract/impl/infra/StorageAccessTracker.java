@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -32,19 +34,21 @@ import org.apache.tuweni.units.bigints.UInt256;
  * Tracks storage accesses for a particular transaction.
  */
 public class StorageAccessTracker {
-    private static final Function<Long, Map<UInt256, StorageAccess>> MAP_FACTORY = ignored -> new TreeMap<>();
-    private final Map<Long, Map<UInt256, StorageAccess>> accessesByContract = new TreeMap<>();
+    private static final Function<ContractID, Map<UInt256, StorageAccess>> MAP_FACTORY = ignored -> new TreeMap<>();
+    private final Map<ContractID, Map<UInt256, StorageAccess>> accessesByContract =
+            new TreeMap<>(HapiUtils.CONTRACT_ID_COMPARATOR);
 
     /**
      * The first time this method is called for a particular {@link SlotKey}, tracks its
      * value for future reporting in a {@link SidecarType#CONTRACT_STATE_CHANGE} sidecar.
      *
-     * @param number the number of the contract whose storage is being read
+     * @param contractID the id of the contract whose storage is being read
      * @param key the key of the slot read
      * @param value the value read
      */
-    public void trackIfFirstRead(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
-        accessesByContract.computeIfAbsent(number, MAP_FACTORY).putIfAbsent(key, StorageAccess.newRead(key, value));
+    public void trackIfFirstRead(
+            final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
+        accessesByContract.computeIfAbsent(contractID, MAP_FACTORY).putIfAbsent(key, StorageAccess.newRead(key, value));
     }
 
     /**
@@ -71,7 +75,7 @@ public class StorageAccessTracker {
      */
     public List<StorageAccesses> getReadsMergedWith(@NonNull final List<StorageAccesses> writes) {
         writes.forEach(scoped -> {
-            final var reads = accessesByContract.computeIfAbsent(scoped.contractNumber(), MAP_FACTORY);
+            final var reads = accessesByContract.computeIfAbsent(scoped.contractID(), MAP_FACTORY);
             scoped.accesses().forEach(write -> reads.put(write.key(), write));
         });
         final List<StorageAccesses> allAccesses = new ArrayList<>();
