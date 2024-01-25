@@ -78,7 +78,8 @@ public class TokenUpdateValidator {
                 op.hasSupplyKey(), op.supplyKey(),
                 op.hasFreezeKey(), op.freezeKey(),
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey());
+                op.hasPauseKey(), op.pauseKey(),
+                op.hasMetadataKey(), op.metadataKey());
 
         // Check whether there is change on the following properties in the transaction body
         // If no change occurred, no need to change them or validate them

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -50,6 +51,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -127,7 +129,11 @@ public class TokenCreateValidator {
                 op.hasSupplyKey(), op.supplyKey(),
                 op.hasFreezeKey(), op.freezeKey(),
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey());
+                op.hasPauseKey(), op.pauseKey(),
+                op.hasMetadataKey(), op.metadataKey());
+
+        final var maxMetadataBytes = config.tokensMaxMetadataBytes();
+        validateMetaData(op.metadata(), maxMetadataBytes);
         // validate custom fees length
         validateTrue(
                 op.customFeesOrElse(emptyList()).size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
@@ -191,5 +197,14 @@ public class TokenCreateValidator {
 
         validateTrue(
                 tokenRelStore.get(account.accountId(), token.tokenId()) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+    }
+
+    /**
+     * Validate the number of bytes of metadata being set for the token to be created.
+     * @param metaData The metadata of the created token.
+     * @param maxMetadataBytes The maximum number of bytes allowed for metadata to be set on the token.
+     */
+    private void validateMetaData(final Bytes metaData, final int maxMetadataBytes) {
+        validateTrue(metaData.toByteArray().length <= maxMetadataBytes, METADATA_TOO_LONG);
     }
 }

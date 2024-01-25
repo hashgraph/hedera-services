@@ -128,6 +128,7 @@ public abstract class HapiSpecOperation {
     protected Optional<Long> validDurationSecs = Optional.empty();
     protected Optional<String> customTxnId = Optional.empty();
     protected Optional<String> memo = Optional.empty();
+    protected Optional<String> metadata = Optional.empty();
     protected Optional<String> payer = Optional.empty();
     protected Optional<Boolean> genRecord = Optional.empty();
     protected Optional<AccountID> node = Optional.empty();

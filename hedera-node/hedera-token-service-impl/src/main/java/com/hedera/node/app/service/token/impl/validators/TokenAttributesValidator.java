@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
@@ -126,7 +127,9 @@ public class TokenAttributesValidator {
             final boolean hasFeeScheduleKey,
             @Nullable final Key feeScheduleKey,
             final boolean hasPauseKey,
-            @Nullable final Key pauseKey) {
+            @Nullable final Key pauseKey,
+            final boolean hasMetadataKey,
+            @Nullable final Key metadataKey) {
         if (hasAdminKey && !isKeyRemoval(adminKey)) {
             validateTrue(isValid(adminKey), INVALID_ADMIN_KEY);
         }
@@ -147,6 +150,9 @@ public class TokenAttributesValidator {
         }
         if (hasPauseKey) {
             validateTrue(isValid(pauseKey), INVALID_PAUSE_KEY);
+        }
+        if (hasMetadataKey) {
+            validateTrue(isValid(metadataKey), INVALID_METADATA_KEY);
         }
     }
 

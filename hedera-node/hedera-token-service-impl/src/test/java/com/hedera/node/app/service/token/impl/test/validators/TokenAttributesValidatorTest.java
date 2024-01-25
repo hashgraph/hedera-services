@@ -139,6 +139,8 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
@@ -147,6 +149,8 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -173,6 +177,8 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
@@ -185,6 +191,8 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -207,6 +215,8 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
@@ -223,6 +233,8 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
@@ -241,7 +253,9 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
-                        Key.DEFAULT))
+                        Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
     }
@@ -263,9 +277,31 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateTokenKeys(
+                        true,
+                        A_COMPLEX_KEY,
+                        false,
+                        Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY,
+                        true,
+                        A_COMPLEX_KEY,
+                        true,
+                        A_COMPLEX_KEY,
+                        true,
+                        A_COMPLEX_KEY,
+                        true,
+                        A_COMPLEX_KEY,
+                        true,
+                        A_COMPLEX_KEY));
+        assertThatNoException()
+                .isThrownBy(() -> subject.validateTokenKeys(
+                        true,
+                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
                         false,
@@ -286,26 +322,12 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
-                        false,
-                        Key.DEFAULT,
-                        true,
-                        A_COMPLEX_KEY,
-                        true,
-                        A_COMPLEX_KEY,
-                        true,
-                        A_COMPLEX_KEY,
-                        true,
-                        A_COMPLEX_KEY));
-        assertThatNoException()
-                .isThrownBy(() -> subject.validateTokenKeys(
-                        true,
-                        A_COMPLEX_KEY,
-                        true,
-                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
                         false,
                         Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -327,6 +349,8 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateTokenKeys(
@@ -343,6 +367,8 @@ class TokenAttributesValidatorTest {
                         false,
                         Key.DEFAULT,
                         true,
+                        A_COMPLEX_KEY,
+                        true,
                         A_COMPLEX_KEY));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateTokenKeys(
@@ -359,6 +385,8 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY,
                         false,
-                        Key.DEFAULT));
+                        Key.DEFAULT,
+                        true,
+                        A_COMPLEX_KEY));
     }
 }
