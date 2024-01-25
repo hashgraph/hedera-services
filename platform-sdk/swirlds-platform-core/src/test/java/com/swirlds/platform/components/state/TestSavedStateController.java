@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.config;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -40,12 +40,12 @@ class TemporaryFileConfigTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .build();
 
         // when
         final TemporaryFileConfig temporaryFileConfig = configuration.getConfigData(TemporaryFileConfig.class);
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final StateCommonConfig stateConfig = configuration.getConfigData(StateCommonConfig.class);
         final String temporaryFilePath = temporaryFileConfig.getTemporaryFilePath(stateConfig);
 
         // then
