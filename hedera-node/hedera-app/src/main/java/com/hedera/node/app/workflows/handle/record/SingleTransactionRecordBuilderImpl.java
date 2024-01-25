@@ -320,7 +320,7 @@ public class SingleTransactionRecordBuilderImpl
         serialNumbers.clear();
         tokenTransferLists.clear();
         automaticTokenAssociations.clear();
-        if (transferList.hasAccountAmounts()) {
+        if (transferList != null && transferList.hasAccountAmounts()) {
             transferList.accountAmounts().clear();
         }
         paidStakingRewards.clear();
