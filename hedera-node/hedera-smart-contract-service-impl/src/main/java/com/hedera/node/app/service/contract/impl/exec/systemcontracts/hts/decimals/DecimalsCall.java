@@ -49,7 +49,9 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
         // match mono - HTSPrecompiledContract#checkFungible
         if (token != null && token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             return gasOnly(
-                    haltResult(HederaExceptionalHaltReason.NOT_SUPPORTED, gasCalculator.viewGasRequirement()),
+                    haltResult(
+                            HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                            gasCalculator.viewGasRequirement()),
                     INVALID_TOKEN_ID,
                     true);
         }
