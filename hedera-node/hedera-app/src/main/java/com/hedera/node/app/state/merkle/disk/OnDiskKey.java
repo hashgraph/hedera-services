@@ -21,7 +21,6 @@ import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
