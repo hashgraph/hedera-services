@@ -53,11 +53,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -89,11 +86,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -120,11 +114,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -153,11 +144,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -186,11 +174,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -225,11 +210,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -258,11 +240,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -297,11 +276,8 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                stateConfig,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                simpleScratchpad);
+        final IssHandler handler =
+                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 

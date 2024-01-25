@@ -55,6 +55,7 @@ public class ConsensusHashFinder {
      * The current round.
      */
     private final long round;
+
     private final IssMetrics issMetrics;
 
     /**
@@ -76,7 +77,6 @@ public class ConsensusHashFinder {
      * The consensus hash. Null until known.
      */
     private Hash consensusHash;
-
 
     /**
      * Create a new object for tracking agreement on the hash of a particular round.

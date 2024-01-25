@@ -105,6 +105,7 @@ public class ConsensusHashManager {
      * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
      */
     private final long ignoredRound;
+
     private final IssMetrics issMetrics;
 
     /**
@@ -188,7 +189,7 @@ public class ConsensusHashManager {
             // evidence of a catastrophic ISS.
             roundData.shiftWindow(oldestRoundToValidate);
         } else {
-            roundData.shiftWindow(oldestRoundToValidate, (k,v)->removedRounds.add(v));
+            roundData.shiftWindow(oldestRoundToValidate, (k, v) -> removedRounds.add(v));
         }
 
         final long roundWeight = addressBook.getTotalWeight();
@@ -233,11 +234,10 @@ public class ConsensusHashManager {
      */
     public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return returnList(
-                transactions.stream().map(
-                                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(),
-                                        t.softwareVersion()))
-                        .toList());
+        return returnList(transactions.stream()
+                .map(t ->
+                        handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
+                .toList());
     }
 
     /**
@@ -311,7 +311,8 @@ public class ConsensusHashManager {
 
     public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
-            return returnList(stateHashedObserver(state.get().getRound(), state.get().getState().getHash()));
+            return returnList(stateHashedObserver(
+                    state.get().getRound(), state.get().getState().getHash()));
         }
     }
 
@@ -483,7 +484,10 @@ public class ConsensusHashManager {
     }
 
     private List<IssNotification> returnList(List<IssNotification> list) {
-        return list == null ? null : list.stream().filter(Objects::nonNull)
-                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
+        return list == null
+                ? null
+                : list.stream()
+                        .filter(Objects::nonNull)
+                        .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 }

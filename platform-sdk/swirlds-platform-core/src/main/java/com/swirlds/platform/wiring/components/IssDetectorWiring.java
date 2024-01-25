@@ -75,7 +75,9 @@ public record IssDetectorWiring(
         ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<IssNotification>>)
                         handlePostconsensusSignatures)
                 .bind(hashManager::handlePostconsensusSignatures);
-        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed).bind(hashManager::newStateHashed);
-        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState).bind(hashManager::overridingState);
+        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed)
+                .bind(hashManager::newStateHashed);
+        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState)
+                .bind(hashManager::overridingState);
     }
 }

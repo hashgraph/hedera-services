@@ -183,7 +183,7 @@ class ConsensusHashFinderTests {
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -231,7 +231,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -271,7 +271,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -305,7 +305,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -356,7 +356,7 @@ class ConsensusHashFinderTests {
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -397,7 +397,8 @@ class ConsensusHashFinderTests {
 
         assertEquals(DECIDED, hashFinder.getStatus(), "should be decided by now");
         assertEquals(expectedConsensusHash, hashFinder.getConsensusHash(), "incorrect hash chosen");
-        assertEquals(expectedDisagreeingNodes,
+        assertEquals(
+                expectedDisagreeingNodes,
                 hashFinder.getPartitionMap().entrySet().stream()
                         .filter(entry -> !entry.getKey().equals(expectedConsensusHash))
                         .flatMap(entry -> entry.getValue().getNodes().stream())

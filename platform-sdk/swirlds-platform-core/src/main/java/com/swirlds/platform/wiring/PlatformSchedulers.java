@@ -208,7 +208,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
-						.build()
+                        .build()
                         .cast(),
                 model.schedulerBuilder("issDetector")
                         .withType(config.issDetectorSchedulerType())

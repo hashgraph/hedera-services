@@ -75,11 +75,8 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -93,11 +90,11 @@ class ConsensusHashManagerTests {
             }
             final long r = round;
             StreamSupport.stream(addressBook.spliterator(), false)
-                    .map(a-> new ScopedSystemTransaction<>(
+                    .map(a -> new ScopedSystemTransaction<>(
                             a.getNodeId(),
                             new BasicSoftwareVersion(1),
                             new StateSignatureTransaction(r, mock(Signature.class), roundHash)))
-                    .forEach(t-> manager.handlePostconsensusSignatures(List.of(t)));
+                    .forEach(t -> manager.handlePostconsensusSignatures(List.of(t)));
         }
         assertTrue(manager.getIssList().isEmpty(), "there should be no ISS notifications");
     }
@@ -174,11 +171,8 @@ class ConsensusHashManagerTests {
             }
         }
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         manager.overridingState(mockState(0L, selfHashes.getFirst()));
 
@@ -216,33 +210,38 @@ class ConsensusHashManagerTests {
             manager.roundCompleted(i);
         }
 
-        assertEquals(expectedSelfIssCount,
-                manager.getIssList().stream().filter(n -> n.getIssType() == IssType.SELF_ISS).count(),
+        assertEquals(
+                expectedSelfIssCount,
+                manager.getIssList().stream()
+                        .filter(n -> n.getIssType() == IssType.SELF_ISS)
+                        .count(),
                 "unexpected number of ISS callbacks");
         assertEquals(
                 expectedCatastrophicIssCount,
-                manager.getIssList().stream().filter(n -> n.getIssType() == IssType.CATASTROPHIC_ISS).count(),
+                manager.getIssList().stream()
+                        .filter(n -> n.getIssType() == IssType.CATASTROPHIC_ISS)
+                        .count(),
                 "unexpected number of catastrophic ISS callbacks");
-        manager.getIssList().forEach(n->{
-            final IssType expectedType = switch (expectedRoundStatus.get((int) n.getRound())){
-                case SELF_ISS -> IssType.SELF_ISS;
-                case CATASTROPHIC_ISS -> IssType.CATASTROPHIC_ISS;
-                // if there was an other-ISS, then the round should still be valid
-                case VALID -> IssType.OTHER_ISS;
-                default -> throw new IllegalStateException("Unexpected value: " + expectedRoundStatus.get((int) n.getRound()));
-            };
+        manager.getIssList().forEach(n -> {
+            final IssType expectedType =
+                    switch (expectedRoundStatus.get((int) n.getRound())) {
+                        case SELF_ISS -> IssType.SELF_ISS;
+                        case CATASTROPHIC_ISS -> IssType.CATASTROPHIC_ISS;
+                            // if there was an other-ISS, then the round should still be valid
+                        case VALID -> IssType.OTHER_ISS;
+                        default -> throw new IllegalStateException(
+                                "Unexpected value: " + expectedRoundStatus.get((int) n.getRound()));
+                    };
             assertEquals(
                     expectedType,
                     n.getIssType(),
-                    "Expected status for round %d to be %s but was %s".formatted(
-                            n.getRound(),
-                            expectedRoundStatus.get((int) n.getRound()),
-                            n.getIssType())
-            );
+                    "Expected status for round %d to be %s but was %s"
+                            .formatted(n.getRound(), expectedRoundStatus.get((int) n.getRound()), n.getIssType()));
         });
         final Set<Long> observedRounds = new HashSet<>();
-        manager.getIssList().forEach(n-> assertTrue(observedRounds.add(n.getRound()), "rounds should trigger a notification at most once"));
-
+        manager.getIssList()
+                .forEach(n -> assertTrue(
+                        observedRounds.add(n.getRound()), "rounds should trigger a notification at most once"));
     }
 
     /**
@@ -292,11 +291,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -361,11 +357,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         // After this method, round 0 will be too old and will not be tracked.
@@ -413,11 +406,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -508,11 +498,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -574,11 +561,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                DO_NOT_IGNORE_ROUNDS
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -634,11 +618,8 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
-                platformContext,
-                addressBook,
-                1
-        );
+        final ConsensusHashManagerTestHelper manager =
+                new ConsensusHashManagerTestHelper(platformContext, addressBook, 1);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {

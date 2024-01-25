@@ -18,7 +18,6 @@ package com.swirlds.platform.state.iss;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
@@ -61,8 +60,8 @@ public class IssHandler {
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
-    public synchronized void issObserved(@NonNull final IssNotification issNotification){
-        switch (issNotification.getIssType()){
+    public synchronized void issObserved(@NonNull final IssNotification issNotification) {
+        switch (issNotification.getIssType()) {
             case SELF_ISS -> selfIssObserver(issNotification.getRound());
             case OTHER_ISS -> otherIss();
             case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());

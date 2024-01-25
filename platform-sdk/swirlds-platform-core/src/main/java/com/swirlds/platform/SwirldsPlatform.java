@@ -117,7 +117,6 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -182,7 +181,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -468,19 +466,15 @@ public class SwirldsPlatform implements Platform {
         // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
-        final IssHandler issHandler = new IssHandler(
-                stateConfig,
-                this::haltRequested,
-                this::handleFatalError,
-                issScratchpad);
+        final IssHandler issHandler =
+                new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
         final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
                 currentAddressBook,
                 epochHash,
                 appVersion,
                 ignorePreconsensusSignatures,
-                roundToIgnore
-        );
+                roundToIgnore);
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
@@ -701,15 +695,16 @@ public class SwirldsPlatform implements Platform {
                 .build());
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
-                "issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("statusManager",n->{
-            if(Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())){
+        platformWiring
+                .getIssDetectorWiring()
+                .issNotificationOutput()
+                .solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("statusManager", n -> {
+            if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
                 platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
             }
         });
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
-                "issHandler", issHandler::issObserved);
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("issHandler", issHandler::issObserved);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
