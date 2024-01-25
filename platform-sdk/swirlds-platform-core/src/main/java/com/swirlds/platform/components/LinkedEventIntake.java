@@ -20,15 +20,12 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -51,17 +48,10 @@ public class LinkedEventIntake {
     /**
      * Stores events, expires them, provides event lookup methods
      */
-    private final ShadowGraph shadowGraph;
-
-    private final LatestEventTipsetTracker latestEventTipsetTracker;
+    private final Shadowgraph shadowGraph;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
-    /**
-     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
-     * for determining Ancient.
-     */
-    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -88,10 +78,6 @@ public class LinkedEventIntake {
      * @param consensusSupplier                 provides the current consensus instance
      * @param dispatcher                        invokes event related callbacks
      * @param shadowGraph                       tracks events in the hashgraph
-     * @param latestEventTipsetTracker          tracks the tipset of the latest self event, null if feature is
-     *                                          not enabled
-     * @param intakeEventCounter                tracks the number of events from each peer that are currently in
-     *                                          the intake pipeline
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
@@ -99,18 +85,15 @@ public class LinkedEventIntake {
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
-            @NonNull final ShadowGraph shadowGraph,
-            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
-        this.latestEventTipsetTracker = latestEventTipsetTracker;
 
         this.paused = false;
         metrics = new EventIntakeMetrics(platformContext, () -> -1);
@@ -128,14 +111,12 @@ public class LinkedEventIntake {
 
         if (paused) {
             // If paused, throw everything into the void
-            event.clear();
             return List.of();
         }
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                event.clear();
                 return List.of();
             }
 
@@ -165,14 +146,6 @@ public class LinkedEventIntake {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
                 handleStale(minimumGenerationNonAncientBeforeAdding);
-                if (latestEventTipsetTracker != null) {
-                    // FUTURE WORK: When this class is refactored, it should not be constructing the
-                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
-                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                            consensusSupplier.get().getLastRoundDecided(),
-                            minimumGenerationNonAncient,
-                            platformContext));
-                }
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);
@@ -197,7 +170,7 @@ public class LinkedEventIntake {
      */
     private void handleStale(final long previousGenerationNonAncient) {
         // find all events that just became ancient and did not reach consensus, these events will be considered stale
-        final Collection<EventImpl> staleEvents = shadowGraph.findByGeneration(
+        final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
                 previousGenerationNonAncient,
                 consensusSupplier.get().getMinGenerationNonAncient(),
                 LinkedEventIntake::isNotConsensus);

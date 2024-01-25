@@ -25,20 +25,15 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_I
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_ITEM_VERSION;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_METADATA;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -126,9 +121,7 @@ public class DataFileMetadata {
         byte compactionLevel = 0;
 
         // Read values from the file, skipping all data items
-        try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
-            final ReadableSequentialData in = new ReadableStreamingData(fin);
-            in.limit(Files.size(file));
+        try (final ReadableStreamingData in = new ReadableStreamingData(file)) {
             while (in.hasRemaining()) {
                 final int tag = in.readVarInt(false);
                 final int fieldNum = tag >> TAG_FIELD_OFFSET;
@@ -184,28 +177,28 @@ public class DataFileMetadata {
     }
 
     void writeTo(final BufferedData out) {
-        ProtoUtils.writeDelimited(out, FIELD_DATAFILE_METADATA, fieldsSizeInBytes(), this::writeFields);
+        ProtoWriterTools.writeDelimited(out, FIELD_DATAFILE_METADATA, fieldsSizeInBytes(), this::writeFields);
     }
 
     private void writeFields(final WritableSequentialData out) {
         if (getIndex() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_INDEX);
+            ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_INDEX);
             out.writeVarInt(getIndex(), false);
         }
         final Instant creationInstant = getCreationDate();
-        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_SECONDS);
+        ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_SECONDS);
         out.writeVarLong(creationInstant.getEpochSecond(), false);
-        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_NANOS);
+        ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_NANOS);
         out.writeVarInt(creationInstant.getNano(), false);
         dataItemCountHeaderOffset = out.position();
-        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
+        ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
         out.writeLong(0); // will be updated later
         if (getSerializationVersion() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEM_VERSION);
+            ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_ITEM_VERSION);
             out.writeVarLong(getSerializationVersion(), false);
         }
         if (getCompactionLevel() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_COMPACTION_LEVEL);
+            ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_COMPACTION_LEVEL);
             out.writeVarInt(compactionLevel, false);
         }
     }
@@ -228,7 +221,7 @@ public class DataFileMetadata {
         this.itemsCount = count;
         assert dataItemCountHeaderOffset != 0;
         out.position(dataItemCountHeaderOffset);
-        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
+        ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
         out.writeLong(count);
     }
 
@@ -251,28 +244,32 @@ public class DataFileMetadata {
     // beginning of the file before reading data items, assuming file metadata is always written
     // first, then data items
     int metadataSizeInBytes() {
-        return ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_METADATA, fieldsSizeInBytes());
+        return ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_METADATA, fieldsSizeInBytes());
     }
 
     private int fieldsSizeInBytes() {
         int size = 0;
         if (index != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_INDEX, WIRE_TYPE_VARINT);
-            size += ProtoUtils.sizeOfVarInt32(index);
+            size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_INDEX, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfVarInt32(index);
         }
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_SECONDS, WIRE_TYPE_VARINT);
-        size += ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond());
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_NANOS, WIRE_TYPE_VARINT);
-        size += ProtoUtils.sizeOfVarInt64(creationDate.getNano());
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT);
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_DATAFILEMETADATA_CREATION_SECONDS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfVarInt64(creationDate.getEpochSecond());
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_DATAFILEMETADATA_CREATION_NANOS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfVarInt64(creationDate.getNano());
+        size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, ProtoConstants.WIRE_TYPE_FIXED_64_BIT);
         size += Long.BYTES;
         if (serializationVersion != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEM_VERSION, WIRE_TYPE_VARINT);
-            size += ProtoUtils.sizeOfVarInt64(serializationVersion);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_DATAFILEMETADATA_ITEM_VERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfVarInt64(serializationVersion);
         }
         if (compactionLevel != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, WIRE_TYPE_VARINT);
-            size += ProtoUtils.sizeOfVarInt32(compactionLevel);
+            size += ProtoWriterTools.sizeOfTag(
+                    FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+            size += ProtoWriterTools.sizeOfVarInt32(compactionLevel);
         }
         return size;
     }

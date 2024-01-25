@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.infra;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -28,17 +29,21 @@ import org.junit.jupiter.api.Test;
 
 class StorageAccessTrackerTest {
     private final StorageAccessTracker subject = new StorageAccessTracker();
+    private final ContractID CONTRACT_ID =
+            ContractID.newBuilder().contractNum(123L).build();
+    private final ContractID ANOTHER_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(456L).build();
 
     @Test
     void onlyFirstReadIsTracked() {
-        subject.trackIfFirstRead(123L, UInt256.ONE, UInt256.MIN_VALUE);
-        subject.trackIfFirstRead(123L, UInt256.ONE, UInt256.MAX_VALUE);
+        subject.trackIfFirstRead(CONTRACT_ID, UInt256.ONE, UInt256.MIN_VALUE);
+        subject.trackIfFirstRead(CONTRACT_ID, UInt256.ONE, UInt256.MAX_VALUE);
 
         final var merged = subject.getReadsMergedWith(List.of());
 
         assertEquals(1, merged.size());
         final var accesses = merged.get(0);
-        assertEquals(123L, accesses.contractNumber());
+        assertEquals(CONTRACT_ID, accesses.contractID());
         final var accesses123 = accesses.accesses();
         assertEquals(1, accesses123.size());
         final var firstAccess = accesses123.get(0);
@@ -49,15 +54,15 @@ class StorageAccessTrackerTest {
 
     @Test
     void writesTakePrecedenceOverReads() {
-        subject.trackIfFirstRead(123L, UInt256.ONE, UInt256.MIN_VALUE);
+        subject.trackIfFirstRead(CONTRACT_ID, UInt256.ONE, UInt256.MIN_VALUE);
 
         final var writes = new StorageAccesses(
-                123L, List.of(StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+                CONTRACT_ID, List.of(StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
 
         final var merged = subject.getReadsMergedWith(List.of(writes));
         assertEquals(1, merged.size());
         final var accesses = merged.get(0);
-        assertEquals(123L, accesses.contractNumber());
+        assertEquals(CONTRACT_ID, accesses.contractID());
         final var accesses123 = accesses.accesses();
         assertEquals(1, accesses123.size());
         final var firstAccess = accesses123.get(0);
@@ -68,8 +73,8 @@ class StorageAccessTrackerTest {
 
     @Test
     void getsExpectedReads() {
-        subject.trackIfFirstRead(123L, UInt256.ONE, UInt256.MIN_VALUE);
-        subject.trackIfFirstRead(456L, UInt256.MAX_VALUE, UInt256.ONE);
+        subject.trackIfFirstRead(CONTRACT_ID, UInt256.ONE, UInt256.MIN_VALUE);
+        subject.trackIfFirstRead(ANOTHER_CONTRACT_ID, UInt256.MAX_VALUE, UInt256.ONE);
 
         final var reads = subject.getJustReads();
 

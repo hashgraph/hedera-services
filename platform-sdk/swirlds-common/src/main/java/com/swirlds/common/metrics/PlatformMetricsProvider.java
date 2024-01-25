@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * An implementation of this class is responsible for creating {@link Metrics}-implementations.

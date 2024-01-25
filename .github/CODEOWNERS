@@ -83,6 +83,10 @@ gradlew.bat                                     @hashgraph/release-engineering @
 **/gradle.*                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
 **/*.gradle.*                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
+# Codacy Tool Configurations
+/config/                                        @hashgraph/release-engineering @hashgraph/release-engineering-managers
+.remarkrc                                       @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 

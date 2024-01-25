@@ -31,7 +31,6 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -242,7 +241,8 @@ class ProxyWorldUpdaterTest {
     @Test
     void providesAccessToPendingStorageChanges() {
         final var someChanges = new StorageAccesses(
-                123L, List.of(new StorageAccess(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+                ContractID.newBuilder().contractNum(123L).build(),
+                List.of(new StorageAccess(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
         final var expected = List.of(someChanges);
 
         given(evmFrameState.getStorageChanges()).willReturn(expected);
@@ -522,12 +522,5 @@ class ProxyWorldUpdaterTest {
     void currentExchangeRateTest() {
         subject.currentExchangeRate();
         verify(systemContractOperations).currentExchangeRate();
-    }
-
-    @Test
-    void contractMustBePresent() {
-        assertTrue(subject.contractMustBePresent());
-        subject.setContractNotRequired();
-        assertFalse(subject.contractMustBePresent());
     }
 }

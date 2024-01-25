@@ -16,20 +16,20 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -39,9 +39,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -385,7 +388,7 @@ public final class SyncUtils {
      */
     @Nullable
     private static ShadowEvent getLatestSelfEventInShadowgraph(
-            @NonNull final ShadowGraph shadowGraph, @NonNull final NodeId selfId) {
+            @NonNull final Shadowgraph shadowGraph, @NonNull final NodeId selfId) {
 
         final List<ShadowEvent> tips = shadowGraph.getTips();
         for (final ShadowEvent tip : tips) {
@@ -407,12 +410,11 @@ public final class SyncUtils {
      * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
      * </ul>
      *
-     * @param selfId                the id of this node
-     * @param nonAncestorThreshold  for each event that is not a self event and is not an ancestor of a self event, the
-     *                              amount of time the event must be known about before it is eligible to be sent
-     * @param now                   the current time
-     * @param eventsTheyNeed        the list of events we think they need
-     * @param latestSelfEventTipset the tipset of the latest self event, or null if there is none
+     * @param selfId               the id of this node
+     * @param nonAncestorThreshold for each event that is not a self event and is not an ancestor of a self event, the
+     *                             amount of time the event must be known about before it is eligible to be sent
+     * @param now                  the current time
+     * @param eventsTheyNeed       the list of events we think they need, expected to be in topological order
      * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
@@ -420,64 +422,59 @@ public final class SyncUtils {
             @NonNull final NodeId selfId,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
-            @NonNull final List<EventImpl> eventsTheyNeed,
-            @Nullable final Tipset latestSelfEventTipset) {
+            @NonNull final List<EventImpl> eventsTheyNeed) {
 
-        final List<EventImpl> filteredList = new ArrayList<>();
+        final LinkedList<EventImpl> filteredList = new LinkedList<>();
 
-        for (final EventImpl event : eventsTheyNeed) {
-            if (event.getCreatorId().equals(selfId)) {
-                // Always send self events right away.
-                filteredList.add(event);
-                continue;
+        final Set<Hash> parentHashesOfEventsToSend = new HashSet<>();
+
+        // Iterate backwards over the events the peer needs, which are in topological order. This allows us to
+        // find all ancestors of events we plan on sending, and to send those as well. Events are added to the
+        // filtered list in reverse order, resulting in a list that is in topological order.
+
+        for (int index = eventsTheyNeed.size() - 1; index >= 0; index--) {
+            final EventImpl event = eventsTheyNeed.get(index);
+
+            final boolean sendEvent =
+                    // Always send self events
+                    event.getCreatorId().equals(selfId)
+                            ||
+                            // Always send parents of other events we plan to send
+                            parentHashesOfEventsToSend.contains(event.getBaseHash())
+                            ||
+                            // Send all other events if we've known about it for long enough
+                            haveWeKnownAboutEventForALongTime(event, nonAncestorThreshold, now);
+
+            if (sendEvent) {
+                // If we've decided to send an event, we also want to send its parents if those parents are needed
+                // by the peer.
+                filteredList.addFirst(event);
+                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
+                if (selfParentHash != null) {
+                    parentHashesOfEventsToSend.add(selfParentHash);
+                }
+                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+                    parentHashesOfEventsToSend.add(otherParent.getHash());
+                }
             }
-
-            if (latestSelfEventTipset == null) {
-                // Special case: we have no self events yet.
-                filteredList.add(event);
-                continue;
-            }
-
-            final long latestGenerationInAncestry = latestSelfEventTipset.getTipGenerationForNode(event.getCreatorId());
-
-            if (latestGenerationInAncestry == Tipset.UNDEFINED) {
-                // Special case: we don't have enough information to decide if this node is in our ancestry.
-                filteredList.add(event);
-                continue;
-            }
-
-            if (latestGenerationInAncestry >= event.getGeneration()) {
-                // This event is an ancestor* of our latest self event.
-                //
-                // We want to answer the question: "Is this event an ancestor of my latest self event?"
-                // The latest self event's tipset makes this easy to answer. A tipset is basically just
-                // an array containing the latest generations of each event creator in our ancestry.
-                // If we compare the generation of the event we're looking at to the generation of the
-                // latest ancestor from the same creator, we can tell if this is an ancestor. If the event's
-                // generation is less than or equal to the latest ancestor's generation, then it is an ancestor.
-                // If it is greater than the latest ancestor's generation, then it is not an ancestor.
-                //
-                // *Note: there is an edge case where this breaks down a little. If this event's creator is branching,
-                // then we may falsely conclude that this event is in our ancestry when it is not. But this is not
-                // harmful. The purpose of this method is to reduce the number of events we send to the peer, and so
-                // the worst that can happen is that we send a few extra events and get a slightly higher duplication
-                // rate.
-                filteredList.add(event);
-                continue;
-            }
-
-            final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
-            final Duration timeKnown = Duration.between(eventReceivedTime, now);
-            if (CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
-                // Always send ancestors of self events right away.
-                // For all other events, only send it if we've known about it for long enough.
-                filteredList.add(event);
-            }
-
-            // We won't send this event now, but we might do so at a future time if needed.
         }
 
         return filteredList;
+    }
+
+    /**
+     * Decide if we've known about an event for long enough to make it eligible to be sent.
+     *
+     * @param event                the event to check
+     * @param nonAncestorThreshold the amount of time the event must be known about before it is eligible to be sent
+     * @param now                  the current time
+     * @return true if we've known about the event for long enough, false otherwise
+     */
+    private static boolean haveWeKnownAboutEventForALongTime(
+            @NonNull final EventImpl event, @NonNull final Duration nonAncestorThreshold, @NonNull final Instant now) {
+        final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
+        final Duration timeKnown = Duration.between(eventReceivedTime, now);
+        return isGreaterThan(timeKnown, nonAncestorThreshold);
     }
 
     /**

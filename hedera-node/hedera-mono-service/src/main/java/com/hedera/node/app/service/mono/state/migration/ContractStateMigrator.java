@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -333,7 +334,7 @@ public class ContractStateMigrator {
             // The transform from the mono-service slot representation to the modular-service slot representation
             // is here:
             final var key = SlotKey.newBuilder()
-                    .contractNumber(slot.contractId())
+                    .contractID(ContractID.newBuilder().contractNum(slot.contractId()))
                     .key(bytesFromInts(slot.key()))
                     .build();
             final var value = SlotValue.newBuilder()
@@ -348,7 +349,7 @@ public class ContractStateMigrator {
             // Some counts to provide some validation
             if (doFullValidation) {
                 counters.sinkOne();
-                counters.addContract(key.contractNumber());
+                counters.addContract(key.contractID().contractNum());
                 if (value.previousKey() == Bytes.EMPTY) counters.addMissingPrev();
                 else counters.xorAnotherLink(value.previousKey().toByteArray());
                 if (value.nextKey() == Bytes.EMPTY) counters.addMissingNext();
@@ -453,7 +454,7 @@ public class ContractStateMigrator {
 
     /** Convert int[] to byte[] and then to Bytes. If argument is null or 0-length then return `Bytes.EMPTY`. */
     @NonNull
-    static Bytes bytesFromInts(@Nullable final int[] ints) {
+    public static Bytes bytesFromInts(@Nullable final int[] ints) {
         if (ints == null) return Bytes.EMPTY;
         if (ints.length == 0) return Bytes.EMPTY;
 

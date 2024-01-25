@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public class WritableContractStateStore implements ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
-    private final WritableKVState<EntityNumber, Bytecode> bytecode;
+    private final WritableKVState<ContractID, Bytecode> bytecode;
 
     public WritableContractStateStore(@NonNull final WritableStates states) {
         requireNonNull(states);
@@ -45,16 +45,16 @@ public class WritableContractStateStore implements ContractStateStore {
      * {@inheritDoc}
      */
     @Override
-    public Bytecode getBytecode(@NonNull final EntityNumber contractNumber) {
-        return bytecode.get(requireNonNull(contractNumber));
+    public Bytecode getBytecode(@NonNull final ContractID contractID) {
+        return bytecode.get(requireNonNull(contractID));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void putBytecode(@NonNull final EntityNumber contractNumber, @NonNull final Bytecode code) {
-        bytecode.put(requireNonNull(contractNumber), requireNonNull(code));
+    public void putBytecode(@NonNull final ContractID contractID, @NonNull final Bytecode code) {
+        bytecode.put(requireNonNull(contractID), requireNonNull(code));
     }
 
     /**
