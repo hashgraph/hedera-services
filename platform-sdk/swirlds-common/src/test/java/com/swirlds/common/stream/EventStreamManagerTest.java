@@ -21,22 +21,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class EventStreamManagerTest {
     private static final MultiStream<ObjectForTestStream> multiStreamMock = mock(MultiStream.class);
-    private static final EventStreamManager<ObjectForTestStream> EVENT_STREAM_MANAGER =
+    private static final EventStreamManager<ObjectForTestStream> eventStreamManager =
             new EventStreamManager<>(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
 
     private static final ObjectForTestStream freezeEvent = mock(ObjectForTestStream.class);
 
     @Test
     void addEventTest() {
-        final EventStreamManager<ObjectForTestStream> eventStreamManager =
-                new EventStreamManager<>(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
-
         final int nonFreezeEventsNum = 10;
         for (int i = 0; i < nonFreezeEventsNum; i++) {
             final ObjectForTestStream event = mock(ObjectForTestStream.class);
@@ -56,6 +58,15 @@ class EventStreamManagerTest {
         eventStreamManager.addEvents(List.of(eventAddAfterFrozen));
         // after frozen, when adding event to the EventStreamManager, multiStream.add(event) should not be called
         verify(multiStreamMock, never()).addObject(eventAddAfterFrozen);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void setStartWriteAtCompleteWindowTest(final boolean startWriteAtCompleteWindow) {
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final Hash runningHash = RandomUtils.randomHash(random);
+        eventStreamManager.updateRunningHash(new RunningEventHashUpdate(runningHash, startWriteAtCompleteWindow));
+        verify(multiStreamMock).setRunningHash(runningHash);
     }
 
     /**
