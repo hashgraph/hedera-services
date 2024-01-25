@@ -16,6 +16,9 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
@@ -26,7 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,9 +37,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
-
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static java.util.Objects.requireNonNull;
 
 /** Dump all token associations (tokenrels) , from a signed state file, to a text file, in deterministic order */
 @SuppressWarnings("java:S106")
@@ -279,7 +278,7 @@ public class DumpTokenAssociationsSubcommand {
         return r;
     }
 
-    //TODO finish this implementation
+    // TODO finish this implementation
     SortedMap<Pair<Long, Long>, TokenRel> getMigratedTokenAssociations() {
         final var tokenAssociationsStore = state.getTokenAssociations();
         final var expectedSize = Math.toIntExact(tokenAssociationsStore.size());
