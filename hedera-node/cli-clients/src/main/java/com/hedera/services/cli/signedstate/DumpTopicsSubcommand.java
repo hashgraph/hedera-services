@@ -171,8 +171,12 @@ public class DumpTopicsSubcommand {
             Pair.of("memo", getFieldFormatter(Topic::memo, csvQuote)),
             Pair.of("expiry", getFieldFormatter(Topic::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
             Pair.of("deleted", getFieldFormatter(Topic::deleted, booleanFormatter)),
-            Pair.of("adminKey", getFieldFormatter(Topic::adminKey, ThingsToStrings::toStringOfJKey)),
-            Pair.of("submitKey", getFieldFormatter(Topic::submitKey, ThingsToStrings::toStringOfJKey)),
+            Pair.of(
+                    "adminKey",
+                    getFieldFormatter(Topic::adminKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of(
+                    "submitKey",
+                    getFieldFormatter(Topic::submitKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
             Pair.of("runningHash", getFieldFormatter(Topic::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
             Pair.of("sequenceNumber", getFieldFormatter(Topic::sequenceNumber, Object::toString)),
             Pair.of("autoRenewSecs", getFieldFormatter(Topic::autoRenewDurationSeconds, Object::toString)),

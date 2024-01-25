@@ -342,16 +342,16 @@ public class DumpStateCommand extends AbstractCommand {
                             arity = "1",
                             description = "Output file for topics dump")
                     @NonNull
-                    final Path associationsPath,
+                    final Path topicsPath,
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit summary information")
                     final boolean emitSummary) {
-        Objects.requireNonNull(associationsPath);
+        Objects.requireNonNull(topicsPath);
         init();
         System.out.println("=== Topics ===");
         DumpTopicsSubcommand.doit(
-                parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+                parent.signedState, topicsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 
