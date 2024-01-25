@@ -85,7 +85,7 @@ class Erc721XTestConstants {
     static final FileID ERC721_FULL_INITCODE_FILE_ID = new FileID(0, 0, 1005);
     static final AccountID ERC721_FULL_ID =
             AccountID.newBuilder().accountNum(1006).build();
-    static final ContractID ERC721_FULL_CONTRACT = ContractID.newBuilder()
+    static final ContractID ERC721_FULL_CONTRACT_ID = ContractID.newBuilder()
             .contractNum(ERC721_FULL_ID.accountNumOrThrow())
             .build();
     static final Function APPROVE = new Function("approve(address,uint256)");

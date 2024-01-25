@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -86,6 +87,26 @@ public interface HederaNativeOperations {
     default Account getAccount(final long number) {
         return readableAccountStore()
                 .getAccountById(AccountID.newBuilder().accountNum(number).build());
+    }
+
+    /**
+     * Returns the {@link Account} with the given contract id.
+     * @param contractID the id of the contract
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    default Account getAccount(final ContractID contractID) {
+        return readableAccountStore().getContractById(contractID);
+    }
+
+    /**
+     * Returns the {@link Account} with the given account id.
+     * @param accountID the id of the account
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    default Account getAccount(final AccountID accountID) {
+        return readableAccountStore().getAccountById(accountID);
     }
 
     /**
@@ -191,23 +212,23 @@ public interface HederaNativeOperations {
      * to the included {@code VerificationStrategy}.
      *
      * @param amount           the amount to transfer
-     * @param fromEntityNumber the number of the entity to transfer from
-     * @param toEntityNumber   the number of the entity to transfer to
+     * @param fromEntityId the id of the entity to transfer from
+     * @param toEntityId   the id of the entity to transfer to
      * @param strategy         the {@link VerificationStrategy} to use
      * @return the result of the transfer attempt
      */
     ResponseCodeEnum transferWithReceiverSigCheck(
-            long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
+            long amount, AccountID fromEntityId, AccountID toEntityId, @NonNull VerificationStrategy strategy);
 
     /**
      * Tracks the self-destruction of a contract and the beneficiary that should receive any staking awards otherwise
      * earned by the deleted contract.
      *
-     * @param deletedNumber the number of the deleted contract
-     * @param beneficiaryNumber the number of the beneficiary
+     * @param deletedId the number of the deleted contract
+     * @param beneficiaryId the number of the beneficiary
      * @param frame the frame in which to track the self-destruct
      */
-    void trackSelfDestructBeneficiary(long deletedNumber, long beneficiaryNumber, @NonNull MessageFrame frame);
+    void trackSelfDestructBeneficiary(AccountID deletedId, AccountID beneficiaryId, @NonNull MessageFrame frame);
 
     /**
      * Checks if the given transfer operation uses custom fees.
