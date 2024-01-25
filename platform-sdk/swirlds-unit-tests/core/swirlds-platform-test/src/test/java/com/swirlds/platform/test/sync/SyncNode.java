@@ -233,9 +233,12 @@ public class SyncNode {
                 .build();
 
         final GossipEventWindowNexus gossipEventWindowNexus = mock(GossipEventWindowNexus.class);
+
+        // this.getConsensus().getMinGenerationNonAncient() // TODO
+
         when(gossipEventWindowNexus.getEventWindow())
                 .thenReturn(new NonAncientEventWindow(
-                        0, this.getConsensus().getMinGenerationNonAncient(), 0, GENERATION_THRESHOLD));
+                        0, 0, 0, GENERATION_THRESHOLD));
 
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowgraphSynchronizer(

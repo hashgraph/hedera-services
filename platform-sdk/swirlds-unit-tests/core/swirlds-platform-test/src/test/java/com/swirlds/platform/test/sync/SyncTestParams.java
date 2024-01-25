@@ -38,6 +38,8 @@ public class SyncTestParams {
         this.customSeed = customSeed;
     }
 
+    // TODO add parameter for ancient mode
+
     public SyncTestParams(
             final int numNetworkNodes,
             final int numCommonEvents,
