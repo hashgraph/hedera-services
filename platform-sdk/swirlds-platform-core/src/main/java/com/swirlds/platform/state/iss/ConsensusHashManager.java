@@ -45,6 +45,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -167,7 +168,7 @@ public class ConsensusHashManager {
      *
      * @param round the round that was just completed
      */
-    public void roundCompleted(final long round) {
+    public List<IssNotification> roundCompleted(final long round) {
         if (round <= previousRound) {
             throw new IllegalArgumentException(
                     "previous round was " + previousRound + ", can't decrease round to " + round);
@@ -175,33 +176,34 @@ public class ConsensusHashManager {
 
         if (round == ignoredRound) {
             // This round is intentionally ignored.
-            return;
+            return null;
         }
 
         final long oldestRoundToValidate = round - roundData.getSequenceNumberCapacity() + 1;
 
+        final List<RoundHashValidator> removedRounds = new ArrayList<>();
         if (round != previousRound + 1) {
             // We are either loading the first state at boot time, or we had a reconnect that caused us to skip some
             // rounds. Rounds that have not yet been validated at this point in time should not be considered
             // evidence of a catastrophic ISS.
             roundData.shiftWindow(oldestRoundToValidate);
         } else {
-            roundData.shiftWindow(oldestRoundToValidate, this::handleRemovedRound);
+            roundData.shiftWindow(oldestRoundToValidate, (k,v)->removedRounds.add(v));
         }
 
         final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
 
         roundData.put(round, new RoundHashValidator(round, roundWeight, issMetrics));
+        return returnList(removedRounds.stream().map(this::handleRemovedRound).toList());
     }
 
     /**
      * Handle a round that has become old enough that we want to stop tracking data on it.
      *
-     * @param round              the round that is old
      * @param roundHashValidator the hash validator for the round
      */
-    private void handleRemovedRound(final long round, final RoundHashValidator roundHashValidator) {
+    private IssNotification handleRemovedRound(final RoundHashValidator roundHashValidator) {
         final boolean justDecided = roundHashValidator.outOfTime();
 
         final StringBuilder sb = new StringBuilder();
@@ -213,6 +215,7 @@ public class ConsensusHashManager {
             if (status == HashValidityStatus.CATASTROPHIC_ISS
                     || status == HashValidityStatus.CATASTROPHIC_LACK_OF_DATA) {
                 handleCatastrophic(roundHashValidator);
+                return new IssNotification(roundHashValidator.getRound(), IssType.CATASTROPHIC_ISS);
             } else if (status == HashValidityStatus.LACK_OF_DATA) {
                 handleLackOfData(roundHashValidator);
             } else {
@@ -220,6 +223,7 @@ public class ConsensusHashManager {
                         "Unexpected hash validation status " + status + ", should have decided prior to now");
             }
         }
+        return null;
     }
 
     /**

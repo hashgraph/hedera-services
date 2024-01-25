@@ -227,6 +227,8 @@ class ConsensusHashManagerTests {
             final IssType expectedType = switch (expectedRoundStatus.get((int) n.getRound())){
                 case SELF_ISS -> IssType.SELF_ISS;
                 case CATASTROPHIC_ISS -> IssType.CATASTROPHIC_ISS;
+                // if there was an other-ISS, then the round should still be valid
+                case VALID -> IssType.OTHER_ISS;
                 default -> throw new IllegalStateException("Unexpected value: " + expectedRoundStatus.get((int) n.getRound()));
             };
             assertEquals(

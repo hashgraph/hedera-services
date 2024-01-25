@@ -72,7 +72,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
-        @NonNull TaskScheduler<IssNotification> issDetectorScheduler) {
+        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model

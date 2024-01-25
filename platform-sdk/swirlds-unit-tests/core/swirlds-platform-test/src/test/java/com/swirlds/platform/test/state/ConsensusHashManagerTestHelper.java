@@ -36,6 +36,11 @@ public class ConsensusHashManagerTestHelper extends ConsensusHashManager {
     }
 
     @Override
+    public List<IssNotification> roundCompleted(final long round) {
+        return processList(super.roundCompleted(round));
+    }
+
+    @Override
     public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return processList(super.handlePostconsensusSignatures(transactions));

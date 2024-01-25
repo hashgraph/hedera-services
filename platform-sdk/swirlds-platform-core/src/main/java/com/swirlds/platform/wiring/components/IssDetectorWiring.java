@@ -49,7 +49,7 @@ public record IssDetectorWiring(
      */
     @NonNull
     public static IssDetectorWiring create(
-            @NonNull final WiringModel model, @NonNull final TaskScheduler<IssNotification> taskScheduler) {
+            @NonNull final WiringModel model, @NonNull final TaskScheduler<List<IssNotification>> taskScheduler) {
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
                         model,
@@ -66,16 +66,16 @@ public record IssDetectorWiring(
                 sigInput,
                 taskScheduler.buildInputWire("newStateHashed"),
                 taskScheduler.buildInputWire("overridingState"),
-                taskScheduler.getOutputWire());
+                taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "issNotificationList"));
     }
 
     public void bind(@NonNull final ConsensusHashManager hashManager) {
         ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(hashManager::signalEndOfPreconsensusReplay);
-        ((BindableInputWire<Long, Void>) roundCompletedInput).bind(hashManager::roundCompleted);
-        ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, Void>)
+        ((BindableInputWire<Long, List<IssNotification>>) roundCompletedInput).bind(hashManager::roundCompleted);
+        ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<IssNotification>>)
                         handlePostconsensusSignatures)
                 .bind(hashManager::handlePostconsensusSignatures);
-        ((BindableInputWire<ReservedSignedState, Void>) newStateHashed).bind(hashManager::newStateHashed);
-        ((BindableInputWire<ReservedSignedState, Void>) overridingState).bind(hashManager::overridingState);
+        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed).bind(hashManager::newStateHashed);
+        ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState).bind(hashManager::overridingState);
     }
 }
