@@ -1,30 +1,7 @@
 ########################################################################################################################
-#### Slight Collapsing
+#### Platform diagram command
 
-Groups high level grouping of components and component groups. Substitutes known spammy wires.
-
-pcli diagram \
-    -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
-    -s 'heartbeat:heartbeat:♡' \
-    -s 'eventCreationManager:non-validated events:†' \
-    -s 'applicationTransactionPrehandler:futures:★' \
-    -s 'pcesReplayer:done streaming pces:@' \
-    -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
-    -g 'Event Hashing:eventHasher,postHashCollector' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
-    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
-    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,consensusRoundHandler' \
-    -c 'Orphan Buffer'
-
-########################################################################################################################
-#### Heavy Collapsing
-
-Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
+Creates high level groupings of components. Substitutes spammy wires, and collapses groupings with transformers.
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
@@ -33,7 +10,8 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
+    -s 'runningHashUpdate:running hash update:§' \
+    -s 'linkedEventIntake:flush request:Ξ' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -41,13 +19,12 @@ pcli diagram \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
-    -g 'PCES Writer:pcesSequencer,pcesWriter,eventDurabilityNexus' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,consensusRoundHandler' \
+    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Consensus Event Stream:getEvents,eventStreamManager' \
+    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
-    -c 'State File Management' \
-    -c 'State Signature Collection' \
     -c 'State Signature Collection' \
     -c 'State File Management' \
-    -c 'Event Hashing' \
-    -c 'PCES Writer'
+    -c 'Preconsensus Event Stream'

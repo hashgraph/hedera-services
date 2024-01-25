@@ -45,7 +45,6 @@ testModuleInfo {
     requires("com.swirlds.platform.core")
     requires("com.swirlds.test.framework")
     requires("org.assertj.core")
-    requires("awaitility")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

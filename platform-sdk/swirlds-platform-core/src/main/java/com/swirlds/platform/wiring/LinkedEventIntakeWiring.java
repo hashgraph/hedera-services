@@ -65,7 +65,7 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
                 taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
-                consensusRoundOutput.buildTransformer("getEvents", "events", ConsensusRound::getConsensusEvents),
+                consensusRoundOutput.buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents),
                 consensusRoundOutput.buildTransformer(
                         "getNonAncientEventWindow", "rounds", ConsensusRound::getNonAncientEventWindow),
                 taskScheduler.buildSecondaryOutputWire(),

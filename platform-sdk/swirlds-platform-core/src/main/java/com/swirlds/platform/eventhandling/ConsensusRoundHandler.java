@@ -164,8 +164,7 @@ public class ConsensusRoundHandler {
     }
 
     /**
-     * Loads data from a SignedState, this is used on startup to load events and the running hash that have been
-     * previously saved on disk
+     * Update the consensus event running hash
      *
      * @param runningHashUpdate the update to the running hash
      */

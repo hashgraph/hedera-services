@@ -44,10 +44,15 @@ public record ConsensusRoundHandlerWiring(
     public static ConsensusRoundHandlerWiring create(@NonNull final TaskScheduler<ConsensusRound> taskScheduler) {
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
-                taskScheduler.buildInputWire("signed state to load"),
+                taskScheduler.buildInputWire("running hash update"),
                 taskScheduler::flush);
     }
 
+    /**
+     * Bind the consensus round handler to this wiring.
+     *
+     * @param consensusRoundHandler the consensus round handler to bind
+     */
     public void bind(@NonNull final ConsensusRoundHandler consensusRoundHandler) {
         ((BindableInputWire<ConsensusRound, Void>) roundInput).bind(consensusRoundHandler::handleConsensusRound);
         ((BindableInputWire<RunningEventHashUpdate, Void>) runningHashUpdateInput)
