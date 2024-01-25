@@ -59,8 +59,8 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         this.values = new ConvertedMetricValues(unitless, metric);
     }
 
-    protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> T setCommonValues(
-            SimpleCollector.Builder<T, C> collectorBuilder) {
+    protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T setCommonValues(
+            @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
         return values.fill(collectorBuilder);
     }
 
@@ -99,7 +99,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         @NonNull
         private final String help;
 
-        private ConvertedMetricValues(boolean unitless, final @NonNull Metric metric) {
+        private ConvertedMetricValues(final boolean unitless, final @NonNull Metric metric) {
             Objects.requireNonNull(metric, "metric must not be null");
             this.unitless = unitless;
             this.subSystem = fix(metric.getCategory());
@@ -109,8 +109,8 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
             verifyMetricNamingComponents(metric);
         }
 
-        <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> T fill(
-                SimpleCollector.Builder<T, C> collectorBuilder) {
+        <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T fill(
+                @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
             final T builder = collectorBuilder.subsystem(subSystem).name(name).help(help);
             return unitless ? builder : builder.unit(unit);
         }
