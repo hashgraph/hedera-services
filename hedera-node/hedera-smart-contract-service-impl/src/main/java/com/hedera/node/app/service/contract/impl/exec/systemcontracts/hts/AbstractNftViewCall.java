@@ -17,14 +17,19 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -41,6 +46,18 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
             final long serialNo) {
         super(gasCalculator, enhancement, token);
         this.serialNo = serialNo;
+    }
+
+    @Override
+    public @NonNull PricedResult execute() {
+        // match mono - HTSPrecompiledContract#checkNFT
+        if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+            return gasOnly(
+                    haltResult(HederaExceptionalHaltReason.NOT_SUPPORTED, gasCalculator.viewGasRequirement()),
+                    INVALID_TOKEN_ID,
+                    true);
+        }
+        return super.execute();
     }
 
     /**

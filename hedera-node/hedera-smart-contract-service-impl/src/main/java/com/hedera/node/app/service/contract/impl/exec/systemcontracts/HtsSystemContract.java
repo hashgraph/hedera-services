@@ -94,6 +94,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
+            if (pricedResult.fullResult().isHalt()) {
+                return pricedResult.fullResult();
+            }
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
             if (dispatchedRecordBuilder != null) {
                 dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(

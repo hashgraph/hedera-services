@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
@@ -58,6 +59,10 @@ public record FullResult(
         if (recordBuilder != null) {
             recordBuilder.status(INSUFFICIENT_GAS);
         }
+    }
+
+    public boolean isHalt() {
+        return MessageFrame.State.EXCEPTIONAL_HALT.equals(result.getState());
     }
 
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
