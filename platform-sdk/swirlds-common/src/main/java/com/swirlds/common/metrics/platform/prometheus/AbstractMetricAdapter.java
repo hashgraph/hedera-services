@@ -125,7 +125,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
          *
          * @param metric the metric to check against
          */
-        private void verifyMetricNamingComponents(@NonNull Metric metric) {
+        private void verifyMetricNamingComponents(@NonNull final Metric metric) {
             if (!Objects.equals(this.subSystem, metric.getCategory())) {
                 log.error(
                         EXCEPTION.getMarker(),
