@@ -43,6 +43,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
 
     private List<ContractID> createdContracts = Collections.emptyList();
     private Map<ContractID, Long> contractNonces = new TreeMap<>();
+    private Long signerNonce;
 
     public static TransactionProcessingResult failed(
             final long gasUsed,
@@ -141,6 +142,14 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
 
     public void setActions(final List<SolidityAction> actions) {
         this.actions = actions;
+    }
+
+    public Long getSignerNonce() {
+        return signerNonce;
+    }
+
+    public void setSignerNonce(Long signerNonce) {
+        this.signerNonce = signerNonce;
     }
 
     /**

@@ -107,7 +107,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
     }
 
     @Test
@@ -143,6 +144,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.failed(
@@ -174,6 +176,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.successful(
@@ -216,6 +219,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.successful(
@@ -251,7 +255,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var three = new EvmFnResult(
                 contractId,
                 result,
@@ -265,7 +270,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var four = new EvmFnResult(
                 contractId,
                 result,
@@ -279,7 +285,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var five = new EvmFnResult(
                 contractId,
                 result,
@@ -293,7 +300,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var six = new EvmFnResult(
                 contractId,
                 result,
@@ -307,7 +315,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var seven = new EvmFnResult(
                 contractId,
                 result,
@@ -321,7 +330,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var nine = new EvmFnResult(
                 contractId,
                 result,
@@ -335,7 +345,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 "randomParameters".getBytes(),
-                senderId);
+                senderId,
+                null);
         final var ten = new EvmFnResult(
                 contractId,
                 result,
@@ -349,6 +360,7 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 "randomParameters".getBytes(),
+                null,
                 null);
 
         assertNotEquals(null, one);
@@ -382,7 +394,8 @@ class EvmFnResultTest {
                         subject.getGas(),
                         subject.getAmount(),
                         subject.getFunctionParameters(),
-                        subject.getSenderId()),
+                        subject.getSenderId(),
+                        subject.getSignerNonce()),
                 subject);
     }
 
@@ -449,7 +462,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
 
         final var grpc = ContractFunctionResult.newBuilder()
                 .setGasUsed(gasUsed)
@@ -489,7 +503,8 @@ class EvmFnResultTest {
                 gas,
                 0L,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
 
         final var grpc = ContractFunctionResult.newBuilder()
                 .setGasUsed(gasUsed)
