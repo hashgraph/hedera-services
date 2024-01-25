@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-TAG=${1:-'0.1.0'}
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 
 READLINK_OPTS=""
@@ -15,8 +14,6 @@ if [[ -n "$(readlink ${READLINK_OPTS} "${SCRIPT_SOURCE}")" ]]; then
 fi
 
 SCRIPT_PATH="$(cd "$(dirname "${SCRIPT_SOURCE}")" && pwd)"
-
-OLD_CWD="$(pwd)"
 
 cd "${SCRIPT_PATH}/../../../../"
 ./gradlew assemble cleanRcdiff rcdiffJar copyRcdiff

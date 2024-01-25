@@ -230,7 +230,9 @@ val yahCliJar =
         }
     }
 
-configurations { create("rcdiffConfig") { extendsFrom(configurations.runtimeClasspath.get()) } }
+val rcdiffConfig = "rcdiffConfig"
+
+configurations { create(rcdiffConfig) { extendsFrom(configurations.runtimeClasspath.get()) } }
 
 dependencies {
     // Example: Add a dependency to your custom configuration
@@ -242,7 +244,7 @@ val rcdiffJar =
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
         archiveFileName.set("rcdiff.jar")
-        configurations = listOf(project.configurations.getByName("rcdiffConfig"))
+        configurations = listOf(project.configurations.getByName(rcdiffConfig))
 
         manifest {
             attributes(

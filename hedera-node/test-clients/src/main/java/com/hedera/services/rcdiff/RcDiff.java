@@ -21,6 +21,7 @@ import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEnc
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
+import static picocli.CommandLine.*;
 
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
@@ -34,37 +35,37 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "rcdiff", description = "Diffs two record streams")
+@Command(name = "rcdiff", description = "Diffs two record streams")
 public class RcDiff implements Callable<Integer> {
-    public static void main(String... args) {
-        int rc = new CommandLine(new RcDiff()).execute(args);
-        System.exit(rc);
-    }
+    @Spec
+    Model.CommandSpec spec;
 
-    @CommandLine.Spec
-    CommandLine.Model.CommandSpec spec;
-
-    @CommandLine.Option(
+    @Option(
             names = {"-m", "--max-diffs-to-export"},
             paramLabel = "max diffs to export",
             defaultValue = "10")
     Long maxDiffsToExport;
 
-    @CommandLine.Option(
+    @Option(
             names = {"-e", "--expected-stream"},
             paramLabel = "location of expected stream files")
     String expectedStreamsLoc;
 
-    @CommandLine.Option(
+    @Option(
             names = {"-a", "--actual-stream"},
             paramLabel = "location of actual stream files")
     String actualStreamsLoc;
 
-    @CommandLine.Option(
+    @Option(
             names = {"-d", "--diffs"},
             paramLabel = "location of diffs file",
             defaultValue = "diffs.txt")
     String diffsLoc;
+
+    public static void main(String... args) {
+        int rc = new CommandLine(new RcDiff()).execute(args);
+        System.exit(rc);
+    }
 
     @Override
     public Integer call() throws Exception {
@@ -90,12 +91,10 @@ public class RcDiff implements Callable<Integer> {
 
     private void throwOnInvalidCommandLine() {
         if (actualStreamsLoc == null) {
-            throw new picocli.CommandLine.ParameterException(
-                    spec.commandLine(), "Please specify an actual stream location");
+            throw new ParameterException(spec.commandLine(), "Please specify an actual stream location");
         }
         if (expectedStreamsLoc == null) {
-            throw new picocli.CommandLine.ParameterException(
-                    spec.commandLine(), "Please specify an expected stream location");
+            throw new ParameterException(spec.commandLine(), "Please specify an expected stream location");
         }
     }
 
