@@ -79,6 +79,7 @@ import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -675,6 +676,8 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
+        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -692,7 +695,8 @@ public class SwirldsPlatform implements Platform {
                 sequencer,
                 eventCreationManager,
                 swirldStateManager,
-                stateSignatureCollector);
+                stateSignatureCollector,
+                futureEventBuffer);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =

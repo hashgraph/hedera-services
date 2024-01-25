@@ -109,7 +109,9 @@ class FutureEventBufferTests {
 
         final List<GossipEvent> futureEvents = new ArrayList<>();
         for (final GossipEvent event : events) {
-            final GossipEvent returnedEvent = futureEventBuffer.addEvent(event);
+            final List<GossipEvent> returnedEvents = futureEventBuffer.addEvent(event);
+            assertTrue(returnedEvents == null || returnedEvents.size() == 1);
+            final GossipEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
@@ -187,7 +189,9 @@ class FutureEventBufferTests {
         events.sort(Comparator.comparingLong(a -> a.getHashedData().getBirthRound()));
 
         for (final GossipEvent event : events) {
-            final GossipEvent returnedEvent = futureEventBuffer.addEvent(event);
+            final List<GossipEvent> returnedEvents = futureEventBuffer.addEvent(event);
+            assertTrue(returnedEvents == null || returnedEvents.size() == 1);
+            final GossipEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);

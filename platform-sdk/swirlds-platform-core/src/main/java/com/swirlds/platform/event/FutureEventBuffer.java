@@ -81,16 +81,17 @@ public class FutureEventBuffer {
      * Add an event to the future event buffer.
      *
      * @param event the event to add
-     * @return the event if it is not a time traveler, or null if the event is from the future and needs to be buffered.
+     * @return a list containing the event if it is not a time traveler, or null if the event is from the future and
+     * needs to be buffered.
      */
     @Nullable
-    public GossipEvent addEvent(@NonNull final GossipEvent event) {
+    public List<GossipEvent> addEvent(@NonNull final GossipEvent event) {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
         } else if (event.getHashedData().getBirthRound() <= eventWindow.pendingConsensusRound()) {
             // this is not a future event, no need to buffer it
-            return event;
+            return List.of(event);
         }
 
         // this is a future event, buffer it
@@ -100,8 +101,6 @@ public class FutureEventBuffer {
         bufferedEventCount.incrementAndGet();
         return null;
     }
-
-    // TODO we need to update this on reconnect/restart
 
     /**
      * Update the current event window. As the event window advances, time catches up to time travelers, and events that
