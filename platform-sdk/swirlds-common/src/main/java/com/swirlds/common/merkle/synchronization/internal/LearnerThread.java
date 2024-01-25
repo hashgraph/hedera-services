@@ -129,7 +129,7 @@ public class LearnerThread<T> {
         }
 
         if (originalNode != null && view.getClassId(originalNode) == lesson.getCustomViewClassId()) {
-            customRoot.setupWithOriginalNode(view.getMerkleRoot(originalNode));
+            customRoot.setupWithOriginalNode(workGroup, view.getMerkleRoot(originalNode));
         } else {
             customRoot.setupWithNoData();
         }

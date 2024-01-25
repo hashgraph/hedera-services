@@ -34,11 +34,15 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
 
 /**
  * An implementation of {@link LearnerTreeView} for the virtual merkle. The learner during reconnect
@@ -66,6 +70,10 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
      * (specifically, leaf 2 for a tree with only a single leaf).
      */
     private static final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
+
+    private StandardWorkGroup workGroup;
+
+    private final Map<Long, Future<Hash>> hashPrefetch = new HashMap<>();
 
     /**
      * Handles removal of old nodes.
@@ -126,7 +134,6 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
             final VirtualKeySet<K> encounteredKeys,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState) {
-
         super(root, originalState, reconnectState);
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.encounteredKeys = encounteredKeys;
@@ -164,7 +171,14 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
 
         // Make sure the path is valid for the original state
         checkValidNode(originalChild, originalState);
-        final Hash hash = originalRecords.findHash(originalChild);
+        final Future<Hash> hashPrefetchFuture = hashPrefetch.remove(originalChild);
+        assert hashPrefetchFuture != null;
+        final Hash hash;
+        try {
+            hash = hashPrefetchFuture.get();
+        } catch (final Exception e) {
+            throw new MerkleSynchronizationException("Cannot load node hash. path = " + originalChild, e);
+        }
 
         // The hash must have been specified by this point. The original tree was hashed before
         // we started running on the learner, so either the hash is in cache or on disk, but it
@@ -181,9 +195,16 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public void expectLessonFor(
             final Long parent, final int childIndex, final Long original, final boolean nodeAlreadyPresent) {
-        expectedChildren.add(parent == null ? 0 : getChildPath(parent, childIndex));
+        final long path = parent == null ? 0 : getChildPath(parent, childIndex);
+        expectedChildren.add(path);
         expectedNodeAlreadyPresent.add(nodeAlreadyPresent);
         expectedOriginalExists.add(original != null);
+        if (!nodeAlreadyPresent) {
+            final long leftPath = Path.getLeftChildPath(path);
+            hashPrefetch.put(leftPath, workGroup.execute(() -> originalRecords.findHash(leftPath)));
+            final long rightPath = Path.getRightChildPath(path);
+            hashPrefetch.put(rightPath, workGroup.execute(() -> originalRecords.findHash(rightPath)));
+        }
     }
 
     /**
@@ -264,6 +285,7 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public void startThreads(final ThreadManager threadManager, final StandardWorkGroup workGroup) {
+        this.workGroup = workGroup;
         nodeRemover = new ReconnectNodeRemover<>(
                 threadManager,
                 workGroup,

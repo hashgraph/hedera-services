@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.manager.ThreadManager;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,7 +48,8 @@ public class StandardWorkGroup {
     private final String groupName;
     private final ExecutorService executorService;
 
-    private final ConcurrentFuturePool<Void> futures;
+    @SuppressWarnings("rawtypes")
+    private final ConcurrentFuturePool futures;
 
     private volatile boolean hasExceptions;
 
@@ -119,7 +121,14 @@ public class StandardWorkGroup {
      */
     @SuppressWarnings("unchecked")
     public void execute(final Runnable operation) {
-        futures.add((Future<Void>) executorService.submit(operation));
+        futures.add(executorService.submit(operation));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Future<T> execute(final Callable<T> operation) {
+        final Future<T> result = executorService.submit(operation);
+        futures.add(result);
+        return result;
     }
 
     /**

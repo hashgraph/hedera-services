@@ -31,6 +31,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.threading.manager.StandardThreadManager;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -511,7 +513,9 @@ class VirtualRootNodeTest extends VirtualTestBase {
         VirtualRootNode<TestKey, TestValue> root = createRoot();
         VirtualRootNode<TestKey, TestValue> anotherRoot = createRoot();
         anotherRoot.computeHash();
-        root.setupWithOriginalNode(anotherRoot);
+        StandardWorkGroup workGroup = new StandardWorkGroup(
+                new StandardThreadManager(), "postInitNoOpIfLearnerTreeViewIsSet", () -> {});
+        root.setupWithOriginalNode(workGroup, anotherRoot);
         assertDoesNotThrow(() -> root.postInit(null));
     }
 }
