@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 
 @DisplayName("RoundHashValidator Tests")
 class RoundHashValidatorTests {
@@ -256,7 +258,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         boolean decided = false;
 
@@ -302,7 +304,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         boolean decided = false;
 
@@ -346,7 +348,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         boolean decided = false;
 
@@ -396,7 +398,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
             final NodeId nodeId = nodeHashInfo.nodeId;
@@ -430,7 +432,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         long addedWeight = 0;
 
@@ -472,7 +474,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         assertFalse(validator.reportSelfHash(thisNode.nodeStateHash), "should not allow a decision");
 
@@ -517,7 +519,7 @@ class RoundHashValidatorTests {
 
         final long round = random.nextInt(1000);
         final RoundHashValidator validator =
-                new RoundHashValidator(round, addressBook.getTotalWeight());
+                new RoundHashValidator(round, addressBook.getTotalWeight(), Mockito.mock(IssMetrics.class));
 
         assertFalse(validator.reportSelfHash(thisNode.nodeStateHash), "should not allow a decision");
 

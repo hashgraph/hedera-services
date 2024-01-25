@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.metrics.IssMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -75,10 +76,9 @@ public class RoundHashValidator {
      * @param roundWeight
      * 		the total weight for this round
      */
-    public RoundHashValidator(final long round, final long roundWeight) {
-
+    public RoundHashValidator(final long round, final long roundWeight, final IssMetrics issMetrics) {
         this.round = round;
-        hashFinder = new ConsensusHashFinder(round, roundWeight);
+        hashFinder = new ConsensusHashFinder(round, roundWeight, issMetrics);
     }
 
     /**

@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.Threshold.MAJORITY;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.metrics.IssMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,7 @@ public class ConsensusHashFinder {
      * The current round.
      */
     private final long round;
+    private final IssMetrics issMetrics;
 
     /**
      * The total weight of nodes that have reported their hash for this round.
@@ -75,6 +77,7 @@ public class ConsensusHashFinder {
      */
     private Hash consensusHash;
 
+
     /**
      * Create a new object for tracking agreement on the hash of a particular round.
      * 		against the consensus hash
@@ -83,9 +86,10 @@ public class ConsensusHashFinder {
      * @param totalWeight
      * 		the total weight contained within the network for this round
      */
-    public ConsensusHashFinder(final long round, final long totalWeight) {
+    public ConsensusHashFinder(final long round, final long totalWeight, final IssMetrics issMetrics) {
         this.round = round;
         this.totalWeight = totalWeight;
+        this.issMetrics = issMetrics;
     }
 
     /**
@@ -147,6 +151,7 @@ public class ConsensusHashFinder {
         }
 
         if (status != ConsensusHashStatus.UNDECIDED) {
+            sendHashValidityDispatch(nodeId, stateHash);
             // Once we know the status, the status never changes.
             return;
         }
@@ -156,12 +161,41 @@ public class ConsensusHashFinder {
             // There exists a partition with a quorum.
             consensusHash = largestPartition.getHash();
             status = ConsensusHashStatus.DECIDED;
+            sendHashValidityDispatchForAllNodes();
         } else {
             final long remainingWeight = totalWeight - hashReportedWeight;
             if (!MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.
                 status = ConsensusHashStatus.CATASTROPHIC_ISS;
+                issMetrics.catastrophicIssObserver(round);
+            }
+        }
+    }
+
+    /**
+     * Check to see if this node agrees with the consensus hash. If it does not agree then send a dispatch.
+     *
+     * @param nodeId
+     * 		the ID of the node that disagrees with the consensus hash
+     * @param stateHash
+     * 		the wrong hash derived by the node
+     */
+    private void sendHashValidityDispatch(@NonNull final NodeId nodeId, @NonNull final Hash stateHash) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
+        if (consensusHash != null) {
+            issMetrics.stateHashValidityObserver(round, nodeId, stateHash, consensusHash);
+        }
+    }
+
+    /**
+     * For all nodes that have already reported, for every node that disagrees with the consensus hash send a dispatch.
+     */
+    private void sendHashValidityDispatchForAllNodes() {
+        for (final HashPartition partition : partitionMap.values()) {
+            for (final NodeId nodeId : partition.getNodes()) {
+                sendHashValidityDispatch(nodeId, partition.getHash());
             }
         }
     }

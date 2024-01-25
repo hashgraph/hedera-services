@@ -25,7 +25,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,13 +123,6 @@ public class IssMetrics {
 
         for (final Address address : addressBook) {
             issDataByNode.put(address.getNodeId(), new IssStatus());
-        }
-    }
-
-    public synchronized void issObserved(@NonNull final IssNotification issNotification){
-        switch (issNotification.getIssType()){
-            case SELF_ISS, OTHER_ISS -> stateHashValidityObserver(issNotification.getRound(), issNotification.getOtherNodeId(), null, null);
-            case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
         }
     }
 

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 @DisplayName("ConsensusHashFinder Tests")
 class ConsensusHashFinderTests {
@@ -129,7 +131,7 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash hash = randomHash(random);
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
         assertEquals(totalWeight, hashFinder.getTotalWeight(), "unexpected total weight");
         assertEquals(0, hashFinder.getHashReportedWeight(), "no weight should be accumulated yet");
         assertEquals(0, hashFinder.getPartitionMap().size(), "there shouldn't be any partitions yet");
@@ -181,7 +183,7 @@ class ConsensusHashFinderTests {
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -229,7 +231,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -269,7 +271,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -303,7 +305,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -354,7 +356,7 @@ class ConsensusHashFinderTests {
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder( 0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 

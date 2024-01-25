@@ -701,8 +701,6 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
         platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
-                "issMetrics", new IssMetrics(metrics, currentAddressBook)::issObserved);
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
                 "issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
         platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
                 "issHandler", issHandler::issObserved);

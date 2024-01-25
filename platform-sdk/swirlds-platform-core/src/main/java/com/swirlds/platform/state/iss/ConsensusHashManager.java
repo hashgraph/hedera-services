@@ -19,6 +19,8 @@ package com.swirlds.platform.state.iss;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -30,6 +32,7 @@ import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -101,6 +104,7 @@ public class ConsensusHashManager {
      * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
      */
     private final long ignoredRound;
+    private final IssMetrics issMetrics;
 
     /**
      * Create an object that tracks reported hashes and detects ISS events.
@@ -148,6 +152,7 @@ public class ConsensusHashManager {
         if (ignoredRound != DO_NOT_IGNORE_ROUNDS) {
             logger.warn(STARTUP.getMarker(), "No ISS detection will be performed for round {}", ignoredRound);
         }
+        this.issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
     }
 
     /**
@@ -187,7 +192,7 @@ public class ConsensusHashManager {
         final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
 
-        roundData.put(round, new RoundHashValidator(round, roundWeight));
+        roundData.put(round, new RoundHashValidator(round, roundWeight, issMetrics));
     }
 
     /**
@@ -224,9 +229,9 @@ public class ConsensusHashManager {
      */
     public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        transactions.forEach(
-                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()));
-        return null;
+        return transactions.stream().map(
+                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
+                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 
     /**
@@ -243,7 +248,7 @@ public class ConsensusHashManager {
      * @param signatureTransaction the signature transaction
      * @param eventVersion         the version of the event that contains the transaction
      */
-    private void handlePostconsensusSignatureTransaction(
+    private IssNotification handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId,
             @NonNull final StateSignatureTransaction signatureTransaction,
             @Nullable final SoftwareVersion eventVersion) {
@@ -253,32 +258,32 @@ public class ConsensusHashManager {
 
         if (eventVersion == null) {
             // Illegal event version, ignore.
-            return;
+            return null;
         }
 
         if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
             // We are still replaying preconsensus events and we are configured to ignore signatures during replay
-            return;
+            return null;
         }
 
         if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
-            return;
+            return null;
         }
 
         if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
             // this is a signature from a different epoch, ignore it
-            return;
+            return null;
         }
 
         if (!addressBook.contains(signerId)) {
             // we don't care about nodes not in the address book
-            return;
+            return null;
         }
 
         if (signatureTransaction.getRound() == ignoredRound) {
             // This round is intentionally ignored.
-            return;
+            return null;
         }
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
@@ -287,14 +292,15 @@ public class ConsensusHashManager {
         if (roundValidator == null) {
             // We are being asked to validate a signature from the far future or far past, or a round that has already
             // been decided.
-            return;
+            return null;
         }
 
         final boolean decided =
                 roundValidator.reportHashFromNetwork(signerId, nodeWeight, signatureTransaction.getStateHash());
         if (decided) {
-            checkValidity(roundValidator);
+            return checkValidity(roundValidator);
         }
+        return null;
     }
 
     public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
@@ -310,10 +316,10 @@ public class ConsensusHashManager {
      * @param round the round of the state
      * @param hash  the hash of the state
      */
-    private void stateHashedObserver(final Long round, final Hash hash) {
+    private IssNotification stateHashedObserver(final Long round, final Hash hash) {
         if (round == ignoredRound) {
             // This round is intentionally ignored.
-            return;
+            return null;
         }
 
         final RoundHashValidator roundHashValidator = roundData.get(round);
@@ -324,8 +330,9 @@ public class ConsensusHashManager {
 
         final boolean decided = roundHashValidator.reportSelfHash(hash);
         if (decided) {
-            checkValidity(roundHashValidator);
+            return checkValidity(roundHashValidator);
         }
+        return null;
     }
 
     /**
@@ -336,7 +343,10 @@ public class ConsensusHashManager {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
             roundCompleted(round);
-            stateHashedObserver(round, stateHash);
+            final IssNotification issNotification = stateHashedObserver(round, stateHash);
+            if (issNotification != null) {
+                return List.of(issNotification);
+            }
         }
         return null;
     }
@@ -353,13 +363,12 @@ public class ConsensusHashManager {
             case VALID -> null; // :)
             case SELF_ISS -> {
                 handleSelfIss(roundValidator);
-                yield new IssNotification(round, IssType.SELF_ISS, null);//TODO find other ID
+                yield new IssNotification(round, IssType.SELF_ISS, null);
             }
             case CATASTROPHIC_ISS -> {
                 handleCatastrophic(roundValidator);
-                yield new IssNotification(round, IssType.CATASTROPHIC_ISS, null);//TODO find other ID
+                yield new IssNotification(round, IssType.CATASTROPHIC_ISS, null);
             }
-            //TODO add other node ISS
             case UNDECIDED -> throw new IllegalStateException(
                     "status is undecided, but method reported a decision, round = " + round);
             case LACK_OF_DATA -> throw new IllegalStateException(
