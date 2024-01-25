@@ -78,7 +78,7 @@ public class RcDiff implements Callable<Integer> {
             throw new AssertionError("No difference to summarize");
         };
         final var diffs = findDifferencesBetweenV6(
-                expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer, System.out::println);
+                expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer, null);
         if (diffs.isEmpty()) {
             System.out.println("These streams are identical ☺️");
             return 0;
