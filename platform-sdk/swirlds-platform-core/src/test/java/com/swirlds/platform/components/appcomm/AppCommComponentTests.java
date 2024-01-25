@@ -119,28 +119,4 @@ public class AppCommComponentTests {
                 -1, signedState::getReservationCount, Duration.ofSeconds(1), "Signed state should be fully released");
         assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");
     }
-
-    @RepeatedTest(100)
-    @DisplayName("IssNotification")
-    void testIssNotification() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final long round = random.nextLong();
-        final int numTypes = IssNotification.IssType.values().length;
-        final IssNotification.IssType issType = IssNotification.IssType.values()[random.nextInt(numTypes)];
-        final NodeId otherNodeId = random.nextDouble() > 0.8 ? null : new NodeId(Math.abs(random.nextLong()));
-
-        final AtomicInteger numInvocations = new AtomicInteger();
-        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        notificationEngine.register(IssListener.class, n -> {
-            numInvocations.getAndIncrement();
-            assertEquals(round, n.getRound(), "Unexpected ISS round");
-            assertEquals(issType, n.getIssType(), "Unexpected ISS Type");
-            assertEquals(otherNodeId, n.getOtherNodeId(), "Unexpected other node id");
-        });
-
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.iss(round, issType, otherNodeId);
-
-        assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");
-    }
 }
