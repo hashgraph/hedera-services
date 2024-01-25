@@ -106,6 +106,9 @@ class CallLocalEvmTxProcessorTest {
     @Mock
     private HederaBlockValues hederaBlockValues;
 
+    @Mock
+    private EvmConfiguration evmConfiguration;
+
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Address receiverAddress = receiver.getId().asEvmAddress();
@@ -120,7 +123,9 @@ class CallLocalEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(EVM_VERSION_0_30, () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
         Map<String, Provider<ContractCreationProcessor>> ccps =
