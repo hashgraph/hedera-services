@@ -83,6 +83,7 @@ public class RcDiff implements Callable<Integer> {
             System.out.println("These streams are identical ☺️");
             return 0;
         } else {
+            System.out.println("These streams differed " + diffs.size() + " times 😞");
             dumpDiffs(diffs);
             return 1;
         }
