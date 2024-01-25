@@ -40,7 +40,7 @@ public class FileCompressionUtils {
                 byteArrayOutputStream.write(buffer, 0, len);
             }
             return byteArrayOutputStream.toByteArray();
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new IOException("Error reading file " + fileLoc, e);
         }
     }
