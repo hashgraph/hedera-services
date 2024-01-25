@@ -23,6 +23,8 @@ import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -33,7 +35,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -634,7 +635,7 @@ public final class MerkleDb {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
                 for (final TableMetadata metadata : tables) {
                     final int len = metadata.pbjSizeInBytes();
-                    ProtoUtils.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
+                    ProtoWriterTools.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
                 }
             } catch (final IOException z) {
                 throw new UncheckedIOException(z);
@@ -682,9 +683,7 @@ public final class MerkleDb {
         final Path tableConfigFilePbj = dir.resolve(METADATA_FILENAME);
         final Path tableConfigFile = dir.resolve(METADATA_FILENAME_OLD);
         if (Files.exists(tableConfigFilePbj)) {
-            try (InputStream fileIn = Files.newInputStream(tableConfigFilePbj, StandardOpenOption.READ)) {
-                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
-                in.limit(Files.size(tableConfigFilePbj));
+            try (final ReadableStreamingData in = new ReadableStreamingData(tableConfigFilePbj)) {
                 while (in.hasRemaining()) {
                     final int tag = in.readVarInt(false);
                     final int fieldNum = tag >> TAG_FIELD_OFFSET;
@@ -884,23 +883,24 @@ public final class MerkleDb {
         public int pbjSizeInBytes() {
             int size = 0;
             if (tableId != 0) {
-                size += ProtoUtils.sizeOfTag(FIELD_TABLEMETADATA_TABLEID, ProtoUtils.WIRE_TYPE_VARINT);
-                size += ProtoUtils.sizeOfVarInt32(tableId);
+                size += ProtoWriterTools.sizeOfTag(
+                        FIELD_TABLEMETADATA_TABLEID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+                size += ProtoWriterTools.sizeOfVarInt32(tableId);
             }
-            size += ProtoUtils.sizeOfDelimited(
+            size += ProtoWriterTools.sizeOfDelimited(
                     FIELD_TABLEMETADATA_TABLENAME, tableName.getBytes(StandardCharsets.UTF_8).length);
-            size += ProtoUtils.sizeOfDelimited(FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes());
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes());
             return size;
         }
 
         public void writeTo(final WritableSequentialData out) {
             if (tableId != 0) {
-                ProtoUtils.writeTag(out, FIELD_TABLEMETADATA_TABLEID);
+                ProtoWriterTools.writeTag(out, FIELD_TABLEMETADATA_TABLEID);
                 out.writeVarInt(tableId, false);
             }
             final byte[] bb = tableName.getBytes(StandardCharsets.UTF_8);
-            ProtoUtils.writeDelimited(out, FIELD_TABLEMETADATA_TABLENAME, bb.length, t -> t.writeBytes(bb));
-            ProtoUtils.writeDelimited(
+            ProtoWriterTools.writeDelimited(out, FIELD_TABLEMETADATA_TABLENAME, bb.length, t -> t.writeBytes(bb));
+            ProtoWriterTools.writeDelimited(
                     out, FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes(), tableConfig::writeTo);
         }
     }
