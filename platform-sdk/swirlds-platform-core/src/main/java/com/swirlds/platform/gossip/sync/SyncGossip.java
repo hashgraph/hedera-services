@@ -26,7 +26,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -41,8 +40,8 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.SyncPermitProvider;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
@@ -72,6 +71,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -83,7 +83,7 @@ public class SyncGossip extends AbstractGossip {
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
-    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
+    protected final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -110,7 +110,8 @@ public class SyncGossip extends AbstractGossip {
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
-     * @param intakeQueue                   the event intake queue
+     * @param receivedEventHandler          handles events received from other nodes
+     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
@@ -130,10 +131,11 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
@@ -150,7 +152,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                intakeQueue,
+                intakeQueueSizeSupplier,
                 swirldStateManager,
                 latestCompleteState,
                 platformStatusManager,
@@ -165,14 +167,13 @@ public class SyncGossip extends AbstractGossip {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
-        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
-                time,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,
-                intakeQueue,
+                receivedEventHandler,
                 syncManager,
                 intakeEventCounter,
                 shadowgraphExecutor,
@@ -262,7 +263,8 @@ public class SyncGossip extends AbstractGossip {
                                             fallenBehindManager,
                                             syncPermitProvider,
                                             gossipHalted::get,
-                                            () -> intakeQueue.size() >= eventConfig.eventIntakeQueueThrottleSize(),
+                                            () -> intakeQueueSizeSupplier.getAsLong()
+                                                    >= eventConfig.eventIntakeQueueThrottleSize(),
                                             Duration.ZERO,
                                             syncMetrics,
                                             time)))))

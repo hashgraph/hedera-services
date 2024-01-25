@@ -161,7 +161,7 @@ public class SerializableSemVers implements SoftwareVersion {
         if (other instanceof SerializableSemVers that) {
             return FULL_COMPARATOR.compare(this, that);
         } else {
-            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+            return -1;
         }
     }
 

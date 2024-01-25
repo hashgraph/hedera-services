@@ -19,12 +19,12 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.BYTECODE_KEY;
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -42,14 +42,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReadableContractStateStoreTest {
 
-    private static final SlotKey SLOT_KEY = new SlotKey(1L, Bytes.EMPTY);
+    private static final SlotKey SLOT_KEY =
+            new SlotKey(ContractID.newBuilder().contractNum(1L).build(), Bytes.EMPTY);
     private static final SlotValue SLOT_VALUE = new SlotValue(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
 
     @Mock
     private ReadableKVState<SlotKey, SlotValue> storage;
 
     @Mock
-    private ReadableKVState<EntityNumber, Bytecode> bytecode;
+    private ReadableKVState<ContractID, Bytecode> bytecode;
 
     @Mock
     private ReadableStates states;
@@ -59,7 +60,7 @@ class ReadableContractStateStoreTest {
     @BeforeEach
     void setUp() {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
-        given(states.<EntityNumber, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
+        given(states.<ContractID, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 
         subject = new ReadableContractStateStore(states);
     }
@@ -68,16 +69,14 @@ class ReadableContractStateStoreTest {
     void allMutationsAreUnsupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.removeSlot(SLOT_KEY));
         assertThrows(UnsupportedOperationException.class, () -> subject.putSlot(SLOT_KEY, SLOT_VALUE));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.putBytecode(CALLED_CONTRACT_ENTITY_NUMBER, BYTECODE));
+        assertThrows(UnsupportedOperationException.class, () -> subject.putBytecode(CALLED_CONTRACT_ID, BYTECODE));
     }
 
     @Test
     void getsBytecodeAsExpected() {
-        given(bytecode.get(CALLED_CONTRACT_ENTITY_NUMBER)).willReturn(BYTECODE);
+        given(bytecode.get(CALLED_CONTRACT_ID)).willReturn(BYTECODE);
 
-        assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ENTITY_NUMBER));
+        assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ID));
     }
 
     @Test

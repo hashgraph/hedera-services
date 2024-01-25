@@ -16,20 +16,18 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
 import com.swirlds.platform.network.Connection;
@@ -150,7 +148,6 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncSent;
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
-    private final AverageStat gensWaitingForExpiry;
     private final RunningAverageMetric syncFilterTime;
 
     /**
@@ -251,13 +248,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-        gensWaitingForExpiry = new AverageStat(
-                metrics,
-                PLATFORM_CATEGORY,
-                PlatformStatNames.GENS_WAITING_FOR_EXPIRY,
-                "the average number of generations waiting to be expired",
-                FORMAT_5_3,
-                AverageStat.WEIGHT_VOLATILE);
 
         permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
@@ -339,7 +329,7 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
      * that have more than one {@code sendTip} in the current synchronization.
      *
      * @param multiTipCount the number of creators in the current synchronization that have more than one sending tip.
@@ -349,23 +339,13 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of
      * {@code sendTips} in the current synchronization.
      *
      * @param tipCount the number of sending tips in the current synchronization.
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Called by {@link ShadowGraph} to update the number of generations that should be expired but can't be yet due to
-     * reservations.
-     *
-     * @param numGenerations the new number of generations
-     */
-    public void updateGensWaitingForExpiry(final long numGenerations) {
-        gensWaitingForExpiry.update(numGenerations);
     }
 
     /**

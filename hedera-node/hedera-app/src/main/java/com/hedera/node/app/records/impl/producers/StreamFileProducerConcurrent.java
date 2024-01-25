@@ -202,6 +202,8 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
         try {
             assert lastRecordHashingResult != null : "initRunningHash() must be called before writeRecordStreamItems";
             assert currentRecordFileWriter != null : "switchBlocks() must be called before writeRecordStreamItems";
+            // FUTURE: consider implications on a reconnect scenario! When the currentRecordFileWriter isn't created in
+            // the same way, there can be NPE's
             requireNonNull(recordStreamItems);
 
             // serialize all the record stream items in background thread into SerializedSingleTransaction objects

@@ -24,6 +24,7 @@ jmhModuleInfo {
     requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
+    requires("com.swirlds.metrics.api")
     requires("com.swirlds.config.extensions")
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkledb")

@@ -388,7 +388,7 @@ public final class SyncUtils {
      */
     @Nullable
     private static ShadowEvent getLatestSelfEventInShadowgraph(
-            @NonNull final ShadowGraph shadowGraph, @NonNull final NodeId selfId) {
+            @NonNull final Shadowgraph shadowGraph, @NonNull final NodeId selfId) {
 
         final List<ShadowEvent> tips = shadowGraph.getTips();
         for (final ShadowEvent tip : tips) {

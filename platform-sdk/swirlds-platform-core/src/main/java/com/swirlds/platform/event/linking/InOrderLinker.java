@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -33,6 +33,7 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -57,7 +58,7 @@ import org.apache.logging.log4j.Logger;
  *     <li>The parent's generation does not match the generation claimed by the child event</li>
  *     <li>The parent's time created is greater than or equal to the child's time created</li>
  * </ul>
- * Note: This class doesn't have a direct dependency on the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph ShadowGraph},
+ * Note: This class doesn't have a direct dependency on the {@link Shadowgraph ShadowGraph},
  * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
 public class InOrderLinker {

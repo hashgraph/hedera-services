@@ -19,6 +19,8 @@ package com.hedera.node.app.spi.state;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A base class for implementations of {@link ReadableKVState} and {@link WritableKVState}.
@@ -38,9 +40,11 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * changed before we got to handle transaction. If the value is "null", this means it was NOT
      * FOUND when we looked it up.
      */
-    private final Map<K, V> readCache = Collections.synchronizedMap(new HashMap<>());
+    private final ConcurrentMap<K, V> readCache = new ConcurrentHashMap<>();
 
     private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
+
+    private static final Object marker = new Object();
 
     /**
      * Create a new StateBase.
@@ -69,7 +73,8 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
             final var value = readFromDataSource(key);
             markRead(key, value);
         }
-        return readCache.get(key);
+        final var value = readCache.get(key);
+        return (value == marker) ? null : value;
     }
 
     /**
@@ -121,7 +126,11 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @param value The value
      */
     protected final void markRead(@NonNull K key, @Nullable V value) {
-        readCache.put(key, value);
+        if (value == null) {
+            readCache.put(key, (V) marker);
+        } else {
+            readCache.put(key, value);
+        }
     }
 
     /**

@@ -167,11 +167,11 @@ public interface TokenServiceApi {
     /**
      * Updates the storage metadata for the given contract.
      *
-     * @param accountId the id of the contract
+     * @param contractID the id of the contract
      * @param firstKey       the first key in the storage linked list, {@link Bytes#EMPTY} if the storage is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(@NonNull ContractID contractID, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Charges the payer the given network fee, and records that fee in the given record builder.
@@ -213,7 +213,7 @@ public interface TokenServiceApi {
      * @param id the id of the account
      * @return the number of storage slots used by the given account before any changes were made
      */
-    long originalKvUsageFor(@NonNull AccountID id);
+    long originalKvUsageFor(@NonNull ContractID id);
 
     /**
      * Updates the passed contract
