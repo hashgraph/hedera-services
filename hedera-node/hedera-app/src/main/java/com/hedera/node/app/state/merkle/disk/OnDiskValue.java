@@ -106,11 +106,7 @@ public class OnDiskValue<V> implements VirtualValue {
         if (md == null) {
             throw new IllegalStateException("Cannot deserialize on-disk value, null metadata / codec");
         }
-        try {
-            value = readFromStream(in, md.stateDefinition().valueCodec());
-        } catch (final ParseException e) {
-            throw new IOException(e);
-        }
+        value = readFromStream(in, md.stateDefinition().valueCodec());
     }
 
     /** {@inheritDoc} */

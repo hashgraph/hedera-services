@@ -138,15 +138,11 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        try {
-            final var keySerdes = md.stateDefinition().keyCodec();
-            final var valueSerdes = md.stateDefinition().valueCodec();
-            final var k = readFromStream(in, keySerdes);
-            this.key = new InMemoryKey<>(k);
-            this.val = readFromStream(in, valueSerdes);
-        } catch (final ParseException e) {
-            throw new IOException(e);
-        }
+        final var keySerdes = md.stateDefinition().keyCodec();
+        final var valueSerdes = md.stateDefinition().valueCodec();
+        final var k = readFromStream(in, keySerdes);
+        this.key = new InMemoryKey<>(k);
+        this.val = readFromStream(in, valueSerdes);
     }
 
     /** {@inheritDoc} */

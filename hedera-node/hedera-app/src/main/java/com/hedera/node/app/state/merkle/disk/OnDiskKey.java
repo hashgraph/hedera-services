@@ -115,11 +115,7 @@ public final class OnDiskKey<K> implements VirtualKey {
         if ((md == null) || ((codec = md.stateDefinition().keyCodec()) == null)) {
             throw new IllegalStateException("Cannot deserialize on-disk key, null metadata / codec");
         }
-        try {
-            key = readFromStream(in, codec);
-        } catch (ParseException e) {
-            throw new IOException(e);
-        }
+        key = readFromStream(in, codec);
     }
 
     @Override

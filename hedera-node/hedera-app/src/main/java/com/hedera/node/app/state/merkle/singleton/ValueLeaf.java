@@ -119,11 +119,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
 
-        try {
-            this.val = readFromStream(in, codec);
-        } catch (final ParseException e) {
-            throw new IOException(e);
-        }
+        this.val = readFromStream(in, codec);
     }
 
     /**
