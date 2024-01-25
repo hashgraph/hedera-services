@@ -168,6 +168,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                     offeredGasPrice,
                     accountStore.loadAccount(relayerId),
                     maxGasAllowanceInTinybars);
+            result.setSignerNonce(worldState.get(senderId.asEvmAddress()).getNonce());
         }
 
         /* --- Externalise result --- */

@@ -341,4 +341,13 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         });
         return this;
     }
+
+    public ContractFnResultAsserts signerNonce(final Long expectedNonce) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            assertEquals(
+                    expectedNonce.longValue(), result.getSignerNonce().getValue(), "Wrong signer nonce expectation");
+        });
+        return this;
+    }
 }

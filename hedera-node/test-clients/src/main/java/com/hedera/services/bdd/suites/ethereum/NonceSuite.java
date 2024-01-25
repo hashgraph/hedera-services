@@ -20,8 +20,11 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -80,6 +83,7 @@ public class NonceSuite extends HapiSuite {
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
     private static final String CHECK_BALANCE_REPEATEDLY_FUNCTION = "checkBalanceRepeatedly";
+    private static final String TX = "tx";
 
     public static void main(String... args) {
         new NonceSuite().runSuiteAsync();
@@ -237,9 +241,15 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(21_000L)
-                        .hasKnownStatus(INSUFFICIENT_GAS))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_GAS)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -259,9 +269,15 @@ public class NonceSuite extends HapiSuite {
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(0L)
                         .maxGasAllowance(0L)
-                        .hasKnownStatus(INSUFFICIENT_TX_FEE))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_TX_FEE)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -282,9 +298,15 @@ public class NonceSuite extends HapiSuite {
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(LOW_GAS_PRICE)
-                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_PAYER_BALANCE)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -306,9 +328,15 @@ public class NonceSuite extends HapiSuite {
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(LOW_GAS_PRICE)
                         .maxGasAllowance(0L)
-                        .hasKnownStatus(INSUFFICIENT_TX_FEE))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_TX_FEE)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -329,9 +357,15 @@ public class NonceSuite extends HapiSuite {
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(ENOUGH_GAS_PRICE)
-                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_PAYER_BALANCE)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -351,9 +385,15 @@ public class NonceSuite extends HapiSuite {
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(0L)
                         .sending(5L)
-                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_PAYER_BALANCE)
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -366,7 +406,8 @@ public class NonceSuite extends HapiSuite {
                 .when(contractCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
                         .gas(ENOUGH_GAS_LIMIT)
                         .payingWith(RELAYER)
-                        .signingWith(RELAYER))
+                        .signingWith(RELAYER)
+                        .via(TX))
                 .then(getAccountInfo(RELAYER).has(accountWith().nonce(0L)));
     }
 
@@ -384,9 +425,14 @@ public class NonceSuite extends HapiSuite {
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
                         .nonce(0)
-                        .gasLimit(ENOUGH_GAS_LIMIT))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -404,9 +450,15 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -424,9 +476,15 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(21_064L)
-                        .hasKnownStatus(INSUFFICIENT_GAS))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_GAS)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -451,9 +509,15 @@ public class NonceSuite extends HapiSuite {
                                 .payingWith(RELAYER)
                                 .nonce(0)
                                 .gasLimit(ENOUGH_GAS_LIMIT)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -477,9 +541,15 @@ public class NonceSuite extends HapiSuite {
                                 .payingWith(RELAYER)
                                 .nonce(0)
                                 .gasLimit(ENOUGH_GAS_LIMIT)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -503,9 +573,15 @@ public class NonceSuite extends HapiSuite {
                                 .payingWith(RELAYER)
                                 .nonce(0)
                                 .gasLimit(ENOUGH_GAS_LIMIT)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -544,9 +620,15 @@ public class NonceSuite extends HapiSuite {
                                 .payingWith(RELAYER)
                                 .nonce(0)
                                 .gasLimit(ENOUGH_GAS_LIMIT)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(MAX_CHILD_RECORDS_EXCEEDED)
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -570,9 +652,14 @@ public class NonceSuite extends HapiSuite {
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gasLimit(ENOUGH_GAS_LIMIT))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .gasLimit(ENOUGH_GAS_LIMIT)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -591,9 +678,14 @@ public class NonceSuite extends HapiSuite {
                                 .type(EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
-                                .nonce(0))))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(1L)));
+                                .nonce(0)
+                                .via(TX))))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().signerNonce(1L))));
     }
 
     @Override
