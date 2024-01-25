@@ -98,6 +98,9 @@ class HederaEvmTxProcessorTest {
     @Mock
     private BlockMetaSource blockMetaSource;
 
+    @Mock
+    private EvmConfiguration evmConfiguration;
+
     private final HederaEvmAccount sender =
             new HederaEvmAccount(Address.fromHexString("0x000000000000000000000000000000000000071e"));
     private final Address senderAddress = Address.fromHexString("0x000000000000000000000000000000000000070e");
@@ -118,7 +121,9 @@ class HederaEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        final var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        final var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {

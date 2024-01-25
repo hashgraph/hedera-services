@@ -53,7 +53,8 @@ document which major hardfork corresponds to each internal version.
 |---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                                                                                                           |
 |        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583. |
-|              ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                                                                                                                 |
+|        `v0.38` | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Adds `PUSH0` opcode needed for solidity compatibility                                                                                                                     |
+|        `v0.46` | Shanghai                                                                                                          | Change to non-existing call behavior for EVM Equivalence                                                                                                                  |
 
 ## Open Questions
 
@@ -62,6 +63,7 @@ The exact timing of versions that correspond to Ethereum Mainnet forks is out of
 ## Acceptance Tests
 
 Acceptance tests use the Paris re-definition of `DIFFICULTY` as the test for activation
+
 * Test that when dynamic is set to false that changing the version has no effect
 * Test when dynamic is set to true the evm version can change at each transaction
 * verify 0.30 still returns zeros for difficulty
