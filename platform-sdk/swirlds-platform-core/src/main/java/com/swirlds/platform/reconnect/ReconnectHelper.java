@@ -19,11 +19,11 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.logging.legacy.payload.ReconnectFinishPayload;
 import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
 import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;

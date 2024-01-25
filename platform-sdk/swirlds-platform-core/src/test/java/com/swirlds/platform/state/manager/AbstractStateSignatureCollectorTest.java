@@ -22,11 +22,11 @@ import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.bui
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
