@@ -42,11 +42,20 @@ public record TransactionParts(
     public static TransactionParts from(@NonNull final Transaction txn) {
         try {
             final var body = extractTransactionBody(txn);
-            return new TransactionParts(txn, body, functionOf(body));
+            return new TransactionParts(txn, body, computeFunction(body));
         } catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
             // Fail immediately with invalid transactions that should not be
             // in any production record stream
             throw new IllegalArgumentException(e);
+        }
+    }
+
+    private static HederaFunctionality computeFunction(@NonNull final TransactionBody body)
+            throws UnknownHederaFunctionality {
+        if (body.hasNodeStakeUpdate()) {
+            return HederaFunctionality.NodeStakeUpdate;
+        } else {
+            return functionOf(body);
         }
     }
 }
