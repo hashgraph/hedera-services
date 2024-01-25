@@ -67,7 +67,7 @@ import java.time.Duration;
  *                                            events to be added to the hashgraph without their parents being added. Or
  *                                            Both. Use this with caution.
  * @param databaseDirectory                   the directory where preconsensus events will be stored, relative to
- *                                            {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
+ *                                            {@link com.swirlds.common.config.StateCommonConfig#savedStateDirectory()}.
  * @param replayQueueSize                     the size of the queue used for holding preconsensus events that are
  *                                            waiting to be replayed
  * @param replayHashPoolSize                  the number of threads used for hashing events during replay
