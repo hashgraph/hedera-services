@@ -74,6 +74,8 @@ class ActiveContractVerificationStrategyTest {
     private static final Key CRYPTO_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("1234567812345678123456781234567812345678123456781234567812345678"))
             .build();
+    private static final ContractID contractID =
+            ContractID.newBuilder().contractNum(ACTIVE_NUMBER).build();
 
     @Mock
     private HandleContext context;
@@ -81,7 +83,7 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void validatesKeysAsExpectedWhenDelegatePermissionNotRequiredAndUsingTopLevelSigs() {
         final var subject =
-                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, false, UseTopLevelSigs.YES);
+                new ActiveContractVerificationStrategy(contractID, ACTIVE_ADDRESS, false, UseTopLevelSigs.YES);
 
         assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
         assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));
@@ -100,7 +102,7 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void validatesKeysAsExpectedWhenDelegatePermissionRequiredAndUsingTopLevelSigs() {
         final var subject =
-                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.YES);
+                new ActiveContractVerificationStrategy(contractID, ACTIVE_ADDRESS, true, UseTopLevelSigs.YES);
 
         assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
         assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));
@@ -119,7 +121,7 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void validatesKeysAsExpectedWhenDelegatePermissionRequiredAndNotUsingTopLevelSigs() {
         final var subject =
-                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.NO);
+                new ActiveContractVerificationStrategy(contractID, ACTIVE_ADDRESS, true, UseTopLevelSigs.NO);
 
         assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
         assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));

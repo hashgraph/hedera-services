@@ -66,6 +66,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   UnevenStake:
     name: UnevenStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -82,6 +84,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - SimilarStake
     if: ${{ !cancelled() && always() }}
@@ -101,6 +105,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - UnevenStake
     if: ${{ !cancelled() && always() }}
@@ -120,6 +126,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - MinStake
     if: ${{ !cancelled() && always() }}
@@ -140,6 +148,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   NewNodesUnevenStake:
     name: NewNodesUnevenStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -156,6 +166,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - NewNodesSimilarStake
     if: ${{ !cancelled() && always() }}
@@ -176,6 +188,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - NewNodesUnevenStake
     if: ${{ !cancelled() && always() }}
@@ -196,6 +210,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - NewNodesMinStake
     if: ${{ !cancelled() && always() }}
