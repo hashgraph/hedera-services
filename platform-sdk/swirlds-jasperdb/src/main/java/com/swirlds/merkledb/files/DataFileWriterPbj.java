@@ -20,9 +20,9 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.MappedByteBuffer;
@@ -213,11 +213,11 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         final long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         final int size = Math.toIntExact(protoData.remaining());
-        if (writingPbjData.remaining() < ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
+        if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
             moveWritingBuffer(byteOffset);
         }
         try {
-            ProtoUtils.writeDelimited(writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(protoData));
+            ProtoWriterTools.writeDelimited(writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(protoData));
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
@@ -241,11 +241,11 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
         final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
-        if (writingPbjData.remaining() < ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize)) {
+        if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize)) {
             moveWritingBuffer(byteOffset);
         }
         try {
-            ProtoUtils.writeDelimited(
+            ProtoWriterTools.writeDelimited(
                     writingPbjData,
                     FIELD_DATAFILE_ITEMS,
                     dataItemSize,

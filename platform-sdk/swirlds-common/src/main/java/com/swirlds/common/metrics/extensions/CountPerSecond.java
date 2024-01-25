@@ -17,16 +17,13 @@
 package com.swirlds.common.metrics.extensions;
 
 import static com.swirlds.base.ArgumentUtils.throwArgBlank;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metrics;
 import java.util.Objects;
 
 /**
@@ -71,7 +68,7 @@ public class CountPerSecond {
     }
 
     /**
-     * An implementation of a {@link IntegerAccumulator} that does not change the value
+     * An implementation of a {@link com.swirlds.metrics.api.IntegerAccumulator} that does not change the value
      */
     public static int noChangeAccumulator(final int currentValue, final int ignored) {
         return currentValue;
@@ -126,7 +123,7 @@ public class CountPerSecond {
     }
 
     /**
-     * Configuration of a {@link LongAccumulator}
+     * Configuration of a {@link com.swirlds.metrics.api.LongAccumulator}
      */
     public static final class Config {
 
@@ -144,7 +141,7 @@ public class CountPerSecond {
          * @param name     a short name for the metric
          */
         public Config(final String category, final String name) {
-            this(category, name, name, "Hz", FORMAT_10_2);
+            this(category, name, name, "Hz", FloatFormats.FORMAT_10_2);
         }
 
         private Config(
@@ -161,7 +158,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Getter of the {@link Metric#getCategory() Metric.category}
+         * Getter of the {@link com.swirlds.metrics.api.Metric#getCategory() Metric.category}
          *
          * @return the {@code category}
          */
@@ -170,7 +167,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Getter of the {@link Metric#getName() Metric.name}
+         * Getter of the {@link com.swirlds.metrics.api.Metric#getName() Metric.name}
          *
          * @return the {@code name}
          */
@@ -179,7 +176,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Getter of the {@link Metric#getDescription() Metric.description}
+         * Getter of the {@link com.swirlds.metrics.api.Metric#getDescription() Metric.description}
          *
          * @return the {@code description}
          */
@@ -188,7 +185,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         * Sets the {@link com.swirlds.metrics.api.Metric#getDescription() Metric.description} in fluent style.
          *
          * @param description the description
          * @return a new configuration-object with updated {@code description}
@@ -200,7 +197,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Getter of the {@link Metric#getUnit() Metric.unit}
+         * Getter of the {@link com.swirlds.metrics.api.Metric#getUnit() Metric.unit}
          *
          * @return the {@code unit}
          */
@@ -209,7 +206,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         * Sets the {@link com.swirlds.metrics.api.Metric#getUnit() Metric.unit} in fluent style.
          *
          * @param unit the unit
          * @return a new configuration-object with updated {@code unit}
@@ -220,7 +217,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Getter of the {@link Metric#getFormat() Metric.format}
+         * Getter of the {@link com.swirlds.metrics.api.Metric#getFormat() Metric.format}
          *
          * @return the format-{@code String}
          */
@@ -229,7 +226,7 @@ public class CountPerSecond {
         }
 
         /**
-         * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
+         * Sets the {@link com.swirlds.metrics.api.Metric#getFormat() Metric.format} in fluent style.
          *
          * @param format the format-string
          * @return a new configuration-object with updated {@code format}

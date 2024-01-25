@@ -34,7 +34,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -48,32 +48,31 @@ import org.junit.jupiter.api.Test;
  */
 class PlatformWiringTests {
     @Test
-    @DisplayName("Assert that all input wires are bound to something, when using new intake")
+    @DisplayName("Assert that all input wires are bound to something")
     void testBindings() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
 
-        wiring.bindIntake(
+        wiring.bind(
+                mock(EventHasher.class),
                 mock(InternalEventValidator.class),
                 mock(EventDeduplicator.class),
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
-                mock(EventCreationManager.class),
-                mock(PcesSequencer.class),
-                mock(SwirldStateManager.class),
-                mock(StateSignatureCollector.class));
-        wiring.bind(
-                mock(EventHasher.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
-                mock(ShadowGraph.class),
+                mock(Shadowgraph.class),
+                mock(PcesSequencer.class),
+                mock(EventCreationManager.class),
+                mock(SwirldStateManager.class),
+                mock(StateSignatureCollector.class),
                 mock(ConsensusHashManager.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());

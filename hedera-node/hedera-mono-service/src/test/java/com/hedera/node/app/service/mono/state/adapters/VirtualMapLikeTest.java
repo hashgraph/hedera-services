@@ -28,10 +28,10 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSerializer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;

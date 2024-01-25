@@ -16,13 +16,11 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -115,10 +113,10 @@ public class IssMetrics {
         Objects.requireNonNull(metrics, "metrics must not be null");
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
 
-        issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(INTERNAL_CATEGORY, "issCount")
+        issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(Metrics.INTERNAL_CATEGORY, "issCount")
                 .withDescription("the number of nodes that currently disagree with the consensus hash"));
 
-        issWeightGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issWeight")
+        issWeightGage = metrics.getOrCreate(new LongGauge.Config(Metrics.INTERNAL_CATEGORY, "issWeight")
                 .withDescription("the amount of weight tied up by ISS events"));
 
         for (final Address address : addressBook) {

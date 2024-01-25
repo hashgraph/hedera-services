@@ -59,7 +59,7 @@ class PlatformDataTests {
         final int randomBound = 10_000;
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
-        final int minGenInfoSize = random.nextInt(100) + 1;
+        final int minGenInfoSize = random.nextInt(1, MinGenInfo.MAX_MINGEN_INFO_SIZE);
         for (int i = 0; i < minGenInfoSize; i++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(randomBound), random.nextLong(randomBound)));
         }

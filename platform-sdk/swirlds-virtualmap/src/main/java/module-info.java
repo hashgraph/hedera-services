@@ -10,6 +10,7 @@ open module com.swirlds.virtualmap {
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;

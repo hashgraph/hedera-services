@@ -42,7 +42,7 @@ public class OpUtils {
         if (accessTracker != null) {
             final var worldUpdater = proxyUpdaterFor(frame);
             final var contractId = worldUpdater.getHederaContractId(frame.getRecipientAddress());
-            accessTracker.trackIfFirstRead(contractId.contractNumOrThrow(), key, value);
+            accessTracker.trackIfFirstRead(contractId, key, value);
         }
     }
 }

@@ -48,7 +48,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
@@ -71,6 +71,7 @@ import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.function.LongSupplier;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -266,88 +267,77 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Bind the intake components to the wiring.
-     * <p>
-     * Future work: this method should be merged with {@link #bind} once the feature flag for the new intake pipeline
-     * has been removed
+     * Bind components to the wiring.
      *
+     * @param eventHasher             the event hasher to bind
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
      * @param eventSignatureValidator the event signature validator to bind
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
-     * @param eventCreationManager    the event creation manager to bind
+     * @param signedStateFileManager  the signed state file manager to bind
+     * @param stateSigner             the state signer to bind
+     * @param pcesReplayer            the PCES replayer to bind
+     * @param pcesWriter              the PCES writer to bind
+     * @param eventDurabilityNexus    the event durability nexus to bind
+     * @param shadowgraph             the shadowgraph to bind
      * @param pcesSequencer           the PCES sequencer to bind
+     * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
      * @param stateSignatureCollector the signed state manager to bind
      */
-    public void bindIntake(
+    public void bind(
+            @NonNull final EventHasher eventHasher,
             @NonNull final InternalEventValidator internalEventValidator,
             @NonNull final EventDeduplicator eventDeduplicator,
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
-            @NonNull final EventCreationManager eventCreationManager,
+            @NonNull final SignedStateFileManager signedStateFileManager,
+            @NonNull final StateSigner stateSigner,
+            @NonNull final PcesReplayer pcesReplayer,
+            @NonNull final PcesWriter pcesWriter,
+            @NonNull final EventDurabilityNexus eventDurabilityNexus,
+            @NonNull final Shadowgraph shadowgraph,
             @NonNull final PcesSequencer pcesSequencer,
+            @NonNull final EventCreationManager eventCreationManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateSignatureCollector stateSignatureCollector) {
+            @NonNull final StateSignatureCollector stateSignatureCollector,
+            @NonNull final ConsensusHashManager consensusHashManager) {
 
+        eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
         eventSignatureValidatorWiring.bind(eventSignatureValidator);
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
-        eventCreationManagerWiring.bind(eventCreationManager);
-        pcesSequencerWiring.bind(pcesSequencer);
-        applicationTransactionPrehandlerWiring.bind(swirldStateManager);
-        stateSignatureCollectorWiring.bind(stateSignatureCollector);
-    }
-
-    /**
-     * Bind components to the wiring.
-     *
-     * @param eventHasher            the event hasher to bind
-     * @param signedStateFileManager the signed state file manager to bind
-     * @param stateSigner            the state signer to bind
-     * @param pcesReplayer           the PCES replayer to bind
-     * @param pcesWriter             the PCES writer to bind
-     * @param eventDurabilityNexus   the event durability nexus to bind
-     * @param shadowgraph            the shadowgraph to bind
-     */
-    public void bind(
-            @NonNull final EventHasher eventHasher,
-            @NonNull final SignedStateFileManager signedStateFileManager,
-            @NonNull final StateSigner stateSigner,
-            @NonNull final PcesReplayer pcesReplayer,
-            @NonNull final PcesWriter pcesWriter,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus,
-            @NonNull final ShadowGraph shadowgraph,
-            @NonNull final ConsensusHashManager consensusHashManager) {
-
-        eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
+        pcesSequencerWiring.bind(pcesSequencer);
+        eventCreationManagerWiring.bind(eventCreationManager);
+        applicationTransactionPrehandlerWiring.bind(swirldStateManager);
+        stateSignatureCollectorWiring.bind(stateSignatureCollector);
         issDetectorWiring.bind(consensusHashManager);
     }
 
     /**
-     * Get the input wire for the internal event validator.
+     * Get the input wire for the hasher.
      * <p>
      * Future work: this is a temporary hook to allow events from gossip to use the new intake pipeline. This method
      * will be removed once gossip is moved to the new framework
      *
-     * @return the input method for the internal event validator, which is the first step in the intake pipeline
+     * @return the input method for the hasher, which is the first step in the intake pipeline
      */
     @NonNull
     public InputWire<GossipEvent> getEventInput() {
-        return internalEventValidatorWiring.eventInput();
+        return eventHasherWiring.eventInput();
     }
 
     /**
@@ -422,6 +412,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for passing a PCES iterator to the replayer
      */
+    @NonNull
     public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
         return pcesReplayerWiring.pcesIteratorInputWire();
     }
@@ -431,6 +422,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
+    @NonNull
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
     }
@@ -440,6 +432,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for the PCES writer minimum generation to store
      */
+    @NonNull
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
         return pcesWriterWiring.minimumAncientIdentifierToStoreInputWire();
     }
@@ -449,8 +442,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input wire for the PCES writer to register a discontinuity
      */
+    @NonNull
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
         return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get a supplier for the number of unprocessed tasks in the hasher.
+     *
+     * @return a supplier for the number of unprocessed tasks in the hasher
+     */
+    @NonNull
+    public LongSupplier getHasherUnprocessedTaskCountSupplier() {
+        return eventHasherWiring.unprocessedTaskCountSupplier();
     }
 
     /**
@@ -459,6 +463,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the output wire for keystone event sequence numbers
      */
+    @NonNull
     public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
         return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }

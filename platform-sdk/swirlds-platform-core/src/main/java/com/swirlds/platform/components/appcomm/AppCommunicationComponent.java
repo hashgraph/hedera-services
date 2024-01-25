@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;

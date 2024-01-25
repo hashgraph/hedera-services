@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.CompareTo.max;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
@@ -746,7 +747,7 @@ public class SyncTests {
                     .updateNonExpiredEventWindow(new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
                             0 /* ignored by shadowgraph */,
-                            maxGen.get() - 1,
+                            max(EventConstants.FIRST_GENERATION, maxGen.get() - 1),
                             GENERATION_THRESHOLD));
             when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
@@ -1087,7 +1088,8 @@ public class SyncTests {
             when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
         });
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            listener.getShadowGraph().startFromGeneration(caller.getConsensus().getMinGenerationNonAncient());
+            listener.getShadowGraph()
+                    .startWithExpiredThreshold(caller.getConsensus().getMinGenerationNonAncient());
         });
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());

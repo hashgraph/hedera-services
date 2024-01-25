@@ -64,6 +64,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   dynamic-freeze:
     name: DynamicFreeze
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -80,6 +82,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - assorted
     if: ${{ !cancelled() && always() }}
@@ -99,6 +103,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     if: ${{ !cancelled() && always() }}
   fcmfcq:
     name: FCMFCQ
@@ -116,6 +122,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     if: ${{ !cancelled() && always() }}
   genesis:
     name: Genesis
@@ -133,6 +141,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     if: ${{ !cancelled() && always() }}
 #  recovery:
 #    name: Recovery
@@ -169,6 +179,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - genesis
     if: ${{ !cancelled() && always() }}

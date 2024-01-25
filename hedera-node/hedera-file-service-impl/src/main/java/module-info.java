@@ -1,5 +1,6 @@
 module com.hedera.node.app.service.file.impl {
     requires com.fasterxml.jackson.databind;
+    requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires org.apache.commons.lang3;
