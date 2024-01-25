@@ -172,12 +172,15 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
         // Make sure the path is valid for the original state
         checkValidNode(originalChild, originalState);
         final Future<Hash> hashPrefetchFuture = hashPrefetch.remove(originalChild);
-        assert hashPrefetchFuture != null;
         final Hash hash;
-        try {
-            hash = hashPrefetchFuture.get();
-        } catch (final Exception e) {
-            throw new MerkleSynchronizationException("Cannot load node hash. path = " + originalChild, e);
+        if (hashPrefetchFuture != null) {
+            try {
+                hash = hashPrefetchFuture.get();
+            } catch (final Exception e) {
+                throw new MerkleSynchronizationException("Cannot load node hash. path = " + originalChild, e);
+            }
+        } else {
+            hash = originalRecords.findHash(originalChild);
         }
 
         // The hash must have been specified by this point. The original tree was hashed before
