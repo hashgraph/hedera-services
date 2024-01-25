@@ -22,7 +22,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STAT
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -40,14 +40,14 @@ import org.apache.logging.log4j.Logger;
  */
 public class SignedStateFilePath {
     private static final Logger logger = LogManager.getLogger(SignedStateFilePath.class);
-    final StateConfig stateConfig;
+    final StateCommonConfig stateConfig;
 
     /**
      * Create a new instance of this class.
      *
      * @param stateConfig the config that contains the location of the saved state directory
      */
-    public SignedStateFilePath(@NonNull final StateConfig stateConfig) {
+    public SignedStateFilePath(@NonNull final StateCommonConfig stateConfig) {
         this.stateConfig = stateConfig;
     }
 
