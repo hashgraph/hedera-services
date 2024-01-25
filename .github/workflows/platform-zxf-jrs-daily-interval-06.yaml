@@ -64,6 +64,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   iss:
     name: ISS
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -80,6 +82,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - abbrev
     if: ${{ !cancelled() && always() }}
@@ -99,6 +103,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - iss
     if: ${{ !cancelled() && always() }}
@@ -118,6 +124,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - addressBook
     if: ${{ !cancelled() && always() }}
@@ -137,6 +145,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - addressBook-add-remove
     if: ${{ !cancelled() && always() }}

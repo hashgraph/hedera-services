@@ -27,7 +27,7 @@ import java.util.Objects;
  * verification strategy used within the EVM to check receiver signature requirements.
  */
 public class ActiveContractVerificationStrategy implements VerificationStrategy {
-    private final long activeNumber;
+    private final ContractID activeContractID;
     private final Bytes activeAddress;
     private final boolean requiresDelegatePermission;
     private final UseTopLevelSigs useTopLevelSigs;
@@ -38,11 +38,11 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     }
 
     public ActiveContractVerificationStrategy(
-            final long activeNumber,
+            final ContractID activeContractID,
             @NonNull final Bytes activeAddress,
             final boolean requiresDelegatePermission,
             @NonNull final UseTopLevelSigs useTopLevelSigs) {
-        this.activeNumber = activeNumber;
+        this.activeContractID = activeContractID;
         this.useTopLevelSigs = Objects.requireNonNull(useTopLevelSigs);
         this.activeAddress = Objects.requireNonNull(activeAddress);
         this.requiresDelegatePermission = requiresDelegatePermission;
@@ -69,8 +69,8 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
         }
     }
 
-    public long getActiveNumber() {
-        return activeNumber;
+    public ContractID getActiveContractID() {
+        return activeContractID;
     }
 
     public Bytes getActiveAddress() {
@@ -82,7 +82,9 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     }
 
     private Decision decisionFor(@NonNull final ContractID authorizedId) {
-        if (authorizedId.hasContractNum() && authorizedId.contractNumOrThrow() == activeNumber) {
+        if (authorizedId.hasContractNum()
+                && activeContractID.hasContractNum()
+                && authorizedId.contractNumOrThrow().equals(activeContractID.contractNumOrThrow())) {
             return Decision.VALID;
         } else if (authorizedId.hasEvmAddress() && activeAddress.equals(authorizedId.evmAddress())) {
             return Decision.VALID;

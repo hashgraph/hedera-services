@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_RE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertExhaustsResourceLimit;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
@@ -57,8 +58,8 @@ class StorageSizeValidatorTest {
     @Test
     void throwsOnTooManyIndividualPairs() {
         final var pretendMaxIndividual = 666L;
-        final var underLimitNumber = 123L;
-        final var overLimitNumber = 321L;
+        final var underLimitNumber = ContractID.newBuilder().contractNum(123L).build();
+        final var overLimitNumber = ContractID.newBuilder().contractNum(321L).build();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("contracts.maxKvPairs.individual", pretendMaxIndividual)
                 .getOrCreateConfig();
