@@ -48,6 +48,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class CustomGasCharging {
+    public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
     private final GasCalculator gasCalculator;
 
     @Inject
@@ -166,7 +167,9 @@ public class CustomGasCharging {
         final var fee = Math.min(
                 gasCostGiven(intrinsicGas, context.gasPrice()),
                 senderAccount.getBalance().toLong());
-        worldUpdater.collectFee(sender, fee);
+        // protective check to ensure that the fee is not excessive
+        final var protectedFee = Math.min(fee, ONE_HBAR_IN_TINYBARS);
+        worldUpdater.collectFee(sender, protectedFee);
     }
 
     private void chargeWithOnlySender(
