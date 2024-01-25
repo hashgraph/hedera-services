@@ -47,6 +47,7 @@ import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -120,6 +121,9 @@ class FileUpdateTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private FeeAccumulator feeAccumulator;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private FileSignatureWaiversImpl waivers;
+
     protected Configuration testConfig;
 
     private FileUpdateHandler subject;
@@ -127,7 +131,7 @@ class FileUpdateTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new FileUpdateHandler(fileOpsUsage);
+        subject = new FileUpdateHandler(fileOpsUsage, waivers);
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);

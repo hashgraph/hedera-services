@@ -131,6 +131,14 @@ public class RcDiff implements Callable<Integer> {
                 || firstEncounteredDifference == TRANSACTION_MISMATCH) {
             sb.append("\nFor body,\n")
                     .append(Objects.requireNonNull(diff.firstEntry()).body());
+            sb.append("➡️  Expected Receipt ")
+                    .append(Objects.requireNonNull(diff.firstEntry())
+                            .transactionRecord()
+                            .getReceipt())
+                    .append(" but was ")
+                    .append(Objects.requireNonNull(diff.secondEntry())
+                            .transactionRecord()
+                            .getReceipt());
         }
         return sb.toString();
     }
