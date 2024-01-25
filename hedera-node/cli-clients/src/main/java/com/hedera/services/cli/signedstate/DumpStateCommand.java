@@ -20,14 +20,15 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Set;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
+
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 @Command(
@@ -325,12 +326,26 @@ public class DumpStateCommand extends AbstractCommand {
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit summary information")
-                    final boolean emitSummary) {
+                    final boolean emitSummary,
+            @Option(
+                            names = {"--migrate"},
+                            description =
+                                    "migrate from mono-service representation to modular-service representation (before dump)")
+                    final boolean withMigration,
+            @Option(
+                            names = {"--validate-migration"},
+                            description = "validate the migrated token associations")
+                    final boolean withValidationOfMigration) {
         Objects.requireNonNull(associationsPath);
         init();
         System.out.println("=== token associations ===");
         DumpTokenAssociationsSubcommand.doit(
-                parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+                parent.signedState,
+                associationsPath,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                withMigration ? WithMigration.YES : WithMigration.NO,
+                withValidationOfMigration ? WithValidation.YES : WithValidation.NO,
+                parent.verbosity);
         finish();
     }
 
