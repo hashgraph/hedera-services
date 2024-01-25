@@ -37,6 +37,7 @@ public class EnvFilterOp extends UtilOp {
     }
 
     private final EnvType allowedEnvType;
+
     private final HapiSpecOperation[] ops;
 
     public EnvFilterOp(@NonNull final EnvType allowedEnvType, @NonNull final HapiSpecOperation[] ops) {
