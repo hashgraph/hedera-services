@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -61,8 +60,6 @@ import org.mockito.Mockito;
 
 @DisplayName("ConsensusHashManager Tests")
 class ConsensusHashManagerTests {
-    /** the default epoch hash to use */
-    private static final Hash DEFAULT_EPOCH_HASH = null;
 
     @Test
     @DisplayName("Valid Signatures After Hash Test")
@@ -80,13 +77,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -183,13 +176,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         manager.overridingState(mockState(0L, selfHashes.getFirst()));
 
@@ -303,13 +292,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -376,13 +361,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         // Start collecting data for rounds.
         // After this method, round 0 will be too old and will not be tracked.
@@ -432,13 +413,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -474,6 +451,8 @@ class ConsensusHashManagerTests {
 
         // Shift the window even though we have not added enough data for a decision
         manager.roundCompleted(roundsNonAncient);
+
+        System.out.println(manager.getIssList());
 
         assertEquals(0, manager.getIssCount(), "there wasn't enough data submitted to observe the ISS");
     }
@@ -529,13 +508,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -599,13 +574,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS,
-                null);
+                DO_NOT_IGNORE_ROUNDS
+        );
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -663,13 +634,9 @@ class ConsensusHashManagerTests {
 
         final ConsensusHashManagerTestHelper manager = new ConsensusHashManagerTestHelper(
                 platformContext,
-                Time.getCurrent(),
                 addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                1,
-                null);
+                1
+        );
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {

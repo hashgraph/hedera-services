@@ -403,5 +403,6 @@ class ConsensusHashFinderTests {
                         .flatMap(entry -> entry.getValue().getNodes().stream())
                         .collect(Collectors.toSet()),
                 "disagreeing node set incorrect");
+        assertTrue(hashFinder.hasDisagreement(), "should have a disagreement");
     }
 }

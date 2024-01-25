@@ -117,7 +117,7 @@ public class ConsensusHashManager {
      * @param ignoredRound                 a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if
      *                                     all rounds should be validated.
      */
-    public ConsensusHashManager( //TODO return iss notification
+    public ConsensusHashManager(
             @NonNull final PlatformContext platformContext,
             final AddressBook addressBook,
             final Hash currentEpochHash,
@@ -229,9 +229,11 @@ public class ConsensusHashManager {
      */
     public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return transactions.stream().map(
-                        t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
-                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
+        return returnList(
+                transactions.stream().map(
+                                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(),
+                                        t.softwareVersion()))
+                        .toList());
     }
 
     /**
@@ -305,9 +307,8 @@ public class ConsensusHashManager {
 
     public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
-            stateHashedObserver(state.get().getRound(), state.get().getState().getHash());
+            return returnList(stateHashedObserver(state.get().getRound(), state.get().getState().getHash()));
         }
-        return null;
     }
 
     /**
@@ -343,12 +344,8 @@ public class ConsensusHashManager {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
             roundCompleted(round);
-            final IssNotification issNotification = stateHashedObserver(round, stateHash);
-            if (issNotification != null) {
-                return List.of(issNotification);
-            }
+            return returnList(stateHashedObserver(round, stateHash));
         }
-        return null;
     }
 
     /**
@@ -475,5 +472,14 @@ public class ConsensusHashManager {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
+    }
+
+    private List<IssNotification> returnList(IssNotification n) {
+        return n == null ? null : List.of(n);
+    }
+
+    private List<IssNotification> returnList(List<IssNotification> list) {
+        return list == null ? null : list.stream().filter(Objects::nonNull)
+                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 }
