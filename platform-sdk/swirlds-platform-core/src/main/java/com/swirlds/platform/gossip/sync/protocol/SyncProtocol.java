@@ -27,7 +27,7 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -54,7 +54,7 @@ public class SyncProtocol implements Protocol {
     /**
      * The shadow graph synchronizer, responsible for actually doing the sync
      */
-    private final ShadowGraphSynchronizer synchronizer;
+    private final ShadowgraphSynchronizer synchronizer;
 
     /**
      * Manager to determine whether this node has fallen behind
@@ -113,7 +113,7 @@ public class SyncProtocol implements Protocol {
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId peerId,
-            @NonNull final ShadowGraphSynchronizer synchronizer,
+            @NonNull final ShadowgraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final SyncPermitProvider permitProvider,
             @NonNull final BooleanSupplier gossipHalted,
