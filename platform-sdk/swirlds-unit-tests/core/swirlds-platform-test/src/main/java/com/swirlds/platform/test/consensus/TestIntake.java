@@ -37,10 +37,9 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -68,7 +67,7 @@ import java.util.List;
  */
 public class TestIntake implements LoadableFromSignedState {
     private final ConsensusImpl consensus;
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
     private final ConsensusOutput output;
 
     private final EventHasherWiring hasherWiring;
@@ -88,11 +87,13 @@ public class TestIntake implements LoadableFromSignedState {
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
                 consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();
+
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+
         final WiringModel model = WiringModel.create(platformContext, time);
 
         hashingObjectCounter = new BackpressureObjectCounter(
@@ -190,7 +191,7 @@ public class TestIntake implements LoadableFromSignedState {
     /**
      * @return the shadowgraph used by this intake
      */
-    public @NonNull ShadowGraph getShadowGraph() {
+    public @NonNull Shadowgraph getShadowGraph() {
         return shadowGraph;
     }
 
@@ -233,7 +234,7 @@ public class TestIntake implements LoadableFromSignedState {
                         AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();
-        shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
+        shadowGraph.startWithExpiredThreshold(consensus.getMinGenerationNonAncient());
     }
 
     public void flush() {
