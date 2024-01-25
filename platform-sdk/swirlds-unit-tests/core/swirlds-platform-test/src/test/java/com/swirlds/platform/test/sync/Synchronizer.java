@@ -21,7 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 
@@ -40,7 +40,7 @@ public class Synchronizer {
     /**
      * Performs synchronization between the caller and listener nodes.
      *
-     * The {@link ShadowGraphSynchronizer#synchronize(PlatformContext, Connection)} method is
+     * The {@link ShadowgraphSynchronizer#synchronize(PlatformContext, Connection)} method is
      * invoked on each node in parallel using the {@link ParallelExecutor}.
      *
      * @throws Exception
