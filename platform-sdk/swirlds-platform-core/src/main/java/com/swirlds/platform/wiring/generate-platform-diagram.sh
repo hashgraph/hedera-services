@@ -1,7 +1,6 @@
 ########################################################################################################################
-#### Platform diagram command
-
-Creates high level groupings of components. Substitutes spammy wires, and collapses groupings with transformers.
+## Creates high level groupings of platform components.
+## Substitutes spammy wires, and collapses groupings with transformers.
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
