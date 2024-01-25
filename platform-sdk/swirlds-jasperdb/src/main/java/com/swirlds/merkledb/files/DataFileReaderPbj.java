@@ -18,12 +18,12 @@ package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_DELIMITED;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -391,10 +391,12 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
                 readBuf.reset();
                 final int tag = readBuf.getVarInt(0, false); // tag
-                assert tag == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_DELIMITED);
-                final int sizeOfTag = ProtoUtils.sizeOfUnsignedVarInt32(tag);
+                assert tag
+                        == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET)
+                                | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
+                final int sizeOfTag = ProtoWriterTools.sizeOfUnsignedVarInt32(tag);
                 final int size = readBuf.getVarInt(sizeOfTag, false);
-                final int sizeOfSize = ProtoUtils.sizeOfUnsignedVarInt32(size);
+                final int sizeOfSize = ProtoWriterTools.sizeOfUnsignedVarInt32(size);
                 // Check if the whole data item is already read in the header
                 if (PRE_READ_BUF_SIZE >= sizeOfTag + sizeOfSize + size) {
                     readBuf.position(sizeOfTag + sizeOfSize);

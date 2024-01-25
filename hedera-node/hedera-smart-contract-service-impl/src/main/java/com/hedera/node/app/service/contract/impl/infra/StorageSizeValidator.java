@@ -57,7 +57,7 @@ public class StorageSizeValidator {
         final var maxIndividualSlots = contractsConfig.maxKvPairsIndividual();
         storageSizeChanges.forEach(change -> {
             final var contractSlotsUsed =
-                    change.numAdded() + hederaOperations.getOriginalSlotsUsed(change.contractNumber());
+                    change.numAdded() + hederaOperations.getOriginalSlotsUsed(change.contractID());
             validateResource(maxIndividualSlots >= contractSlotsUsed, MAX_CONTRACT_STORAGE_EXCEEDED);
         });
     }

@@ -1,0 +1,20 @@
+metrics:
+  global:
+    scrape_interval: 5s
+    external_labels:
+      pod: ${RUNNER_NAME}
+      namespace: ${KUBERNETES_NAMESPACE}
+  wal_directory: /tmp/wal
+  configs:
+    - name: scrape-ping-exporter
+      host_filter: false
+      scrape_configs:
+        - job_name: ping-exporter
+          static_configs:
+            - targets: ['127.0.0.1:9427']
+
+      remote_write:
+        - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push
+          basic_auth:
+            username: ${GRAFANA_AGENT_USERNAME}
+            password: ${GRAFANA_AGENT_PASSWORD}

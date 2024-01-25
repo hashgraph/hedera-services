@@ -158,20 +158,20 @@ public interface HederaOperations {
      * preference to its auto-renew account (if any); falling back to charging the contract itself
      * if the auto-renew account does not exist or does not have sufficient balance.
      *
-     * @param contractNumber         the number of the contract to charge
+     * @param contractID         the id of the contract to charge
      * @param amount                 the amount to charge
      * @param itemizeStoragePayments whether to itemize storage payments in the record
      */
-    void chargeStorageRent(long contractNumber, final long amount, final boolean itemizeStoragePayments);
+    void chargeStorageRent(ContractID contractID, final long amount, final boolean itemizeStoragePayments);
 
     /**
      * Updates the storage metadata for the given contract.
      *
-     * @param contractNumber the number of the contract
+     * @param contractID the id of the contract
      * @param firstKey       the first key in the storage linked list, or {@link Bytes#EMPTY} if the list is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(ContractID contractID, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias
@@ -240,10 +240,10 @@ public interface HederaOperations {
      * modifications already dispatched. If the contract did not exist before the transaction, returns
      * zero.
      *
-     * @param contractNumber the contract number
+     * @param contractID the contract id
      * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
      */
-    long getOriginalSlotsUsed(long contractNumber);
+    long getOriginalSlotsUsed(ContractID contractID);
 
     /**
      * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
