@@ -230,7 +230,7 @@ public class ConsensusHashManager {
     public List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return transactions.stream().map(
-                t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
+                        t -> handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
                 .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 
@@ -360,14 +360,19 @@ public class ConsensusHashManager {
         final long round = roundValidator.getRound();
 
         return switch (roundValidator.getStatus()) {
-            case VALID -> null; // :)
+            case VALID -> {
+                if (roundValidator.hasDisagreement()) {
+                    yield new IssNotification(round, IssType.OTHER_ISS);
+                }
+                yield null;
+            }
             case SELF_ISS -> {
                 handleSelfIss(roundValidator);
-                yield new IssNotification(round, IssType.SELF_ISS, null);
+                yield new IssNotification(round, IssType.SELF_ISS);
             }
             case CATASTROPHIC_ISS -> {
                 handleCatastrophic(roundValidator);
-                yield new IssNotification(round, IssType.CATASTROPHIC_ISS, null);
+                yield new IssNotification(round, IssType.CATASTROPHIC_ISS);
             }
             case UNDECIDED -> throw new IllegalStateException(
                     "status is undecided, but method reported a decision, round = " + round);

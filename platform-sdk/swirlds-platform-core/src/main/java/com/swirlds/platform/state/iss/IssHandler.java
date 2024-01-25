@@ -17,18 +17,13 @@
 package com.swirlds.platform.state.iss;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -38,92 +33,51 @@ import java.util.Objects;
 public class IssHandler {
     private final StateConfig stateConfig;
     private final HaltRequestedConsumer haltRequestedConsumer;
-    private final IssConsumer issConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
     private final Scratchpad<IssScratchpad> issScratchpad;
 
     private boolean halted;
 
-    private final NodeId selfId;
-
-    /**
-     * Allows for submitting
-     * {@link PlatformStatusAction PlatformStatusActions}
-     */
-    private final StatusActionSubmitter statusActionSubmitter;
-
     /**
      * Create an object responsible for handling ISS events.
      *
      * @param stateConfig           settings for the state
-     * @param selfId                the self ID of this node
-     * @param statusActionSubmitter the object to use to submit status actions
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
-     * @param issConsumer           consumer to invoke if an ISS is detected
      * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
      */
     public IssHandler(
             @NonNull final StateConfig stateConfig,
-            @NonNull final NodeId selfId,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final IssConsumer issConsumer,
             @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
 
-        this.issConsumer = Objects.requireNonNull(issConsumer, "issConsumer must not be null");
         this.haltRequestedConsumer =
                 Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
 
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
 
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
     public synchronized void issObserved(@NonNull final IssNotification issNotification){
         switch (issNotification.getIssType()){
-            case SELF_ISS -> selfIssObserver(issNotification.getRound(), null, null);
-            case OTHER_ISS -> stateHashValidityObserver(issNotification.getRound(), issNotification.getOtherNodeId(), null, null);
-            case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound(), null);
+            case SELF_ISS -> selfIssObserver(issNotification.getRound());
+            case OTHER_ISS -> otherIss();
+            case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
         }
     }
 
     /**
      * This method is called whenever any node is observed in disagreement with the consensus hash.
-     *
-     * @param round         the round of the ISS
-     * @param nodeId        the ID of the node that had an ISS
-     * @param nodeHash      the incorrect hash computed by the node
-     * @param consensusHash the correct hash computed by the network
      */
-    public void stateHashValidityObserver(
-            @NonNull final Long round,
-            @NonNull final NodeId nodeId,
-            @NonNull final Hash nodeHash,
-            @NonNull final Hash consensusHash) {
-
-        if (consensusHash.equals(nodeHash)) {
-            // no need to take action when the hash is valid
-            return;
-        }
-
-        if (Objects.equals(nodeId, selfId)) {
-            // let the logic in selfIssObserver handle self ISS events
-            return;
-        }
+    private void otherIss() {
 
         if (halted) {
             // don't take any action once halted
             return;
         }
-
-        issConsumer.iss(round, IssNotification.IssType.OTHER_ISS, nodeId);
 
         if (stateConfig.haltOnAnyIss()) {
             haltRequestedConsumer.haltRequested("other node observed with ISS");
@@ -156,10 +110,8 @@ public class IssHandler {
      * This method is called when there is a self ISS.
      *
      * @param round    the round of the ISS
-     * @param ignored1 the incorrect hash computed by this node
-     * @param ignored2 the correct hash computed by the network
      */
-    public void selfIssObserver(@NonNull final Long round, @NonNull final Hash ignored1, @NonNull final Hash ignored2) {
+    private void selfIssObserver(@NonNull final Long round) {
 
         if (halted) {
             // don't take any action once halted
@@ -167,9 +119,6 @@ public class IssHandler {
         }
 
         updateIssRoundInScratchpad(round);
-        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
-
-        issConsumer.iss(round, IssNotification.IssType.SELF_ISS, selfId);
 
         if (stateConfig.haltOnAnyIss()) {
             haltRequestedConsumer.haltRequested("self ISS observed");
@@ -235,10 +184,9 @@ public class IssHandler {
     /**
      * This method is called when there is a catastrophic ISS.
      *
-     * @param round   the round of the ISS
-     * @param ignored the hash computed by this node
+     * @param round the round of the ISS
      */
-    public void catastrophicIssObserver(@NonNull final Long round, @NonNull final Hash ignored) {
+    private void catastrophicIssObserver(@NonNull final Long round) {
 
         if (halted) {
             // don't take any action once halted
@@ -246,9 +194,6 @@ public class IssHandler {
         }
 
         updateIssRoundInScratchpad(round);
-        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
-
-        issConsumer.iss(round, IssNotification.IssType.CATASTROPHIC_ISS, null);
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {
             haltRequestedConsumer.haltRequested("catastrophic ISS observed");

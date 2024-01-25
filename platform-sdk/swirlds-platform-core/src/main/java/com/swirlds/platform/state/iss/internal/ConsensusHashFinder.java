@@ -208,6 +208,13 @@ public class ConsensusHashFinder {
     }
 
     /**
+     * @return true if there is any disagreement between nodes on the hash for this round
+     */
+    public boolean hasDisagreement() {
+        return partitionMap.size() > 1;
+    }
+
+    /**
      * Get the total weight in the network.
      */
     public long getTotalWeight() {

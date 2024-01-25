@@ -235,4 +235,11 @@ public class RoundHashValidator {
     public synchronized HashValidityStatus getStatus() {
         return status;
     }
+
+    /**
+     * @return true if there is any disagreement between nodes on the hash for this round
+     */
+    public boolean hasDisagreement() {
+        return hashFinder.hasDisagreement();
+    }
 }

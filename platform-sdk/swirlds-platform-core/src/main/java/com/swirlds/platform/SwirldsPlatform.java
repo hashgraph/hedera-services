@@ -157,8 +157,10 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
@@ -174,11 +176,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -466,11 +470,8 @@ public class SwirldsPlatform implements Platform {
 
         final IssHandler issHandler = new IssHandler(
                 stateConfig,
-                selfId,
-                platformStatusManager,
                 this::haltRequested,
                 this::handleFatalError,
-                null,
                 issScratchpad);
         final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
                 platformContext,
@@ -702,6 +703,11 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
         platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
                 "issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
+        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("statusManager",n->{
+            if(Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())){
+                platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
+            }
+        });
         platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo(
                 "issHandler", issHandler::issObserved);
 
