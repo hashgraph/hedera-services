@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
@@ -52,9 +53,15 @@ class QueryHederaOperationsTest {
 
     private QueryHederaOperations subject;
 
+    private ContractID contractID;
+
+    private ContractID anotherContractID;
+
     @BeforeEach
     void setUp() {
         subject = new QueryHederaOperations(context, DEFAULT_HEDERA_CONFIG);
+        contractID = ContractID.newBuilder().contractNum(1234L).build();
+        anotherContractID = ContractID.newBuilder().contractNum(1L).build();
     }
 
     @Test
@@ -117,7 +124,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void chargingStorageRentNotSupported() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.chargeStorageRent(1L, 2L, true));
+        assertThrows(UnsupportedOperationException.class, () -> subject.chargeStorageRent(anotherContractID, 2L, true));
     }
 
     @Test
@@ -138,7 +145,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void getOriginalSlotsUsedNotSupported() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(1234L));
+        assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(contractID));
     }
 
     @Test

@@ -17,10 +17,11 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.DigestType;
@@ -28,7 +29,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -88,9 +88,9 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
 
     @Override
     public int getTypicalSerializedSize() {
-        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT)
+        return ProtoWriterTools.sizeOfTag(FIELD_HASHRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
                 + Long.BYTES
-                + ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, DigestType.SHA_384.digestLength());
+                + ProtoWriterTools.sizeOfDelimited(FIELD_HASHRECORD_HASH, DigestType.SHA_384.digestLength());
     }
 
     @Override
@@ -98,9 +98,11 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         // This method is only used for PBJ serialization, so estimation is for PBJ, not JDB
         int size = 0;
         if (data.path() != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_HASHRECORD_PATH, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                    + Long.BYTES;
         }
-        size += ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+        size += ProtoWriterTools.sizeOfDelimited(
+                FIELD_HASHRECORD_HASH, data.hash().getValue().length);
         return size;
     }
 
@@ -126,11 +128,11 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
                     "Only " + DEFAULT_DIGEST + " digests allowed, but received hash with digest " + digestType);
         }
         if (hashRecord.path() != 0) {
-            ProtoUtils.writeTag(out, FIELD_HASHRECORD_PATH);
+            ProtoWriterTools.writeTag(out, FIELD_HASHRECORD_PATH);
             // Use long instead of var long to keep the size fixed
             out.writeLong(hashRecord.path());
         }
-        ProtoUtils.writeDelimited(
+        ProtoWriterTools.writeDelimited(
                 out,
                 FIELD_HASHRECORD_HASH,
                 hashRecord.hash().getValue().length,
