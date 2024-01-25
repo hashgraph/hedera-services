@@ -61,6 +61,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -95,6 +96,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
+    private final GossipWiring gossipWiring;
 
     /**
      * The object counter that spans the event hasher and the post hash collector.
@@ -166,6 +168,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
+        gossipWiring = GossipWiring.create(model);
+
         wire();
     }
 
@@ -199,6 +203,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
+        gossipWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
         eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
@@ -323,15 +328,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
     /**
      * Get the input wire for the hasher.
-     * <p>
-     * Future work: this is a temporary hook to allow events from gossip to use the new intake pipeline. This method
-     * will be removed once gossip is moved to the new framework
      *
-     * @return the input method for the hasher, which is the first step in the intake pipeline
+     * @return the wire where all events from gossip should be passed
      */
     @NonNull
-    public InputWire<GossipEvent> getEventInput() {
-        return eventHasherWiring.eventInput();
+    public InputWire<GossipEvent> getGossipEventInput() {
+        return gossipWiring.eventInput();
     }
 
     /**
