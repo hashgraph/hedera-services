@@ -24,6 +24,7 @@ testModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.mono.test.fixtures")
+    requires("com.hedera.node.app.service.token")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.google.protobuf")
