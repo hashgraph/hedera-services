@@ -103,6 +103,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -231,6 +232,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void doesUnescapingBytesWork() throws Exception {
+        final var expected = "618dc65e00000000000000000000000000000000004279ac18160ddd";
+        final var encoded =
+                "a\\215\\306^\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000By\\254\\030\\026\\r\\335";
+        final var raw = TextFormat.unescapeBytes(encoded);
+        assertEquals(expected, com.swirlds.common.utility.CommonUtils.hex(raw.toByteArray()));
+    }
+
     @Test
     void canGetSynthAccessor() {
         final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()

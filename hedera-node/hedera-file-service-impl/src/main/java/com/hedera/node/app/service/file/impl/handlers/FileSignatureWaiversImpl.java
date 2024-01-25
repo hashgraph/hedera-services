@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.FileSignatureWaivers;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import edu.umd.cs.findbugs.annotations.NonNull;
