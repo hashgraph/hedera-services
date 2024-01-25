@@ -45,8 +45,12 @@ public class AssortedOpsXTestConstants {
             ContractID.newBuilder().contractNum(1005L).build();
     static final AccountID POINTLESS_INTERMEDIARY_ID =
             AccountID.newBuilder().accountNum(1007L).build();
+    static final ContractID POINTLESS_INTERMEDIARY_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(1007L).build();
     static final AccountID RUBE_GOLDBERG_CHILD_ID =
             AccountID.newBuilder().accountNum(1008L).build();
+    static final ContractID RUBE_GOLDBERG_CHILD_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(1008L).build();
     static final FileID ASSORTED_OPS_INITCODE_FILE_ID = new FileID(0, 0, 1003);
     static final Bytes ETH_LAZY_CREATE = Bytes.fromHex(
             "02f8ad82012a80a000000000000000000000000000000000000000000000000000000000000003e8a0000000000000000000000000000000000000000000000000000000746a528800831e848094fee687d5088faff48013a6767505c027e2742536880de0b6b3a764000080c080a0f5ddf2394311e634e2147bf38583a017af45f4326bdf5746cac3a1110f973e4fa025bad52d9a9f8b32eb983c9fb8959655258bd75e2826b2c6a48d4c26ec30d112");
