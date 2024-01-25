@@ -21,6 +21,7 @@ import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -114,7 +115,11 @@ public final class OnDiskKey<K> implements VirtualKey {
         if ((md == null) || ((codec = md.stateDefinition().keyCodec()) == null)) {
             throw new IllegalStateException("Cannot deserialize on-disk key, null metadata / codec");
         }
-        key = readFromStream(in, codec);
+        try {
+            key = readFromStream(in, codec);
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

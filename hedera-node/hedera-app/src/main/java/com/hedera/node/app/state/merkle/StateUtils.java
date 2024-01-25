@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
@@ -70,7 +71,7 @@ public final class StateUtils {
      */
     @NonNull
     public static <T> T readFromStream(@NonNull final InputStream in, @NonNull final Codec<T> codec)
-            throws IOException {
+            throws ParseException {
         final var stream = new ReadableStreamingData(in);
         final var size = stream.readInt();
         stream.limit((long) size + Integer.BYTES); // +4 for the size

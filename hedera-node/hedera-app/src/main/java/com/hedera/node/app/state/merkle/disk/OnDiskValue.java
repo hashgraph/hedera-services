@@ -20,6 +20,7 @@ import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
 import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -105,7 +106,11 @@ public class OnDiskValue<V> implements VirtualValue {
         if (md == null) {
             throw new IllegalStateException("Cannot deserialize on-disk value, null metadata / codec");
         }
-        value = readFromStream(in, md.stateDefinition().valueCodec());
+        try {
+            value = readFromStream(in, md.stateDefinition().valueCodec());
+        } catch (final ParseException e) {
+            throw new IOException(e);
+        }
     }
 
     /** {@inheritDoc} */

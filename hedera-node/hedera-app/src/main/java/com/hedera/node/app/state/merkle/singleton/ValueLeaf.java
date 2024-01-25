@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -118,7 +119,11 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
 
-        this.val = readFromStream(in, codec);
+        try {
+            this.val = readFromStream(in, codec);
+        } catch (final ParseException e) {
+            throw new IOException(e);
+        }
     }
 
     /**

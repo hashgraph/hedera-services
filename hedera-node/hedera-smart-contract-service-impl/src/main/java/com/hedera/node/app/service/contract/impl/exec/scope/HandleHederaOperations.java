@@ -53,6 +53,8 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -444,9 +446,9 @@ public class HandleHederaOperations implements HederaOperations {
                         .copyBuilder()
                         .contractCreateInstance(standardized(createdNumber, op))
                         .build());
-            } catch (IOException e) {
+            } catch (ParseException e) {
                 // Should be impossible
-                throw new UncheckedIOException(e);
+                throw new UncheckedParseException(e);
             }
         };
     }

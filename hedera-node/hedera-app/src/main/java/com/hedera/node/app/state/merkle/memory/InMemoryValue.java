@@ -20,6 +20,7 @@ import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
 import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -137,11 +138,15 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        final var keySerdes = md.stateDefinition().keyCodec();
-        final var valueSerdes = md.stateDefinition().valueCodec();
-        final var k = readFromStream(in, keySerdes);
-        this.key = new InMemoryKey<>(k);
-        this.val = readFromStream(in, valueSerdes);
+        try {
+            final var keySerdes = md.stateDefinition().keyCodec();
+            final var valueSerdes = md.stateDefinition().valueCodec();
+            final var k = readFromStream(in, keySerdes);
+            this.key = new InMemoryKey<>(k);
+            this.val = readFromStream(in, valueSerdes);
+        } catch (final ParseException e) {
+            throw new IOException(e);
+        }
     }
 
     /** {@inheritDoc} */
