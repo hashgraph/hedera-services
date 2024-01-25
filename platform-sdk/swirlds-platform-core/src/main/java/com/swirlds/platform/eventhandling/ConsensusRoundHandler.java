@@ -27,7 +27,6 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDA
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
 
 import com.swirlds.base.function.CheckedConsumer;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -76,9 +75,9 @@ public class ConsensusRoundHandler {
     private final RoundHandlingMetrics handlerMetrics;
 
     /**
-     * Whether a freeze state has been saved. Only the first state in a freeze period is saved.
+     * Whether a round in a freeze period has been received. This may never be reset to false after it is set to true.
      */
-    private boolean freezeStateSaved = false;
+    private boolean freezeRoundReceived = false;
 
     /**
      * a RunningHash object which calculates running hash of all consensus events so far with their transactions handled
@@ -95,8 +94,6 @@ public class ConsensusRoundHandler {
      * Enables submitting platform status actions.
      */
     private final StatusActionSubmitter statusActionSubmitter;
-
-    private boolean addedFirstRoundInFreeze = false;
 
     private final SoftwareVersion softwareVersion;
 
@@ -158,9 +155,7 @@ public class ConsensusRoundHandler {
         // to the framework
         final RunningAverageMetric avgStateToHashSignDepth =
                 platformContext.getMetrics().getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
-        platformContext.getMetrics().addUpdater(() -> {
-            avgStateToHashSignDepth.update(stateHashSignQueue.size());
-        });
+        platformContext.getMetrics().addUpdater(() -> avgStateToHashSignDepth.update(stateHashSignQueue.size()));
     }
 
     /**
@@ -178,15 +173,14 @@ public class ConsensusRoundHandler {
      * @param consensusRound the consensus round to apply
      */
     public void handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
-        // If there has already been a saved state created in a freeze period, do not apply any more rounds to the
-        // state until the node shuts down and comes back up (which resets this variable to false).
-        if (freezeStateSaved) {
+        // Once there is a saved state created in a freeze period, we will never apply any more rounds to the state.
+        if (freezeRoundReceived) {
             return;
         }
 
-        if (!addedFirstRoundInFreeze && swirldStateManager.isInFreezePeriod(consensusRound.getConsensusTimestamp())) {
-            addedFirstRoundInFreeze = true;
+        if (swirldStateManager.isInFreezePeriod(consensusRound.getConsensusTimestamp())) {
             statusActionSubmitter.submitStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
+            freezeRoundReceived = true;
         }
 
         handlerMetrics.recordEventsPerRound(consensusRound.getNumEvents());
@@ -211,43 +205,13 @@ public class ConsensusRoundHandler {
             // this calls into the ConsensusHashManager
             roundAppliedToStateConsumer.accept(consensusRound.getRoundNum());
 
-            maybeCreateSignedState(consensusRound);
+            createSignedState();
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
             Thread.currentThread().interrupt();
         } finally {
             handlerMetrics.setPhase(IDLE);
         }
-    }
-
-    /**
-     * Creates a signed state if necessary
-     *
-     * @param round the consensus round
-     * @throws InterruptedException if this thread is interrupted
-     */
-    private void maybeCreateSignedState(@NonNull final ConsensusRound round) throws InterruptedException {
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        if (stateConfig.signedStateFreq() <= 0) {
-            // we are not signing states
-            return;
-        }
-
-        // the first round should be signed and every Nth should be signed, where N is signedStateFreq
-        if (round.getRoundNum() != 1 && round.getRoundNum() % stateConfig.signedStateFreq() != 0) {
-            return;
-        }
-
-        if (addedFirstRoundInFreeze) {
-            // We are saving the first state in the freeze period.
-            // This should never be set to false once it is true. It is reset by restarting the node
-            freezeStateSaved = true;
-
-            // Let the swirld state manager know we are about to write the saved state for the freeze period
-            swirldStateManager.savedStateInFreezePeriod();
-        }
-
-        createSignedState();
     }
 
     /**
@@ -281,6 +245,11 @@ public class ConsensusRoundHandler {
      * @throws InterruptedException if this thread is interrupted
      */
     private void createSignedState() throws InterruptedException {
+        if (freezeRoundReceived) {
+            // Let the swirld state manager know we are about to write the saved state for the freeze period
+            swirldStateManager.savedStateInFreezePeriod();
+        }
+
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
         // create a new signed state, sign it, and send out a new transaction with the signature
         // the signed state keeps a copy that never changes.
@@ -288,7 +257,7 @@ public class ConsensusRoundHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext, immutableStateCons, "ConsensusHandler.createSignedState()", freezeStateSaved);
-        stateHashSignQueue.put(signedState.reserve("ConsensusHandler.createSignedState()"));
+                platformContext, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
+        stateHashSignQueue.put(signedState.reserve("ConsensusRoundHandler.createSignedState()"));
     }
 }
