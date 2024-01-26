@@ -28,12 +28,12 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_F
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.address.AddressBook;

@@ -20,13 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
