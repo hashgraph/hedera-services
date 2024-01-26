@@ -327,7 +327,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input wire for the hasher.
+     * Get the input wire gossip. All events received from peers during should be passed to this wire.
      *
      * @return the wire where all events from gossip should be passed
      */

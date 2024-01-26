@@ -36,12 +36,13 @@ public record GossipWiring(@NonNull InputWire<GossipEvent> eventInput, @NonNull 
     /**
      * Create a new instance of {@link GossipWiring}.
      *
+     * @param model the wiring model
      * @return the new instance
      */
     @NonNull
     public static GossipWiring create(@NonNull final WiringModel model) {
         final TaskScheduler<GossipEvent> scheduler = model.schedulerBuilder("gossip")
-                .withType(TaskSchedulerType.DIRECT)
+                .withType(TaskSchedulerType.DIRECT_STATELESS)
                 .build()
                 .cast();
 
