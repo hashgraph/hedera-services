@@ -30,7 +30,8 @@ import java.util.List;
  * The wiring for the {@link com.swirlds.platform.event.FutureEventBuffer}.
  *
  * @param eventInput       an input wire with events in topological order, possibly containing time travelers
- * @param eventWindowInput an output wire with events in topological order, guaranteed no time travelers
+ * @param eventWindowInput input wire with event windows
+ * @param eventOutput      an output wire with events in topological order, guaranteed no time travelers
  * @param flushRunnable    a runnable that will flush the future event buffer
  */
 public record FutureEventBufferWiring(
@@ -42,6 +43,7 @@ public record FutureEventBufferWiring(
     /**
      * Create a new instance of the FutureEventBufferWiring.
      *
+     * @param scheduler the scheduler that will run the future event buffer
      * @return a new instance of the FutureEventBufferWiring
      */
     @NonNull
@@ -49,9 +51,9 @@ public record FutureEventBufferWiring(
         final InputWire<GossipEvent> eventInput = scheduler.buildInputWire("preconsensus events");
         final InputWire<NonAncientEventWindow> eventWindowInput = scheduler.buildInputWire("non-ancient event window");
 
-        final OutputWire<List<GossipEvent>> eventListOutputWIre = scheduler.getOutputWire();
+        final OutputWire<List<GossipEvent>> eventListOutputWire = scheduler.getOutputWire();
         final OutputWire<GossipEvent> eventOutputWire =
-                eventListOutputWIre.buildSplitter("futureEventBufferSplitter", "possible parent lists");
+                eventListOutputWire.buildSplitter("futureEventBufferSplitter", "possible parent lists");
 
         final Runnable flushRunnable = scheduler::flush;
 
@@ -60,6 +62,8 @@ public record FutureEventBufferWiring(
 
     /**
      * Bind the input and output wires to the future event buffer.
+     *
+     * @param futureEventBuffer the future event buffer to bind
      */
     public void bind(@NonNull final FutureEventBuffer futureEventBuffer) {
         ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(futureEventBuffer::addEvent);

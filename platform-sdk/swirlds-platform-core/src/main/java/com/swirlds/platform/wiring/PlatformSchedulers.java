@@ -51,6 +51,7 @@ import java.util.List;
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
+ * @param futureEventBufferScheduler                the scheduler for the future event buffer
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
