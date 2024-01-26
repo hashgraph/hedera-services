@@ -129,7 +129,7 @@ public class SeededPropertySource {
                 nextUnsignedLong(),
                 nextBytes(128),
                 nextEntityId(),
-                nextLong());
+                null);
         evmResult.setContractNonces(nextContractNonces(2));
         return evmResult;
     }
@@ -802,7 +802,7 @@ public class SeededPropertySource {
                 nextUnsignedLong(),
                 nextBytes(64),
                 null,
-                nextLong());
+                null);
     }
 
     public List<EvmLog> nextEvmLogs(final int n) {
