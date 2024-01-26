@@ -141,8 +141,9 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(
-                        GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)),
+                asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                        .getOutputs()
+                        .encodeElements()),
                 result.getOutput());
     }
 
@@ -256,8 +257,9 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(
-                        GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)),
+                asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                        .getOutputs()
+                        .encodeElements()),
                 result.getOutput());
     }
 }
