@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.infra;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -71,24 +72,24 @@ public class IterableStorageManager {
             @NonNull final List<StorageSizeChange> allSizeChanges,
             @NonNull final ContractStateStore store) {
         // map to store the first storage key for each contract
-        final Map<Long, Bytes> firstKeys = new HashMap<>();
+        final Map<ContractID, Bytes> firstKeys = new HashMap<>();
 
         // Adjust the storage linked lists for each contract
         allAccesses.forEach(contractAccesses -> contractAccesses.accesses().forEach(access -> {
             if (access.isUpdate()) {
-                var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractNumber());
+                var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractID());
 
                 switch (StorageAccessType.getAccessType(access)) {
                     case REMOVAL -> firstContractKey = removeAccessedValue(
-                            store, firstContractKey, contractAccesses.contractNumber(), tuweniToPbjBytes(access.key()));
+                            store, firstContractKey, contractAccesses.contractID(), tuweniToPbjBytes(access.key()));
                     case INSERTION -> firstContractKey = insertAccessedValue(
                             store,
                             firstContractKey,
                             tuweniToPbjBytes(access.writtenValue()),
-                            contractAccesses.contractNumber(),
+                            contractAccesses.contractID(),
                             tuweniToPbjBytes(access.key()));
                 }
-                firstKeys.put(contractAccesses.contractNumber(), firstContractKey);
+                firstKeys.put(contractAccesses.contractID(), firstContractKey);
             }
         }));
 
@@ -98,8 +99,8 @@ public class IterableStorageManager {
                 enhancement
                         .operations()
                         .updateStorageMetadata(
-                                change.contractNumber(),
-                                firstKeys.getOrDefault(change.contractNumber(), Bytes.EMPTY),
+                                change.contractID(),
+                                firstKeys.getOrDefault(change.contractID(), Bytes.EMPTY),
                                 change.netChange());
             }
         });
@@ -112,8 +113,8 @@ public class IterableStorageManager {
      * @return the first storage key for the contract or null if none exists.
      */
     @NonNull
-    private Bytes contractFirstKeyOf(@NonNull final Enhancement enhancement, long contractNumber) {
-        final var account = enhancement.nativeOperations().getAccount(contractNumber);
+    private Bytes contractFirstKeyOf(@NonNull final Enhancement enhancement, ContractID contractID) {
+        final var account = enhancement.nativeOperations().getAccount(contractID);
         return account != null && account.firstContractStorageKey() != null
                 ? account.firstContractStorageKey()
                 : Bytes.EMPTY;
@@ -124,7 +125,7 @@ public class IterableStorageManager {
      *
      * @param store Contract storage store
      * @param firstContractKey The first key in the linked list of storage for the given contract
-     * @param contractNumber The contract number under consideration
+     * @param contractID The contract id under consideration
      * @param key The slot key to remove
      * @return the new first key in the linked list of storage for the given contract
      */
@@ -132,19 +133,19 @@ public class IterableStorageManager {
     private Bytes removeAccessedValue(
             @NonNull final ContractStateStore store,
             @NonNull final Bytes firstContractKey,
-            long contractNumber,
+            ContractID contractID,
             @NonNull final Bytes key) {
         try {
             Objects.requireNonNull(store);
             Objects.requireNonNull(key);
-            final var slotKey = newSlotKeyFor(contractNumber, key);
+            final var slotKey = newSlotKeyFor(contractID, key);
             final var slotValue = slotValueFor(store, false, slotKey, "Missing key ");
             final var nextKey = slotValue.nextKey();
             final var prevKey = slotValue.previousKey();
 
             if (!nextKey.equals(Bytes.EMPTY)) {
                 // Look up the next slot value
-                final var nextSlotKey = newSlotKeyFor(contractNumber, nextKey);
+                final var nextSlotKey = newSlotKeyFor(contractID, nextKey);
                 final var nextValue = slotValueFor(store, true, nextSlotKey, "Missing next key ");
 
                 // Create new next value and put into the store
@@ -154,7 +155,7 @@ public class IterableStorageManager {
             }
             if (!prevKey.equals(Bytes.EMPTY)) {
                 // Look up the previous slot value
-                final var prevSlotKey = newSlotKeyFor(contractNumber, prevKey);
+                final var prevSlotKey = newSlotKeyFor(contractID, prevKey);
                 final var prevValue = slotValueFor(store, true, prevSlotKey, "Missing previous key ");
 
                 // Create new previous value and put into the store
@@ -180,7 +181,7 @@ public class IterableStorageManager {
      * @param store Contract storage store
      * @param firstContractKey The first key in the linked list of storage for the given contract
      * @param newValue The new value for the slot
-     * @param contractNumber The contract number under consideration
+     * @param contractID The contract id under consideration
      * @param newKey The slot key to insert
      * @return the new first key in the linked list of storage for the given contract
      */
@@ -189,14 +190,14 @@ public class IterableStorageManager {
             @NonNull final ContractStateStore store,
             @NonNull final Bytes firstContractKey,
             @NonNull final Bytes newValue,
-            long contractNumber,
+            ContractID contractID,
             @NonNull final Bytes newKey) {
         try {
             Objects.requireNonNull(store);
             Objects.requireNonNull(newValue);
             Objects.requireNonNull(newKey);
             // Create new slot key and value and put into the store
-            final var newSlotKey = newSlotKeyFor(contractNumber, newKey);
+            final var newSlotKey = newSlotKeyFor(contractID, newKey);
             final var newSlotValue = SlotValue.newBuilder()
                     .value(newValue)
                     .previousKey(Bytes.EMPTY)
@@ -211,7 +212,7 @@ public class IterableStorageManager {
     }
 
     @NonNull
-    private SlotKey newSlotKeyFor(long contractNumber, @NonNull final Bytes key) {
+    private SlotKey newSlotKeyFor(ContractID contractNumber, @NonNull final Bytes key) {
         return new SlotKey(contractNumber, key);
     }
 

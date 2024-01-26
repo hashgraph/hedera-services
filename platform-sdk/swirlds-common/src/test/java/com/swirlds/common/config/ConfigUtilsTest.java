@@ -17,20 +17,17 @@
 package com.swirlds.common.config;
 
 import com.swirlds.common.config.sub.TestConfig;
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ConfigUtilsTest {
 
     @Test
+    @DisplayName("Should scan and register all expected config records")
     void testDefaultBehavior() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
@@ -40,13 +37,8 @@ class ConfigUtilsTest {
 
         // then
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(CryptoConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(TemporaryFileConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(ReconnectConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(MetricsConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(PrometheusConfig.class));
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateCommonConfig.class));
     }
 
     @Test

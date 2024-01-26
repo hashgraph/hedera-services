@@ -83,6 +83,9 @@ class TokenServiceApiImplTest {
     public static final AccountID CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow())
             .build();
+    public static final ContractID CONTRACT_ID = ContractID.newBuilder()
+            .contractNum(CONTRACT_ID_BY_NUM.contractNumOrThrow())
+            .build();
     public static final AccountID OTHER_CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(OTHER_CONTRACT_ID_BY_NUM.contractNumOrThrow())
             .build();
@@ -135,7 +138,7 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, 7);
+        subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, 7);
 
         final var postIncrementAccount = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
         assertEquals(SOME_STORE_KEY, postIncrementAccount.firstContractStorageKey());
@@ -144,7 +147,7 @@ class TokenServiceApiImplTest {
 
     @Test
     void missingAccountHasZeroOriginalKvUsage() {
-        assertEquals(0, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
+        assertEquals(0, subject.originalKvUsageFor(CONTRACT_ID));
     }
 
     @Test
@@ -156,7 +159,7 @@ class TokenServiceApiImplTest {
                 .build());
         ((WritableKVStateBase<?, ?>) accountState).commit();
 
-        assertEquals(3, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
+        assertEquals(3, subject.originalKvUsageFor(CONTRACT_ID));
     }
 
     @Test
@@ -168,8 +171,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -4));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -4));
     }
 
     @Test
@@ -180,8 +182,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -3));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -3));
     }
 
     @Test
