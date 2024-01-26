@@ -106,8 +106,8 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
-                    .getOutputs()
-                    .encodeElements();
+                            .getOutputs()
+                            .encodeElements();
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
