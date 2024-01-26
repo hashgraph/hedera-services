@@ -62,6 +62,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
@@ -98,6 +99,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final FutureEventBufferWiring futureEventBufferWiring;
+    private final EventWindowManagerWiring eventWindowManagerWiring;
 
     /**
      * The object counter that spans the event hasher and the post hash collector.
@@ -170,6 +172,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         futureEventBufferWiring = FutureEventBufferWiring.create(schedulers.futureEventBufferScheduler());
+        eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         wire();
     }
@@ -189,7 +192,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     private void solderNonAncientEventWindow() {
         final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
-                linkedEventIntakeWiring.nonAncientEventWindowOutput();
+                eventWindowManagerWiring.nonAncientEventWindowOutput();
 
         nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
@@ -229,6 +232,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
         linkedEventIntakeWiring.keystoneEventSequenceNumberOutput().solderTo(pcesWriterWiring.flushRequestInputWire());
+        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
@@ -474,19 +478,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
     /**
      * Inject a new non-ancient event window into all components that need it.
-     * <p>
-     * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
-     * This method will be removed once the components are wired together.
      *
      * @param nonAncientEventWindow the new non-ancient event window
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        eventDeduplicatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        eventSignatureValidatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        futureEventBufferWiring.eventWindowInput().inject(nonAncientEventWindow);
+        eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
     }
 
     /**

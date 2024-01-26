@@ -26,13 +26,11 @@ socket.timeoutSyncClientSocket, 1000
 socket.timeoutSyncClientConnect, 1000
 socket.timeoutServerAcceptConnect, 1000
 socket.deadlockCheckPeriod, 2000
-sleepHeartbeat, 1000
 sync.callerSkipsBeforeSleep, 50
 statsSkipSeconds, 70
 thread.threadPrioritySync, 10
 transaction.transactionMaxBytes, 7000
 transaction.maxAddressSizeAllowed, 2048
-freezeSecondsAfterStartup, 15
 loadKeysFromPfxFiles, false
 transaction.maxTransactionBytesPerEvent, 300000
 transaction.maxTransactionCountPerEvent, 300000

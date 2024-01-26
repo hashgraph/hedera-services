@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
@@ -29,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
@@ -428,7 +428,9 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                ROUND_FIRST,
+                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? nonAncientEventWindow.pendingConsensusRound()
+                        : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);

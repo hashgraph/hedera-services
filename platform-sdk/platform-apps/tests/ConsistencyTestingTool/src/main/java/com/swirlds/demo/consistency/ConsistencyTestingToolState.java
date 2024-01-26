@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -138,7 +138,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(platformState);
         Objects.requireNonNull(trigger);
 
-        final StateConfig stateConfig = platform.getContext().getConfiguration().getConfigData(StateConfig.class);
+        final StateCommonConfig stateConfig =
+                platform.getContext().getConfiguration().getConfigData(StateCommonConfig.class);
         final ConsistencyTestingToolConfig testingToolConfig =
                 platform.getContext().getConfiguration().getConfigData(ConsistencyTestingToolConfig.class);
 
