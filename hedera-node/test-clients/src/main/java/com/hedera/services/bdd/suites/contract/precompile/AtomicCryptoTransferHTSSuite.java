@@ -126,7 +126,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            cryptoTransferAllowanceFungibleToken(), cryptoTransferAllowanceNft(), cryptoTransferSpecialAccounts()
+                cryptoTransferForHbarOnly(),
+                cryptoTransferForFungibleTokenOnly(),
+                cryptoTransferForNonFungibleTokenOnly(),
+                cryptoTransferHBarFungibleNft(),
+                cryptoTransferAllowanceHbarToken(),
+                cryptoTransferAllowanceFungibleToken(),
+                cryptoTransferAllowanceNft(),
+                cryptoTransferSpecialAccounts()
         });
     }
 
