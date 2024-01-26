@@ -23,7 +23,6 @@ import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -39,6 +38,7 @@ import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.ApplicationDefinitionLoader;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;

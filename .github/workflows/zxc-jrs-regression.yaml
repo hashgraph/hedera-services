@@ -138,6 +138,12 @@ on:
       gradle-cache-password:
         description: "The password used to authenticate with the Gradle Build Cache Node."
         required: true
+      grafana-agent-username:
+        description: "The username used to authenticate with the Grafana Agent."
+        required: true
+      grafana-agent-password:
+        description: "The password used to authenticate with the Grafana Agent."
+        required: true
       jrs-ssh-user-name:
         description: ""
         required: true
@@ -161,6 +167,7 @@ env:
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
   CG_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
+  PING_CG_EXEC: cgexec -g cpu,memory:ping-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
 
 defaults:
   run:
@@ -230,27 +237,107 @@ jobs:
 
           echo "file=${FINAL_PATH}" >> "${GITHUB_OUTPUT}"
 
+      - name: Setup Control Groups
+        run: |
+          echo "::group::Get System Configuration"
+            USR_ID="$(id -un)"
+            GRP_ID="$(id -gn)"
+            GRADLE_MEM_LIMIT="30064771072"
+            PING_MEM_LIMIT="1073741824"
+            AGENT_MEM_LIMIT="2147483648"
+            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
+            PING_GROUP_NAME="ping-${{ github.run_id }}"
+            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
+          echo "::endgroup::"
+
+          echo "::group::Install Control Group Tools"
+            if ! command -v cgcreate >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y cgroup-tools
+            fi
+          echo "::endgroup::"
+
+          echo "::group::Create Control Groups"
+            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+            sudo cgcreate -g cpu,memory:${PING_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+          echo "::endgroup::"
+
+          echo "::group::Set Control Group Limits"
+            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
+            cgset -r cpu.shares=768 ${PING_GROUP_NAME}
+            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
+            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+            cgset -r memory.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
+            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+            cgset -r memory.memsw.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
+            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+          echo "::endgroup::"
+
+          echo "::group::Move Runner Processes to Control Groups"
+            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
+            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
+          echo "::endgroup::"
+
+      - name: Install Grafana Agent
+        run: |
+          sudo mkdir -p /usr/local/grafana-agent
+          curl -sSL -o /tmp/grafana-agent.zip https://github.com/grafana/agent/releases/download/v0.39.1/grafana-agent-linux-amd64.zip
+          sudo unzip -d /usr/local/grafana-agent /tmp/grafana-agent.zip
+          sudo rm -rf /tmp/grafana-agent.zip
+          sudo chmod +x /usr/local/grafana-agent/grafana-agent-linux-amd64
+
+      - name: Install Ping Exporter
+        run: |
+          sudo mkdir -p /usr/local/ping-exporter
+          curl -sSL -o /tmp/ping-exporter.tar.gz https://github.com/czerwonk/ping_exporter/releases/download/1.1.0/ping_exporter_1.1.0_linux_amd64.tar.gz
+          sudo tar -xzf /tmp/ping-exporter.tar.gz -C /usr/local/ping-exporter
+          sudo rm -rf /tmp/ping-exporter.tar.gz
+          sudo chmod +x /usr/local/ping-exporter/ping_exporter
+
+      - name: Execute Ping Exporter
+        uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
+        with:
+          run: |
+            sudo setcap cap_net_raw+ep /usr/local/ping-exporter/ping_exporter
+            ${PING_CG_EXEC} /usr/local/ping-exporter/ping_exporter --config.path ${{ github.workspace }}/.github/workflows/config/ping-exporter.yaml
+          tail: true
+          log-output: true
+          wait-for: 1m
+          wait-on: |
+            http://localhost:9427/metrics
+
+      - name: Execute Grafana Agent
+        uses: JarvusInnovations/background-action@313d37130873d82c33fc907b9b78e932aec8e990 # v1.0.5
+        env:
+          GRAFANA_AGENT_USERNAME: ${{ secrets.grafana-agent-username }}
+          GRAFANA_AGENT_PASSWORD: ${{ secrets.grafana-agent-password }}
+        with:
+          run: |
+            ${PING_CG_EXEC} /usr/local/grafana-agent/grafana-agent-linux-amd64 -config.expand-env -config.file "${{ github.workspace }}/.github/workflows/config/grafana-agent.yaml" >> /tmp/grafana-agent.log 2>&1
+          tail: true
+          log-output: true
+          wait-for: 1m
+          wait-on: |
+            http://localhost:9427/metrics
+
       - name: Setup NodeJS Environment
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
+        uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
         with:
           node-version: 18
 
       - name: Setup Java
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            jdks
-            dependency-check-data
 
       - name: Install Python Virtual Environment
         run: |
@@ -290,13 +377,13 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@f105ef0cdb3b102a020be1767fcc8a974898b7c6 # v1.2.0
+        uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2.1.0
         with:
           workload_identity_provider: 'projects/785813846068/locations/global/workloadIdentityPools/jrs-identity-pool/providers/gh-provider'
           service_account: 'swirlds-automation@swirlds-regression.iam.gserviceaccount.com'
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
         with:
           install_components: 'alpha'
 
@@ -305,43 +392,6 @@ jobs:
           curl -O -L -s https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-linux-amd64.deb
           sudo apt install -y ./rclone-v1.58.1-linux-amd64.deb
           rm -rf rclone-v1.58.1-linux-amd64.deb
-
-      - name: Setup Control Groups
-        run: |
-          echo "::group::Get System Configuration"
-            USR_ID="$(id -un)"
-            GRP_ID="$(id -gn)"
-            GRADLE_MEM_LIMIT="30064771072"
-            AGENT_MEM_LIMIT="2147483648"
-            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
-            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
-          echo "::endgroup::"
-
-          echo "::group::Install Control Group Tools"
-            if ! command -v cgcreate >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y cgroup-tools
-            fi
-          echo "::endgroup::"
-
-          echo "::group::Create Control Groups"
-            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-          echo "::endgroup::"
-
-          echo "::group::Set Control Group Limits"
-            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
-            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
-            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-          echo "::endgroup::"
-
-          echo "::group::Move Runner Processes to Control Groups"
-            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
-            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
-          echo "::endgroup::"
 
       - name: Configure RClone Authentication
         id: rclone-auth
@@ -355,14 +405,14 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
         with:
           build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
