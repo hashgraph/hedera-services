@@ -103,10 +103,11 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
-            // in mono nft approve call has boolean output
-            final var encodedOutput =
-                    GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true);
-
+            final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                    ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
+                    : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                    .getOutputs()
+                    .encodeElements();
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
