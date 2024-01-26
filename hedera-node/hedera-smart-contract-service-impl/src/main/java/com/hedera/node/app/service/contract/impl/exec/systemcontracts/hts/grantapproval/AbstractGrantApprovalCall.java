@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
@@ -34,7 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.List;
+import java.util.ArrayList;
 
 public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final VerificationStrategy verificationStrategy;
@@ -70,16 +67,8 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
             var ownerId = getOwnerId();
 
             if (ownerId != null && !isNftApprovalRevocation()) {
-                List<AccountApprovalForAllAllowance> accountApprovalForAllAllowances = enhancement
-                        .nativeOperations()
-                        .getAccount(ownerId.accountNum())
-                        .approveForAllNftAllowances();
-                if (accountApprovalForAllAllowances != null) {
-                    for (var approvedForAll : accountApprovalForAllAllowances) {
-                        if (approvedForAll.tokenId().equals(token)) {
-                            return buildCryptoApproveAllowance(approveDelegate(ownerId, approvedForAll.spenderId()));
-                        }
-                    }
+                if (!ownerId.equals(senderId)) {
+                    return buildCryptoApproveAllowance(approveDelegate(ownerId, senderId));
                 }
             }
 
@@ -141,12 +130,21 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         return TransactionBody.newBuilder().cryptoApproveAllowance(body).build();
     }
 
-    private AccountID getOwnerId() {
+    protected AccountID getOwnerId() {
         final var nft = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue());
-        requireNonNull(nft);
-        return nft.hasOwnerId()
-                ? nft.ownerId()
-                : enhancement.nativeOperations().getToken(token.tokenNum()).treasuryAccountId();
+        final var tokenAccount = nativeOperations().getToken(token.tokenNum());
+        return nft != null ? nft.ownerIdOrElse(tokenAccount.treasuryAccountIdOrThrow()) : null;
+    }
+
+    protected boolean senderHasAllowance() {
+        var ownerId = getOwnerId();
+        if (ownerId == null) {
+            return false;
+        }
+        var owner = nativeOperations().getAccount(getOwnerId().accountNum());
+        var approvals = owner.approveForAllNftAllowancesOrElse(new ArrayList<>());
+        var spenderList = approvals.stream().map(item -> item.spenderId()).toList();
+        return spenderList.contains(senderId);
     }
 
     private boolean isNftApprovalRevocation() {
