@@ -23,12 +23,15 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.EventWindowManager;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the {@link EventWindowManager}.
+ * Wiring for the event window manager.
+ *
+ * @param consensusRoundInput         input wire for rounds that have reached consensus
+ * @param manualWindowInput           input wire for when we need to manually push out a new event window
+ * @param nonAncientEventWindowOutput output wire for the non-ancient event window
  */
 public record EventWindowManagerWiring(
         @NonNull InputWire<ConsensusRound> consensusRoundInput,
@@ -54,10 +57,8 @@ public record EventWindowManagerWiring(
         final BindableInputWire<NonAncientEventWindow, NonAncientEventWindow> manualWindowInput =
                 scheduler.buildInputWire("override event window");
 
-        // This is stateless and requires no parameters to build, so we can just build and bind it here directly.
-        final EventWindowManager eventWindowManager = new EventWindowManager();
-        consensusRoundInput.bind(eventWindowManager::roundReachedConsensus);
-        manualWindowInput.bind(eventWindowManager::manuallyOverrideNonAncientEventWindow);
+        consensusRoundInput.bind(ConsensusRound::getNonAncientEventWindow);
+        manualWindowInput.bind(x -> x);
 
         return new EventWindowManagerWiring(consensusRoundInput, manualWindowInput, scheduler.getOutputWire());
     }
