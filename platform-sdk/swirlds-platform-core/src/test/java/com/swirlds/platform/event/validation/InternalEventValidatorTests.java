@@ -135,6 +135,40 @@ class InternalEventValidatorTests {
     }
 
     @Test
+    @DisplayName("Generation Threshold With Negative BirthRound should validate")
+    void generationThresholdWithNegativeBirthRound() {
+        final EventDescriptor selfParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor otherParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor self = new EventDescriptor(randomHash(random), new NodeId(0), 1, -1);
+        final GossipEvent event = generateEvent(self, selfParent, otherParent, 1111);
+
+        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
+        doAnswer(invocation -> {
+                    exitedIntakePipelineCount.incrementAndGet();
+                    return null;
+                })
+                .when(intakeEventCounter)
+                .eventExitedIntakePipeline(any());
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, false)
+                        .getOrCreateConfig())
+                .build();
+
+        final Time time = new FakeTime();
+
+        final InternalEventValidator multinodeValidator =
+                new InternalEventValidator(platformContext, time, false, intakeEventCounter);
+        final InternalEventValidator singleNodeValidator =
+                new InternalEventValidator(platformContext, time, true, intakeEventCounter);
+
+        assertNotNull(multinodeValidator.validateEvent(event));
+        assertNotNull(singleNodeValidator.validateEvent(event));
+        assertEquals(0, exitedIntakePipelineCount.get());
+    }
+
+    @Test
     @DisplayName("An event with null hashed data is invalid")
     void nullHashedData() {
         final GossipEvent event = generateGoodEvent(random, 1111);
