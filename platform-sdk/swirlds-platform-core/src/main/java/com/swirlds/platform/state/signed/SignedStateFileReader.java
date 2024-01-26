@@ -21,7 +21,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -58,7 +58,7 @@ public final class SignedStateFileReader {
             final NodeId platformId,
             final String swirldName) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(platformContext.getConfiguration().getConfigData(StateConfig.class))
+        return new SignedStateFilePath(platformContext.getConfiguration().getConfigData(StateCommonConfig.class))
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 

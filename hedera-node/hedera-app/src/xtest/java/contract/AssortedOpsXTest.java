@@ -33,8 +33,10 @@ import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_CONTRA
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_ID;
 import static contract.AssortedOpsXTestConstants.NEXT_ENTITY_NUM;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ADDRESS;
+import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_CONTRACT_ID;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ID;
 import static contract.AssortedOpsXTestConstants.RELAYER_ID;
+import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_CONTRACT_ID;
 import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
@@ -179,15 +181,15 @@ public class AssortedOpsXTest extends AbstractContractXTest {
         assertEquals(numExpectedSlots, storage.size());
 
         EXPECTED_CHILD_STORAGE.forEach((key, value) -> {
-            final var destructedSlot = storage.get(new SlotKey(FINALIZED_AND_DESTRUCTED_ID.accountNumOrThrow(), key));
+            final var destructedSlot = storage.get(new SlotKey(FINALIZED_AND_DESTRUCTED_CONTRACT_ID, key));
             assertNotNull(destructedSlot);
             assertEquals(value, destructedSlot.value());
-            final var survivingSlot = storage.get(new SlotKey(RUBE_GOLDBERG_CHILD_ID.accountNumOrThrow(), key));
+            final var survivingSlot = storage.get(new SlotKey(RUBE_GOLDBERG_CHILD_CONTRACT_ID, key));
             assertNotNull(survivingSlot);
             assertEquals(value, survivingSlot.value());
         });
         EXPECTED_POINTLESS_INTERMEDIARY_STORAGE.forEach((key, value) -> {
-            final var slot = storage.get(new SlotKey(POINTLESS_INTERMEDIARY_ID.accountNumOrThrow(), key));
+            final var slot = storage.get(new SlotKey(POINTLESS_INTERMEDIARY_CONTRACT_ID, key));
             assertNotNull(slot);
             assertEquals(value, slot.value());
         });

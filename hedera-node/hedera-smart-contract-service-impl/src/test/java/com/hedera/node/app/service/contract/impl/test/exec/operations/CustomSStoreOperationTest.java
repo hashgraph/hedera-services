@@ -137,9 +137,7 @@ class CustomSStoreOperationTest {
         assertSame(successResult, result);
         verify(accessTracker)
                 .trackIfFirstRead(
-                        CALLED_CONTRACT_ID.contractNumOrThrow(),
-                        UInt256.fromBytes(A_STORAGE_KEY),
-                        UInt256.fromBytes(A_STORAGE_VALUE));
+                        CALLED_CONTRACT_ID, UInt256.fromBytes(A_STORAGE_KEY), UInt256.fromBytes(A_STORAGE_VALUE));
     }
 
     @Test

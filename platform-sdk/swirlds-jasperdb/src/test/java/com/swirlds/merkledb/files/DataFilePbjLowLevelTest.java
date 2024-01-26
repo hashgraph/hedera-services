@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -257,7 +257,7 @@ class DataFilePbjLowLevelTest {
                 long[] dataItem = dataFileReader.readDataItem(DataFileCommon.dataLocation(DATA_FILE_INDEX, offset));
                 assertEquals(i, dataItem[0], "unexpected dataItem[0]");
                 assertEquals(i + 10_000, dataItem[1], "unexpected dataItem[1]");
-                offset += ProtoUtils.sizeOfDelimited(DataFileCommon.FIELD_DATAFILE_ITEMS, Long.BYTES * 2);
+                offset += ProtoWriterTools.sizeOfDelimited(DataFileCommon.FIELD_DATAFILE_ITEMS, Long.BYTES * 2);
             }
         }
         // check by random

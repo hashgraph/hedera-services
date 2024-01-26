@@ -16,11 +16,11 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Map.Entry.comparingByKey;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.ContractService;
@@ -63,6 +63,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
+    private SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
 
     static void doit(
             @NonNull final SignedStateHolder state,
@@ -236,7 +237,7 @@ public class DumpContractStoresSubcommand {
         contractStorageStore.keys().forEachRemaining(key -> {
             // (Not sure how many temporary _copies_ of a byte arrays are made here ... best not to ask ...)
             final var contractKeyLocal = ContractKeyLocal.from(
-                    new ContractKey(key.contractNumber(), key.key().toByteArray()));
+                    new ContractKey(key.contractID().contractNum(), key.key().toByteArray()));
             final var slotValue = contractStorageStore.get(key);
             assert (slotValue != null);
             final var value = uint256FromByteArray(slotValue.value().toByteArray());
@@ -260,7 +261,7 @@ public class DumpContractStoresSubcommand {
 
         // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-        final var contractSchema = new InitialModServiceContractSchema(RELEASE_045_VERSION);
+        final var contractSchema = new InitialModServiceContractSchema(CURRENT_VERSION);
         final var contractSchemas = contractSchema.statesToCreate();
         final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
                 .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))

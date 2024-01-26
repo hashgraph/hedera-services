@@ -47,6 +47,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import java.time.Instant;
@@ -138,7 +139,8 @@ class StandardProcessLogicTest {
                 executionTimeTracker,
                 recordStreaming,
                 workingView,
-                recordCache);
+                recordCache,
+                InitTrigger.GENESIS);
     }
 
     @Test

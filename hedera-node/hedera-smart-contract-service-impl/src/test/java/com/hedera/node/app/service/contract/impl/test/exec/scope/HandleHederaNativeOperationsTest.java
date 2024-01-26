@@ -114,9 +114,15 @@ class HandleHederaNativeOperationsTest {
 
     private HandleHederaNativeOperations subject;
 
+    private AccountID deletedAccount;
+
+    private AccountID beneficiaryAccount;
+
     @BeforeEach
     void setUp() {
         subject = new HandleHederaNativeOperations(context);
+        deletedAccount = AccountID.newBuilder().accountNum(1L).build();
+        beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
 
     @Test
@@ -247,8 +253,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(OK, result);
         verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
@@ -266,8 +274,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(INVALID_SIGNATURE, result);
         verify(tokenServiceApi, never()).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
@@ -284,8 +294,10 @@ class HandleHederaNativeOperationsTest {
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
-                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
-                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                NON_SYSTEM_ACCOUNT_ID,
+                AccountID.newBuilder()
+                        .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                        .build(),
                 verificationStrategy);
         assertEquals(OK, result);
         verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
@@ -297,7 +309,7 @@ class HandleHederaNativeOperationsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         stack.push(frame);
         given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
-        subject.trackSelfDestructBeneficiary(1L, 2L, frame);
+        subject.trackSelfDestructBeneficiary(deletedAccount, beneficiaryAccount, frame);
         verify(beneficiaries)
                 .addBeneficiaryForDeletedAccount(
                         AccountID.newBuilder().accountNum(1L).build(),

@@ -20,7 +20,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -32,6 +31,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -40,8 +40,8 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.SyncPermitProvider;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
@@ -83,7 +83,7 @@ public class SyncGossip extends AbstractGossip {
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
-    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
+    protected final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -131,7 +131,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,
@@ -167,9 +167,8 @@ public class SyncGossip extends AbstractGossip {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
-        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
-                time,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
