@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -57,6 +58,11 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile impleme
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());
         return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeGetTokenDefaultKycStatusFailure(status, false);
     }
 
     public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(final Bytes input) {

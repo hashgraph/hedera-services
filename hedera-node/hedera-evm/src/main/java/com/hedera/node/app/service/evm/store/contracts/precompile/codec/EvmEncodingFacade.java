@@ -68,6 +68,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenTypeFailure(final ResponseCodeEnum status, final int tokenType) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
+                .withStatus(status.getNumber())
+                .withGetTokenType(tokenType)
+                .build();
+    }
+
     public Bytes encodeAllowance(final long allowance) {
         return functionResultBuilder()
                 .forFunction(FunctionType.ERC_ALLOWANCE)
@@ -104,10 +112,27 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeIsFrozenFailure(final ResponseCodeEnum status, final boolean isFrozen) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_FROZEN)
+                .withStatus(status.getNumber())
+                .withIsFrozen(isFrozen)
+                .build();
+    }
+
     public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
                 .withStatus(SUCCESS.getNumber())
+                .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
+                .build();
+    }
+
+    public Bytes encodeGetTokenDefaultFreezeStatusFailure(
+            final ResponseCodeEnum status, final boolean defaultFreezeStatus) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+                .withStatus(status.getNumber())
                 .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
                 .build();
     }
@@ -120,6 +145,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenDefaultKycStatusFailure(final ResponseCodeEnum status, final boolean defaultKycStatus) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                .withStatus(status.getNumber())
+                .withGetTokenDefaultKycStatus(defaultKycStatus)
+                .build();
+    }
+
     public Bytes encodeIsKyc(final boolean isKyc) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_KYC)
@@ -128,10 +161,26 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeIsKycFailure(final ResponseCodeEnum status, final boolean isKyc) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_KYC)
+                .withStatus(status.getNumber())
+                .withIsKyc(isKyc)
+                .build();
+    }
+
     public Bytes encodeIsToken(final boolean isToken) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_TOKEN)
                 .withStatus(SUCCESS.getNumber())
+                .withIsToken(isToken)
+                .build();
+    }
+
+    public Bytes encodeIsTokenFailure(final ResponseCodeEnum status, final boolean isToken) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_TOKEN)
+                .withStatus(status.getNumber())
                 .withIsToken(isToken)
                 .build();
     }
@@ -175,6 +224,14 @@ public class EvmEncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
+    }
+
+    public Bytes encodeGetTokenInfoFailure(final ResponseCodeEnum status, final EvmTokenInfo tokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
+                .withStatus(status.getNumber())
                 .withTokenInfo(tokenInfo)
                 .build();
     }
@@ -230,10 +287,27 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenExpiryInfoFailure(
+            final ResponseCodeEnum status, final TokenExpiryInfo tokenExpiryWrapper) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(status.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
+    }
+
     public Bytes encodeGetTokenKey(final EvmKey keyValue) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
                 .withStatus(SUCCESS.getNumber())
+                .withKey(keyValue)
+                .build();
+    }
+
+    public Bytes encodeGetTokenKeyFailure(final ResponseCodeEnum status, final EvmKey keyValue) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                .withStatus(status.getNumber())
                 .withKey(keyValue)
                 .build();
     }
