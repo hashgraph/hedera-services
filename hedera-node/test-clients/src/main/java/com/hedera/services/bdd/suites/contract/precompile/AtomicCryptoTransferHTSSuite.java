@@ -126,14 +126,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-                cryptoTransferForHbarOnly(),
-                cryptoTransferForFungibleTokenOnly(),
-                cryptoTransferForNonFungibleTokenOnly(),
-                cryptoTransferHBarFungibleNft(),
-                cryptoTransferAllowanceHbarToken(),
-                cryptoTransferAllowanceFungibleToken(),
-                cryptoTransferAllowanceNft(),
-                cryptoTransferSpecialAccounts()
+            cryptoTransferForHbarOnly(),
+            cryptoTransferForFungibleTokenOnly(),
+            cryptoTransferForNonFungibleTokenOnly(),
+            cryptoTransferHBarFungibleNft(),
+            cryptoTransferAllowanceHbarToken(),
+            cryptoTransferAllowanceFungibleToken(),
+            cryptoTransferAllowanceNft(),
+            cryptoTransferSpecialAccounts()
         });
     }
 
@@ -496,7 +496,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
         return propertyPreservingHapiSpec(
                         "cryptoTransferHBarFungibleNft",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
                         overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
