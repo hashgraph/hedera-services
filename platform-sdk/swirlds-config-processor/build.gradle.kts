@@ -26,7 +26,7 @@ testModuleInfo { requires("org.junit.jupiter.api") }
 
 tasks.register<AntlrTask>("generateParser") {
     conventionMapping.map("antlrClasspath") {
-        configurations.detachedConfiguration(dependencies.create("org.antlr:antlr4:4.11.1"))
+        configurations.detachedConfiguration(dependencies.create("org.antlr:antlr4:4.13.1"))
     }
     source(layout.projectDirectory.dir("src/main/antlr"))
     outputDirectory =

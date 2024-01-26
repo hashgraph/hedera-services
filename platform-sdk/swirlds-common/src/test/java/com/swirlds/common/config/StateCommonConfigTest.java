@@ -16,32 +16,18 @@
 
 package com.swirlds.common.config;
 
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class BasicConfigTest {
+class StateCommonConfigTest {
 
     @Test
     public void testDefaultValuesValid() {
         // given
-        final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(BasicConfig.class);
+        final ConfigurationBuilder builder = ConfigurationBuilder.create().withConfigDataType(StateCommonConfig.class);
 
         // then
-        Assertions.assertDoesNotThrow(() -> builder.build(), "All default values of BasicConfig should be valid");
-    }
-
-    @Test
-    void propertiesHasNoPrefix() {
-        // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "42")
-                .getOrCreateConfig();
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
-
-        // then
-        Assertions.assertEquals(42, basicConfig.jvmPauseDetectorSleepMs());
+        Assertions.assertDoesNotThrow(builder::build, "All default values of StateConfig should be valid");
     }
 }
