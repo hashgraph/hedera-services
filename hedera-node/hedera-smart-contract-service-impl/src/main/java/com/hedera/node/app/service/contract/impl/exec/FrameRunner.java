@@ -38,6 +38,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,7 +80,8 @@ public class FrameRunner {
             @NonNull final MessageFrame frame,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
-            @NonNull final ContractCreationProcessor contractCreation) {
+            @NonNull final ContractCreationProcessor contractCreation,
+            @NonNull final HederaEvmContext context) {
         requireNonNull(frame);
         requireNonNull(tracer);
         requireNonNull(senderId);
@@ -103,9 +105,21 @@ public class FrameRunner {
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
             return successFrom(
-                    gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame, tracer);
+                    gasUsed,
+                    senderId,
+                    recipientMetadata.hederaId(),
+                    asEvmContractId(recipientAddress),
+                    frame,
+                    tracer,
+                    context.recordBuilder().getSignerNonce());
         } else {
-            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId(), tracer);
+            return failureFrom(
+                    gasUsed,
+                    senderId,
+                    frame,
+                    recipientMetadata.postFailureHederaId(),
+                    tracer,
+                    context.recordBuilder().getSignerNonce());
         }
     }
 

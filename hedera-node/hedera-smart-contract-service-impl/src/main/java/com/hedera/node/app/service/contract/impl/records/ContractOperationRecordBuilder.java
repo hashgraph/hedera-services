@@ -24,6 +24,7 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public interface ContractOperationRecordBuilder extends DeleteCapableTransactionRecordBuilder {
     /**
@@ -81,4 +82,10 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
     @NonNull
     ContractOperationRecordBuilder addContractStateChanges(
             @NonNull ContractStateChanges contractStateChanges, boolean isMigration);
+
+    @NonNull
+    ContractOperationRecordBuilder signerNonce(@NonNull Long nonce);
+
+    @Nullable
+    Long getSignerNonce();
 }

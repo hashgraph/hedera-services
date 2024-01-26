@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -116,7 +117,11 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         } catch (AbortException e) {
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
-            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
+            final var result = HederaEvmTransactionResult.fromAborted(
+                    e.senderId(),
+                    hevmTransaction,
+                    e.getStatus(),
+                    context.recordBuilder(ContractOperationRecordBuilder.class).getSignerNonce());
             return CallOutcome.fromResultsWithoutSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }

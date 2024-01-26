@@ -144,7 +144,13 @@ public class TransactionProcessor {
 
         // Compute the result of running the frame to completion
         final var result = frameRunner.runToCompletion(
-                transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
+                transaction.gasLimit(),
+                parties.senderId(),
+                initialFrame,
+                tracer,
+                messageCall,
+                contractCreation,
+                context);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -192,7 +198,12 @@ public class TransactionProcessor {
         // (FUTURE) Once fee charging is more consumable in the HandleContext, we will also want
         // to re-charge top-level HAPI fees in this edge case (not only gas); not urgent though
         updater.commit();
-        return resourceExhaustionFrom(parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason);
+        return resourceExhaustionFrom(
+                parties.senderId(),
+                transaction.gasLimit(),
+                context.gasPrice(),
+                reason,
+                requireNonNull(context.recordBuilder()).getSignerNonce());
     }
 
     /**

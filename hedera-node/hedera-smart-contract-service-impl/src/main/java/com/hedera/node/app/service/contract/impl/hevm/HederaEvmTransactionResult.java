@@ -69,7 +69,8 @@ public record HederaEvmTransactionResult(
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges,
         @Nullable ResponseCodeEnum finalStatus,
-        @Nullable ContractActions actions) {
+        @Nullable ContractActions actions,
+        @Nullable Long signerNonce) {
     public HederaEvmTransactionResult {
         requireNonNull(senderId);
         requireNonNull(output);
@@ -185,7 +186,8 @@ public record HederaEvmTransactionResult(
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final MessageFrame frame,
-            @NonNull final ActionSidecarContentTracer tracer) {
+            @NonNull final ActionSidecarContentTracer tracer,
+            @Nullable Long signerNonce) {
         requireNonNull(frame);
         requireNonNull(tracer);
         return successFrom(
@@ -197,7 +199,8 @@ public record HederaEvmTransactionResult(
                 frame.getOutputData(),
                 frame.getLogs(),
                 maybeAllStateChangesFrom(frame),
-                maybeActionsFrom(frame, tracer));
+                maybeActionsFrom(frame, tracer),
+                signerNonce);
     }
 
     public static HederaEvmTransactionResult successFrom(
@@ -209,7 +212,8 @@ public record HederaEvmTransactionResult(
             @NonNull final org.apache.tuweni.bytes.Bytes output,
             @NonNull final List<Log> logs,
             @Nullable final ContractStateChanges stateChanges,
-            @Nullable ContractActions actions) {
+            @Nullable ContractActions actions,
+            @Nullable Long signerNonce) {
         return new HederaEvmTransactionResult(
                 gasUsed,
                 requireNonNull(gasPrice).toLong(),
@@ -222,7 +226,8 @@ public record HederaEvmTransactionResult(
                 requireNonNull(logs),
                 stateChanges,
                 null,
-                actions);
+                actions,
+                signerNonce);
     }
 
     /**
@@ -241,7 +246,8 @@ public record HederaEvmTransactionResult(
             @NonNull final AccountID senderId,
             @NonNull final MessageFrame frame,
             @Nullable final ContractID recipientId,
-            @NonNull final ActionSidecarContentTracer tracer) {
+            @NonNull final ActionSidecarContentTracer tracer,
+            @Nullable final Long signerNonce) {
         requireNonNull(frame);
         requireNonNull(tracer);
         return new HederaEvmTransactionResult(
@@ -256,7 +262,8 @@ public record HederaEvmTransactionResult(
                 Collections.emptyList(),
                 maybeReadOnlyStateChangesFrom(frame),
                 null,
-                maybeActionsFrom(frame, tracer));
+                maybeActionsFrom(frame, tracer),
+                signerNonce);
     }
 
     /**
@@ -271,7 +278,8 @@ public record HederaEvmTransactionResult(
             @NonNull final AccountID senderId,
             final long gasUsed,
             final long gasPrice,
-            @NonNull final ResponseCodeEnum reason) {
+            @NonNull final ResponseCodeEnum reason,
+            @Nullable Long signerNonce) {
         requireNonNull(reason);
         return new HederaEvmTransactionResult(
                 gasUsed,
@@ -285,7 +293,8 @@ public record HederaEvmTransactionResult(
                 Collections.emptyList(),
                 null,
                 null,
-                null);
+                null,
+                signerNonce);
     }
 
     /**
@@ -299,7 +308,8 @@ public record HederaEvmTransactionResult(
     public static HederaEvmTransactionResult fromAborted(
             @NonNull final AccountID senderId,
             @NonNull final HederaEvmTransaction transaction,
-            @NonNull final ResponseCodeEnum reason) {
+            @NonNull final ResponseCodeEnum reason,
+            @Nullable final Long signerNonce) {
         requireNonNull(senderId);
         requireNonNull(transaction);
         requireNonNull(reason);
@@ -315,7 +325,8 @@ public record HederaEvmTransactionResult(
                 List.of(),
                 null,
                 reason,
-                null);
+                null,
+                signerNonce);
     }
 
     private ContractFunctionResult withMaybeEthFields(
@@ -331,7 +342,10 @@ public record HederaEvmTransactionResult(
 
     private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
         requireNonNull(errorMessage);
-        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .errorMessage(errorMessage)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
@@ -345,7 +359,8 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null);
+                .errorMessage(null)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult asSuccessResultForQuery() {
@@ -356,6 +371,7 @@ public record HederaEvmTransactionResult(
                 .contractID(recipientId)
                 .logInfo(pbjLogsFrom(logs))
                 .errorMessage(null)
+                .signerNonce(signerNonce)
                 .build();
     }
 
