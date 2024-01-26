@@ -26,7 +26,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
@@ -85,7 +85,7 @@ public class LegacyCsvWriter {
     // path and filename of the .csv file to write to
     private final Path csvFilePath;
     private final MetricsConfig metricsConfig;
-    private final BasicConfig basicConfig;
+    private final BasicCommonConfig basicConfig;
 
     private final Map<Pair<String, String>, Integer> indexLookup = new HashMap<>();
     private final List<Integer> cellCount = new ArrayList<>();
@@ -112,7 +112,7 @@ public class LegacyCsvWriter {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId is null");
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        basicConfig = configuration.getConfigData(BasicConfig.class);
+        basicConfig = configuration.getConfigData(BasicCommonConfig.class);
 
         final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);

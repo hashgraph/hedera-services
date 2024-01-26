@@ -32,7 +32,6 @@ The following are all the settings, as modified by settings.txt, but not reflect
            5000 = timeoutSyncClientConnect
            5000 = timeoutServerAcceptConnect
            1000 = deadlockCheckPeriod
-            500 = sleepHeartbeat
             200 = delayShuffle
              30 = callerSkipsBeforeSleep
              50 = sleepCallerSkips

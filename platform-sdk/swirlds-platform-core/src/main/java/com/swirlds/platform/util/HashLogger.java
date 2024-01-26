@@ -18,10 +18,10 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
