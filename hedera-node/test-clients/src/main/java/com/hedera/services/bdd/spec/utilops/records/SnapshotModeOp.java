@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EMPTY_ERROR_MSG;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -55,6 +56,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -180,6 +182,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     private RecordSnapshot snapshotToMatchAgainst;
 
+    /**
+     *  If node stake update transaction record was found,
+     *  we should normalize following transactions id nonce
+     */
+    private boolean nodeStakeUpdateFound = false;
+
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
         final var snapshotFileMeta =
@@ -288,6 +296,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     .toList();
             // We only want to snapshot or fuzzy-match the records that come after the placeholder creation
             boolean placeholderFound = false;
+            nodeStakeUpdateFound = false;
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 if (parsedItem.isPropertyOverride()) {
@@ -297,6 +306,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
+                    nodeStakeUpdateFound = true;
                     continue;
                 }
                 if (spec.setup()
@@ -594,6 +604,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
             } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
                 Assertions.assertTrue(expected != null && actual != null, "Token name is null");
+            } else if ("errorMessage".equals(fieldName)
+                    && "0x".equals(expected)
+                    && matchModes.contains(ALLOW_EMPTY_ERROR_MSG)) {
+                // Mono return empty error msg on revert, but in mod we have status enum name
+                Assertions.assertTrue(true);
             } else {
                 Assertions.assertEquals(
                         expected,
@@ -621,7 +636,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param placeholderNum the placeholder number to use in normalization
      * @return the original message if not an entity id; or a normalized message if it is
      */
-    private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
+    private GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
             final var normalizedNum = placeholderNum < accountID.getAccountNum()
@@ -652,6 +667,14 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     ? scheduleID.getScheduleNum() - placeholderNum
                     : scheduleID.getScheduleNum();
             return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
+        } else if (message instanceof TransactionID transactionID) {
+            // if node stake update transaction was found, nonce of any following transaction id
+            // should be decreased by one.
+            return nodeStakeUpdateFound && transactionID.getNonce() > 1
+                    ? transactionID.toBuilder()
+                            .setNonce(transactionID.getNonce() - 1)
+                            .build()
+                    : transactionID;
         } else {
             return message;
         }
