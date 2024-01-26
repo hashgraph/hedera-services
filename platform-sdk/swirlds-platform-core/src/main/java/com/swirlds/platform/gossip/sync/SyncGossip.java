@@ -36,7 +36,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
-import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.SyncPermitProvider;
@@ -108,7 +107,6 @@ public class SyncGossip extends AbstractGossip {
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
-     * @param gossipEventWindowNexus        provides access to the event window
      * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
@@ -132,7 +130,6 @@ public class SyncGossip extends AbstractGossip {
             @Nullable final Hash epochHash,
             @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final GossipEventWindowNexus gossipEventWindowNexus,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -171,7 +168,6 @@ public class SyncGossip extends AbstractGossip {
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
-                gossipEventWindowNexus,
                 receivedEventHandler,
                 syncManager,
                 intakeEventCounter,

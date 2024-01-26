@@ -37,7 +37,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -90,11 +89,6 @@ public class ShadowgraphSynchronizer {
     private final SyncMetrics syncMetrics;
 
     /**
-     * Provides access to the current event window.
-     */
-    private final GossipEventWindowNexus gossipEventWindowNexus;
-
-    /**
      * consumes events received by the peer
      */
     private final Consumer<GossipEvent> eventHandler;
@@ -142,7 +136,6 @@ public class ShadowgraphSynchronizer {
      * @param shadowGraph            stores events to sync
      * @param numberOfNodes          number of nodes in the network
      * @param syncMetrics            metrics for sync
-     * @param gossipEventWindowNexus provides the event window
      * @param receivedEventHandler   events that are received are passed here
      * @param fallenBehindManager    tracks if we have fallen behind
      * @param intakeEventCounter     used for tracking events in the intake pipeline per peer
@@ -153,7 +146,6 @@ public class ShadowgraphSynchronizer {
             @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final GossipEventWindowNexus gossipEventWindowNexus,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
@@ -165,7 +157,6 @@ public class ShadowgraphSynchronizer {
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.gossipEventWindowNexus = Objects.requireNonNull(gossipEventWindowNexus);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = Objects.requireNonNull(executor);
@@ -221,7 +212,7 @@ public class ShadowgraphSynchronizer {
 
             // Step 1: each peer tells the other about its tips and event windows
 
-            final NonAncientEventWindow myWindow = getEventWindow(reservation.getReservedIndicator());
+            final NonAncientEventWindow myWindow = reservation.getEventWindow();
 
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE event windows numbers & tip hashes
@@ -273,24 +264,6 @@ public class ShadowgraphSynchronizer {
 
         return sendAndReceiveEvents(
                 connection, timing, sendList, syncConfig.syncKeepalivePeriod(), syncConfig.maxSyncTime());
-    }
-
-    /**
-     * Get the event window to use for a sync. We can't directly use the event window returned by the
-     * {@link GossipEventWindowNexus} due to the legacy shadowgraph reservation pattern.
-     *
-     * @param reservedExpirationThreshold the reserved expiration threshold
-     * @return the event window to use for a sync
-     */
-    @NonNull
-    private NonAncientEventWindow getEventWindow(final long reservedExpirationThreshold) {
-        final NonAncientEventWindow currentWindow = gossipEventWindowNexus.getEventWindow();
-
-        return new NonAncientEventWindow(
-                currentWindow.getLatestConsensusRound(),
-                currentWindow.getAncientThreshold(),
-                reservedExpirationThreshold,
-                currentWindow.getAncientMode());
     }
 
     @NonNull

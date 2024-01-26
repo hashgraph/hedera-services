@@ -30,7 +30,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
@@ -71,7 +70,6 @@ public class SyncNode {
     private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final Shadowgraph shadowGraph;
-    private final GossipEventWindowNexus gossipEventWindowNexus;
     private final Consensus consensus;
     private ParallelExecutor executor;
     private Connection connection;
@@ -126,7 +124,6 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        gossipEventWindowNexus = new GossipEventWindowNexus(platformContext);
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
         consensus = mock(Consensus.class);
         this.executor = executor;
@@ -240,7 +237,6 @@ public class SyncNode {
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
-                gossipEventWindowNexus,
                 eventHandler,
                 syncManager,
                 mock(IntakeEventCounter.class),
@@ -249,11 +245,11 @@ public class SyncNode {
 
     /**
      * <p>Calls the
-     * {@link Shadowgraph#updateNonExpiredEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and
-     * saves the {@code expireBelow} value for use in validation. For the purposes of these tests, the
-     * {@code expireBelow} value becomes the oldest non-expired generation in the shadow graph returned by
-     * {@link SyncNode#getOldestGeneration()} . In order words, these tests assume there are no generation reservations
-     * prior to the sync that occurs in the test.</p>
+     * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
+     * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
+     * becomes the oldest non-expired generation in the shadow graph returned by {@link SyncNode#getOldestGeneration()}
+     * . In order words, these tests assume there are no generation reservations prior to the sync that occurs in the
+     * test.</p>
      *
      * <p>The {@link SyncNode#getOldestGeneration()} value is used to determine which events should not be send to the
      * peer because they are expired.</p>
@@ -284,12 +280,10 @@ public class SyncNode {
     }
 
     /**
-     * Sets the current {@link NonAncientEventWindow} for the {@link GossipEventWindowNexus} and the
-     * {@link Shadowgraph}.
+     * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
      */
     public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
-        gossipEventWindowNexus.setEventWindow(eventWindow);
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
     }
 
     public TestingSyncManager getSyncManager() {
@@ -342,7 +336,7 @@ public class SyncNode {
     }
 
     public long getCurrentAncientThreshold() {
-        return gossipEventWindowNexus.getEventWindow().getAncientThreshold();
+        return shadowGraph.getEventWindow().getAncientThreshold();
     }
 
     public long getOldestGeneration() {

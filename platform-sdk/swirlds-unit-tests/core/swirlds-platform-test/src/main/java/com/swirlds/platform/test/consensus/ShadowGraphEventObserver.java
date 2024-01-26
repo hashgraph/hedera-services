@@ -53,7 +53,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        shadowGraph.updateNonExpiredEventWindow(consensusRound.getNonAncientEventWindow());
+        shadowGraph.updateEventWindow(consensusRound.getNonAncientEventWindow());
     }
 
     /**

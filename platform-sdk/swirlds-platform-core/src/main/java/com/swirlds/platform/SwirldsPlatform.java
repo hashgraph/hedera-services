@@ -101,7 +101,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
-import com.swirlds.platform.gossip.GossipEventWindowNexus;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -303,6 +302,8 @@ public class SwirldsPlatform implements Platform {
      */
     private final PlatformWiring platformWiring;
 
+    private final AncientMode ancientMode;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -329,6 +330,11 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+
+        ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
@@ -424,12 +430,6 @@ public class SwirldsPlatform implements Platform {
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
-            final AncientMode currentFileType = platformContext
-                            .getConfiguration()
-                            .getConfigData(EventConfig.class)
-                            .useBirthRoundAncientThreshold()
-                    ? AncientMode.BIRTH_ROUND_THRESHOLD
-                    : AncientMode.GENERATION_THRESHOLD;
 
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
@@ -437,7 +437,7 @@ public class SwirldsPlatform implements Platform {
                     databaseDirectory,
                     initialState.getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
-                    currentFileType);
+                    ancientMode);
 
             preconsensusEventFileManager =
                     new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
@@ -676,8 +676,6 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
-        final GossipEventWindowNexus gossipEventWindowNexus = new GossipEventWindowNexus(platformContext);
-
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -695,8 +693,7 @@ public class SwirldsPlatform implements Platform {
                 sequencer,
                 eventCreationManager,
                 swirldStateManager,
-                stateSignatureCollector,
-                gossipEventWindowNexus);
+                stateSignatureCollector);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -728,7 +725,6 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
-                gossipEventWindowNexus,
                 platformWiring.getGossipEventInput()::put,
                 platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 swirldStateManager,
@@ -744,10 +740,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
                 getAddressBook(),
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .getAncientMode()));
+                ancientMode));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -898,7 +891,14 @@ public class SwirldsPlatform implements Platform {
         Objects.requireNonNull(signedState);
 
         consensusRef.get().loadFromSignedState(signedState);
-        shadowGraph.startWithExpiredThreshold(consensusRef.get().getMinGenerationNonAncient());
+
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                signedState.getRound(),
+                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
+                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
+                ancientMode);
+
+        shadowGraph.startWithEventWindow(eventWindow);
 
         gossip.loadFromSignedState(signedState);
     }
@@ -962,7 +962,7 @@ public class SwirldsPlatform implements Platform {
                     signedState.getRound(),
                     signedState.getMinRoundGeneration(),
                     signedState.getMinRoundGeneration(),
-                    AncientMode.getAncientMode(platformContext)));
+                    ancientMode));
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 

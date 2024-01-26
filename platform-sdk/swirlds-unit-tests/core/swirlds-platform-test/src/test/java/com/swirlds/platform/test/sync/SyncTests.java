@@ -18,6 +18,7 @@ package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CompareTo.max;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
@@ -591,7 +592,7 @@ public class SyncTests {
             when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinGen);
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
             c.getShadowGraph()
-                    .updateNonExpiredEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
                             0 /* ignored by shadowgraph */,
                             callerMinGen,
@@ -599,7 +600,7 @@ public class SyncTests {
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
             l.getShadowGraph()
-                    .updateNonExpiredEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
                             0 /* ignored by shadowgraph */,
                             listenerMinGen,
@@ -682,7 +683,7 @@ public class SyncTests {
                             0 /* ignored by shadowgraph */,
                             genToExpire.get() + 1,
                             GENERATION_THRESHOLD);
-                    executor.getCaller().getShadowGraph().updateNonExpiredEventWindow(eventWindow);
+                    executor.getCaller().getShadowGraph().updateEventWindow(eventWindow);
                 },
                 false));
 
@@ -864,7 +865,7 @@ public class SyncTests {
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =
-                () -> executor.getListener().getShadowGraph().updateNonExpiredEventWindow(eventWindow);
+                () -> executor.getListener().getShadowGraph().updateEventWindow(eventWindow);
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
                 getStaticThreadManager(),
                 expireAfterPhase == 1 ? expireEvents : null,
@@ -1077,8 +1078,13 @@ public class SyncTests {
             when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
         });
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            listener.getShadowGraph()
-                    .startWithExpiredThreshold(caller.getConsensus().getMinGenerationNonAncient());
+            final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                    ROUND_FIRST,
+                    caller.getConsensus().getMinGenerationNonAncient(),
+                    caller.getConsensus().getMinGenerationNonAncient(),
+                    GENERATION_THRESHOLD); // TODO
+
+            listener.getShadowGraph().startWithEventWindow(eventWindow);
         });
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
