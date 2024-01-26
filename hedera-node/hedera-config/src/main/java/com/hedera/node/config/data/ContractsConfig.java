@@ -76,7 +76,7 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
+        @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "false") @NetworkProperty
                 boolean evmAllowCallsToNonContractAccounts,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
