@@ -288,9 +288,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
         // user transaction
-        final var firstConsTimeOfLastBlock = blockRecordManager.firstConsTimeOfLastBlock();
-        final var isFirstTransaction =
-                firstConsTimeOfLastBlock != null && !firstConsTimeOfLastBlock.isAfter(Instant.EPOCH);
+        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
+        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
         // Setup record builder list
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);

@@ -301,6 +301,18 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Instant consTimeOfLastHandledTxn() {
+        final var lastHandledTxn = lastBlockInfo.consTimeOfLastHandledTxn();
+        return lastHandledTxn != null
+                ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
+                : Instant.EPOCH;
+    }
+
     @Override
     public @NonNull Timestamp currentBlockTimestamp() {
         return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();

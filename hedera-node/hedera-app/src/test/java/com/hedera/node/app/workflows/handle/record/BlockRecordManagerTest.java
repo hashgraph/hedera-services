@@ -28,6 +28,7 @@ import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -36,19 +37,27 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
+import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
@@ -397,6 +406,48 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
                 new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, timestampBeforeEpoch, false, CONSENSUS_TIME));
         Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void consTimeOfLastHandledTxnIsSet() {
+        final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
+        final var state = simpleBlockInfoState(blockInfo);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+
+        final var result = subject.consTimeOfLastHandledTxn();
+        Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
+    }
+
+    @Test
+    void consTimeOfLastHandledTxnIsNotSet() {
+        final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
+        final var state = simpleBlockInfoState(blockInfo);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+
+        final var result = subject.consTimeOfLastHandledTxn();
+        Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
+    }
+
+    private static HederaState simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new HederaState() {
+            @NonNull
+            @Override
+            public ReadableStates getReadableStates(@NonNull final String serviceName) {
+                return new MapReadableStates(Map.of(
+                        BlockRecordService.BLOCK_INFO_STATE_KEY,
+                        new ReadableSingletonStateBase<>(BlockRecordService.BLOCK_INFO_STATE_KEY, () -> blockInfo),
+                        RUNNING_HASHES_STATE_KEY,
+                        new ReadableSingletonStateBase<>(RUNNING_HASHES_STATE_KEY, () -> RunningHashes.DEFAULT)));
+            }
+
+            @NonNull
+            @Override
+            public WritableStates getWritableStates(@NonNull String serviceName) {
+                throw new UnsupportedOperationException("Shouldn't be needed for this test");
+            }
+        };
     }
 
     private static Instant fromTimestamp(final Timestamp timestamp) {
