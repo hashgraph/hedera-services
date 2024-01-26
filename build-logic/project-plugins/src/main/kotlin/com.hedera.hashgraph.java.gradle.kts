@@ -22,6 +22,7 @@ import com.autonomousapps.DependencyAnalysisSubExtension
 plugins {
     id("java")
     id("jacoco")
+    id("checkstyle")
     id("com.adarshr.test-logger")
     id("com.hedera.hashgraph.jpms-modules")
     id("com.hedera.hashgraph.jpms-module-dependencies")
@@ -259,4 +260,14 @@ val dependencyAnalysis = extensions.findByType<AbstractExtension>()
 
 if (dependencyAnalysis is DependencyAnalysisSubExtension) {
     dependencyAnalysis.issues { onAny { exclude(project.path) } }
+}
+
+checkstyle { toolVersion = "10.12.7" }
+
+tasks.withType<Checkstyle>().configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+        sarif.required = true
+    }
 }
