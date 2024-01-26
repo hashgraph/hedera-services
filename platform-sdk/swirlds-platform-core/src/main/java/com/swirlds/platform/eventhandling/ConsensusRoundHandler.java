@@ -30,7 +30,6 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.RunningEventHashUpdate;
@@ -82,8 +81,7 @@ public class ConsensusRoundHandler {
     /**
      * a RunningHash object which calculates running hash of all consensus events so far with their transactions handled
      */
-    private RunningHash consensusEventsRunningHash =
-            new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+    private RunningHash consensusEventsRunningHash;
 
     /**
      * A queue that accepts signed states for hashing and signature collection.
@@ -150,6 +148,8 @@ public class ConsensusRoundHandler {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
+        this.consensusEventsRunningHash =
+                new RunningHash(platformContext.getCryptography().getNullHash(DigestType.SHA_384));
 
         // Future work: This metric should be moved to a suitable component once the stateHashSignQueue is migrated
         // to the framework
