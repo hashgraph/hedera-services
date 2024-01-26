@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountB
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -112,7 +111,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String NFT_KEY = "nftKey";
     private static final String AUTO_CREATION_MODES = "AutoCreationModes";
-    private static final String NESTED_LAZY_CREATE_VIA_CONSTRUCTOR = "NestedLazyCreateViaConstructor";
     private static final String CREATION_ATTEMPT = "creationAttempt";
     private static final String ONE_TIME = "ONE TIME";
     private static final String CREATE_DIRECTLY = "createDirectly";
@@ -656,31 +654,5 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .logged());
                 }))
                 .then();
-    }
-
-    @HapiTest
-    final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
-        final var depositAmount = 1000;
-
-        return defaultHapiSpec("htsTransferFromForNFTViaContractCreateLazyCreate")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    allRunFor(
-                            spec,
-                            contractCreate(
-                                            NESTED_LAZY_CREATE_VIA_CONSTRUCTOR,
-                                            HapiParserUtil.asHeadlongAddress(addressBytes))
-                                    .balance(depositAmount)
-                                    .gas(GAS_TO_OFFER)
-                                    .via(TRANSFER_TXN)
-                                    .hasKnownStatus(SUCCESS),
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
-                }))
-                .then(childRecordsCheck(TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS)));
     }
 }

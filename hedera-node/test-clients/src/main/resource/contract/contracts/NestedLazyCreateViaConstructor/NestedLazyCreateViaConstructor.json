@@ -9,24 +9,5 @@
       ],
       "stateMutability": "payable",
       "type": "constructor"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
-        }
-      ],
-      "name": "pauseToken",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "responseCode",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
-  ]
+]
