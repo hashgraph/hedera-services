@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;

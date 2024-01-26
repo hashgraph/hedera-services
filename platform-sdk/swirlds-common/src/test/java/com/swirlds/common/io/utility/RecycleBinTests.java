@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateConfig_;
+import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -59,7 +59,7 @@ class RecycleBinTests {
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         configuration = new TestConfigBuilder()
-                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .getOrCreateConfig();
     }
 
@@ -215,7 +215,7 @@ class RecycleBinTests {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
 
         final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
                 .getOrCreateConfig();
 
@@ -281,7 +281,7 @@ class RecycleBinTests {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
 
         final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
                 .getOrCreateConfig();
 

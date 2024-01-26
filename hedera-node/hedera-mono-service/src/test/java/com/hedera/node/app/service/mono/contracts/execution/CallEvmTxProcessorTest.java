@@ -138,6 +138,9 @@ class CallEvmTxProcessorTest {
     @Mock
     private InHandleBlockMetaSource blockMetaSource;
 
+    @Mock
+    private EvmConfiguration evmConfiguration;
+
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Account relayer = new Account(new Id(0, 0, 1007));
@@ -159,7 +162,9 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {
@@ -637,7 +642,9 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         final MessageCallProcessor messageCallProcessor = mock(MessageCallProcessor.class);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(EVM_VERSION_0_30, () -> messageCallProcessor, EVM_VERSION_0_34, () -> messageCallProcessor);
