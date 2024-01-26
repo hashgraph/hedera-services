@@ -82,7 +82,7 @@ class TokenUriCallTest extends HtsCallTestBase {
         // then
         assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
         assertEquals(
-                HederaExceptionalHaltReason.NOT_SUPPORTED,
+                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
                 result.getHaltReason().get());
     }
 }
