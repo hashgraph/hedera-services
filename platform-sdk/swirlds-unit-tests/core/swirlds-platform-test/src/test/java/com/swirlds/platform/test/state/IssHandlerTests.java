@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;

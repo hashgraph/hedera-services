@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.iss;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
