@@ -17,13 +17,15 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.mockito.Mockito.when;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -217,13 +219,22 @@ public class SyncTestExecutor {
                 callerMinNonAncientGen++;
             }
 
-            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncientGen);
+            // TODO
+            //            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            //            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+            //            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncientGen);
 
-            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
-            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncientGen);
+            caller.updateEventWindow(new NonAncientEventWindow(
+                    ROUND_FIRST, callerMinNonAncientGen, callerMinGen, GENERATION_THRESHOLD)); // TODO
+
+            // TODO
+            //            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
+            //            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
+            //
+            // when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncientGen);
+
+            listener.updateEventWindow(new NonAncientEventWindow(
+                    ROUND_FIRST, listenerMinNonAncientGen, listenerMinGen, GENERATION_THRESHOLD)); // TODO
         };
     }
 

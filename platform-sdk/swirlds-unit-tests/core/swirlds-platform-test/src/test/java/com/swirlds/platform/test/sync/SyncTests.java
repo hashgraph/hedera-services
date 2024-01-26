@@ -732,21 +732,16 @@ public class SyncTests {
 
         // before the sync, expire the tip on the listener
         executor.setCustomPreSyncConfiguration((c, l) -> {
-            l.getShadowGraph()
-                    .updateNonExpiredEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */,
-                            0 /* ignored by shadowgraph */,
-                            maxGen.get() + 1,
-                            GENERATION_THRESHOLD));
+            l.updateEventWindow(new NonAncientEventWindow(
+                    0 /* ignored by shadowgraph */, 0, maxGen.get() + 1, GENERATION_THRESHOLD));
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
 
-            c.getShadowGraph()
-                    .updateNonExpiredEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */,
-                            0 /* ignored by shadowgraph */,
-                            max(EventConstants.FIRST_GENERATION, maxGen.get() - 1),
-                            GENERATION_THRESHOLD));
+            c.updateEventWindow(new NonAncientEventWindow(
+                    0 /* ignored by shadowgraph */,
+                    0,
+                    max(EventConstants.FIRST_GENERATION, maxGen.get() - 1),
+                    GENERATION_THRESHOLD));
             when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
         });
@@ -755,12 +750,8 @@ public class SyncTests {
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
                 getStaticThreadManager(),
                 () -> executor.getCaller()
-                        .getShadowGraph()
-                        .updateNonExpiredEventWindow(new NonAncientEventWindow(
-                                0 /* ignored by shadowgraph */,
-                                0 /* ignored by shadowgraph */,
-                                maxGen.get() + 1,
-                                GENERATION_THRESHOLD)),
+                        .updateEventWindow(new NonAncientEventWindow(
+                                0 /* ignored by shadowgraph */, 0, maxGen.get() + 1, GENERATION_THRESHOLD)),
                 null,
                 true);
         executor.setExecutorSupplier(() -> parallelExecutor);

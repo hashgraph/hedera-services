@@ -135,10 +135,10 @@ public class SyncValidator {
         expectedListenerSendList.removeIf(e -> e.getGeneration() < listener.getOldestGeneration());
 
         // Remove events that are ancient for the peer
-        expectedCallerSendList.removeIf(
-                e -> e.getGeneration() < listener.getConsensus().getMinGenerationNonAncient());
-        expectedListenerSendList.removeIf(
-                e -> e.getGeneration() < caller.getConsensus().getMinGenerationNonAncient());
+        expectedCallerSendList.removeIf( // TODO generations vs rounds
+                e -> e.getGeneration() < listener.getCurrentAncientThreshold());
+        expectedListenerSendList.removeIf( // TODO generations vs rounds
+                e -> e.getGeneration() < caller.getCurrentAncientThreshold());
 
         // Get the events each received from the other in the sync
         final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();

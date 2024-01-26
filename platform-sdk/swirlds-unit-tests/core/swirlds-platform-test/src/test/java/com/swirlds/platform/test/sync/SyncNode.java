@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -43,6 +42,7 @@ import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,6 +71,7 @@ public class SyncNode {
     private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final Shadowgraph shadowGraph;
+    private final GossipEventWindowNexus gossipEventWindowNexus;
     private final Consensus consensus;
     private ParallelExecutor executor;
     private Connection connection;
@@ -125,6 +126,7 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
+        gossipEventWindowNexus = new GossipEventWindowNexus(platformContext);
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
         consensus = mock(Consensus.class);
         this.executor = executor;
@@ -232,14 +234,6 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        final GossipEventWindowNexus gossipEventWindowNexus = mock(GossipEventWindowNexus.class);
-
-        // this.getConsensus().getMinGenerationNonAncient() // TODO
-
-        when(gossipEventWindowNexus.getEventWindow())
-                .thenReturn(new NonAncientEventWindow(
-                        0, 0, 0, GENERATION_THRESHOLD));
-
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowgraphSynchronizer(
                 platformContext,
@@ -270,7 +264,7 @@ public class SyncNode {
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelow, GENERATION_THRESHOLD);
 
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        updateEventWindow(eventWindow);
     }
 
     public NodeId getNodeId() {
@@ -287,6 +281,15 @@ public class SyncNode {
 
     public Shadowgraph getShadowGraph() {
         return shadowGraph;
+    }
+
+    /**
+     * Sets the current {@link NonAncientEventWindow} for the {@link GossipEventWindowNexus} and the
+     * {@link Shadowgraph}.
+     */
+    public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+        gossipEventWindowNexus.setEventWindow(eventWindow);
+        shadowGraph.updateNonExpiredEventWindow(eventWindow);
     }
 
     public TestingSyncManager getSyncManager() {
@@ -333,8 +336,13 @@ public class SyncNode {
         this.executor = executor;
     }
 
+    // TODO this needs to be removed
     public Consensus getConsensus() {
         return consensus;
+    }
+
+    public long getCurrentAncientThreshold() {
+        return gossipEventWindowNexus.getEventWindow().getAncientThreshold();
     }
 
     public long getOldestGeneration() {
