@@ -191,6 +191,10 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             } else {
                 info.pauseStatus(PAUSE_NOT_APPLICABLE);
             }
+            if (!isEmpty(token.metadataKey())) {
+                info.metadataKey(token.metadataKey());
+            }
+            info.metadata(token.metadata());
             info.customFees(token.customFees());
 
             return Optional.of(info.build());

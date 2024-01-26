@@ -32,6 +32,7 @@ import static org.mockito.Mockito.never;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -54,6 +55,7 @@ class GetTokenInfoResourceUsageTest {
     private static final String symbol = "HEYMAOK";
     private static final String name = "IsItReallyOk";
     private static final TokenID target = IdUtils.asToken("0.0.123");
+    private static final Bytes metadata = Bytes.wrap("Test Metadata");
     private static final TokenInfo info = TokenInfo.newBuilder()
             .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
             .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
@@ -61,11 +63,13 @@ class GetTokenInfoResourceUsageTest {
             .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
             .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
             .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
+            .setMetadataKey(TxnHandlingScenario.TOKEN_METADATA_KT.asKey())
             .setSymbol(symbol)
             .setName(name)
             .setMemo(memo)
             .setPauseStatus(TokenPauseStatus.Paused)
             .setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
+            //            .setMetadata(metadata)
             .build();
     private static final Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
 
