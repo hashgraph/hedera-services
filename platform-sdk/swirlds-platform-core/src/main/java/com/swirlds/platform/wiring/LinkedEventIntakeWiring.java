@@ -22,7 +22,6 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -37,8 +36,6 @@ import java.util.List;
  * @param consensusRoundOutput              the output wire for consensus rounds
  * @param consensusEventsOutput             the output wire for consensus events, transformed from the consensus round
  *                                          output
- * @param nonAncientEventWindowOutput       the output wire for the {@link NonAncientEventWindow}. This output is
- *                                          transformed from the consensus round output
  * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
  * @param flushRunnable                     the runnable to flush the intake
  */
@@ -47,7 +44,6 @@ public record LinkedEventIntakeWiring(
         @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<List<EventImpl>> consensusEventsOutput,
-        @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
         @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -66,8 +62,6 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
                 consensusRoundOutput.buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents),
-                consensusRoundOutput.buildTransformer(
-                        "getNonAncientEventWindow", "rounds", ConsensusRound::getNonAncientEventWindow),
                 taskScheduler.buildSecondaryOutputWire(),
                 taskScheduler::flush);
     }

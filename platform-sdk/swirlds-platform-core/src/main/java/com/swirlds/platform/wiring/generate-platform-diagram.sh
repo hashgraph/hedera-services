@@ -4,7 +4,7 @@
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
+    -s 'eventWindowManager:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
@@ -14,7 +14,7 @@ pcli diagram \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
