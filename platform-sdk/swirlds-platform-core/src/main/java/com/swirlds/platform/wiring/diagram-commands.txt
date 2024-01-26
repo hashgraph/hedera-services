@@ -10,6 +10,7 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
+    -s 'inOrderLinker:events to gossip:g' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -19,6 +20,7 @@ pcli diagram \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -g 'Gossip:gossip,shadowgraph' \
     -c 'Orphan Buffer'
 
 ########################################################################################################################
@@ -34,6 +36,7 @@ pcli diagram \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
+    -s 'inOrderLinker:events to gossip:g' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -43,6 +46,7 @@ pcli diagram \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'PCES Writer:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -g 'Gossip:gossip,shadowgraph' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
