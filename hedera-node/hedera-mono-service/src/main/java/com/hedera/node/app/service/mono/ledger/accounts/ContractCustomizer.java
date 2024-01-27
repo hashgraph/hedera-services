@@ -175,6 +175,6 @@ public class ContractCustomizer {
     }
 
     public boolean appliesTo(final Address address) {
-        return customizerAppliesToAddress.equals(address);
+        return customizerAppliesToAddress == null || customizerAppliesToAddress.equals(address);
     }
 }
