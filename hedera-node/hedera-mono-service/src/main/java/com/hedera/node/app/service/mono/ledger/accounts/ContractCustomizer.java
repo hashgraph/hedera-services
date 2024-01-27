@@ -177,6 +177,9 @@ public class ContractCustomizer {
     }
 
     public boolean appliesTo(final Address address) {
-        return customizerAppliesToAddress == null || customizerAppliesToAddress.equals(address);
+        if (customizerAppliesToAddress == null) {
+            throw new IllegalStateException("CustomizerAppliesToAddress is null");
+        }
+        return customizerAppliesToAddress.equals(address);
     }
 }
