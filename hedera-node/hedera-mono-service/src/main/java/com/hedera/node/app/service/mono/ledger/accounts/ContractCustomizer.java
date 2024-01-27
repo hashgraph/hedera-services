@@ -68,6 +68,7 @@ public class ContractCustomizer {
      * @param decodedKey the key implied by the HAPI operation
      * @param consensusTime the consensus time of the ContractCreate
      * @param op the details of the HAPI operation
+     * @param customizerAppliesToAddress the address of the contract being created, or null if not applicable
      * @return an appropriate top-level customizer
      */
     public static ContractCustomizer fromHapiCreation(
@@ -105,6 +106,7 @@ public class ContractCustomizer {
      *
      * @param sponsor the sending contract
      * @param ledger the containing ledger
+     * @param customizerAppliesToAddress the address of the contract being created, or null if not applicable
      * @return an appropriate child customizer
      */
     public static ContractCustomizer fromSponsorContract(
