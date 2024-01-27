@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,7 +197,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
 
         // --- Do the business logic ---
-        final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+        final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op, newContractAddress);
         worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
         TransactionProcessingResult result;
         try {
