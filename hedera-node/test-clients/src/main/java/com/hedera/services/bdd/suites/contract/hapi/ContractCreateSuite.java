@@ -151,7 +151,8 @@ public class ContractCreateSuite extends HapiSuite {
                 contractWithAutoRenewNeedSignatures(),
                 newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields(),
-                disallowCreationsOfEmptyInitCode());
+                disallowCreationsOfEmptyInitCode(),
+                createCallInConstructor());
     }
 
     @Override
@@ -337,6 +338,17 @@ public class ContractCreateSuite extends HapiSuite {
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final HapiSpec createCallInConstructor() {
+        final var txn = "txn";
+        return defaultHapiSpec("callInConstructor")
+                .given(uploadInitCode("CallInConstructor"))
+                .when()
+                .then(
+                        contractCreate("CallInConstructor").via(txn).hasKnownStatus(SUCCESS),
+                        getTxnRecord(txn).logged());
     }
 
     @HapiTest

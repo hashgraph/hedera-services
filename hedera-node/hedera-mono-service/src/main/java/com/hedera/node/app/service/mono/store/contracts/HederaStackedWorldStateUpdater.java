@@ -185,7 +185,7 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         final var newAddress = worldState.newContractAddress(sponsor);
         numAllocatedIds++;
         final var sponsorId = accountIdFromEvmAddress(sponsor);
-        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
+        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts(), newAddress);
         if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
             pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
         }
@@ -284,7 +284,8 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
 
     @FunctionalInterface
     interface CustomizerFactory {
-        ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger);
+        ContractCustomizer apply(
+                AccountID id, TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger, Address address);
     }
 
     // --- Only used by unit tests

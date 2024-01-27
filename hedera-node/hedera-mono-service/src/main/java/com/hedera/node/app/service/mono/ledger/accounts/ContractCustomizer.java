@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Encapsulates a set of customizations to a smart contract. Primarily delegates to an {@link
@@ -45,14 +46,19 @@ public class ContractCustomizer {
     // Null if the contract is immutable; then its key derives from its entity id
     private final JKey cryptoAdminKey;
     private final HederaAccountCustomizer accountCustomizer;
+    private final Address customizerAppliesToAddress;
 
     public ContractCustomizer(final HederaAccountCustomizer accountCustomizer) {
-        this(null, accountCustomizer);
+        this(null, accountCustomizer, null);
     }
 
-    public ContractCustomizer(final @Nullable JKey cryptoAdminKey, final HederaAccountCustomizer accountCustomizer) {
+    public ContractCustomizer(
+            final @Nullable JKey cryptoAdminKey,
+            final HederaAccountCustomizer accountCustomizer,
+            final @Nullable Address customizerAppliesToAddress) {
         this.cryptoAdminKey = cryptoAdminKey;
         this.accountCustomizer = accountCustomizer;
+        this.customizerAppliesToAddress = customizerAppliesToAddress;
     }
 
     /**
@@ -65,7 +71,10 @@ public class ContractCustomizer {
      * @return an appropriate top-level customizer
      */
     public static ContractCustomizer fromHapiCreation(
-            final JKey decodedKey, final Instant consensusTime, final ContractCreateTransactionBody op) {
+            final JKey decodedKey,
+            final Instant consensusTime,
+            final ContractCreateTransactionBody op,
+            final Address customizerAppliesToAddress) {
         final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
         final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
 
@@ -86,7 +95,7 @@ public class ContractCustomizer {
             customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
 
-        return new ContractCustomizer(key, customizer);
+        return new ContractCustomizer(key, customizer, customizerAppliesToAddress);
     }
 
     /**
@@ -99,13 +108,15 @@ public class ContractCustomizer {
      * @return an appropriate child customizer
      */
     public static ContractCustomizer fromSponsorContract(
-            final AccountID sponsor, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+            final AccountID sponsor,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger,
+            final Address customizerAppliesToAddress) {
         var key = (JKey) ledger.get(sponsor, KEY);
         if (key instanceof JContractIDKey) {
             key = null;
         }
         final var customizer = getAccountCustomizer(sponsor, ledger);
-        return new ContractCustomizer(key, customizer);
+        return new ContractCustomizer(key, customizer, customizerAppliesToAddress);
     }
 
     public static ContractCustomizer fromSponsorContractWithoutKey(
@@ -161,5 +172,9 @@ public class ContractCustomizer {
 
     public HederaAccountCustomizer accountCustomizer() {
         return accountCustomizer;
+    }
+
+    public boolean appliesTo(final Address address) {
+        return customizerAppliesToAddress.equals(address);
     }
 }
