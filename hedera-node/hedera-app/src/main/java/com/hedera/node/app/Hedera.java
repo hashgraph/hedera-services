@@ -126,7 +126,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
@@ -751,13 +750,6 @@ public final class Hedera implements SwirldMain {
             // states change. We will use these state changes for various purposes, such as turning off the gRPC
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
-            if (daggerApp.initTrigger() == EVENT_STREAM_RECOVERY) {
-                notifications.register(NewRecoveredStateListener.class, (notification) -> {
-                    // Ensure the last record stream file is closed
-                    daggerApp.blockRecordManager().close();
-                });
-            }
-
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 platformStatus = notification.getNewStatus();
                 switch (platformStatus) {
