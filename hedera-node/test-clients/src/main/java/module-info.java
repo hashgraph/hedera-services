@@ -1,4 +1,6 @@
 module com.hedera.node.test.clients {
+    exports com.hedera.services.bdd.spec.utilops.records;
+
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app;

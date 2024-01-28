@@ -46,6 +46,8 @@ sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
     main { resources { srcDir("src/main/resource") } }
+
+    create("rcdiff") { java.srcDir("src/rcdiff/java") }
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -230,21 +232,12 @@ val yahCliJar =
         }
     }
 
-val rcdiffConfig = "rcdiffConfig"
-
-configurations { create(rcdiffConfig) { extendsFrom(configurations.runtimeClasspath.get()) } }
-
-dependencies {
-    // Example: Add a dependency to your custom configuration
-    "rcdiffConfig"("info.picocli:picocli:4.6.3")
-}
-
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
         archiveFileName.set("rcdiff.jar")
-        configurations = listOf(project.configurations.getByName(rcdiffConfig))
+        configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
 
         manifest {
             attributes(
