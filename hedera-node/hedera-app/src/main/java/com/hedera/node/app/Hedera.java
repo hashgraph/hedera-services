@@ -84,8 +84,6 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
@@ -115,7 +113,6 @@ import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
@@ -128,8 +125,8 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
@@ -754,6 +751,13 @@ public final class Hedera implements SwirldMain {
             // states change. We will use these state changes for various purposes, such as turning off the gRPC
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
+            if (daggerApp.initTrigger() == EVENT_STREAM_RECOVERY) {
+                notifications.register(NewRecoveredStateListener.class, (notification) -> {
+                    // Ensure the last record stream file is closed
+                    daggerApp.blockRecordManager().close();
+                });
+            }
+
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 platformStatus = notification.getNewStatus();
                 switch (platformStatus) {
@@ -901,6 +905,12 @@ public final class Hedera implements SwirldMain {
         daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
     }
 
+    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
+        // (FUTURE) - dump the semantic contents of the recovered state for
+        // comparison with the mirroring mono-service state
+        daggerApp.blockRecordManager().close();
+    }
+
     /**
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
@@ -909,40 +919,6 @@ public final class Hedera implements SwirldMain {
             @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.handleWorkflow().handleRound(state, platformState, round);
-    }
-
-    /**
-     * Invoked by the platform to update weights of all nodes, to be used in consensus.
-     * This only happens during upgrade.
-     * @param state current state
-     * @param configAddressBook address book from config.txt
-     * @param context platform context
-     */
-    public void onUpdateWeight(
-            @NonNull final MerkleHederaState state,
-            @NonNull AddressBook configAddressBook,
-            @NonNull final PlatformContext context) {
-        final var tokenServiceState = state.getReadableStates(TokenService.NAME);
-        if (!tokenServiceState.isEmpty()) {
-            final var readableStoreFactory = new ReadableStoreFactory(state);
-            // Get all nodeIds added in the config.txt
-            Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
-            final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-            final var allNodeIds = stakingInfoStore.getAll();
-            for (final var nodeId : allNodeIds) {
-                final var stakingInfo = requireNonNull(stakingInfoStore.get(nodeId));
-                NodeId id = new NodeId(nodeId);
-                // ste weight for the nodes that exist in state and remove from
-                // nodes given in config.txt. This is needed to recognize newly added nodes
-                configAddressBook.updateWeight(id, stakingInfo.weight());
-                configNodeIds.remove(id);
-            }
-            // for any newly added nodes that doesn't exist in state, weight should be set to 0
-            // irrespective of the weight provided in config.txt
-            configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
-        } else {
-            logger.warn("Token service state is empty to update weights from StakingInfo Map");
-        }
     }
 
     /*==================================================================================================================
@@ -1107,6 +1083,9 @@ public final class Hedera implements SwirldMain {
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
         onMigrate(state, deserializedVersion, trigger);
+        if (trigger == EVENT_STREAM_RECOVERY) {
+            // (FUTURE) Dump post-migration mod-service state
+        }
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, trigger);
