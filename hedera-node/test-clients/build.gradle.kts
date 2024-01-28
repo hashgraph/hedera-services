@@ -235,7 +235,7 @@ val yahCliJar =
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
-
+        from(sourceSets["rcdiff"].output)
         archiveFileName.set("rcdiff.jar")
         configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
 
