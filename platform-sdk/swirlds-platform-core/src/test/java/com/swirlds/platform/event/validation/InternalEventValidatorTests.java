@@ -18,8 +18,11 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -30,13 +33,19 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +74,13 @@ class InternalEventValidatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        // Adding the configuration to use the birth round as the ancient threshold for testing.
+        // The conditions where it is false is covered by the case where it is set to true.
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
+                        .getOrCreateConfig())
+                .build();
 
         final Time time = new FakeTime();
 
@@ -75,11 +89,9 @@ class InternalEventValidatorTests {
     }
 
     private static GossipEvent generateEvent(
-            @Nullable final Hash selfParentHash,
-            @Nullable final Hash otherParentHash,
-            final long eventGeneration,
-            final long selfParentGeneration,
-            final long otherParentGeneration,
+            @NonNull final EventDescriptor self,
+            @Nullable final EventDescriptor selfParent,
+            @Nullable final EventDescriptor otherParent,
             final int totalTransactionBytes) {
 
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[100];
@@ -89,26 +101,77 @@ class InternalEventValidatorTests {
         }
 
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentHash()).thenReturn(selfParentHash);
-        when(hashedData.getOtherParentHash()).thenReturn(otherParentHash);
-        when(hashedData.getSelfParentGen()).thenReturn(selfParentGeneration);
-        when(hashedData.getOtherParentGen()).thenReturn(otherParentGeneration);
+        when(hashedData.getSelfParentHash()).thenReturn(selfParent == null ? null : selfParent.getHash());
+        when(hashedData.getOtherParentHash()).thenReturn(otherParent == null ? null : otherParent.getHash());
+        when(hashedData.getSelfParentGen())
+                .thenReturn(selfParent == null ? GENERATION_UNDEFINED : selfParent.getGeneration());
+        when(hashedData.getOtherParentGen())
+                .thenReturn(otherParent == null ? GENERATION_UNDEFINED : otherParent.getGeneration());
         when(hashedData.getTransactions()).thenReturn(transactions);
+        when(hashedData.getBirthRound()).thenReturn(self.getBirthRound());
+        when(hashedData.getGeneration()).thenReturn(self.getGeneration());
+        when(hashedData.getSelfParent()).thenReturn(selfParent);
+        // FUTURE WORK: Extend to support multiple other parents.
+        when(hashedData.getOtherParents())
+                .thenReturn(otherParent == null ? Collections.EMPTY_LIST : Collections.singletonList(otherParent));
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
 
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getGeneration()).thenReturn(eventGeneration);
+        when(event.getGeneration()).thenReturn(self.getGeneration());
+        when(event.getDescriptor()).thenReturn(self);
 
         return event;
+    }
+
+    private static GossipEvent generateGoodEvent(@NonNull final Random random, final int totalTransactionBytes) {
+        return generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
+                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
+                totalTransactionBytes);
+    }
+
+    @Test
+    @DisplayName("Generation Threshold With Negative BirthRound should validate")
+    void generationThresholdWithNegativeBirthRound() {
+        final EventDescriptor selfParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor otherParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor self = new EventDescriptor(randomHash(random), new NodeId(0), 1, -1);
+        final GossipEvent event = generateEvent(self, selfParent, otherParent, 1111);
+
+        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
+        doAnswer(invocation -> {
+                    exitedIntakePipelineCount.incrementAndGet();
+                    return null;
+                })
+                .when(intakeEventCounter)
+                .eventExitedIntakePipeline(any());
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, false)
+                        .getOrCreateConfig())
+                .build();
+
+        final Time time = new FakeTime();
+
+        final InternalEventValidator multinodeValidator =
+                new InternalEventValidator(platformContext, time, false, intakeEventCounter);
+        final InternalEventValidator singleNodeValidator =
+                new InternalEventValidator(platformContext, time, true, intakeEventCounter);
+
+        assertNotNull(multinodeValidator.validateEvent(event));
+        assertNotNull(singleNodeValidator.validateEvent(event));
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
     @DisplayName("An event with null hashed data is invalid")
     void nullHashedData() {
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
+        final GossipEvent event = generateGoodEvent(random, 1111);
         when(event.getHashedData()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
@@ -120,7 +183,7 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with null unhashed data is invalid")
     void nullUnhashedData() {
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
+        final GossipEvent event = generateGoodEvent(random, 1111);
         when(event.getUnhashedData()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
@@ -133,7 +196,7 @@ class InternalEventValidatorTests {
     @DisplayName("An event with too many transaction bytes is invalid")
     void tooManyTransactionBytes() {
         // default max is 245_760 bytes
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 500_000);
+        final GossipEvent event = generateGoodEvent(random, 500_000);
 
         assertNull(multinodeValidator.validateEvent(event));
         assertNull(singleNodeValidator.validateEvent(event));
@@ -144,26 +207,43 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with parent inconsistency is invalid")
     void inconsistentParents() {
-        // has null self parent hash, but valid self parent generation
-        final GossipEvent nullSelfParentHash = generateEvent(null, randomHash(random), 7, 5, 6, 1111);
-        // has valid self parent hash, but invalid self parent generation
-        final GossipEvent invalidSelfParentGeneration =
-                generateEvent(randomHash(random), randomHash(random), -1, 7, 6, 1111);
-        // has null other parent hash, but valid other parent generation
-        final GossipEvent nullOtherParentHash = generateEvent(randomHash(random), null, 7, 5, 6, 1111);
-        // has valid other parent hash, but invalid other parent generation
-        final GossipEvent invalidOtherParentGeneration =
-                generateEvent(randomHash(random), randomHash(random), 6, 5, -1, 1111);
+        // self parent has invalid generation.
+        final GossipEvent invalidSelfParentGeneration = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), GENERATION_UNDEFINED, 1),
+                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
+                1111);
 
-        assertNull(multinodeValidator.validateEvent(nullSelfParentHash));
+        // self parent has invalid birth round.
+        final GossipEvent invalidSelfParentBirthRound = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), 5, ROUND_NEGATIVE_INFINITY),
+                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
+                1111);
+
+        // other parent has invalid generation.
+        final GossipEvent invalidOtherParentGeneration = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
+                new EventDescriptor(randomHash(random), new NodeId(1), GENERATION_UNDEFINED, 1),
+                1111);
+
+        // other parent has invalid birth round.
+        final GossipEvent invalidOtherParentBirthRound = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
+                new EventDescriptor(randomHash(random), new NodeId(1), 6, ROUND_NEGATIVE_INFINITY),
+                1111);
+
         assertNull(multinodeValidator.validateEvent(invalidSelfParentGeneration));
-        assertNull(multinodeValidator.validateEvent(nullOtherParentHash));
+        assertNull(multinodeValidator.validateEvent(invalidSelfParentBirthRound));
         assertNull(multinodeValidator.validateEvent(invalidOtherParentGeneration));
+        assertNull(multinodeValidator.validateEvent(invalidOtherParentBirthRound));
 
-        assertNull(singleNodeValidator.validateEvent(nullSelfParentHash));
         assertNull(singleNodeValidator.validateEvent(invalidSelfParentGeneration));
-        assertNull(singleNodeValidator.validateEvent(nullOtherParentHash));
+        assertNull(singleNodeValidator.validateEvent(invalidSelfParentBirthRound));
         assertNull(singleNodeValidator.validateEvent(invalidOtherParentGeneration));
+        assertNull(singleNodeValidator.validateEvent(invalidOtherParentBirthRound));
 
         assertEquals(8, exitedIntakePipelineCount.get());
     }
@@ -172,7 +252,9 @@ class InternalEventValidatorTests {
     @DisplayName("An event with identical parents is only valid in a single node network")
     void identicalParents() {
         final Hash sharedHash = randomHash(random);
-        final GossipEvent event = generateEvent(sharedHash, sharedHash, 7, 5, 6, 1111);
+        final EventDescriptor sharedDescriptor = new EventDescriptor(sharedHash, new NodeId(0), 5, 1);
+        final GossipEvent event = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 6, 1), sharedDescriptor, sharedDescriptor, 1111);
 
         assertNull(multinodeValidator.validateEvent(event));
         assertNotEquals(null, singleNodeValidator.validateEvent(event));
@@ -183,23 +265,79 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event must have a generation of the max parent generation + 1")
     void invalidGeneration() {
-        final GossipEvent highGeneration = generateEvent(randomHash(random), randomHash(random), 8, 5, 6, 1111);
-        final GossipEvent lowGeneration = generateEvent(randomHash(random), randomHash(random), 4, 5, 6, 1111);
+        final EventDescriptor selfParent1 = new EventDescriptor(randomHash(random), new NodeId(0), 5, 1);
+        final EventDescriptor otherParent1 = new EventDescriptor(randomHash(random), new NodeId(1), 7, 1);
+        final EventDescriptor selfParent2 = new EventDescriptor(randomHash(random), new NodeId(0), 7, 1);
+        final EventDescriptor otherParent2 = new EventDescriptor(randomHash(random), new NodeId(1), 5, 1);
+        final EventDescriptor selfMiddle = new EventDescriptor(randomHash(random), new NodeId(0), 6, 1);
+        final EventDescriptor selfHigh = new EventDescriptor(randomHash(random), new NodeId(0), 9, 1);
+        final EventDescriptor selfLow = new EventDescriptor(randomHash(random), new NodeId(0), 3, 1);
+        final EventDescriptor selfGood = new EventDescriptor(randomHash(random), new NodeId(0), 8, 1);
 
-        assertNull(multinodeValidator.validateEvent(highGeneration));
-        assertNull(multinodeValidator.validateEvent(lowGeneration));
-        assertNull(singleNodeValidator.validateEvent(highGeneration));
-        assertNull(singleNodeValidator.validateEvent(lowGeneration));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfHigh, selfParent1, otherParent1, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfHigh, selfParent2, otherParent2, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfMiddle, selfParent1, otherParent1, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfMiddle, selfParent2, otherParent2, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfLow, selfParent1, otherParent1, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfLow, selfParent2, otherParent2, 1111)));
+        assertNotNull(multinodeValidator.validateEvent(generateEvent(selfGood, selfParent1, otherParent1, 1111)));
+        assertNotNull(multinodeValidator.validateEvent(generateEvent(selfGood, selfParent2, otherParent2, 1111)));
 
-        assertEquals(4, exitedIntakePipelineCount.get());
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfHigh, selfParent1, otherParent1, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfHigh, selfParent2, otherParent2, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfMiddle, selfParent1, otherParent1, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfMiddle, selfParent2, otherParent2, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfLow, selfParent1, otherParent1, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfLow, selfParent2, otherParent2, 1111)));
+        assertNotNull(singleNodeValidator.validateEvent(generateEvent(selfGood, selfParent1, otherParent1, 1111)));
+        assertNotNull(singleNodeValidator.validateEvent(generateEvent(selfGood, selfParent2, otherParent2, 1111)));
+
+        assertEquals(12, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("An event must have a birth round greater than or equal to the max of all parent birth rounds.")
+    void invalidBirthRound() {
+        final EventDescriptor selfParent1 = new EventDescriptor(randomHash(random), new NodeId(0), 5, 5);
+        final EventDescriptor otherParent1 = new EventDescriptor(randomHash(random), new NodeId(1), 7, 7);
+        final EventDescriptor selfParent2 = new EventDescriptor(randomHash(random), new NodeId(0), 7, 7);
+        final EventDescriptor otherParent2 = new EventDescriptor(randomHash(random), new NodeId(1), 5, 5);
+        final EventDescriptor selfMiddle = new EventDescriptor(randomHash(random), new NodeId(0), 8, 6);
+        final EventDescriptor selfLow = new EventDescriptor(randomHash(random), new NodeId(0), 8, 4);
+        final EventDescriptor selfGood = new EventDescriptor(randomHash(random), new NodeId(0), 8, 7);
+
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfMiddle, selfParent1, otherParent1, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfMiddle, selfParent2, otherParent2, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfLow, selfParent1, otherParent1, 1111)));
+        assertNull(multinodeValidator.validateEvent(generateEvent(selfLow, selfParent2, otherParent2, 1111)));
+        assertNotNull(multinodeValidator.validateEvent(generateEvent(selfGood, selfParent1, otherParent1, 1111)));
+        assertNotNull(multinodeValidator.validateEvent(generateEvent(selfGood, selfParent2, otherParent2, 1111)));
+
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfMiddle, selfParent1, otherParent1, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfMiddle, selfParent2, otherParent2, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfLow, selfParent1, otherParent1, 1111)));
+        assertNull(singleNodeValidator.validateEvent(generateEvent(selfLow, selfParent2, otherParent2, 1111)));
+        assertNotNull(singleNodeValidator.validateEvent(generateEvent(selfGood, selfParent1, otherParent1, 1111)));
+        assertNotNull(singleNodeValidator.validateEvent(generateEvent(selfGood, selfParent2, otherParent2, 1111)));
+
+        assertEquals(8, exitedIntakePipelineCount.get());
     }
 
     @Test
     @DisplayName("Test that an event with no issues passes validation")
     void successfulValidation() {
-        final GossipEvent normalEvent = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
-        final GossipEvent missingSelfParent = generateEvent(null, randomHash(random), 7, -1, 6, 1111);
-        final GossipEvent missingOtherParent = generateEvent(randomHash(random), null, 6, 5, -1, 1111);
+        final GossipEvent normalEvent = generateGoodEvent(random, 1111);
+        final GossipEvent missingSelfParent = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
+                null,
+                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
+                1111);
+
+        final GossipEvent missingOtherParent = generateEvent(
+                new EventDescriptor(randomHash(random), new NodeId(0), 6, 1),
+                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
+                null,
+                1111);
 
         assertNotEquals(null, multinodeValidator.validateEvent(normalEvent));
         assertNotEquals(null, multinodeValidator.validateEvent(missingSelfParent));
