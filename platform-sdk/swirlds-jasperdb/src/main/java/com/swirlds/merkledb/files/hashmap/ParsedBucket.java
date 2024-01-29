@@ -271,7 +271,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      * in a bucket, and a bucket entry already exists for the same key, instead of creating
      * a new entry, we just update the value in the existing entry.
      */
-    private class BucketEntry {
+    public class BucketEntry {
 
         /** Key hash code */
         private final int hashCode;
