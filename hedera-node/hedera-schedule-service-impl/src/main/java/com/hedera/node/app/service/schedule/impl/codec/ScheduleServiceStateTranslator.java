@@ -31,11 +31,11 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ public final class ScheduleServiceStateTranslator {
 
     public static Schedule convertScheduleVirtualValueToSchedule(
             @NonNull final com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue virtualValue)
-            throws IOException {
+            throws ParseException {
         final Builder scheduleBuilder = Schedule.newBuilder()
                 .deleted(virtualValue.isDeleted())
                 .executed(virtualValue.isExecuted())
