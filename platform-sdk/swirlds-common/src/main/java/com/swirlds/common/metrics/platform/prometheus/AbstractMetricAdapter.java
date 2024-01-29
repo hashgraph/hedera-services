@@ -28,9 +28,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class AbstractMetricAdapter implements MetricAdapter {
-    private static final Logger log = LogManager.getLogger(AbstractMetricAdapter.class);
+    private static final Logger logger = LogManager.getLogger(AbstractMetricAdapter.class);
     protected final PrometheusEndpoint.AdapterType adapterType;
-    private final @NonNull ConvertedMetricValues values;
+    private final @NonNull AdaptedMetricCommonValues values;
 
     private final AtomicInteger referenceCount = new AtomicInteger();
 
@@ -41,12 +41,12 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
      */
     protected AbstractMetricAdapter(
             @NonNull final PrometheusEndpoint.AdapterType adapterType, @NonNull final Metric metric) {
-        this(adapterType, metric, false);
+        this(adapterType, metric, true);
     }
 
     /**
      * @param metric   the metric being adapted
-     * @param unitless if the {@code metric} being adapted represents a dimensionless metric. Prometheus will fail in
+     * @param supportsUnit if the {@code metric} being adapted is not a dimensionless metric. Prometheus will fail in
      *                 case of setting a unit to an invalid metric type.
      * @throws NullPointerException in case {@code adapterType} parameter is {@code null}
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
@@ -54,9 +54,9 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
     protected AbstractMetricAdapter(
             @NonNull final PrometheusEndpoint.AdapterType adapterType,
             @NonNull final Metric metric,
-            final boolean unitless) {
+            final boolean supportsUnit) {
         this.adapterType = Objects.requireNonNull(adapterType, "adapterType must not be null");
-        this.values = new ConvertedMetricValues(unitless, metric);
+        this.values = new AdaptedMetricCommonValues(metric, supportsUnit);
     }
 
     protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T setCommonValues(
@@ -84,8 +84,8 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
      * category, name, unit, and help fields.
      * </p>
      */
-    private static class ConvertedMetricValues {
-        private final boolean unitless;
+    private static class AdaptedMetricCommonValues {
+        private final boolean supportsUnit;
 
         @NonNull
         private final String subSystem;
@@ -99,9 +99,15 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         @NonNull
         private final String help;
 
-        private ConvertedMetricValues(final boolean unitless, final @NonNull Metric metric) {
+        /**
+         * @param metric       the metric being adapted
+         * @param supportsUnit if the {@code metric} being adapted is not a dimensionless metric. Prometheus
+         *                     will fail in case of setting a unit to an invalid metric type.
+         * @throws NullPointerException in case {@code metric} parameter is {@code null}
+         */
+        private AdaptedMetricCommonValues(final @NonNull Metric metric, final boolean supportsUnit) {
             Objects.requireNonNull(metric, "metric must not be null");
-            this.unitless = unitless;
+            this.supportsUnit = supportsUnit;
             this.subSystem = fix(metric.getCategory());
             this.name = fix(metric.getName());
             this.unit = fix(metric.getUnit());
@@ -112,7 +118,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T fill(
                 @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
             final T builder = collectorBuilder.subsystem(subSystem).name(name).help(help);
-            return unitless ? builder : builder.unit(unit);
+            return !supportsUnit ? builder : builder.unit(unit);
         }
 
         /**
@@ -127,7 +133,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
          */
         private void verifyMetricNamingComponents(@NonNull final Metric metric) {
             if (!Objects.equals(this.subSystem, metric.getCategory())) {
-                log.error(
+                logger.error(
                         EXCEPTION.getMarker(),
                         "category field changed for metric:{} from:{} to:{}",
                         metric,
@@ -135,15 +141,15 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
                         this.subSystem);
             }
             if (!Objects.equals(this.name, metric.getName())) {
-                log.error(
+                logger.error(
                         EXCEPTION.getMarker(),
                         "name field changed for metric:{} from:{} to:{}",
                         metric,
                         metric.getName(),
                         this.name);
             }
-            if (!unitless && !Objects.equals(this.unit, metric.getUnit())) {
-                log.error(
+            if (supportsUnit && !Objects.equals(this.unit, metric.getUnit())) {
+                logger.error(
                         EXCEPTION.getMarker(),
                         "unit field changed for metric:{} from:{} to:{}",
                         metric,

@@ -56,7 +56,7 @@ public class BooleanAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public BooleanAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType, metric, true);
+        super(adapterType, metric, false);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
         final Gauge.Builder builder = setCommonValues(new Gauge.Builder());
