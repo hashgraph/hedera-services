@@ -16,19 +16,23 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -67,6 +71,7 @@ public class InternalEventValidator {
     private final RateLimitedLogger inconsistentOtherParentLogger;
     private final RateLimitedLogger identicalParentsLogger;
     private final RateLimitedLogger invalidGenerationLogger;
+    private final RateLimitedLogger invalidBirthRoundLogger;
 
     private final LongAccumulator nullHashedDataAccumulator;
     private final LongAccumulator nullUnhashedDataAccumulator;
@@ -75,6 +80,9 @@ public class InternalEventValidator {
     private final LongAccumulator inconsistentOtherParentAccumulator;
     private final LongAccumulator identicalParentsAccumulator;
     private final LongAccumulator invalidGenerationAccumulator;
+    private final LongAccumulator invalidBirthRoundAccumulator;
+
+    private final AncientMode ancientMode;
 
     /**
      * Constructor
@@ -104,6 +112,7 @@ public class InternalEventValidator {
         this.inconsistentOtherParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.identicalParentsLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.invalidGenerationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.invalidBirthRoundLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.nullHashedDataAccumulator = platformContext
                 .getMetrics()
@@ -140,6 +149,16 @@ public class InternalEventValidator {
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidGeneration")
                         .withDescription("Events with an invalid generation")
                         .withUnit("events"));
+        this.invalidBirthRoundAccumulator = platformContext
+                .getMetrics()
+                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidBirthRound")
+                        .withDescription("Events with an invalid birth round")
+                        .withUnit("events"));
+
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
     }
 
     /**
@@ -191,7 +210,8 @@ public class InternalEventValidator {
     }
 
     /**
-     * Checks whether the parent hashes and generations of an event are internally consistent.
+     * Checks that if parents are present, then the generation and birth round of the parents are internally
+     * consistent.
      *
      * @param event the event to check
      * @return true if the parent hashes and generations of the event are internally consistent, otherwise false
@@ -199,38 +219,59 @@ public class InternalEventValidator {
     private boolean areParentsInternallyConsistent(@NonNull final GossipEvent event) {
         final BaseEventHashedData hashedData = event.getHashedData();
 
-        // If a parent hash is missing, then the generation must also be invalid.
-        // If a parent hash is not missing, then the generation must be valid.
+        // If a parent is not missing, then the generation and birth round must be valid.
 
-        final Hash selfParentHash = hashedData.getSelfParentHash();
-        final long selfParentGeneration = hashedData.getSelfParentGen();
-        if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
-            inconsistentSelfParentLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has inconsistent self-parent hash and generation. Self-parent hash: %s, self-parent generation: %s"
-                            .formatted(event, selfParentHash, selfParentGeneration));
-            inconsistentSelfParentAccumulator.update(1);
-            return false;
+        final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+        if (selfParent != null) {
+            if (selfParent.getGeneration() < FIRST_GENERATION) {
+                inconsistentSelfParentLogger.error(
+                        EXCEPTION.getMarker(),
+                        "Event %s has self parent with generation less than the FIRST_GENERATION. self-parent generation: %s"
+                                .formatted(event, selfParent.getGeneration()));
+                inconsistentSelfParentAccumulator.update(1);
+                return false;
+            }
+            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && selfParent.getBirthRound() < ROUND_FIRST) {
+                inconsistentSelfParentLogger.error(
+                        EXCEPTION.getMarker(),
+                        "Event %s has self parent with birth round less than the ROUND_FIRST. self-parent birth round: %s"
+                                .formatted(event, selfParent.getBirthRound()));
+                inconsistentSelfParentAccumulator.update(1);
+                return false;
+            }
         }
 
-        final Hash otherParentHash = hashedData.getOtherParentHash();
-        final long otherParentGeneration = hashedData.getOtherParentGen();
-        if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
-            inconsistentOtherParentLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has inconsistent other-parent hash and generation. Other-parent hash: %s, other-parent generation: %s"
-                            .formatted(event, otherParentHash, otherParentGeneration));
-            inconsistentOtherParentAccumulator.update(1);
-            return false;
+        for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
+            if (otherParent.getGeneration() < FIRST_GENERATION) {
+                inconsistentOtherParentLogger.error(
+                        EXCEPTION.getMarker(),
+                        "Event %s has other parent with generation less than the FIRST_GENERATION. other-parent: %s"
+                                .formatted(event, otherParent));
+                inconsistentOtherParentAccumulator.update(1);
+                return false;
+            }
+            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && otherParent.getBirthRound() < ROUND_FIRST) {
+                inconsistentOtherParentLogger.error(
+                        EXCEPTION.getMarker(),
+                        "Event %s has other parent with birth round less than the ROUND_FIRST. other-parent: %s"
+                                .formatted(event, otherParent));
+                inconsistentOtherParentAccumulator.update(1);
+                return false;
+            }
         }
 
-        // single node networks are allowed to have identical self-parent and other-parent hashes
-        if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
-            identicalParentsLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has identical self-parent and other-parent hash: %s".formatted(event, selfParentHash));
-            identicalParentsAccumulator.update(1);
-            return false;
+        // only single node networks are allowed to have identical self-parent and other-parent hashes
+        if (!singleNodeNetwork && selfParent != null) {
+            for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
+                if (selfParent.getHash().equals(otherParent.getHash())) {
+                    identicalParentsLogger.error(
+                            EXCEPTION.getMarker(),
+                            "Event %s has identical self-parent and other-parent hash: %s"
+                                    .formatted(event, selfParent.getHash()));
+                    identicalParentsAccumulator.update(1);
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -245,15 +286,68 @@ public class InternalEventValidator {
      */
     private boolean isEventGenerationValid(@NonNull final GossipEvent event) {
         final long eventGeneration = event.getGeneration();
-        final long selfParentGeneration = event.getHashedData().getSelfParentGen();
-        final long otherParentGeneration = event.getHashedData().getOtherParentGen();
 
-        if (eventGeneration != Math.max(selfParentGeneration, otherParentGeneration) + 1) {
+        if (eventGeneration < FIRST_GENERATION) {
             invalidGenerationLogger.error(
                     EXCEPTION.getMarker(),
-                    "Event %s has an invalid generation. Event generation: %s, self-parent generation: %s, other-parent generation: %s"
-                            .formatted(event, eventGeneration, selfParentGeneration, otherParentGeneration));
+                    "Event %s has an invalid generation. Event generation: %s, the min generation is: %s"
+                            .formatted(event, eventGeneration, FIRST_GENERATION));
             invalidGenerationAccumulator.update(1);
+            return false;
+        }
+
+        long maxParentGeneration = event.getHashedData().getSelfParentGen();
+        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+            maxParentGeneration = Math.max(maxParentGeneration, otherParent.getGeneration());
+        }
+
+        if (eventGeneration != maxParentGeneration + 1) {
+            invalidGenerationLogger.error(
+                    EXCEPTION.getMarker(),
+                    "Event %s has an invalid generation. Event generation: %s, the max of all parent generations is: %s"
+                            .formatted(event, eventGeneration, maxParentGeneration));
+            invalidGenerationAccumulator.update(1);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether the birth round of an event is valid. A child cannot have a birth round prior to the birth round
+     * of its parents.
+     *
+     * @param event the event to check
+     * @return true if the birth round of the event is valid, otherwise false
+     */
+    private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
+        final long eventBirthRound = event.getDescriptor().getBirthRound();
+
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && eventBirthRound < ROUND_FIRST) {
+            invalidBirthRoundLogger.error(
+                    EXCEPTION.getMarker(),
+                    "Event %s has an invalid birth round. Event birth round: %s, the min birth round is: %s"
+                            .formatted(event, eventBirthRound, ROUND_FIRST));
+            invalidBirthRoundAccumulator.update(1);
+            return false;
+        }
+
+        long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
+        final EventDescriptor parent = event.getHashedData().getSelfParent();
+        if (parent != null) {
+            maxParentBirthRound = parent.getBirthRound();
+        }
+        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+            maxParentBirthRound = Math.max(maxParentBirthRound, otherParent.getBirthRound());
+        }
+
+        if (eventBirthRound < maxParentBirthRound) {
+            invalidBirthRoundLogger.error(
+                    EXCEPTION.getMarker(),
+                    ("Event %s has an invalid birth round that is less than the max of its parents. Event birth round: "
+                                    + "%s, the max of all parent birth rounds is: %s")
+                            .formatted(event, eventBirthRound, maxParentBirthRound));
+            invalidBirthRoundAccumulator.update(1);
             return false;
         }
 
@@ -273,7 +367,8 @@ public class InternalEventValidator {
         if (areRequiredFieldsNonNull(event)
                 && isTransactionByteCountValid(event)
                 && areParentsInternallyConsistent(event)
-                && isEventGenerationValid(event)) {
+                && isEventGenerationValid(event)
+                && isEventBirthRoundValid(event)) {
             return event;
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());

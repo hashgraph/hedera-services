@@ -56,6 +56,10 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         // staked to a node
         final var nodeId = account.stakedNodeIdOrThrow();
         final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
+        if (stakingInfo != null && stakingInfo.deleted()) {
+            logger.info("Node {} is deleted. Paying zero rewards", nodeId);
+            return 0;
+        }
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
@@ -68,7 +72,8 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             @Nullable final StakingNodeInfo nodeStakingInfo,
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
-        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart, rewardsStore)) {
+        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart, rewardsStore)
+                || (nodeStakingInfo != null && nodeStakingInfo.deleted())) {
             return 0;
         }
         final var rewardOffered = computeRewardFromDetails(

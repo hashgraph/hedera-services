@@ -22,10 +22,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -36,6 +34,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,7 +55,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param intakeQueue                   the event intake queue
+     * @param intakeQueueSizeSupplier       supplies the event intake queue size
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param statusActionSubmitter         enables submitting platform status actions
@@ -71,7 +70,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -86,7 +85,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                intakeQueue,
+                intakeQueueSizeSupplier,
                 swirldStateManager,
                 latestCompleteState,
                 statusActionSubmitter,

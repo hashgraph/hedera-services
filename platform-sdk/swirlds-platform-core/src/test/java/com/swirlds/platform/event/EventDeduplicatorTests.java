@@ -32,10 +32,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -47,7 +50,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests the {@link EventDeduplicator} class
@@ -83,9 +87,10 @@ class EventDeduplicatorTests {
             @NonNull final Hash hash,
             @NonNull final NodeId creatorId,
             final long generation,
+            final long birthRound,
             @NonNull final byte[] signature) {
 
-        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation, -1);
+        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation, birthRound);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getSignature()).thenReturn(signature);
@@ -94,11 +99,9 @@ class EventDeduplicatorTests {
         when(event.getDescriptor()).thenReturn(descriptor);
         when(event.getGeneration()).thenReturn(generation);
         when(event.getUnhashedData()).thenReturn(unhashedData);
-        // FUTURE WORK: Add birthRound to arguments and replace the first round constant below.
         when(event.getAncientIndicator(any()))
-                .thenAnswer(args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD
-                        ? ConsensusConstants.ROUND_FIRST
-                        : generation);
+                .thenAnswer(
+                        args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD ? birthRound : generation);
 
         return event;
     }
@@ -106,18 +109,31 @@ class EventDeduplicatorTests {
     private static void validateEmittedEvent(
             @Nullable final GossipEvent event,
             final long minimumGenerationNonAncient,
+            final long minimumRoundNonAncient,
+            @NonNull final AncientMode ancientMode,
             @NonNull final Set<GossipEvent> emittedEvents) {
         if (event != null) {
-            assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
-
+            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+                assertFalse(
+                        event.getDescriptor().getBirthRound() < minimumRoundNonAncient,
+                        "Ancient events shouldn't be emitted");
+            } else {
+                assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
+            }
             assertTrue(emittedEvents.add(event), "Event was emitted twice");
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Test standard event deduplicator operation")
-    void standardOperation() {
-        long minimumGenerationNonAncient = 0;
+    void standardOperation(final boolean useBirthRoundForAncientThreshold) {
+        final AncientMode ancientMode =
+                useBirthRoundForAncientThreshold ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
+
+        long minimumGenerationNonAncient = EventConstants.FIRST_GENERATION;
+        long minimumRoundNonAncient = ConsensusConstants.ROUND_FIRST;
+
         // events that have been emitted from the deduplicator
         final Set<GossipEvent> emittedEvents = new HashSet<>();
 
@@ -134,7 +150,15 @@ class EventDeduplicatorTests {
                 .eventExitedIntakePipeline(any());
 
         final EventDeduplicator deduplicator = new EventDeduplicator(
-                TestPlatformContextBuilder.create().build(), intakeEventCounter, mock(EventIntakeMetrics.class));
+                TestPlatformContextBuilder.create()
+                        .withConfiguration(new TestConfigBuilder()
+                                .withValue(
+                                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                                        ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
+                                .getOrCreateConfig())
+                        .build(),
+                intakeEventCounter,
+                mock(EventIntakeMetrics.class));
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;
@@ -145,18 +169,32 @@ class EventDeduplicatorTests {
                 final Hash eventHash = randomHash(random);
                 final NodeId creatorId = new NodeId(random.nextInt(NODE_ID_COUNT));
                 final long eventGeneration = Math.max(0, minimumGenerationNonAncient + random.nextInt(-1, 10));
+                final long eventBirthRound =
+                        Math.max(ConsensusConstants.ROUND_FIRST, minimumRoundNonAncient + random.nextLong(-1, 4));
 
-                if (eventGeneration < minimumGenerationNonAncient) {
-                    ancientEventCount++;
+                if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+                    if (eventBirthRound < minimumRoundNonAncient) {
+                        ancientEventCount++;
+                    }
+                } else {
+                    if (eventGeneration < minimumGenerationNonAncient) {
+                        ancientEventCount++;
+                    }
                 }
 
                 final GossipEvent newEvent = createGossipEvent(
                         eventHash,
                         creatorId,
                         eventGeneration,
+                        eventBirthRound,
                         randomSignature(random).getSignatureBytes());
 
-                validateEmittedEvent(deduplicator.handleEvent(newEvent), minimumGenerationNonAncient, emittedEvents);
+                validateEmittedEvent(
+                        deduplicator.handleEvent(newEvent),
+                        minimumGenerationNonAncient,
+                        minimumRoundNonAncient,
+                        ancientMode,
+                        emittedEvents);
 
                 submittedEvents.add(newEvent);
             } else if (random.nextBoolean()) {
@@ -166,6 +204,8 @@ class EventDeduplicatorTests {
                 validateEmittedEvent(
                         deduplicator.handleEvent(submittedEvents.get(random.nextInt(submittedEvents.size()))),
                         minimumGenerationNonAncient,
+                        minimumRoundNonAncient,
+                        ancientMode,
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
@@ -174,26 +214,43 @@ class EventDeduplicatorTests {
                         duplicateEvent.getDescriptor().getHash(),
                         duplicateEvent.getDescriptor().getCreator(),
                         duplicateEvent.getDescriptor().getGeneration(),
+                        duplicateEvent.getDescriptor().getBirthRound(),
                         randomSignature(random).getSignatureBytes());
 
-                if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient) {
-                    ancientEventCount++;
+                if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+                    if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {
+                        ancientEventCount++;
+                    }
+                } else {
+                    if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient) {
+                        ancientEventCount++;
+                    }
                 }
 
                 validateEmittedEvent(
                         deduplicator.handleEvent(eventWithDisparateSignature),
                         minimumGenerationNonAncient,
+                        minimumRoundNonAncient,
+                        ancientMode,
                         emittedEvents);
             }
 
             if (random.nextBoolean()) {
                 minimumGenerationNonAncient++;
-                // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
-                deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
-                        ConsensusConstants.ROUND_FIRST,
-                        ConsensusConstants.ROUND_FIRST,
-                        minimumGenerationNonAncient,
-                        AncientMode.GENERATION_THRESHOLD));
+                minimumRoundNonAncient++;
+                if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                            ConsensusConstants.ROUND_FIRST,
+                            minimumRoundNonAncient,
+                            ConsensusConstants.ROUND_FIRST /* ignored in this context */,
+                            AncientMode.BIRTH_ROUND_THRESHOLD));
+                } else {
+                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                            ConsensusConstants.ROUND_FIRST,
+                            minimumGenerationNonAncient,
+                            ConsensusConstants.ROUND_FIRST /* ignored in this context */,
+                            AncientMode.GENERATION_THRESHOLD));
+                }
             }
         }
 

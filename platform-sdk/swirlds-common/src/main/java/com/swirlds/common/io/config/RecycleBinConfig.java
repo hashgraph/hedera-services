@@ -18,7 +18,7 @@ package com.swirlds.common.io.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -32,7 +32,7 @@ import java.time.Duration;
  * @param maximumFileAge   the maximum age of a file in the recycle bin before it is deleted
  * @param collectionPeriod the period between recycle bin collection runs
  * @param recycleBinPath   the directory where recycled files are stored, relative to the saved state directory defined
- *                         by {@link StateConfig#savedStateDirectory()}.
+ *                         by {@link StateCommonConfig#savedStateDirectory()}.
  */
 @ConfigData("recycleBin")
 public record RecycleBinConfig(
@@ -47,7 +47,7 @@ public record RecycleBinConfig(
      * @param selfId      the ID of this node
      * @return the location where recycle bin files are stored
      */
-    public Path getStorageLocation(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
+    public Path getStorageLocation(@NonNull final StateCommonConfig stateConfig, @NonNull final NodeId selfId) {
         return getAbsolutePath(
                 stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id())));
     }

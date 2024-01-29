@@ -25,7 +25,7 @@ import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
@@ -42,7 +42,7 @@ public class ChatterSyncProtocol implements Protocol {
     private final NodeId peerId;
     private final CommunicationState state;
     private final MessageProvider messageProvider;
-    private final ShadowGraphSynchronizer synchronizer;
+    private final ShadowgraphSynchronizer synchronizer;
     private final FallenBehindManager fallenBehindManager;
     private final PlatformContext platformContext;
 
@@ -59,7 +59,7 @@ public class ChatterSyncProtocol implements Protocol {
             final NodeId peerId,
             final CommunicationState state,
             final MessageProvider messageProvider,
-            final ShadowGraphSynchronizer synchronizer,
+            final ShadowgraphSynchronizer synchronizer,
             final FallenBehindManager fallenBehindManager) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = peerId;

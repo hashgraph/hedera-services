@@ -50,6 +50,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -91,6 +98,7 @@ import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -136,7 +144,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(SMART_CONTRACT)
 public class TraceabilitySuite extends HapiSuite {
@@ -223,7 +231,10 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(2)
     final HapiSpec traceabilityE2EScenario1() {
-        return defaultHapiSpec("traceabilityE2EScenario1")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario1",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -594,7 +605,10 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(3)
     final HapiSpec traceabilityE2EScenario2() {
-        return defaultHapiSpec("traceabilityE2EScenario2")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario2",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
@@ -999,7 +1013,8 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(4)
     final HapiSpec traceabilityE2EScenario3() {
-        return defaultHapiSpec("traceabilityE2EScenario3")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario3", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -1408,7 +1423,8 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(5)
     final HapiSpec traceabilityE2EScenario4() {
-        return defaultHapiSpec("traceabilityE2EScenario4")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario4", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -1700,7 +1716,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(6)
     final HapiSpec traceabilityE2EScenario5() {
-        return defaultHapiSpec("traceabilityE2EScenario5")
+        return defaultHapiSpec("traceabilityE2EScenario5", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2006,7 +2022,10 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(7)
     final HapiSpec traceabilityE2EScenario6() {
-        return defaultHapiSpec("traceabilityE2EScenario6")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario6",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -2342,7 +2361,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(8)
     final HapiSpec traceabilityE2EScenario7() {
-        return defaultHapiSpec("traceabilityE2EScenario7")
+        return defaultHapiSpec("traceabilityE2EScenario7", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2733,7 +2752,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(9)
     final HapiSpec traceabilityE2EScenario8() {
-        return defaultHapiSpec("traceabilityE2EScenario8")
+        return defaultHapiSpec("traceabilityE2EScenario8", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -3085,7 +3104,8 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(10)
     final HapiSpec traceabilityE2EScenario9() {
-        return defaultHapiSpec("traceabilityE2EScenario9")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario9", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -3392,7 +3412,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(11)
     final HapiSpec traceabilityE2EScenario10() {
-        return defaultHapiSpec("traceabilityE2EScenario10")
+        return defaultHapiSpec("traceabilityE2EScenario10", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -3735,7 +3755,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(12)
     final HapiSpec traceabilityE2EScenario11() {
-        return defaultHapiSpec("traceabilityE2EScenario11")
+        return defaultHapiSpec("traceabilityE2EScenario11", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -4047,7 +4067,7 @@ public class TraceabilitySuite extends HapiSuite {
     @Order(14)
     HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("traceabilityE2EScenario13")
+        return defaultHapiSpec("traceabilityE2EScenario13", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4090,7 +4110,8 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(15)
     final HapiSpec traceabilityE2EScenario14() {
-        return defaultHapiSpec("traceabilityE2EScenario14")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario14", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4099,7 +4120,7 @@ public class TraceabilitySuite extends HapiSuite {
                         getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
                         .nonce(0)
@@ -4147,7 +4168,11 @@ public class TraceabilitySuite extends HapiSuite {
         final AtomicReference<byte[]> bytecodeFromMirror = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
         final String specName = "traceabilityE2EScenario15";
-        return defaultHapiSpec(specName)
+        return defaultHapiSpec(
+                        specName,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -4280,7 +4305,10 @@ public class TraceabilitySuite extends HapiSuite {
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
         final String toHash = "toHash";
-        return defaultHapiSpec("traceabilityE2EScenario16")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario16",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         tokenCreate("goodToken")
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -4473,7 +4501,8 @@ public class TraceabilitySuite extends HapiSuite {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
-        return defaultHapiSpec("traceabilityE2EScenario19")
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario19", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
@@ -4514,7 +4543,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(21)
     final HapiSpec traceabilityE2EScenario20() {
-        return defaultHapiSpec("traceabilityE2EScenario20")
+        return defaultHapiSpec("traceabilityE2EScenario20", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
@@ -4653,7 +4682,7 @@ public class TraceabilitySuite extends HapiSuite {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
-        return defaultHapiSpec(trivialCreate)
+        return defaultHapiSpec(trivialCreate, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract))
                 .when(contractCreate(contract).via(firstTxn))
                 .then(
@@ -4693,7 +4722,10 @@ public class TraceabilitySuite extends HapiSuite {
         final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
         final String contractCreateTxn = "contractCreate";
         final var serialNumberId = MAX_UINT256_VALUE;
-        return propertyPreservingHapiSpec("ActionsShowPropagatedRevert")
+        return propertyPreservingHapiSpec(
+                        "ActionsShowPropagatedRevert",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(SIDECARS_PROP)
                 .given(
                         overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
@@ -4867,7 +4899,11 @@ public class TraceabilitySuite extends HapiSuite {
         final var lazyCreateTxn = "lazyCreateTxn";
         final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
-        return propertyPreservingHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
+        return propertyPreservingHapiSpec(
+                        "ethereumLazyCreateExportsExpectedSidecars",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_NONCE,
+                        ALLOW_SKIPPED_ENTITY_IDS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingThree(
@@ -4913,12 +4949,12 @@ public class TraceabilitySuite extends HapiSuite {
                             spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1();
                     final var firstAliasAsByteString =
                             ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(ecdsaSecp256K1.toByteArray()));
-                    AtomicReference<AccountID> lazyAccountIdReference = new AtomicReference<>();
+                    final AtomicReference<AccountID> lazyAccountIdReference = new AtomicReference<>();
                     final var lazyAccountInfoCheck = getAliasedAccountInfo(firstAliasAsByteString)
                             .logged()
                             .has(accountWith().balance(FIVE_HBARS).key(EMPTY_KEY))
                             .exposingIdTo(lazyAccountIdReference::set);
-                    AtomicReference<AccountID> ethSenderAccountReference = new AtomicReference<>();
+                    final AtomicReference<AccountID> ethSenderAccountReference = new AtomicReference<>();
                     final var hapiGetAccountInfo =
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).exposingIdTo(ethSenderAccountReference::set);
                     allRunFor(spec, hapiGetAccountInfo, lazyAccountInfoCheck);
@@ -4970,7 +5006,12 @@ public class TraceabilitySuite extends HapiSuite {
         final AtomicReference<AccountID> mergedAccountId = new AtomicReference<>();
         final var CREATE_2_TXN = "create2Txn";
         final var specName = "hollowAccountCreate2MergeExportsExpectedSidecars";
-        return propertyPreservingHapiSpec(specName)
+        return propertyPreservingHapiSpec(
+                        specName,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),

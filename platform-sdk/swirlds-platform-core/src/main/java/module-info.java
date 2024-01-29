@@ -135,11 +135,15 @@ module com.swirlds.platform.core {
             com.swirlds.common,
             com.swirlds.config.impl;
     exports com.swirlds.platform.wiring;
+    exports com.swirlds.platform.wiring.components;
+    exports com.swirlds.platform.event.hashing;
+    exports com.swirlds.platform.event.orphan;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive info.picocli;

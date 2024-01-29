@@ -23,7 +23,7 @@ import com.swirlds.platform.internal.EventImpl;
 /**
  * A shadow event wraps a hashgraph event, and provides parent pointers to shadow events.
  *
- * The shadow event type is the vertex type of the shadow graph. This is the elemental type of {@link ShadowGraph}.
+ * The shadow event type is the vertex type of the shadow graph. This is the elemental type of {@link Shadowgraph}.
  * It provides a reference to a hashgraph event instance and the following operations:
  *
  * <ul>

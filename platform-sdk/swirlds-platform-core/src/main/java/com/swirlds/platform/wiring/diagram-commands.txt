@@ -1,52 +1,57 @@
 ########################################################################################################################
-#### Uncollapsed
+#### Slight Collapsing
 
 Groups high level grouping of components and component groups. Substitutes known spammy wires.
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
+    -s 'eventWindowManager:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
+    -s 'inOrderLinker:events to gossip:g' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
+    -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
+    -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
+    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -g 'Gossip:gossip,shadowgraph' \
+    -c 'Orphan Buffer'
 
 ########################################################################################################################
-#### Simple Collapsing
+#### Heavy Collapsing
 
 Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
-    -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
+    -s 'eventWindowManager:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:s' \
+    -s 'inOrderLinker:events to gossip:g' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
+    -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
+    -g 'PCES Writer:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -g 'Gossip:gossip,shadowgraph' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
     -c 'State Signature Collection' \
     -c 'State Signature Collection' \
     -c 'State File Management' \
-    -c 'PCES'
+    -c 'Event Hashing' \
+    -c 'PCES Writer'

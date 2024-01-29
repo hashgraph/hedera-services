@@ -16,13 +16,14 @@
 
 package com.swirlds.platform.event.deduplication;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -74,8 +75,7 @@ public class EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents =
-            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents;
 
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "eventsWithDisparateSignature")
@@ -108,10 +108,17 @@ public class EventDeduplicator {
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+
+        final AncientMode ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
-                .getAncientMode());
+                .getAncientMode();
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+        } else {
+            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+        }
     }
 
     /**

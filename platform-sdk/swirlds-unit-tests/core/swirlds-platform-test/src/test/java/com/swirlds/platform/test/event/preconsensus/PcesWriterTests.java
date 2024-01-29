@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -38,7 +37,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -46,6 +44,8 @@ import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -313,7 +313,7 @@ class PcesWriterTests {
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
             final GossipEvent event = iterator.next();
@@ -322,6 +322,7 @@ class PcesWriterTests {
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
+
             writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
 
             if (event.getAncientIndicator(ancientMode) < lowerBound) {
@@ -379,7 +380,7 @@ class PcesWriterTests {
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
             final GossipEvent event = iterator.next();
@@ -506,7 +507,7 @@ class PcesWriterTests {
         // We intentionally do not call writer.beginStreamingNewEvents(). This should cause all events
         // passed into the writer to be more or less ignored.
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
@@ -559,7 +560,7 @@ class PcesWriterTests {
 
             final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
-            long lowerBound = 0;
+            long lowerBound = ancientMode.selectIndicator(0, 1);
             final Iterator<GossipEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
             while (iterator1.hasNext()) {
                 final GossipEvent event = iterator1.next();
@@ -640,8 +641,8 @@ class PcesWriterTests {
     }
 
     /**
-     * In this test, increase the lower bound as events are added. When this happens, we should never
-     * have to include more than the preferred number of events in each file.
+     * In this test, increase the lower bound as events are added. When this happens, we should never have to include
+     * more than the preferred number of events in each file.
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
@@ -670,7 +671,7 @@ class PcesWriterTests {
 
         final Set<GossipEvent> rejectedEvents = new HashSet<>();
 
-        long lowerBound = 0;
+        long lowerBound = ancientMode.selectIndicator(0, 1);
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
 

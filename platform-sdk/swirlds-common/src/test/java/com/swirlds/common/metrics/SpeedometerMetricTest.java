@@ -16,14 +16,14 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.DataType.FLOAT;
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.metrics.MetricType.SPEEDOMETER;
+import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.swirlds.metrics.api.MetricType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -83,7 +83,7 @@ class SpeedometerMetricTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(SPEEDOMETER);
+        assertThat(sut.getMetricType()).isEqualTo(MetricType.SPEEDOMETER);
     }
 
     @Test

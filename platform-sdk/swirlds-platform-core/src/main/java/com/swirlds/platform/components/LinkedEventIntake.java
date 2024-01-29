@@ -21,7 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -48,15 +48,10 @@ public class LinkedEventIntake {
     /**
      * Stores events, expires them, provides event lookup methods
      */
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
-    /**
-     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
-     * for determining Ancient.
-     */
-    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -83,9 +78,6 @@ public class LinkedEventIntake {
      * @param consensusSupplier                 provides the current consensus instance
      * @param dispatcher                        invokes event related callbacks
      * @param shadowGraph                       tracks events in the hashgraph
-     *
-     * @param intakeEventCounter                tracks the number of events from each peer that are currently in
-     *                                          the intake pipeline
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
@@ -93,10 +85,9 @@ public class LinkedEventIntake {
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Shadowgraph shadowGraph,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
@@ -120,14 +111,12 @@ public class LinkedEventIntake {
 
         if (paused) {
             // If paused, throw everything into the void
-            event.clear();
             return List.of();
         }
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                event.clear();
                 return List.of();
             }
 
@@ -181,7 +170,7 @@ public class LinkedEventIntake {
      */
     private void handleStale(final long previousGenerationNonAncient) {
         // find all events that just became ancient and did not reach consensus, these events will be considered stale
-        final Collection<EventImpl> staleEvents = shadowGraph.findByGeneration(
+        final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
                 previousGenerationNonAncient,
                 consensusSupplier.get().getMinGenerationNonAncient(),
                 LinkedEventIntake::isNotConsensus);

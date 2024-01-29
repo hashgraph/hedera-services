@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -61,7 +63,7 @@ public class AccountStateTranslator {
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
 
         final var firstContractStorageKey = account.getFirstContractStorageKey() == null
-                ? null
+                ? Bytes.EMPTY
                 : Bytes.wrap(account.getFirstContractStorageKey()
                         .getKeyAsBigInteger()
                         .toByteArray());
@@ -96,9 +98,76 @@ public class AccountStateTranslator {
                 .maxAutoAssociations(account.getMaxAutomaticAssociations())
                 .usedAutoAssociations(account.getUsedAutoAssociations())
                 .contractKvPairsNumber(account.getNumContractKvPairs())
-                .cryptoAllowances(orderedHbarAllowancesFrom(account))
-                .approveForAllNftAllowances(orderedOperatorApprovalsFrom(account))
-                .tokenAllowances(orderedFungibleAllowancesFrom(account))
+                .cryptoAllowances(orderedHbarAllowancesFrom(account.getCryptoAllowances()))
+                .approveForAllNftAllowances(orderedOperatorApprovalsFrom(account.getApproveForAllNfts()))
+                .tokenAllowances(orderedFungibleAllowancesFrom(account.getFungibleTokenAllowances()))
+                .declineReward(account.isDeclinedReward())
+                .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
+                .stakedToMe(account.getStakedToMe())
+                .stakePeriodStart(account.getStakePeriodStart())
+                .stakedAccountId(stakedAccountId)
+                .stakedNodeId(stakedNodeId)
+                .firstContractStorageKey(firstContractStorageKey)
+                .headNftId(NftID.newBuilder()
+                        .tokenId(TokenID.newBuilder()
+                                .tokenNum(account.getHeadNftTokenNum())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
+                        .serialNumber(account.getHeadNftSerialNum()))
+                .autoRenewAccountId(AccountID.newBuilder()
+                        .accountNum(Optional.ofNullable(account.getAutoRenewAccount())
+                                .map(EntityId::num)
+                                .orElse(0L))
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
+                .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval());
+
+        if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);
+        else if (stakedNodeId != -1) acntBuilder.stakedNodeId(stakedNodeId);
+
+        return acntBuilder.build();
+    }
+
+    public static Account accountFromOnDiskAccount(@NonNull final OnDiskAccount account) {
+        final var firstContractStorageKey = account.getFirstContractStorageKey() == null
+                ? Bytes.EMPTY
+                : Bytes.wrap(account.getFirstContractStorageKey()
+                        .getKeyAsBigInteger()
+                        .toByteArray());
+        final var stakedAccountId = account.getStakedId() > 0
+                ? AccountID.newBuilder().accountNum(account.getStakedId()).build()
+                : null;
+        final var stakedNodeId = account.getStakedId() < 0 ? -account.getStakedId() - 1 : -1;
+        final var acntBuilder = Account.newBuilder()
+                .accountId(AccountID.newBuilder()
+                        .accountNum(account.getAccountNumber())
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
+                .numberOwnedNfts(account.getNftsOwned())
+                .numberTreasuryTitles(account.getNumTreasuryTitles())
+                .memo(account.getMemo())
+                .smartContract(account.isSmartContract())
+                .alias(Bytes.wrap(account.getAlias().toByteArray()))
+                .ethereumNonce(account.getEthereumNonce())
+                .numberAssociations(account.getNumAssociations())
+                .numberPositiveBalances(account.getNumPositiveBalances())
+                .headTokenId(TokenID.newBuilder()
+                        .tokenNum(account.getHeadTokenId())
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
+                .headNftSerialNumber(account.getHeadNftSerialNum())
+                .tinybarBalance(account.getBalance())
+                .receiverSigRequired(account.isReceiverSigRequired())
+                .key(PbjConverter.asPbjKey(account.getAccountKey()))
+                .autoRenewSeconds(account.getAutoRenewSecs())
+                .deleted(account.isDeleted())
+                .expirationSecond(account.getExpiry())
+                .maxAutoAssociations(account.getMaxAutomaticAssociations())
+                .usedAutoAssociations(account.getUsedAutoAssociations())
+                .contractKvPairsNumber(account.getNumContractKvPairs())
+                .cryptoAllowances(orderedHbarAllowancesFrom(account.getCryptoAllowances()))
+                .approveForAllNftAllowances(orderedOperatorApprovalsFrom(account.getApproveForAllNfts()))
+                .tokenAllowances(orderedFungibleAllowancesFrom(account.getFungibleTokenAllowances()))
                 .declineReward(account.isDeclinedReward())
                 .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
                 .stakedToMe(account.getStakedToMe())
@@ -128,8 +197,8 @@ public class AccountStateTranslator {
 
     @Nullable
     static List<AccountApprovalForAllAllowance> orderedOperatorApprovalsFrom(
-            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
-        return orderedOperatorApprovals(account.getApproveForAllNfts().stream()
+            @NonNull final Set<FcTokenAllowanceId> approveForAllNfts) {
+        return orderedOperatorApprovals(approveForAllNfts.stream()
                 .map(a -> AccountApprovalForAllAllowance.newBuilder()
                         .spenderId(AccountID.newBuilder()
                                 .accountNum(a.getSpenderNum().longValue())
@@ -145,8 +214,8 @@ public class AccountStateTranslator {
 
     @Nullable
     static List<AccountCryptoAllowance> orderedHbarAllowancesFrom(
-            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
-        return orderedHbarAllowances(account.getCryptoAllowances().entrySet().stream()
+            @NonNull final Map<EntityNum, Long> cryptoAllowances) {
+        return orderedHbarAllowances(cryptoAllowances.entrySet().stream()
                 .map(e -> AccountCryptoAllowance.newBuilder()
                         .spenderId(AccountID.newBuilder()
                                 .accountNum(e.getKey().longValue())
@@ -159,8 +228,8 @@ public class AccountStateTranslator {
 
     @Nullable
     static List<AccountFungibleTokenAllowance> orderedFungibleAllowancesFrom(
-            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
-        return orderedFungibleAllowances(account.getFungibleTokenAllowances().entrySet().stream()
+            @NonNull final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return orderedFungibleAllowances(fungibleTokenAllowances.entrySet().stream()
                 .map(e -> AccountFungibleTokenAllowance.newBuilder()
                         .tokenId(TokenID.newBuilder()
                                 .tokenNum(e.getKey().getTokenNum().longValue())
@@ -277,7 +346,8 @@ public class AccountStateTranslator {
                 .tokenIdOrElse(TokenID.DEFAULT)
                 .tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
-        if (account.firstContractStorageKey() != null)
+        if (account.firstContractStorageKey() != null
+                && account.firstContractStorageKey().length() > 0)
             merkleAccount.setFirstUint256StorageKey(new ContractKey(
                             account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
                             account.firstContractStorageKey().toByteArray())

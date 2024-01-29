@@ -17,11 +17,12 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.InitialModServiceScheduleSchema;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
@@ -31,13 +32,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
-    @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(scheduleSchema(version));
+    private InitialModServiceScheduleSchema scheduleSchema;
+
+    public void setFs(@Nullable final MerkleScheduledTransactions fs) {
+        scheduleSchema.setFs(fs);
     }
 
-    private Schema scheduleSchema(final SemanticVersion version) {
-        // Everything in memory for now
-        return new InitialModServiceScheduleSchema(version);
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+        scheduleSchema = new InitialModServiceScheduleSchema(version);
+        registry.register(scheduleSchema);
     }
 }

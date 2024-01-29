@@ -89,6 +89,8 @@ include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
+include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
+
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
@@ -145,6 +147,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.11")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.14")
     }
 }

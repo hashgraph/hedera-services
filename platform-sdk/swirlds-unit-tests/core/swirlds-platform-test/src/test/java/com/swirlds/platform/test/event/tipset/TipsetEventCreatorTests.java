@@ -38,6 +38,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -894,7 +895,8 @@ class TipsetEventCreatorTests {
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100, AncientMode.GENERATION_THRESHOLD));
+        eventCreator.setNonAncientEventWindow(
+                new NonAncientEventWindow(1, 100, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
@@ -940,11 +942,19 @@ class TipsetEventCreatorTests {
 
                 final long pendingConsensusRound = eventIndex + 2;
                 if (eventIndex > 0) {
+
+                    final long ancientThreshold;
+                    if (useBirthRoundForAncient) {
+                        ancientThreshold = Math.max(1, eventIndex - 26);
+                    } else {
+                        ancientThreshold = Math.max(0, eventIndex - 26);
+                    }
+
                     // Set non-ancientEventWindow after creating genesis event from each node.
                     eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
                             pendingConsensusRound - 1,
-                            eventIndex - 26,
-                            0,
+                            ancientThreshold,
+                            1 /* ignored in this context */,
                             useBirthRoundForAncient
                                     ? AncientMode.BIRTH_ROUND_THRESHOLD
                                     : AncientMode.GENERATION_THRESHOLD));
@@ -963,7 +973,7 @@ class TipsetEventCreatorTests {
 
                 if (eventIndex == 0 || (!useBirthRoundForAncient && event != null)) {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(addressBook.getRound(), birthRound);
+                    assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
                 } else if (event != null) {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(pendingConsensusRound, birthRound);

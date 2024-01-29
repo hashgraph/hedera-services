@@ -25,6 +25,8 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the admin service
@@ -33,7 +35,9 @@ import java.util.Set;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceAdminSchema extends Schema {
-    public InitialModServiceAdminSchema(SemanticVersion version) {
+    private static final Logger log = LogManager.getLogger(InitialModServiceAdminSchema.class);
+
+    public InitialModServiceAdminSchema(@NonNull final SemanticVersion version) {
         super(version);
     }
 
@@ -65,5 +69,7 @@ public class InitialModServiceAdminSchema extends Schema {
             freezeTimeKeyState.put(Timestamp.DEFAULT);
             lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
         }
+
+        log.info("BBM: no migration actions necessary for admin service");
     }
 }

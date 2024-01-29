@@ -144,6 +144,7 @@ public class EndOfStakingPeriodUpdater {
                     .copyBuilder()
                     .stake(recomputedStake.stake())
                     .stakeRewardStart(recomputedStake.stakeRewardStart())
+                    .unclaimedStakeRewardStart(0)
                     .build();
             final var newStakeRewardStart = recomputedStake.stakeRewardStart();
             final var nodePendingRewards = pendingRewardHbars * newPendingRewardRate;
@@ -154,10 +155,8 @@ public class EndOfStakingPeriodUpdater {
                     nodePendingRewards,
                     oldStakeRewardStart,
                     newStakeRewardStart);
-            stakeRewardsHelper.increasePendingRewardsBy(stakingRewardsStore, nodePendingRewards);
-
-            currStakingInfo =
-                    currStakingInfo.copyBuilder().unclaimedStakeRewardStart(0).build();
+            currStakingInfo = stakeRewardsHelper.increasePendingRewardsBy(
+                    stakingRewardsStore, nodePendingRewards, currStakingInfo);
 
             newTotalStakedRewardStart += newStakeRewardStart;
             newTotalStakedStart += currStakingInfo.stake();
@@ -180,8 +179,13 @@ public class EndOfStakingPeriodUpdater {
             // stake(rewarded + non-rewarded) of the node is greater than maxStake, stakingInfo's stake field is set to
             // maxStake.So, there is no need to clamp the stake value here. Sum of all stakes can be used to calculate
             // the weight.
-            final var updatedWeight =
-                    calculateWeightFromStake(stakingInfo.stake(), newTotalStakedStart, sumOfConsensusWeights);
+            final int updatedWeight;
+            if (!stakingInfo.deleted()) {
+                updatedWeight =
+                        calculateWeightFromStake(stakingInfo.stake(), newTotalStakedStart, sumOfConsensusWeights);
+            } else {
+                updatedWeight = 0;
+            }
             final var oldWeight = stakingInfo.weight();
             stakingInfo = stakingInfo.copyBuilder().weight(updatedWeight).build();
             log.info(

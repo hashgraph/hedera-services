@@ -35,20 +35,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.StateConfig_;
+import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -110,12 +112,13 @@ class SignedStateFileManagerTests {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
-        signedStateFilePath = new SignedStateFilePath(context.getConfiguration().getConfigData(StateConfig.class));
+        signedStateFilePath =
+                new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
     }
 
     private SignedStateMetrics buildMockMetrics() {
@@ -261,7 +264,7 @@ class SignedStateFileManagerTests {
                 .withValue(StateConfig_.SAVE_STATE_PERIOD, stateSavePeriod)
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
@@ -381,7 +384,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
