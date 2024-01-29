@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -105,10 +104,6 @@ public class UtilPrngHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
         if (range > 0) {
             final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
-            if (range == 100) {
-                System.out.println("pseudoRandomBytes: " + Arrays.toString(pseudoRandomBytes.toByteArray()) + ", "
-                        + "randomNum : " + pseudoRandomNumber);
-            }
             recordBuilder.entropyNumber(pseudoRandomNumber);
         } else {
             recordBuilder.entropyBytes(pseudoRandomBytes);
@@ -130,6 +125,12 @@ public class UtilPrngHandler implements TransactionHandler {
         return (int) mod(initialBitsValue, range);
     }
 
+    /**
+     * Returns {@code x mod m}, a non-negative value less than {@code m}. This differs from {@code x %
+     * m}, which might be negative.
+     *
+     * @throws ArithmeticException if {@code m <= 0}
+     */
     public static long mod(long x, int m) {
         if (m <= 0) {
             throw new ArithmeticException("Modulus must be positive");

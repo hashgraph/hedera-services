@@ -211,8 +211,10 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
                             .toList(),
                     executorService);
             // when serialization is done and previous running hash is computed, we can compute new running hash and
-            // write
-            // serialized items to record file in parallel update running hash in a background thread
+            // write serialized items to record file in parallel update running hash in a background thread
+            // Even though we don't update the currentRecordFileWriter until the end, we still need to update the
+            // running hashes here for every transaction even if the currentRecordFileWriter is null to be compatible
+            // with the mono-service implementation.
             lastRecordHashingResultNMinus3 = lastRecordHashingResultNMinus2;
             lastRecordHashingResultNMinus2 = lastRecordHashingResultNMinus1;
             lastRecordHashingResultNMinus1 = lastRecordHashingResult;
@@ -221,6 +223,9 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
                     .thenApplyAsync(
                             twoResults -> format.computeNewRunningHash(twoResults.a(), twoResults.b()),
                             executorService);
+            // When the currentRecordFileWriter is null, it means that the node is starting from genesis or restarting
+            // at an upgrade boundary. In either case, there is no previous record file to write to. So we just ignore
+            // the serialized items.
             if (currentRecordFileWriter == null) {
                 // For a node starting from genesis or restarting at an upgrade boundary, switchBlocks() is
                 // always called before the first call to writeRecordStreamItems(), because
