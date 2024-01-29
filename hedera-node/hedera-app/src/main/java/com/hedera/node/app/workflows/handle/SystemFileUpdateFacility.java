@@ -35,10 +35,10 @@ import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Collections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -161,7 +161,7 @@ public class SystemFileUpdateFacility {
                     "Refreshing properties with following overrides to {}:\n\t{}",
                     configFileName,
                     printableConfigList.isBlank() ? "<NONE>" : printableConfigList);
-        } catch (IOException ignore) {
+        } catch (ParseException ignore) {
             // If this isn't parseable we won't have updated anything, also don't log
         }
     }

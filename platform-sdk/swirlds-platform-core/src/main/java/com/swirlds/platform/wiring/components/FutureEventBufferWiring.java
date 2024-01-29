@@ -61,7 +61,7 @@ public record FutureEventBufferWiring(
     }
 
     /**
-     * Bind the input and output wires to the future event buffer.
+     * Bind to the future event buffer.
      *
      * @param futureEventBuffer the future event buffer to bind
      */
