@@ -260,6 +260,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeTokenGetCustomFeesFailure(final ResponseCodeEnum status, final List<CustomFee> customFees) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                .withStatus(status.getNumber())
+                .withCustomFees(customFees)
+                .build();
+    }
+
     public Bytes encodeGetNonFungibleTokenInfo(final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
