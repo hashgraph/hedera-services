@@ -237,7 +237,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
         }
 
         initialHash = new Hash(runningEventHashUpdate.runningEventHash());
-        logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", () -> initialHash);
+        logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", initialHash);
         multiStream.setRunningHash(initialHash);
     }
 
