@@ -2422,7 +2422,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     final HapiSpec callStaticCallToLargeAddress() {
         final var txn = "txn";
-        final var contract = "callInConstructor";
+        final var contract = "CallInConstructor";
         return defaultHapiSpec("callStaticAddress")
                 .given(
                         uploadInitCode(contract),
