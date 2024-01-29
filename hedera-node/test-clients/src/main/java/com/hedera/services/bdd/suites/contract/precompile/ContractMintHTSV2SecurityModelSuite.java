@@ -136,7 +136,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryNegative(),
                 V2Security003NonFungibleTokenMintInTreasuryNegative(),
-                V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall());
+                V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall(),
+                V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall(),
+                V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode());
     }
 
     List<HapiSpec> positiveSpecs() {
