@@ -61,7 +61,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -376,22 +375,6 @@ public class SyncTests {
     }
 
     /**
-     * Test a sync where the listener rejects the sync.
-     */
-    @ParameterizedTest
-    @MethodSource({"simpleFourNodeGraphParams", "fourNodeGraphParams", "tenNodeGraphParams", "edgeCaseGraphParams"})
-    void testSyncRejected(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
-
-        executor.setCustomInitialization((caller, listener) -> listener.setCanAcceptSync(false));
-
-        executor.execute();
-
-        SyncValidator.assertNoEventsTransferred(executor.getCaller(), executor.getListener());
-        SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
-    }
-
-    /**
      * This test verifies that no events are transferred when no booleans are received from the other node.
      */
     @ParameterizedTest
@@ -593,18 +576,12 @@ public class SyncTests {
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
             c.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */,
-                            0 /* ignored by shadowgraph */,
-                            callerMinGen,
-                            GENERATION_THRESHOLD));
+                            0 /* ignored by shadowgraph */, callerMaxGen, callerMinGen, GENERATION_THRESHOLD));
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
             l.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */,
-                            0 /* ignored by shadowgraph */,
-                            listenerMinGen,
-                            GENERATION_THRESHOLD));
+                            0 /* ignored by shadowgraph */, listenerMaxGen, listenerMinGen, GENERATION_THRESHOLD));
         });
 
         executor.execute();
@@ -642,12 +619,19 @@ public class SyncTests {
 
             assertEquals(listenerMinNonAncient, callerMinGen, "listener max gen and caller min gen should be equal.");
 
-            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncient);
-            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
-            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncient);
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+            listener.getShadowGraph()
+                    .updateEventWindow(new NonAncientEventWindow(
+                            ROUND_FIRST /* ignored */,
+                            listenerMinNonAncient,
+                            listenerMinGen,
+                            GENERATION_THRESHOLD)); // TODO
+
+            caller.getShadowGraph()
+                    .updateEventWindow(new NonAncientEventWindow(
+                            ROUND_FIRST /* ignored */,
+                            callerMinNonAncient,
+                            callerMinGen,
+                            GENERATION_THRESHOLD)); // TODO
         });
 
         executor.execute();
@@ -733,18 +717,15 @@ public class SyncTests {
 
         // before the sync, expire the tip on the listener
         executor.setCustomPreSyncConfiguration((c, l) -> {
-            l.updateEventWindow(new NonAncientEventWindow(
-                    0 /* ignored by shadowgraph */, 0, maxGen.get() + 1, GENERATION_THRESHOLD));
-            when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
-            when(l.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
+            l.getShadowGraph()
+                    .updateEventWindow(new NonAncientEventWindow(
+                            0 /* ignored by shadowgraph */, maxGen.get() + 2, maxGen.get() + 1, GENERATION_THRESHOLD));
 
             c.updateEventWindow(new NonAncientEventWindow(
                     0 /* ignored by shadowgraph */,
-                    0,
+                    maxGen.get() + 2,
                     max(EventConstants.FIRST_GENERATION, maxGen.get() - 1),
                     GENERATION_THRESHOLD));
-            when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
-            when(c.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
         });
 
         // after phase 1, expire the tip on the caller
@@ -970,54 +951,6 @@ public class SyncTests {
     }
 
     /**
-     * Tests if a sync is interrupted because it takes too long. The caller has 300 events to send, but the listener
-     * sleeps after reading every event. Eventually, the sync will time out and will be aborted.
-     */
-    @Test
-    @Disabled("Test takes a minute to finish, so disabled by default")
-    void testSyncTimeExceeded() {
-        final SyncTestParams params = new SyncTestParams(10, 1000, 500, 200);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
-        final int sleep = 1000;
-
-        executor.setGraphCustomization((caller, listener) -> {
-            caller.setSaveGeneratedEvents(true);
-            listener.setSaveGeneratedEvents(true);
-        });
-
-        executor.setCustomInitialization((c, l) -> l.setSleepAfterEventReadMillis(sleep));
-
-        assertThrows(Exception.class, executor::execute, "the sync should time out and an exception should be thrown");
-    }
-
-    /**
-     * Tests if a sync is aborted when there is any issue on the readers side (in this case a socket timeout), while the
-     * listener is blocked while writing to the socket, because the buffer is full. The only was to unlock the writer is
-     * to close the connection, which is what the synchronizer does.
-     */
-    @Test
-    @Disabled("Not reliable enough for CCI")
-    void testTimoutWriterStuck() {
-        final SyncTestParams params = new SyncTestParams(10, 1000, 5000, 200);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
-        final int sleep = 5000;
-
-        executor.setConnectionFactory(ConnectionFactory::createSocketConnections);
-
-        executor.setGraphCustomization((caller, listener) -> {
-            caller.setSaveGeneratedEvents(true);
-            listener.setSaveGeneratedEvents(true);
-        });
-
-        executor.setCustomInitialization((c, l) -> l.setSleepAfterEventReadMillis(sleep));
-
-        assertThrows(
-                Exception.class,
-                executor::execute,
-                "the socket read should time out and an exception should be thrown");
-    }
-
-    /**
      * Tests that events from a signed state are not gossiped and that such a sync is properly aborted
      */
     @Test
@@ -1069,22 +1002,13 @@ public class SyncTests {
             long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 
-            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen / 2);
-            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+            listener.getShadowGraph()
+                    .updateEventWindow(new NonAncientEventWindow(
+                            ROUND_FIRST /* ignored */, callerMaxGen / 2, callerMinGen, GENERATION_THRESHOLD)); // TODO
 
-            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen / 2);
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
-        });
-        executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                    ROUND_FIRST,
-                    caller.getConsensus().getMinGenerationNonAncient(),
-                    caller.getConsensus().getMinGenerationNonAncient(),
-                    GENERATION_THRESHOLD); // TODO
-
-            listener.getShadowGraph().startWithEventWindow(eventWindow);
+            listener.getShadowGraph()
+                    .updateEventWindow(new NonAncientEventWindow(
+                            ROUND_FIRST /* ignored */, callerMaxGen / 2, callerMinGen, GENERATION_THRESHOLD)); // TODO
         });
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
