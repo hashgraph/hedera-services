@@ -152,7 +152,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check grand parent path")
     void testGetGrandParentPath() {
@@ -202,7 +201,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check left grand child path computation")
     void testGetLeftGrandChild() {

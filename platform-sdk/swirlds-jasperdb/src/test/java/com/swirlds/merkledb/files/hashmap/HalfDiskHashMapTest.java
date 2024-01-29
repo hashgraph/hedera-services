@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;

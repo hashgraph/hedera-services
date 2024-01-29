@@ -41,6 +41,7 @@ hammerModuleInfo {
     requires("com.swirlds.common")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.merkledb.test.fixtures")
+    requires("com.swirlds.metrics.api")
     requires("com.swirlds.virtualmap")
     requires("org.apache.logging.log4j")
     requires("org.apache.logging.log4j.core")

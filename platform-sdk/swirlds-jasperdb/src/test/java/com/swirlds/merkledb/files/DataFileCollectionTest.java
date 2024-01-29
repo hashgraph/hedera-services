@@ -17,8 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
