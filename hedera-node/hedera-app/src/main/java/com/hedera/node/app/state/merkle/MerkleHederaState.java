@@ -112,10 +112,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
-    private static final long CLASS_ID = 0x2de3ead3caf06392L;
+    //    private static final long CLASS_ID = 0x2de3ead3caf06392L;
     // Uncomment the following class ID to run a mono -> modular state migration
     // NOTE: also change class ID of ServicesState
-    //    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
 
@@ -185,7 +185,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final var notificationEngine = platform.getNotificationEngine();
             notificationEngine.register(
                     NewRecoveredStateListener.class,
-                    (notification) -> lifecycles.onNewRecoveredState(notification.getSwirldState()));
+                    notification -> lifecycles.onNewRecoveredState(notification.getSwirldState()));
         }
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
@@ -427,7 +427,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @param stateKey the state key
      * @return -1 if not found, otherwise the index into the children
      */
-    private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
+    public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);

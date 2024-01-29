@@ -17,6 +17,12 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_MIGRATION;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.bbm.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
+import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
@@ -45,6 +51,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -455,6 +462,10 @@ public final class Hedera implements SwirldMain {
         final Object test = state.getChild(0);
         boolean doBbmMigration = test instanceof VirtualMap;
         if (doBbmMigration) {
+            if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
+                dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+            }
+
             // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
             logger.info("BBM: migration beginning 😅...");
 
@@ -607,7 +618,7 @@ public final class Hedera implements SwirldMain {
             switch (trigger) {
                 case GENESIS -> genesis(state);
                 case RECONNECT -> reconnect(state, deserializedVersion);
-                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion);
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
@@ -657,6 +668,9 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+        if (shouldDump(trigger, MOD_POST_MIGRATION)) {
+            dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+        }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
@@ -900,6 +914,9 @@ public final class Hedera implements SwirldMain {
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
         // (FUTURE) - dump the semantic contents of the recovered state for
         // comparison with the mirroring mono-service state
+        if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
+            dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+        }
         daggerApp.blockRecordManager().close();
     }
 
@@ -1018,8 +1035,10 @@ public final class Hedera implements SwirldMain {
      * Initialize flow for when a node has been restarted. This means it was started from a saved state.
      */
     private void restart(
-            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
-        initializeForTrigger(state, deserializedVersion, RESTART);
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final InitTrigger trigger) {
+        initializeForTrigger(state, deserializedVersion, trigger);
     }
 
     /*==================================================================================================================
@@ -1202,5 +1221,9 @@ public final class Hedera implements SwirldMain {
                 .realmNum(hederaConfig.realm())
                 .build();
         return readableFileStore.getFileLeaf(fileId);
+    }
+
+    private static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
+        return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 }

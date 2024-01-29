@@ -999,6 +999,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(OP_BODY)
+                                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.NEW)
                                 .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(FIRST_USER).balance(0L))
