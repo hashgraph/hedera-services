@@ -62,6 +62,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -103,7 +104,7 @@ public final class PbjConverter {
         try {
             final var bytes = txBody.toByteArray();
             return TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
-        } catch (IOException e) {
+        } catch (ParseException e) {
             throw new RuntimeException(e);
         }
     }
@@ -113,7 +114,7 @@ public final class PbjConverter {
         try {
             final var bytes = keyValue.toByteArray();
             return Key.PROTOBUF.parse(BufferedData.wrap(bytes));
-        } catch (IOException e) {
+        } catch (ParseException e) {
             throw new RuntimeException(e);
         }
     }
@@ -1335,7 +1336,7 @@ public final class PbjConverter {
             final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
             final var codec = (Codec<R>) codecField.get(null);
             return codec.parse(BufferedData.wrap(bytes));
-        } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
+        } catch (NoSuchFieldException | IllegalAccessException | ParseException e) {
             // Should be impossible, so just propagate an exception
             throw new RuntimeException("Invalid conversion to PBJ for " + pbjClass.getSimpleName(), e);
         }
@@ -1355,7 +1356,7 @@ public final class PbjConverter {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return Key.PROTOBUF.parse(stream);
-        } catch (final IOException e) {
+        } catch (final IOException | ParseException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion to PBJ for Key", e);
         }
@@ -1435,7 +1436,7 @@ public final class PbjConverter {
             schedulableTransactionBody.writeTo(baos);
             return Optional.of(SchedulableTransactionBody.PROTOBUF.parse(
                     Bytes.wrap(baos.toByteArray()).toReadableSequentialData()));
-        } catch (final IOException e) {
+        } catch (final IOException | ParseException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion from PBJ for SchedulableTransactionBody", e);
         }
@@ -1456,7 +1457,7 @@ public final class PbjConverter {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return CustomFee.PROTOBUF.parse(stream);
-        } catch (final IOException e) {
+        } catch (final IOException | ParseException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion to PBJ for CustomFee", e);
         }

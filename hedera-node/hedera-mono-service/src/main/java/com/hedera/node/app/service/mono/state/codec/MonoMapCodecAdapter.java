@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -57,18 +58,22 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
+            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
                 final var buffer = new byte[input.readInt()];
                 input.readBytes(buffer);
                 final var bais = new ByteArrayInputStream(buffer);
                 final var item = factory.get();
-                item.deserialize(new SerializableDataInputStream(bais), version);
+                try {
+                    item.deserialize(new SerializableDataInputStream(bais), version);
+                } catch (final IOException e) {
+                    throw new ParseException(e);
+                }
                 return item;
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
                 return parse(dataInput);
             }
 
@@ -105,31 +110,35 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
-                if (input instanceof ReadableStreamingData in) {
-                    final var item = factory.get();
-                    final var buffer = new byte[input.readInt()];
-                    input.readBytes(buffer);
-                    final var bais = new ByteArrayInputStream(buffer);
-                    item.deserialize(new SerializableDataInputStream(bais), version);
-                    return item;
-                } else if (input instanceof BufferedData dataBuffer) {
-                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                    dataBuffer.readBytes(byteBuffer);
-                    // TODO: Remove the following line once this was fixed in BufferedData
-                    dataBuffer.skip(dataBuffer.remaining());
-                    byteBuffer.rewind();
-                    return keySerializer.deserialize(byteBuffer, version);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataInput type: " + input.getClass().getName());
+            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+                try {
+                    if (input instanceof ReadableStreamingData in) {
+                        final var item = factory.get();
+                        final var buffer = new byte[input.readInt()];
+                        input.readBytes(buffer);
+                        final var bais = new ByteArrayInputStream(buffer);
+                        item.deserialize(new SerializableDataInputStream(bais), version);
+                        return item;
+                    } else if (input instanceof BufferedData dataBuffer) {
+                        // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                        final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
+                        dataBuffer.readBytes(byteBuffer);
+                        // TODO: Remove the following line once this was fixed in BufferedData
+                        dataBuffer.skip(dataBuffer.remaining());
+                        byteBuffer.rewind();
+                        return keySerializer.deserialize(byteBuffer, version);
+                    } else {
+                        throw new IllegalArgumentException("Unsupported DataInput type: "
+                                + input.getClass().getName());
+                    }
+                } catch (final IOException e) {
+                    throw new ParseException(e);
                 }
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
                 return parse(dataInput);
             }
 
@@ -177,31 +186,35 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
-                if (input instanceof ReadableStreamingData in) {
-                    final var item = factory.get();
-                    final var buffer = new byte[input.readInt()];
-                    input.readBytes(buffer);
-                    final var bais = new ByteArrayInputStream(buffer);
-                    item.deserialize(new SerializableDataInputStream(bais), version);
-                    return item;
-                } else if (input instanceof BufferedData dataBuffer) {
-                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                    dataBuffer.readBytes(byteBuffer);
-                    // TODO: Remove the following line once this was fixed in BufferedData
-                    dataBuffer.skip(dataBuffer.remaining());
-                    byteBuffer.rewind();
-                    return valueSerializer.deserialize(byteBuffer, version);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataInput type: " + input.getClass().getName());
+            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+                try {
+                    if (input instanceof ReadableStreamingData in) {
+                        final var item = factory.get();
+                        final var buffer = new byte[input.readInt()];
+                        input.readBytes(buffer);
+                        final var bais = new ByteArrayInputStream(buffer);
+                        item.deserialize(new SerializableDataInputStream(bais), version);
+                        return item;
+                    } else if (input instanceof BufferedData dataBuffer) {
+                        // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                        final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
+                        dataBuffer.readBytes(byteBuffer);
+                        // TODO: Remove the following line once this was fixed in BufferedData
+                        dataBuffer.skip(dataBuffer.remaining());
+                        byteBuffer.rewind();
+                        return valueSerializer.deserialize(byteBuffer, version);
+                    } else {
+                        throw new IllegalArgumentException("Unsupported DataInput type: "
+                                + input.getClass().getName());
+                    }
+                } catch (final IOException e) {
+                    throw new ParseException(e);
                 }
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
                 return parse(dataInput);
             }
 
