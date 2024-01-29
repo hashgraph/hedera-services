@@ -16,12 +16,15 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static java.util.Objects.requireNonNull;
-
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.Writer;
@@ -29,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,10 +42,15 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.Objects.requireNonNull;
+
 /** Dump all token associations (tokenrels) , from a signed state file, to a text file, in deterministic order */
 @SuppressWarnings("java:S106")
 // S106: "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpTokenAssociationsSubcommand {
+    private SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
 
     static void doit(
             @NonNull final SignedStateHolder state,
@@ -148,6 +157,20 @@ public class DumpTokenAssociationsSubcommand {
                     tokenRel.isAutomaticAssociation(),
                     tokenRel.getPrev(),
                     tokenRel.getNext());
+        }
+
+        @NonNull
+        public static TokenRel from(@NonNull final TokenRelation tokenRel) {
+            final var pair = Pair.of(tokenRel.accountId(), tokenRel.tokenId());
+            return new TokenRel(
+                    tokenRel.accountId().accountNum(),
+                    tokenRel.tokenId().tokenNum(),
+                    tokenRel.balance(),
+                    tokenRel.frozen(),
+                    tokenRel.kycGranted(),
+                    tokenRel.automaticAssociation(),
+                    tokenRel.previousToken().tokenNum(),
+                    tokenRel.nextToken().tokenNum());
         }
 
         @NonNull
@@ -283,9 +306,20 @@ public class DumpTokenAssociationsSubcommand {
         final var tokenAssociationsStore = state.getTokenAssociations();
         final var expectedSize = Math.toIntExact(tokenAssociationsStore.size());
 
-        final SortedMap<Pair<Long, Long>, TokenRel> r = new TreeMap<>(getPairOfLongsComparator());
+        final var associationsSchema = new InitialModServiceTokenSchema(null, null, null, null, null, CURRENT_VERSION);
+        final var associationsSchemas = associationsSchema.statesToCreate();
+        final var associationsStateDefinition = associationsSchemas.stream()
+                .filter(state -> state.stateKey().equals(TOKEN_RELS_KEY))
+                .findFirst()
+                .orElseThrow();
+        final var associationsSchemaMetadata = new StateMetadata<>(TokenService.NAME, associationsSchema, associationsStateDefinition);
+        final var contractMerkleMap =
+                new NonAtomicReference<SortedMap<Pair<Long, Long>, TokenRel>>(new TreeMap<>(getPairOfLongsComparator()));
+        final var toStore = new NonAtomicReference<SortedMap<Pair<Long, Long>, TokenRel>>(
+                new TreeMap<>(getPairOfLongsComparator()));
 
-        return r;
+
+        return toStore.get();
     }
 
     @NonNull
