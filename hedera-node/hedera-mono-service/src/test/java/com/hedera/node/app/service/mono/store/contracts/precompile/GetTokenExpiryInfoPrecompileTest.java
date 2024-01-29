@@ -276,6 +276,7 @@ class GetTokenExpiryInfoPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        given(evmEncoder.encodeGetTokenExpiryInfoFailure(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
 
         // then:

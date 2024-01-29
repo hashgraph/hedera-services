@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType.ADMIN_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -345,6 +346,7 @@ class GetTokenKeyPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
+        given(evmEncoder.encodeGetTokenKeyFailure(any(), any())).willReturn(failResult);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(HTSTestsUtil.failResult, result);
@@ -363,6 +365,7 @@ class GetTokenKeyPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
+        given(evmEncoder.encodeGetTokenKeyFailure(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(invalidTokenIdResult, result);
