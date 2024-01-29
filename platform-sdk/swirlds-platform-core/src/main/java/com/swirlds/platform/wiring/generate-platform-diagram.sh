@@ -21,11 +21,10 @@ pcli diagram \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
+    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g' \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State Signature Collection' \
-    -c 'State File Management' \
-    -c 'Preconsensus Event Stream'
+    -c 'State File Management'
