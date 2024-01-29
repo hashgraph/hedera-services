@@ -66,7 +66,9 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
                     .givenCurrentPauseKey(ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
                     .givenCurrentName(info.getName())
                     .givenCurrentMemo(info.getMemo())
-                    .givenCurrentSymbol(info.getSymbol());
+                    .givenCurrentSymbol(info.getSymbol())
+                    .givenCurrentMetadataKey(ifPresent(info, TokenInfo::hasMetadataKey, TokenInfo::getMetadataKey))
+                    .givenCurrentMetadata(String.valueOf(info.getMetadata()));
             if (info.hasAutoRenewAccount()) {
                 estimate.givenCurrentlyUsingAutoRenewAccount();
             }
