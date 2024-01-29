@@ -501,6 +501,7 @@ public class TestHelpers {
             pbjToTuweniBytes(CALL_DATA),
             List.of(BESU_LOG),
             null,
+            null,
             null);
 
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
@@ -513,6 +514,7 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
             null,
             null,
             null);

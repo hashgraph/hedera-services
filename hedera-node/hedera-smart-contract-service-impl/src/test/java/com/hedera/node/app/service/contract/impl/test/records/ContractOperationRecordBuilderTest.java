@@ -112,6 +112,18 @@ class ContractOperationRecordBuilderTest {
             public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
+
+            @NonNull
+            @Override
+            public ContractOperationRecordBuilder signerNonce(@NonNull Long nonce) {
+                return this;
+            }
+
+            @Nullable
+            @Override
+            public Long getSignerNonce() {
+                return null;
+            }
         };
 
         final var outcomeWithoutSidecars = new CallOutcome(

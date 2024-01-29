@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
@@ -75,6 +76,9 @@ class ContextTransactionProcessorTest {
 
     @Mock
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;
+
+    @Mock
+    private ContractOperationRecordBuilder recordBuilder;
 
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
@@ -136,6 +140,8 @@ class ContextTransactionProcessorTest {
 
     @Test
     void stillChargesHapiFeesOnAbort() {
+        given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
+
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(

@@ -43,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import org.hyperledger.besu.datatypes.Wei;
@@ -77,6 +78,9 @@ class CustomGasChargingTest {
     private GasCalculator gasCalculator;
 
     private CustomGasCharging subject;
+
+    @Mock
+    private ContractOperationRecordBuilder recordBuilder;
 
     @BeforeEach
     void setUp() {
@@ -265,7 +269,7 @@ class CustomGasChargingTest {
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
-                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder),
                 worldUpdater,
                 transaction);
         assertEquals(gasCost, chargingResult.relayerAllowanceUsed());
@@ -284,7 +288,7 @@ class CustomGasChargingTest {
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
-                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder),
                 worldUpdater,
                 transaction);
         assertEquals(0, chargingResult.relayerAllowanceUsed());
@@ -369,7 +373,7 @@ class CustomGasChargingTest {
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
-                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder),
                 worldUpdater,
                 transaction);
         assertEquals(relayerGasCost, chargingResult.relayerAllowanceUsed());

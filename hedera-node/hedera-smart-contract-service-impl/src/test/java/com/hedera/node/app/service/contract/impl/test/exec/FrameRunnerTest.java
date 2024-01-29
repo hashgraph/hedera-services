@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_REVERT_REASON;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -45,12 +46,16 @@ import static org.mockito.Mockito.doAnswer;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureRef;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -94,6 +99,18 @@ class FrameRunnerTest {
     @Mock
     private CustomGasCalculator gasCalculator;
 
+    @Mock
+    private HederaEvmBlocks blocks;
+
+    @Mock
+    private TinybarValues tinybarValues;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
+    private ContractOperationRecordBuilder recordBuilder;
+
     private final PropagatedCallFailureRef propagatedCallFailure = new PropagatedCallFailureRef();
 
     private FrameRunner subject;
@@ -111,8 +128,9 @@ class FrameRunnerTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -134,8 +152,9 @@ class FrameRunnerTest {
 
         givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -153,8 +172,9 @@ class FrameRunnerTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -173,8 +193,9 @@ class FrameRunnerTest {
         givenBaseReceiverSigCheckHaltWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SIGNATURE));
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -193,8 +214,9 @@ class FrameRunnerTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION));
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -215,8 +237,9 @@ class FrameRunnerTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INSUFFICIENT_CHILD_RECORDS));
 
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
         final var result = subject.runToCompletion(
-                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor, context);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
