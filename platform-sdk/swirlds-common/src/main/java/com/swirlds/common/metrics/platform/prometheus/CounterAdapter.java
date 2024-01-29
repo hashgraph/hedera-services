@@ -59,7 +59,7 @@ public class CounterAdapter extends AbstractMetricAdapter {
         Objects.requireNonNull(metric, "metric must not be null");
 
         final Counter.Builder builder =
-                super.setCommonValues(new Counter.Builder()).withoutExemplars();
+                super.assignCommonValues(new Counter.Builder()).withoutExemplars();
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

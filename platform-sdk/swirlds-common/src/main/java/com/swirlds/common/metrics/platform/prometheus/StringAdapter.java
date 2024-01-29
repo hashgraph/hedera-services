@@ -56,7 +56,7 @@ public class StringAdapter extends AbstractMetricAdapter {
         super(adapterType, metric, false);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Info.Builder builder = setCommonValues(new Info.Builder());
+        final Info.Builder builder = assignCommonValues(new Info.Builder());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

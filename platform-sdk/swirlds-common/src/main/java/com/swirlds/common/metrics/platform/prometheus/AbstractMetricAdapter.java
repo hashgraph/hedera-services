@@ -16,9 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.metrics.api.Metric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.prometheus.client.SimpleCollector;
@@ -45,9 +43,9 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
     }
 
     /**
-     * @param metric   the metric being adapted
+     * @param metric       the metric being adapted
      * @param supportsUnit if the {@code metric} being adapted is not a dimensionless metric. Prometheus will fail in
-     *                 case of setting a unit to an invalid metric type.
+     *                     case of setting a unit to an invalid metric type.
      * @throws NullPointerException in case {@code adapterType} parameter is {@code null}
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
@@ -59,9 +57,16 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         this.values = new AdaptedMetricCommonValues(metric, supportsUnit);
     }
 
-    protected <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T setCommonValues(
-            @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
-        return values.fill(collectorBuilder);
+    /**
+     * Depending on the configuration for this adapter, sets adapted values from {@code values} to
+     * {@code collectorBuilder}
+     *
+     * @param collectorBuilder builder to set the values to
+     * @return same instance of {@code collectorBuilder} with values set.
+     */
+    protected final <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull
+            T assignCommonValues(final @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
+        return values.assignTo(collectorBuilder);
     }
 
     @Override
@@ -78,11 +83,8 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
      * A holder for common metric values supporting automatic naming rules conversions. Instances of this class are
      * created based on a {@code Metric}, and naming rules conversions will be applied to the category, name, and unit
      * fields according to {@link NameConverter}.
-     *
-     * <p>
      * The class facilitates the creation of Prometheus-compatible metric values by storing the fixed and converted
      * category, name, unit, and help fields.
-     * </p>
      */
     private static class AdaptedMetricCommonValues {
         private final boolean supportsUnit;
@@ -101,24 +103,24 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
 
         /**
          * @param metric       the metric being adapted
-         * @param supportsUnit if the {@code metric} being adapted is not a dimensionless metric. Prometheus
-         *                     will fail in case of setting a unit to an invalid metric type.
+         * @param supportsUnit if the {@code metric} being adapted is not a dimensionless metric. Prometheus will fail
+         *                     in case of setting a unit to an invalid metric type.
          * @throws NullPointerException in case {@code metric} parameter is {@code null}
          */
         private AdaptedMetricCommonValues(final @NonNull Metric metric, final boolean supportsUnit) {
             Objects.requireNonNull(metric, "metric must not be null");
             this.supportsUnit = supportsUnit;
-            this.subSystem = fix(metric.getCategory());
-            this.name = fix(metric.getName());
-            this.unit = fix(metric.getUnit());
+            this.subSystem = NameConverter.fix(metric.getCategory());
+            this.name = NameConverter.fix(metric.getName());
+            this.unit = NameConverter.fix(metric.getUnit());
             this.help = metric.getDescription();
             verifyMetricNamingComponents(metric);
         }
 
-        <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T fill(
-                @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
+        <C extends SimpleCollector<?>, T extends SimpleCollector.Builder<T, C>> @NonNull T assignTo(
+                final @NonNull SimpleCollector.Builder<T, C> collectorBuilder) {
             final T builder = collectorBuilder.subsystem(subSystem).name(name).help(help);
-            return !supportsUnit ? builder : builder.unit(unit);
+            return supportsUnit ? builder.unit(unit) : builder;
         }
 
         /**
@@ -134,7 +136,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         private void verifyMetricNamingComponents(@NonNull final Metric metric) {
             if (!Objects.equals(this.subSystem, metric.getCategory())) {
                 logger.error(
-                        EXCEPTION.getMarker(),
+                        LogMarker.EXCEPTION.getMarker(),
                         "category field changed for metric:{} from:{} to:{}",
                         metric,
                         metric.getCategory(),
@@ -142,7 +144,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
             }
             if (!Objects.equals(this.name, metric.getName())) {
                 logger.error(
-                        EXCEPTION.getMarker(),
+                        LogMarker.EXCEPTION.getMarker(),
                         "name field changed for metric:{} from:{} to:{}",
                         metric,
                         metric.getName(),
@@ -150,7 +152,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
             }
             if (supportsUnit && !Objects.equals(this.unit, metric.getUnit())) {
                 logger.error(
-                        EXCEPTION.getMarker(),
+                        LogMarker.EXCEPTION.getMarker(),
                         "unit field changed for metric:{} from:{} to:{}",
                         metric,
                         metric.getUnit(),
