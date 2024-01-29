@@ -22,11 +22,12 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -102,7 +103,7 @@ public class SignedStateFileManager {
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context.getConfiguration());
-        this.signedStateFilePath = new SignedStateFilePath(configuration.getConfigData(StateConfig.class));
+        this.signedStateFilePath = new SignedStateFilePath(configuration.getConfigData(StateCommonConfig.class));
     }
 
     /**
