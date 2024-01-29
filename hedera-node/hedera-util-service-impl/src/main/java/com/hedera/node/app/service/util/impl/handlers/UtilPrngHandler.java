@@ -28,6 +28,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -103,6 +105,10 @@ public class UtilPrngHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
         if (range > 0) {
             final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
+            if (range == 100) {
+                System.out.println("pseudoRandomBytes: " + Arrays.toString(pseudoRandomBytes.toByteArray()) + ", "
+                        + "randomNum : " + pseudoRandomNumber);
+            }
             recordBuilder.entropyNumber(pseudoRandomNumber);
         } else {
             recordBuilder.entropyBytes(pseudoRandomBytes);
@@ -119,7 +125,16 @@ public class UtilPrngHandler implements TransactionHandler {
         // Use the initial 4 bytes of the random number to extract the integer value. This might be a negative number,
         // which when used with the modulus operator will result in a negative number. To avoid this, we mask off the
         // high bit to make sure we always have a positive number for the mod operator.
-        final int initialBitsValue = pseudoRandomBytes.getInt(0) & 0x7fffffff;
-        return initialBitsValue % range;
+        final var initialBitsValue =
+                ByteBuffer.wrap(pseudoRandomBytes.toByteArray(), 0, 4).getInt();
+        return (int) mod(initialBitsValue, range);
+    }
+
+    public static long mod(long x, int m) {
+        if (m <= 0) {
+            throw new ArithmeticException("Modulus must be positive");
+        }
+        long result = x % m;
+        return (result >= 0) ? result : result + m;
     }
 }
