@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.utils.forensics;
+package com.hedera.node.app.hapi.utils.forensics;
 
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 
@@ -24,18 +23,18 @@ import java.time.Instant;
  * Represents a single {@code (Transaction, TransactionRecord)} entry from a record stream,
  * including the consensus time as a {@link Instant} for convenience.
  *
- * @param accessor the transaction as an accessor for convenience
+ * @param parts the transaction parts
  * @param txnRecord the resolved record the transaction
  * @param consensusTime the consensus time
  */
-public record RecordStreamEntry(TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
+public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime) {
 
     public Transaction submittedTransaction() {
-        return accessor.getSignedTxnWrapper();
+        return parts.wrapper();
     }
 
     public TransactionBody body() {
-        return accessor.getTxn();
+        return parts.body();
     }
 
     public ResponseCodeEnum finalStatus() {
@@ -43,7 +42,7 @@ public record RecordStreamEntry(TxnAccessor accessor, TransactionRecord txnRecor
     }
 
     public HederaFunctionality function() {
-        return accessor.getFunction();
+        return parts.function();
     }
 
     public TransactionRecord transactionRecord() {

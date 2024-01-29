@@ -46,6 +46,8 @@ sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
     main { resources { srcDir("src/main/resource") } }
+
+    create("rcdiff") { java.srcDir("src/rcdiff/java") }
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -230,6 +232,21 @@ val yahCliJar =
         }
     }
 
+val rcdiffJar =
+    tasks.register<ShadowJar>("rcdiffJar") {
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["rcdiff"].output)
+        archiveFileName.set("rcdiff.jar")
+        configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
+
+        manifest {
+            attributes(
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Multi-Release" to "true"
+            )
+        }
+    }
+
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
@@ -256,6 +273,19 @@ val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
         group = "build"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
+    }
+
+val cleanRcdiff =
+    tasks.register<Delete>("cleanRcdiff") {
+        group = "build"
+        delete(File(project.file("rcdiff"), "rcdiff.jar"))
+    }
+
+val copyRcdiff =
+    tasks.register<Copy>("copyRcdiff") {
+        group = "copy"
+        from(rcdiffJar)
+        into(project.file("rcdiff"))
     }
 
 val copyYahCli =
