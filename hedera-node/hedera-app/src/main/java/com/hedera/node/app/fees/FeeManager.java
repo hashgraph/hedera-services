@@ -32,10 +32,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
@@ -98,7 +98,7 @@ public final class FeeManager {
         final CurrentAndNextFeeSchedule schedules;
         try {
             schedules = CurrentAndNextFeeSchedule.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (final BufferUnderflowException | IOException ex) {
+        } catch (final BufferUnderflowException | ParseException ex) {
             return ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
         }
 

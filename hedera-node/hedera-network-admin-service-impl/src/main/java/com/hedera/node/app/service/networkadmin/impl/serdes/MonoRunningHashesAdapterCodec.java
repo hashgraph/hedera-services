@@ -18,6 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl.serdes;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,15 +31,19 @@ import java.io.IOException;
 public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLeaf> {
     @NonNull
     @Override
-    public RecordsRunningHashLeaf parse(final @NonNull ReadableSequentialData input) throws IOException {
-        final var length = input.readInt();
-        final var javaIn = new byte[length];
-        input.readBytes(javaIn);
-        final var bais = new ByteArrayInputStream(javaIn);
-        final var context = new RecordsRunningHashLeaf();
-        final var hashLeafIn = new SerializableDataInputStream(bais);
-        context.deserialize(hashLeafIn, RecordsRunningHashLeaf.RELEASE_0280_VERSION);
-        return context;
+    public RecordsRunningHashLeaf parse(final @NonNull ReadableSequentialData input) throws ParseException {
+        try {
+            final var length = input.readInt();
+            final var javaIn = new byte[length];
+            input.readBytes(javaIn);
+            final var bais = new ByteArrayInputStream(javaIn);
+            final var context = new RecordsRunningHashLeaf();
+            final var hashLeafIn = new SerializableDataInputStream(bais);
+            context.deserialize(hashLeafIn, RecordsRunningHashLeaf.RELEASE_0280_VERSION);
+            return context;
+        } catch (final IOException e) {
+            throw new ParseException(e);
+        }
     }
 
     @Override
@@ -69,7 +74,7 @@ public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLe
 
     @NonNull
     @Override
-    public RecordsRunningHashLeaf parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+    public RecordsRunningHashLeaf parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
         return parse(dataInput);
     }
 }

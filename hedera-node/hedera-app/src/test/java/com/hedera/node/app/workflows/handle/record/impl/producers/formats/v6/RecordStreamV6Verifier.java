@@ -31,6 +31,7 @@ import com.hedera.hapi.streams.SignatureFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -213,7 +214,7 @@ public class RecordStreamV6Verifier {
             final String extension,
             final int sideCarItemsOffset,
             final List<TransactionSidecarRecord> expectedSideCarItems)
-            throws IOException, NoSuchAlgorithmException {
+            throws IOException, ParseException, NoSuchAlgorithmException {
         assertEquals(id, sidecarMetadata.id(), "Sidecar file id does not match id in record file metadata");
         assertTrue(
                 sidecarFilePath.getFileName().toString().endsWith(id + extension),
