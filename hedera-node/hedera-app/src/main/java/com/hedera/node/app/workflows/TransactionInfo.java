@@ -25,6 +25,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Contains information related to a parsed transaction.
@@ -49,8 +50,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record TransactionInfo(
         @NonNull Transaction transaction,
         @NonNull TransactionBody txBody,
-        @NonNull TransactionID transactionID,
-        @NonNull AccountID payerID,
+        @Nullable TransactionID transactionID,
+        @Nullable AccountID payerID,
         @NonNull SignatureMap signatureMap,
         @NonNull Bytes signedBytes,
         @NonNull HederaFunctionality functionality) {
@@ -66,6 +67,28 @@ public record TransactionInfo(
                 txBody,
                 txBody.transactionIDOrThrow(),
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
+                signatureMap,
+                signedBytes,
+                functionality);
+    }
+
+    static public TransactionInfo from(@NonNull Transaction transaction,
+                                @NonNull TransactionBody txBody,
+                                @NonNull SignatureMap signatureMap,
+                                @NonNull Bytes signedBytes,
+                                @NonNull HederaFunctionality functionality) {
+        TransactionID transactionId = null;
+        AccountID payerId = null;
+        if (txBody.transactionID() != null) {
+            transactionId = txBody.transactionID();
+            if (transactionId.accountID() != null) {
+                payerId = txBody.transactionID().accountID();
+            }
+        }
+        return new TransactionInfo(transaction,
+                txBody,
+                transactionId,
+                payerId,
                 signatureMap,
                 signedBytes,
                 functionality);
