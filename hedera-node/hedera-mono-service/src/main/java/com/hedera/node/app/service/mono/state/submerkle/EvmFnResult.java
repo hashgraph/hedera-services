@@ -57,7 +57,7 @@ public class EvmFnResult implements SelfSerializable {
     static final int RELEASE_0260_VERSION = 5;
     static final int RELEASE_0290_VERSION = 6;
     static final int RELEASE_0400_VERSION = 7;
-    static final int RELEASE_0470_VERSION = 7;
+    static final int RELEASE_0470_VERSION = 8;
     static final int CURRENT_VERSION = RELEASE_0470_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
