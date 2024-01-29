@@ -1,6 +1,4 @@
-########################################################################################################################
-## Creates high level groupings of platform components.
-## Substitutes spammy wires, and collapses groupings with transformers.
+#!/usr/bin/env bash
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \

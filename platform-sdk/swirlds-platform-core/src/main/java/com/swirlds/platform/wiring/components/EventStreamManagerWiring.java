@@ -43,6 +43,7 @@ public record EventStreamManagerWiring(
      * @param taskScheduler the task scheduler to use
      * @return the new wiring object
      */
+    @NonNull
     public static EventStreamManagerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new EventStreamManagerWiring(
                 taskScheduler.buildInputWire("events"),

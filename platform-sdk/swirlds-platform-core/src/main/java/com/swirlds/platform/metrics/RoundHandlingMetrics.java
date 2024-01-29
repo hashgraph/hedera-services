@@ -94,7 +94,7 @@ public class RoundHandlingMetrics {
      *
      * @param consensusTime the consensus time of the last transaction in the round that is currently being handled
      */
-    public void recordConsensusTime(final Instant consensusTime) {
+    public void recordConsensusTime(@NonNull final Instant consensusTime) {
         this.consensusTime.set(consensusTime.toEpochMilli());
         consensusTimeDeviation.set(consensusTime.toEpochMilli() - time.now().toEpochMilli());
     }

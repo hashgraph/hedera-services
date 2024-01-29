@@ -41,6 +41,7 @@ public record ConsensusRoundHandlerWiring(
      * @param taskScheduler the task scheduler for this wiring object
      * @return the new wiring instance
      */
+    @NonNull
     public static ConsensusRoundHandlerWiring create(@NonNull final TaskScheduler<ConsensusRound> taskScheduler) {
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),

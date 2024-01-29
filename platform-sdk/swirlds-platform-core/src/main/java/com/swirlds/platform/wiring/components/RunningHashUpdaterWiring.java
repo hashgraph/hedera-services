@@ -39,6 +39,7 @@ public record RunningHashUpdaterWiring(
      * @param taskScheduler the task scheduler to use
      * @return the new wiring object
      */
+    @NonNull
     public static RunningHashUpdaterWiring create(@NonNull final TaskScheduler<RunningEventHashUpdate> taskScheduler) {
         final BindableInputWire<RunningEventHashUpdate, RunningEventHashUpdate> inputWire =
                 taskScheduler.buildInputWire("running hash update");
