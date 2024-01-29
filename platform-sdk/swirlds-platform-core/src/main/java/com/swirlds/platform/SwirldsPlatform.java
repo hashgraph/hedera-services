@@ -649,7 +649,8 @@ public class SwirldsPlatform implements Platform {
         // wire ISS output
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
-        final OutputWire<IssNotification> issOutput = platformWiring.getIssDetectorWiring().issNotificationOutput();
+        final OutputWire<IssNotification> issOutput =
+                platformWiring.getIssDetectorWiring().issNotificationOutput();
         issOutput.solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
         issOutput.solderTo("statusManager", n -> {
             if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
@@ -1039,7 +1040,8 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesReplayerIteratorInput().inject(iterator);
         }
 
-        // we have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is done
+        // we have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is
+        // done
         // the PCES replay will flush the intake pipeline, so we have to flush the hasher
         try {
             stateHashSignQueue.waitUntilNotBusy();

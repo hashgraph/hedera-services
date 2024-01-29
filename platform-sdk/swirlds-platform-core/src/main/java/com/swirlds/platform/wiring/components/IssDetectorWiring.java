@@ -64,10 +64,10 @@ public record IssDetectorWiring(
             @NonNull final WiringModel model, @NonNull final TaskScheduler<List<IssNotification>> taskScheduler) {
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
-                model,
-                "extractSignaturesForIssDetector",
-                "consensus round",
-                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+                        model,
+                        "extractSignaturesForIssDetector",
+                        "consensus round",
+                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =
                 taskScheduler.buildInputWire("handlePostconsensusSignatures");
         roundTransformer.getOutputWire().solderTo(sigInput);
@@ -90,7 +90,7 @@ public record IssDetectorWiring(
         ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(issDetector::signalEndOfPreconsensusReplay);
         ((BindableInputWire<Long, List<IssNotification>>) roundCompletedInput).bind(issDetector::roundCompleted);
         ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<IssNotification>>)
-                handlePostconsensusSignatures)
+                        handlePostconsensusSignatures)
                 .bind(issDetector::handlePostconsensusSignatures);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed)
                 .bind(issDetector::newStateHashed);

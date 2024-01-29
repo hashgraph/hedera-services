@@ -58,7 +58,8 @@ public class SignedStateHasher {
      *
      * @throws NullPointerException if any of the {@code fatalErrorConsumer} parameter is {@code null}.
      */
-    public SignedStateHasher(@Nullable final SignedStateMetrics signedStateMetrics,
+    public SignedStateHasher(
+            @Nullable final SignedStateMetrics signedStateMetrics,
             @NonNull final FatalErrorConsumer fatalErrorConsumer) {
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;

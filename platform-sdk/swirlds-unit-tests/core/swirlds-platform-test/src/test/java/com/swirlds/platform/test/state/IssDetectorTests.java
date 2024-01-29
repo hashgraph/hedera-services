@@ -618,8 +618,7 @@ class IssDetectorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final IssDetectorTestHelper manager =
-                new IssDetectorTestHelper(platformContext, addressBook, 1);
+        final IssDetectorTestHelper manager = new IssDetectorTestHelper(platformContext, addressBook, 1);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {

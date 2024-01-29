@@ -237,9 +237,8 @@ public class IssDetector {
      */
     public @Nullable List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return returnList(transactions.stream()
-                .map(this::handlePostconsensusSignature)
-                .toList());
+        return returnList(
+                transactions.stream().map(this::handlePostconsensusSignature).toList());
     }
 
     /**
@@ -307,7 +306,6 @@ public class IssDetector {
         }
         return null;
     }
-
 
     /**
      * Called when this node finishes hashing a state.
