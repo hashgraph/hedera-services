@@ -36,9 +36,9 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.pbj.runtime.ParseException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -90,7 +90,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
                                     .scheduleNum(entityNumVirtualKey.getKeyAsLong())
                                     .build(),
                             schedule);
-                } catch (IOException e) {
+                } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
             });
