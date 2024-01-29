@@ -38,6 +38,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -972,7 +973,7 @@ class TipsetEventCreatorTests {
 
                 if (eventIndex == 0 || (!useBirthRoundForAncient && event != null)) {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(addressBook.getRound(), birthRound);
+                    assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
                 } else if (event != null) {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(pendingConsensusRound, birthRound);

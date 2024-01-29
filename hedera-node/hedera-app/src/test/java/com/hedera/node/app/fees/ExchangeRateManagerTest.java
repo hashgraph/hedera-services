@@ -31,8 +31,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,7 +73,7 @@ class ExchangeRateManagerTest {
     }
 
     @Test
-    void hasExpectedFields() throws IOException {
+    void hasExpectedFields() throws ParseException {
         // when
         subject.update(validRateBytes, AccountID.DEFAULT);
 
