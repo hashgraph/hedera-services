@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetSize;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapIterate;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -27,6 +30,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -41,6 +46,8 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     private final StateMetadata<K, V> md;
 
+    private final Executor executor;
+
     /**
      * Create a new instance
      *
@@ -52,6 +59,18 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
         super(md.stateDefinition().stateKey());
         this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.executor = Executors.newVirtualThreadPerTaskExecutor();
+    }
+
+    @VisibleForTesting
+    OnDiskReadableKVState(
+            @NonNull final StateMetadata<K, V> md,
+            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap,
+            @NonNull final Executor executor) {
+        super(md.stateDefinition().stateKey());
+        this.md = md;
+        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.executor = executor;
     }
 
     /** {@inheritDoc} */
@@ -117,6 +136,6 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     public void warm(@NonNull final K key) {
         final var k = new OnDiskKey<>(md, key);
-        virtualMap.warm(k);
+        executor.execute(() -> virtualMap.warm(k));
     }
 }
