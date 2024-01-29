@@ -207,8 +207,19 @@ public class InitialModServiceTokenSchema extends Schema {
                                     var fromNft2 = new MerkleUniqueToken(
                                             fromNft.getOwner(), fromNft.getMetadata(), fromNft.getCreationTime());
                                     fromNft2.setKey(nftId.toEntityNumPair());
+                                    fromNft2.setPrev(fromNft.getPrev());
+                                    fromNft2.setNext(fromNft.getNext());
+                                    fromNft2.setSpender(fromNft.getSpender());
+
                                     var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
                                     nftsToState.get().put(toNftId, translated);
+                                    if (nftId.getNum() == 4420421 && nftId.getTokenSerial() == 279) {
+                                        System.out.println("FROM NFT: " + fromNft);
+                                        System.out.println("TO NFT Id: " + toNftId);
+                                        System.out.println("TO NFT: " + translated);
+                                        System.out.println("Get from modifications ="
+                                                + nftsToState.get().get(toNftId));
+                                    }
                                     if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
                                         ((WritableKVStateBase) nftsToState.get()).commit();
@@ -222,6 +233,15 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (nftsToState.get().isModified()) ((WritableKVStateBase) nftsToState.get()).commit();
+            System.out.println("After commit "
+                    + nftsToState
+                            .get()
+                            .get(NftID.newBuilder()
+                                    .tokenId(TokenID.newBuilder()
+                                            .tokenNum(4420421)
+                                            .build())
+                                    .serialNumber(279)
+                                    .build()));
             log.info("BBM: finished nfts");
 
             // ---------- Token Rels/Associations
