@@ -19,8 +19,8 @@ package com.hedera.node.app.service.mono.state.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
@@ -36,7 +36,7 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKe
     }
 
     @Test
-    void canMeasureKeySize() throws IOException {
+    void canMeasureKeySize() throws ParseException {
         final var key = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, RANDOM.nextInt());
         final var bb = BufferedData.wrap(ByteBuffer.wrap(writeUsingBuffer(key)));
         final var expected = SERIALIZER.getSerializedSize();

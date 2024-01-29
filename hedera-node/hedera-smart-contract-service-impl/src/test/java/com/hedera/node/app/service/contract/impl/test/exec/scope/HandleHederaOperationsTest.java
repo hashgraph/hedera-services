@@ -59,10 +59,11 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -301,7 +302,7 @@ class HandleHederaOperationsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+    void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
                 .accountId(AccountID.newBuilder().accountNum(123L).build())
@@ -385,7 +386,7 @@ class HandleHederaOperationsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+    void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
                 .accountId(AccountID.newBuilder().accountNum(123L).build())
@@ -434,7 +435,7 @@ class HandleHederaOperationsTest {
     private void assertInternalFinisherAsExpected(
             @NonNull final UnaryOperator<Transaction> internalFinisher,
             @NonNull final ContractCreateTransactionBody expectedOp)
-            throws IOException {
+            throws ParseException {
         Objects.requireNonNull(internalFinisher);
 
         // The finisher should swap the crypto create body with the contract create body
@@ -468,7 +469,7 @@ class HandleHederaOperationsTest {
         final var nonsenseInput = Transaction.newBuilder()
                 .signedTransactionBytes(Bytes.wrap("NONSENSE"))
                 .build();
-        assertThrows(UncheckedIOException.class, () -> internalFinisher.apply(nonsenseInput));
+        assertThrows(UncheckedParseException.class, () -> internalFinisher.apply(nonsenseInput));
     }
 
     @Test

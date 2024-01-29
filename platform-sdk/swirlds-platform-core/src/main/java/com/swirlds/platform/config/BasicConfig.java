@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
@@ -32,20 +32,10 @@ import java.time.Duration;
  * into config records with a prefix defined by a {@link ConfigData} tag. Adding
  * settings to this record pollutes the top level namespace.
  *
- * @param showInternalStats
- * 		show the user all statistics, including those with category "internal"?
- * @param verboseStatistics
- * 		show expand statistics values, inlcude mean, min, max, stdDev
  * @param numConnections
  * 		number of connections maintained by each member (syncs happen on random connections from that set
- * @param logStack
- * 		when converting an exception to a string for logging, should it include the stack trace?
- * @param sleepHeartbeat
- * 		send a heartbeat byte on each comm channel to keep it open, every this many milliseconds
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
- * @param freezeSecondsAfterStartup
- * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
  * 		When enabled, the platform will try to load node keys from .pfx files located in the {@code PathsConfig.keysDirPath}. If even a
  * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
@@ -54,12 +44,7 @@ import java.time.Duration;
  * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
  * @param jvmPauseReportMs
  * 		log an error when JVMPauseDetectorThread detect a pause greater than this many milliseconds
- * @param enablePingTrans
- * 		if set to true, send a transaction every {@code pingTransFreq} providing the ping in milliseconds from self to
  * 		all peers
- * @param pingTransFreq
- * 		if {@code enablePingTrans} is set to true, the frequency at which to send transactions containing the average
- * 		ping from self to all peers, in seconds
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
@@ -72,18 +57,11 @@ import java.time.Duration;
  */
 @ConfigData
 public record BasicConfig(
-        @ConfigProperty(defaultValue = "true") boolean showInternalStats,
-        @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "1000") int numConnections,
-        @ConfigProperty(defaultValue = "true") boolean logStack,
-        @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
-        @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
         @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
-        @ConfigProperty(defaultValue = "true") boolean enablePingTrans,
-        @ConfigProperty(defaultValue = "1") long pingTransFreq,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
         @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {

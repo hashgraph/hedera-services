@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -44,7 +45,7 @@ class EntityNumCodecTest {
     }
 
     @Test
-    void codecWorks() throws IOException {
+    void codecWorks() throws IOException, ParseException {
         final var subject = new EntityNumCodec();
 
         final var baos = new ByteArrayOutputStream();

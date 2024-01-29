@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.eventhandling;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
