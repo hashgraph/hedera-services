@@ -259,6 +259,7 @@ class TokenGetCustomFeesPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        given(evmEncoder.encodeTokenGetCustomFeesFailure(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
 
         // then:
