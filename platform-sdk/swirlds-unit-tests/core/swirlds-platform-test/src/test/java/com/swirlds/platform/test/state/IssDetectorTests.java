@@ -20,7 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
+import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCatastrophicNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateRegularNodeHashes;
@@ -59,7 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 @DisplayName("ConsensusHashManager Tests")
-class ConsensusHashManagerTests {
+class IssDetectorTests {
 
     @Test
     @DisplayName("Valid Signatures After Hash Test")
@@ -75,8 +75,8 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {
@@ -171,8 +171,8 @@ class ConsensusHashManagerTests {
             }
         }
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         manager.overridingState(mockState(0L, selfHashes.getFirst()));
 
@@ -291,8 +291,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -357,8 +357,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         // After this method, round 0 will be too old and will not be tracked.
@@ -406,8 +406,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -498,8 +498,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -561,8 +561,8 @@ class ConsensusHashManagerTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, DO_NOT_IGNORE_ROUNDS);
 
         // Start collecting data for rounds.
         for (long round = 0; round < roundsNonAncient; round++) {
@@ -618,8 +618,8 @@ class ConsensusHashManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ConsensusHashManagerTestHelper manager =
-                new ConsensusHashManagerTestHelper(platformContext, addressBook, 1);
+        final IssDetectorTestHelper manager =
+                new IssDetectorTestHelper(platformContext, addressBook, 1);
 
         final int rounds = 1_000;
         for (long round = 1; round <= rounds; round++) {

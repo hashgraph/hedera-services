@@ -36,7 +36,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -73,7 +73,7 @@ class PlatformWiringTests {
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
                 mock(StateSignatureCollector.class),
-                mock(ConsensusHashManager.class));
+                mock(IssDetector.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

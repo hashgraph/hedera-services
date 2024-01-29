@@ -51,7 +51,7 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -305,7 +305,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateSignatureCollector stateSignatureCollector,
-            @NonNull final ConsensusHashManager consensusHashManager) {
+            @NonNull final IssDetector issDetector) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -324,7 +324,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.bind(eventCreationManager);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
-        issDetectorWiring.bind(consensusHashManager);
+        issDetectorWiring.bind(issDetector);
     }
 
     /**

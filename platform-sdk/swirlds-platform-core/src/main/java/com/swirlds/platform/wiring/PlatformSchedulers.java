@@ -214,7 +214,6 @@ public record PlatformSchedulers(
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true) // TODO do I need this?
                         .build()
                         .cast());
     }

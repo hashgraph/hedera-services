@@ -25,7 +25,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -52,10 +52,10 @@ public record IssDetectorWiring(
             @NonNull final WiringModel model, @NonNull final TaskScheduler<List<IssNotification>> taskScheduler) {
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 roundTransformer = new WireTransformer<>(
-                        model,
-                        "extractSignaturesForIssDetector",
-                        "consensus round",
-                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+                model,
+                "extractSignaturesForIssDetector",
+                "consensus round",
+                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =
                 taskScheduler.buildInputWire("handlePostconsensusSignatures");
         roundTransformer.getOutputWire().solderTo(sigInput);
@@ -69,11 +69,11 @@ public record IssDetectorWiring(
                 taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "issNotificationList"));
     }
 
-    public void bind(@NonNull final ConsensusHashManager hashManager) {
+    public void bind(@NonNull final IssDetector hashManager) {
         ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(hashManager::signalEndOfPreconsensusReplay);
         ((BindableInputWire<Long, List<IssNotification>>) roundCompletedInput).bind(hashManager::roundCompleted);
         ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<IssNotification>>)
-                        handlePostconsensusSignatures)
+                handlePostconsensusSignatures)
                 .bind(hashManager::handlePostconsensusSignatures);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed)
                 .bind(hashManager::newStateHashed);

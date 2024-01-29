@@ -19,7 +19,7 @@ package com.swirlds.platform.test.state;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -32,13 +32,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public class ConsensusHashManagerTestHelper extends ConsensusHashManager {
+public class IssDetectorTestHelper extends IssDetector {
     /** the default epoch hash to use */
     private static final Hash DEFAULT_EPOCH_HASH = null;
 
     private final List<IssNotification> issList = new ArrayList<>();
 
-    public ConsensusHashManagerTestHelper(
+    public IssDetectorTestHelper(
             @NonNull final PlatformContext platformContext, final AddressBook addressBook, final long ignoredRound) {
         super(platformContext, addressBook, DEFAULT_EPOCH_HASH, new BasicSoftwareVersion(1), false, ignoredRound);
     }

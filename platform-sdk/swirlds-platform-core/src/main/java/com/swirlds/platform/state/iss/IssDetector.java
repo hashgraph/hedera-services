@@ -54,9 +54,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * Keeps track of the state hashes reported by all network nodes. Responsible for detecting ISS events.
  */
-public class ConsensusHashManager {
+public class IssDetector {
 
-    private static final Logger logger = LogManager.getLogger(ConsensusHashManager.class);
+    private static final Logger logger = LogManager.getLogger(IssDetector.class);
 
     private final SequenceMap<Long /* round */, RoundHashValidator> roundData;
 
@@ -105,12 +105,13 @@ public class ConsensusHashManager {
      * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
      */
     private final long ignoredRound;
-
+    /** ISS related metrics */
     private final IssMetrics issMetrics;
 
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
+     * @param platformContext              the platform context
      * @param addressBook                  the address book for the network
      * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
@@ -119,15 +120,14 @@ public class ConsensusHashManager {
      * @param ignoredRound                 a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if
      *                                     all rounds should be validated.
      */
-    public ConsensusHashManager(
+    public IssDetector(
             @NonNull final PlatformContext platformContext,
-            final AddressBook addressBook,
-            final Hash currentEpochHash,
+            @NonNull final AddressBook addressBook,
+            @Nullable final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
-
-        Objects.requireNonNull(currentSoftwareVersion);
+        Objects.requireNonNull(platformContext);
 
         final ConsensusConfig consensusConfig =
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
@@ -138,9 +138,9 @@ public class ConsensusHashManager {
         selfIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
         catastrophicIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
 
-        this.addressBook = addressBook;
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.currentEpochHash = currentEpochHash;
-        this.currentSoftwareVersion = currentSoftwareVersion;
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
 
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
@@ -165,11 +165,12 @@ public class ConsensusHashManager {
     }
 
     /**
-     * Observes when a round has been completed.
+     * Called when a round has been completed.
      *
      * @param round the round that was just completed
+     * @return a list of ISS notifications, or null if no ISS occurred
      */
-    public List<IssNotification> roundCompleted(final long round) {
+    public @Nullable List<IssNotification> roundCompleted(final long round) {
         if (round <= previousRound) {
             throw new IllegalArgumentException(
                     "previous round was " + previousRound + ", can't decrease round to " + round);
@@ -203,8 +204,9 @@ public class ConsensusHashManager {
      * Handle a round that has become old enough that we want to stop tracking data on it.
      *
      * @param roundHashValidator the hash validator for the round
+     * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification handleRemovedRound(final RoundHashValidator roundHashValidator) {
+    private @Nullable IssNotification handleRemovedRound(@NonNull final RoundHashValidator roundHashValidator) {
         final boolean justDecided = roundHashValidator.outOfTime();
 
         final StringBuilder sb = new StringBuilder();
@@ -231,12 +233,12 @@ public class ConsensusHashManager {
      * Handle postconsensus state signatures.
      *
      * @param transactions the signature transactions to handle
+     * @return a list of ISS notifications, or null if no ISS occurred
      */
-    public List<IssNotification> handlePostconsensusSignatures(
+    public @Nullable List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return returnList(transactions.stream()
-                .map(t ->
-                        handlePostconsensusSignatureTransaction(t.submitterId(), t.transaction(), t.softwareVersion()))
+                .map(this::handlePostconsensusSignature)
                 .toList());
     }
 
@@ -250,17 +252,14 @@ public class ConsensusHashManager {
      * signature transaction observed here (post consensus) will be for a round in the past.
      * </p>
      *
-     * @param signerId             the ID of the node that signed the state
-     * @param signatureTransaction the signature transaction
-     * @param eventVersion         the version of the event that contains the transaction
+     * @param transaction the transaction to handle
+     * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId,
-            @NonNull final StateSignatureTransaction signatureTransaction,
-            @Nullable final SoftwareVersion eventVersion) {
-
-        Objects.requireNonNull(signerId);
-        Objects.requireNonNull(signatureTransaction);
+    private @Nullable IssNotification handlePostconsensusSignature(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+        final NodeId signerId = transaction.submitterId();
+        final StateSignatureTransaction signatureTransaction = transaction.transaction();
+        final SoftwareVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {
             // Illegal event version, ignore.
@@ -309,20 +308,28 @@ public class ConsensusHashManager {
         return null;
     }
 
+
+    /**
+     * Called when this node finishes hashing a state.
+     *
+     * @param state the state that was hashed
+     * @return a list of ISS notifications, or null if no ISS occurred
+     */
     public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
-            return returnList(stateHashedObserver(
+            return returnList(newStateHashed(
                     state.get().getRound(), state.get().getState().getHash()));
         }
     }
 
     /**
-     * Observe when this node finishes hashing a state.
+     * Called when this node finishes hashing a state.
      *
      * @param round the round of the state
      * @param hash  the hash of the state
+     * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification stateHashedObserver(final Long round, final Hash hash) {
+    private IssNotification newStateHashed(final long round, @NonNull final Hash hash) {
         if (round == ignoredRound) {
             // This round is intentionally ignored.
             return null;
@@ -343,13 +350,16 @@ public class ConsensusHashManager {
 
     /**
      * Called when an overriding state is obtained, i.e. via reconnect or state loading.
+     *
+     * @param state the state that was loaded
+     * @return a list of ISS notifications, or null if no ISS occurred
      */
     public List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
             roundCompleted(round);
-            return returnList(stateHashedObserver(round, stateHash));
+            return returnList(newStateHashed(round, stateHash));
         }
     }
 
@@ -357,8 +367,9 @@ public class ConsensusHashManager {
      * Called once the validity has been decided. Take action based on the validity status.
      *
      * @param roundValidator the validator for the round
+     * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification checkValidity(final RoundHashValidator roundValidator) {
+    private IssNotification checkValidity(@NonNull final RoundHashValidator roundValidator) {
         final long round = roundValidator.getRound();
 
         return switch (roundValidator.getStatus()) {

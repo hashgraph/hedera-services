@@ -196,7 +196,7 @@ public class IssMetrics {
      * @param round
      * 		the round of the ISS
      */
-    public void catastrophicIssObserver(final Long round) {
+    public void catastrophicIssObserver(final long round) {
         if (round <= highestRound) {
             // Don't report old data
             return;

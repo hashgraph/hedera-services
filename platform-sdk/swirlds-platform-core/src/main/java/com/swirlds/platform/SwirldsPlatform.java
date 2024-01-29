@@ -25,7 +25,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
-import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
+import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
@@ -56,6 +56,7 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
@@ -126,7 +127,7 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
@@ -156,6 +157,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
@@ -290,6 +292,8 @@ public class SwirldsPlatform implements Platform {
      * Encapsulated wiring for the platform.
      */
     private final PlatformWiring platformWiring;
+    /** thread-queue responsible for hashing states */
+    private final QueueThread<ReservedSignedState> stateHashSignQueue;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -459,9 +463,7 @@ public class SwirldsPlatform implements Platform {
         // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
-        final IssHandler issHandler =
-                new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
-        final ConsensusHashManager consensusHashManager = new ConsensusHashManager(
+        final IssDetector issDetector = new IssDetector(
                 platformContext,
                 currentAddressBook,
                 epochHash,
@@ -568,15 +570,14 @@ public class SwirldsPlatform implements Platform {
             rs.close();
         };
 
-        final QueueThread<ReservedSignedState> stateHashSignQueue =
-                components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
-                        .setNodeId(selfId)
-                        .setComponent(PLATFORM_THREAD_POOL_NAME)
-                        .setThreadName("state-hash-sign")
-                        .setHandler(newSignedStateFromTransactionsConsumer)
-                        .setCapacity(1)
-                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
-                        .build());
+        stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
+                .setNodeId(selfId)
+                .setComponent(PLATFORM_THREAD_POOL_NAME)
+                .setThreadName("state-hash-sign")
+                .setHandler(newSignedStateFromTransactionsConsumer)
+                .setCapacity(1)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
+                .build());
 
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
@@ -645,6 +646,18 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
+        // wire ISS output
+        final IssHandler issHandler =
+                new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
+        final OutputWire<IssNotification> issOutput = platformWiring.getIssDetectorWiring().issNotificationOutput();
+        issOutput.solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
+        issOutput.solderTo("statusManager", n -> {
+            if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
+                platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
+            }
+        });
+        issOutput.solderTo("issHandler", issHandler::issObserved);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -663,7 +676,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 swirldStateManager,
                 stateSignatureCollector,
-                consensusHashManager);
+                issDetector);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -674,17 +687,6 @@ public class SwirldsPlatform implements Platform {
                     savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
-
-        platformWiring
-                .getIssDetectorWiring()
-                .issNotificationOutput()
-                .solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("statusManager", n -> {
-            if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
-                platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
-            }
-        });
-        platformWiring.getIssDetectorWiring().issNotificationOutput().solderTo("issHandler", issHandler::issObserved);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
@@ -1037,6 +1039,13 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesReplayerIteratorInput().inject(iterator);
         }
 
+        // we have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is done
+        // the PCES replay will flush the intake pipeline, so we have to flush the hasher
+        try {
+            stateHashSignQueue.waitUntilNotBusy();
+        } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.INSTANCE);
 
         platformStatusManager.submitStatusAction(
