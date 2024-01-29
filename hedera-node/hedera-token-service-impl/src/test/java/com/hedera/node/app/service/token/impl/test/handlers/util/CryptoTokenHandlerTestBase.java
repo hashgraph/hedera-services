@@ -128,7 +128,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key treasuryKey = C_COMPLEX_KEY;
     protected final Key EMPTY_KEYLIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
-    protected final Key metadataKey = Key.DEFAULT;
+    protected final Key metadataKey = A_COMPLEX_KEY;
     /* ---------- Node IDs */
     protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();

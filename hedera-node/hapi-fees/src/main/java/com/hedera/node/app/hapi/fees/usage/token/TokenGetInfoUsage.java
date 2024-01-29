@@ -85,4 +85,14 @@ public class TokenGetInfoUsage extends QueryUsage {
         addRb(BASIC_ENTITY_ID_SIZE);
         return this;
     }
+
+    public TokenGetInfoUsage givenCurrentMetadata(final String metadata) {
+        addRb(metadata.length());
+        return this;
+    }
+
+    public TokenGetInfoUsage givenCurrentMetadataKey(final Optional<Key> metadataKey) {
+        metadataKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
+        return this;
+    }
 }
