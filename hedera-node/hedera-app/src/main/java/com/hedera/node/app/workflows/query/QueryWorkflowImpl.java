@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hedera.node.app.workflows.ParseExceptionWorkaround.getParseExceptionCause;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -301,7 +302,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
         } catch (ParseException e) {
-            switch (e.getCause()) {
+
+            // Temporary workaround for unexpected behavior in PBJ. Can be removed if we agree that
+            // ParseException should not be wrapped.
+            final var cause = getParseExceptionCause(e);
+
+            switch (cause) {
                 case MalformedProtobufException ex:
                     break;
                 case UnknownFieldException ex:
