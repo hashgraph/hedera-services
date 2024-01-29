@@ -77,16 +77,12 @@ public class UniqueTokenDumpUtils {
             @NonNull final Function<V, UniqueToken> valueMapper) {
         final var r = new HashMap<UniqueTokenId, UniqueToken>();
         final var threadCount = 8; // Good enough for my laptop, why not?
-        final var keys = new ConcurrentLinkedQueue<UniqueTokenId>();
-        final var values = new ConcurrentLinkedQueue<UniqueToken>();
+        final var mappings = new ConcurrentLinkedQueue<Pair<UniqueTokenId, UniqueToken>>();
         try {
             VirtualMapLike.from(source)
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> {
-                                keys.add(keyMapper.apply(p.left()));
-                                values.add(valueMapper.apply(p.right()));
-                            },
+                            p -> mappings.add(Pair.of(keyMapper.apply(p.left()), valueMapper.apply(p.right()))),
                             threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of uniques virtual map interrupted!");
@@ -94,8 +90,9 @@ public class UniqueTokenDumpUtils {
         }
         // Consider in the future: Use another thread to pull things off the queue as they're put on by the
         // virtual map traversal
-        while (!keys.isEmpty()) {
-            r.put(keys.poll(), values.poll());
+        while (!mappings.isEmpty()) {
+            final var mapping = mappings.poll();
+            r.put(mapping.key(), mapping.value());
         }
         return r;
     }
