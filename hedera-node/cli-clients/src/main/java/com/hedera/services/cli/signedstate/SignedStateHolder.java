@@ -46,6 +46,10 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -58,9 +62,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Navigates a signed state "file" and returns information from it
@@ -292,6 +293,18 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     @NonNull
     public VirtualMapLike<ContractKey, IterableContractValue> getRawContractStorage() {
         final var rawContractStorage = servicesState.contractStorage();
+        assertSignedStateComponentExists(rawContractStorage, "contractStorage");
+        return rawContractStorage;
+    }
+
+    @NonNull
+    public VirtualMapLike<ContractKey, IterableContractValue> getBlockInfo() {
+        final var runningHashLeaf = servicesState.runningHashLeaf();
+        final var runningHash1 = runningHashLeaf.getNMinus1RunningHash().getHash();
+        final var runningHash2 = runningHashLeaf.getNMinus2RunningHash().getHash();
+        final var runningHash3 = runningHashLeaf.getNMinus3RunningHash().getHash();
+
+
         assertSignedStateComponentExists(rawContractStorage, "contractStorage");
         return rawContractStorage;
     }
