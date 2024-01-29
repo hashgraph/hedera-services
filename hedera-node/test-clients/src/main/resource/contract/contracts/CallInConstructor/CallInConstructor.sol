@@ -9,4 +9,11 @@ contract CallInConstructor {
             let r := staticcall(gas(), somebodyToCall, 0, 0, 0, 0)
         }
     }
+
+    function callSomebody() view public {
+        address somebodyToCall = CONSOLE_ADDRESS;
+        assembly {
+            let r := staticcall(gas(), somebodyToCall, 0, 0, 0, 0)
+        }
+    }
 }
