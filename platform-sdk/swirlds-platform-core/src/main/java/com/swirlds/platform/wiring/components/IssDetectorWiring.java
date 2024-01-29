@@ -33,6 +33,17 @@ import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * Wiring for the {@link IssDetector}.
+ *
+ * @param endOfPcesReplay               the input wire for the end of the PCES replay
+ * @param roundCompletedInput           the input wire for completed rounds
+ * @param handleConsensusRound          the input wire for consensus rounds
+ * @param handlePostconsensusSignatures the input wire for postconsensus signatures
+ * @param newStateHashed                the input wire for new hashed states
+ * @param overridingState               the input wire for overriding states
+ * @param issNotificationOutput         the output wire for ISS notifications
+ */
 public record IssDetectorWiring(
         @NonNull InputWire<NoInput> endOfPcesReplay,
         @NonNull InputWire<Long> roundCompletedInput,
@@ -44,6 +55,7 @@ public record IssDetectorWiring(
     /**
      * Create a new instance of this wiring.
      *
+     * @param model         the wiring model
      * @param taskScheduler the task scheduler that will detect ISSs
      * @return the new wiring instance
      */
@@ -69,15 +81,20 @@ public record IssDetectorWiring(
                 taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "issNotificationList"));
     }
 
-    public void bind(@NonNull final IssDetector hashManager) {
-        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(hashManager::signalEndOfPreconsensusReplay);
-        ((BindableInputWire<Long, List<IssNotification>>) roundCompletedInput).bind(hashManager::roundCompleted);
+    /**
+     * Bind the given ISS detector to this wiring.
+     *
+     * @param issDetector the ISS detector
+     */
+    public void bind(@NonNull final IssDetector issDetector) {
+        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(issDetector::signalEndOfPreconsensusReplay);
+        ((BindableInputWire<Long, List<IssNotification>>) roundCompletedInput).bind(issDetector::roundCompleted);
         ((BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<IssNotification>>)
                 handlePostconsensusSignatures)
-                .bind(hashManager::handlePostconsensusSignatures);
+                .bind(issDetector::handlePostconsensusSignatures);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) newStateHashed)
-                .bind(hashManager::newStateHashed);
+                .bind(issDetector::newStateHashed);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState)
-                .bind(hashManager::overridingState);
+                .bind(issDetector::overridingState);
     }
 }

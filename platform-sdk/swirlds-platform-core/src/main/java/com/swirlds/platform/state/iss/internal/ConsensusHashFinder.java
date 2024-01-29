@@ -79,17 +79,16 @@ public class ConsensusHashFinder {
     private Hash consensusHash;
 
     /**
-     * Create a new object for tracking agreement on the hash of a particular round.
-     * 		against the consensus hash
-     * @param round
-     * 		the current round
-     * @param totalWeight
-     * 		the total weight contained within the network for this round
+     * Create a new object for tracking agreement on the hash of a particular round. against the consensus hash
+     *
+     * @param round       the current round
+     * @param totalWeight the total weight contained within the network for this round
+     * @param issMetrics  iss related metrics
      */
-    public ConsensusHashFinder(final long round, final long totalWeight, final IssMetrics issMetrics) {
+    public ConsensusHashFinder(final long round, final long totalWeight, @NonNull final IssMetrics issMetrics) {
         this.round = round;
         this.totalWeight = totalWeight;
-        this.issMetrics = issMetrics;
+        this.issMetrics = Objects.requireNonNull(issMetrics);
     }
 
     /**

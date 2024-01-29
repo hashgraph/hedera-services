@@ -21,6 +21,8 @@ import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -54,13 +56,10 @@ public class SignedStateHasher {
      * @param signedStateMetrics the SignedStateMetrics instance to record time spent hashing.
      * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
      *
-     * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code stateHashedTrigger}</li>
-     *       <li>{@code fatalErrorConsumer}</li>
-     *     </ul>
+     * @throws NullPointerException if any of the {@code fatalErrorConsumer} parameter is {@code null}.
      */
-    public SignedStateHasher(SignedStateMetrics signedStateMetrics, FatalErrorConsumer fatalErrorConsumer) {
+    public SignedStateHasher(@Nullable final SignedStateMetrics signedStateMetrics,
+            @NonNull final FatalErrorConsumer fatalErrorConsumer) {
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;
     }

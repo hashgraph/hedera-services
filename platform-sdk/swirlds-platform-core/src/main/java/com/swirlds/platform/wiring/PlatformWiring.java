@@ -97,13 +97,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
+    private final IssDetectorWiring issDetectorWiring;
 
     /**
      * The object counter that spans the event hasher and the post hash collector.
      */
     private final ObjectCounter hashingObjectCounter;
-
-    private final IssDetectorWiring issDetectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -286,6 +285,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
      * @param stateSignatureCollector the signed state manager to bind
+     * @param issDetector             the ISS detector to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -468,7 +468,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }
 
-    public IssDetectorWiring getIssDetectorWiring() {
+    /**
+     * @return the wiring wrapper for the ISS detector
+     */
+    public @NonNull IssDetectorWiring getIssDetectorWiring() {
         return issDetectorWiring;
     }
 

@@ -315,7 +315,7 @@ public class IssDetector {
      * @param state the state that was hashed
      * @return a list of ISS notifications, or null if no ISS occurred
      */
-    public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
+    public @Nullable List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
             return returnList(newStateHashed(
                     state.get().getRound(), state.get().getState().getHash()));
@@ -329,7 +329,7 @@ public class IssDetector {
      * @param hash  the hash of the state
      * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification newStateHashed(final long round, @NonNull final Hash hash) {
+    private @Nullable IssNotification newStateHashed(final long round, @NonNull final Hash hash) {
         if (round == ignoredRound) {
             // This round is intentionally ignored.
             return null;
@@ -354,7 +354,7 @@ public class IssDetector {
      * @param state the state that was loaded
      * @return a list of ISS notifications, or null if no ISS occurred
      */
-    public List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
+    public @Nullable List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
@@ -369,7 +369,7 @@ public class IssDetector {
      * @param roundValidator the validator for the round
      * @return an ISS notification, or null if no ISS occurred
      */
-    private IssNotification checkValidity(@NonNull final RoundHashValidator roundValidator) {
+    private @Nullable IssNotification checkValidity(@NonNull final RoundHashValidator roundValidator) {
         final long round = roundValidator.getRound();
 
         return switch (roundValidator.getStatus()) {
@@ -401,7 +401,7 @@ public class IssDetector {
      *
      * @param roundHashValidator the validator responsible for validating the round with a self ISS
      */
-    private void handleSelfIss(final RoundHashValidator roundHashValidator) {
+    private void handleSelfIss(@NonNull final RoundHashValidator roundHashValidator) {
         final long round = roundHashValidator.getRound();
         final Hash selfHash = roundHashValidator.getSelfStateHash();
         final Hash consensusHash = roundHashValidator.getConsensusHash();
@@ -428,7 +428,7 @@ public class IssDetector {
      *
      * @param roundHashValidator information about the round, including the signatures that were gathered
      */
-    private void handleCatastrophic(final RoundHashValidator roundHashValidator) {
+    private void handleCatastrophic(@NonNull final RoundHashValidator roundHashValidator) {
 
         final long round = roundHashValidator.getRound();
         final ConsensusHashFinder hashFinder = roundHashValidator.getHashFinder();
@@ -454,7 +454,7 @@ public class IssDetector {
      *
      * @param roundHashValidator information about the round
      */
-    private void handleLackOfData(final RoundHashValidator roundHashValidator) {
+    private void handleLackOfData(@NonNull final RoundHashValidator roundHashValidator) {
         final long skipCount = lackingSignaturesRateLimiter.getDeniedRequests();
         if (!lackingSignaturesRateLimiter.requestAndTrigger()) {
             return;
@@ -480,7 +480,7 @@ public class IssDetector {
     /**
      * Write the number of times a log has been skipped.
      */
-    private static void writeSkippedLogCount(final StringBuilder sb, final long skipCount) {
+    private static void writeSkippedLogCount(@NonNull final StringBuilder sb, final long skipCount) {
         if (skipCount > 0) {
             sb.append("This condition has been triggered ")
                     .append(skipCount)
@@ -490,11 +490,19 @@ public class IssDetector {
         }
     }
 
-    private List<IssNotification> returnList(IssNotification n) {
+    /**
+     * @param n the notification to wrap
+     * @return a list containing the notification, or null if the notification is null
+     */
+    private List<IssNotification> returnList(@Nullable final IssNotification n) {
         return n == null ? null : List.of(n);
     }
 
-    private List<IssNotification> returnList(List<IssNotification> list) {
+    /**
+     * @param list the list to filter
+     * @return the list, or null if the list is null or empty
+     */
+    private List<IssNotification> returnList(@Nullable final List<IssNotification> list) {
         return list == null
                 ? null
                 : list.stream()

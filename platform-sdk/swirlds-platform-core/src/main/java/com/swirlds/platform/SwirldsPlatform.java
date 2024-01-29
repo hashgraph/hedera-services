@@ -1046,7 +1046,7 @@ public class SwirldsPlatform implements Platform {
         } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
-        platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.INSTANCE);
+        platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
 
         platformStatusManager.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));

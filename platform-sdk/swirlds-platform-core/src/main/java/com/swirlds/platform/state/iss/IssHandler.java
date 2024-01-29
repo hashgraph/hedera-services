@@ -50,17 +50,19 @@ public class IssHandler {
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
-
         this.haltRequestedConsumer =
                 Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
-
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
-
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
-    public synchronized void issObserved(@NonNull final IssNotification issNotification) {
+    /**
+     * This method is called whenever an ISS event is observed.
+     *
+     * @param issNotification the notification of the ISS event
+     */
+    public void issObserved(@NonNull final IssNotification issNotification) {
         switch (issNotification.getIssType()) {
             case SELF_ISS -> selfIssObserver(issNotification.getRound());
             case OTHER_ISS -> otherIss();
@@ -72,12 +74,10 @@ public class IssHandler {
      * This method is called whenever any node is observed in disagreement with the consensus hash.
      */
     private void otherIss() {
-
         if (halted) {
             // don't take any action once halted
             return;
         }
-
         if (stateConfig.haltOnAnyIss()) {
             haltRequestedConsumer.haltRequested("other node observed with ISS");
             halted = true;

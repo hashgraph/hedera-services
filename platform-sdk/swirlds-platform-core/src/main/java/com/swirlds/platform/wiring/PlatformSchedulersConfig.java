@@ -69,6 +69,8 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          collector
  * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
  * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
+ * @param issDetectorSchedulerType                          the ISS detector scheduler type
+ * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
