@@ -72,11 +72,12 @@ public record TransactionInfo(
                 functionality);
     }
 
-    static public TransactionInfo from(@NonNull Transaction transaction,
-                                @NonNull TransactionBody txBody,
-                                @NonNull SignatureMap signatureMap,
-                                @NonNull Bytes signedBytes,
-                                @NonNull HederaFunctionality functionality) {
+    public static TransactionInfo from(
+            @NonNull Transaction transaction,
+            @NonNull TransactionBody txBody,
+            @NonNull SignatureMap signatureMap,
+            @NonNull Bytes signedBytes,
+            @NonNull HederaFunctionality functionality) {
         TransactionID transactionId = null;
         AccountID payerId = null;
         if (txBody.transactionID() != null) {
@@ -85,12 +86,7 @@ public record TransactionInfo(
                 payerId = txBody.transactionID().accountID();
             }
         }
-        return new TransactionInfo(transaction,
-                txBody,
-                transactionId,
-                payerId,
-                signatureMap,
-                signedBytes,
-                functionality);
+        return new TransactionInfo(
+                transaction, txBody, transactionId, payerId, signatureMap, signedBytes, functionality);
     }
 }
