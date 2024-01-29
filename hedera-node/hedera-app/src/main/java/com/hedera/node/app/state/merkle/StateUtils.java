@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
@@ -65,7 +66,7 @@ public final class StateUtils {
      * @param codec The codec to use. MUST be compatible with the {@code object} type
      * @return The object read from the stream
      * @param <T> The type of the object and associated codec.
-     * @throws IOException If the input stream throws it.
+     * @throws IOException If the input stream throws it or parsing fails
      * @throws ClassCastException If the object or codec is not for type {@code T}.
      */
     @NonNull
@@ -74,7 +75,11 @@ public final class StateUtils {
         final var stream = new ReadableStreamingData(in);
         final var size = stream.readInt();
         stream.limit((long) size + Integer.BYTES); // +4 for the size
-        return codec.parse(stream);
+        try {
+            return codec.parse(stream);
+        } catch (final ParseException ex) {
+            throw new IOException(ex);
+        }
     }
 
     /**
