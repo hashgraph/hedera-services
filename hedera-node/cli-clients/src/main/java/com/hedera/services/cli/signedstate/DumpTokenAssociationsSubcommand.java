@@ -16,15 +16,13 @@
 
 package com.hedera.services.cli.signedstate;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.token.TokenRelation;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.Writer;
@@ -32,7 +30,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,25 +39,17 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static java.util.Objects.requireNonNull;
-
 /** Dump all token associations (tokenrels) , from a signed state file, to a text file, in deterministic order */
 @SuppressWarnings("java:S106")
 // S106: "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpTokenAssociationsSubcommand {
-    private SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
 
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path tokenRelPath,
             @NonNull final EmitSummary emitSummary,
-            @NonNull final DumpStateCommand.WithMigration withMigration,
-            @NonNull final DumpStateCommand.WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
-        new DumpTokenAssociationsSubcommand(state, tokenRelPath, emitSummary, withMigration, withValidation, verbosity)
-                .doit();
+        new DumpTokenAssociationsSubcommand(state, tokenRelPath, emitSummary, verbosity).doit();
     }
 
     @NonNull
@@ -73,33 +62,21 @@ public class DumpTokenAssociationsSubcommand {
     final EmitSummary emitSummary;
 
     @NonNull
-    final DumpStateCommand.WithMigration withMigration;
-
-    @NonNull
-    final DumpStateCommand.WithValidation withValidation;
-
-    @NonNull
     final Verbosity verbosity;
 
     DumpTokenAssociationsSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path tokenRelPath,
             @NonNull final EmitSummary emitSummary,
-            @NonNull final DumpStateCommand.WithMigration withMigration,
-            @NonNull final DumpStateCommand.WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
         requireNonNull(state, "state");
         requireNonNull(tokenRelPath, "tokenRelPath");
         requireNonNull(emitSummary, "emitSummary");
-        requireNonNull(withMigration, "withMigration");
-        requireNonNull(withValidation, "withValidation");
         requireNonNull(verbosity, "verbosity");
 
         this.state = state;
         this.tokenRelPath = tokenRelPath;
         this.emitSummary = emitSummary;
-        this.withMigration = withMigration;
-        this.withValidation = withValidation;
         this.verbosity = verbosity;
     }
 
@@ -108,9 +85,7 @@ public class DumpTokenAssociationsSubcommand {
         System.out.printf(
                 "=== %d token associations (%s) === %n",
                 tokenAssociationsStore.size(), tokenAssociationsStore.areOnDisk() ? "virtual" : "merkle");
-        final var tokenAssociations = (withMigration == DumpStateCommand.WithMigration.NO)
-                ? gatherTokenAssociations()
-                : gatherMigratedTokenAssociations();
+        final var tokenAssociations = gatherTokenAssociations(tokenAssociationsStore);
 
         int reportSize;
         try (@NonNull final var writer = new Writer(tokenRelPath)) {
@@ -130,7 +105,6 @@ public class DumpTokenAssociationsSubcommand {
             boolean isAutomaticAssociation,
             long prev,
             long next) {
-
         @NonNull
         public static TokenRel from(@NonNull final MerkleTokenRelStatus tokenRel) {
             final var at = toLongsPair(toPair(tokenRel.getKey()));
@@ -160,20 +134,6 @@ public class DumpTokenAssociationsSubcommand {
         }
 
         @NonNull
-        public static TokenRel from(@NonNull final TokenRelation tokenRel) {
-            final var pair = Pair.of(tokenRel.accountId(), tokenRel.tokenId());
-            return new TokenRel(
-                    tokenRel.accountId().accountNum(),
-                    tokenRel.tokenId().tokenNum(),
-                    tokenRel.balance(),
-                    tokenRel.frozen(),
-                    tokenRel.kycGranted(),
-                    tokenRel.automaticAssociation(),
-                    tokenRel.previousToken().tokenNum(),
-                    tokenRel.nextToken().tokenNum());
-        }
-
-        @NonNull
         public Pair<Long /*accountId*/, Long /*tokenId*/> getKey() {
             return Pair.of(account, tokenId);
         }
@@ -183,11 +143,6 @@ public class DumpTokenAssociationsSubcommand {
             @NonNull final Writer writer, @NonNull final SortedMap<Pair<Long, Long>, TokenRel> tokenAssociations) {
         requireNonNull(writer, "writer");
         requireNonNull(tokenAssociations, "tokenAssociations");
-
-        final var validationSummary = withValidation == DumpStateCommand.WithValidation.NO ? "" : "validated ";
-        final var migrationSummary = withMigration == DumpStateCommand.WithMigration.NO
-                ? ""
-                : "(with %smigration)".formatted(validationSummary);
 
         final var uniqueAccounts = new HashSet<Long>();
         final var uniqueTokens = new HashSet<Long>();
@@ -202,13 +157,12 @@ public class DumpTokenAssociationsSubcommand {
                 tokensByAccounts.values().stream().mapToLong(i -> i).sum();
 
         writer.write(
-                "# === %8d token associations (%d the hard way), %7d accounts with associations, %7d token types associated with accounts%n %s"
+                "# === %8d token associations (%d the hard way), %7d accounts with associations, %7d token types associated with accounts%n"
                         .formatted(
                                 tokenAssociations.size(),
                                 totalTokenRelsByUniques,
                                 uniqueAccounts.size(),
-                                uniqueTokens.size(),
-                                migrationSummary));
+                                uniqueTokens.size()));
 
         final var tokensByAccountsHistogram = tokensByAccounts.values().stream()
                 .collect(Collectors.groupingBy(n -> 0 == n ? 0 : (int) Math.log10(n), Collectors.counting()));
@@ -260,8 +214,9 @@ public class DumpTokenAssociationsSubcommand {
     }
 
     @NonNull
-    SortedMap<Pair<Long, Long>, TokenRel> gatherTokenAssociations() {
-        final var tokenRelStore = state.getTokenAssociations();
+    SortedMap<Pair<Long, Long>, TokenRel> gatherTokenAssociations(@NonNull TokenRelStorageAdapter tokenRelStore) {
+        requireNonNull(tokenRelStore, "tokenRelStore");
+
         final SortedMap<Pair<Long, Long>, TokenRel> r = new TreeMap<>(getPairOfLongsComparator());
 
         if (tokenRelStore.areOnDisk()) {
@@ -269,7 +224,7 @@ public class DumpTokenAssociationsSubcommand {
             final var tokenAssociations = new ConcurrentLinkedQueue<TokenRel>();
             try {
                 final var threadCount = 8; // Good enough for my laptop, why not?
-                tokenRels.extractVirtualMapData(
+                tokenRels.extractVirtualMapDataC(
                         getStaticThreadManager(),
                         p -> {
                             final var tokenRel = TokenRel.from(p.value());
@@ -290,36 +245,6 @@ public class DumpTokenAssociationsSubcommand {
         }
 
         return r;
-    }
-
-    @NonNull
-    SortedMap<Pair<Long, Long>, TokenRel> gatherMigratedTokenAssociations() {
-        final var tokenRelStore = getMigratedTokenAssociations();
-        final SortedMap<Pair<Long, Long>, TokenRel> r = new TreeMap<>(getPairOfLongsComparator());
-        r.putAll(tokenRelStore);
-
-        return r;
-    }
-
-    // TODO finish this implementation
-    SortedMap<Pair<Long, Long>, TokenRel> getMigratedTokenAssociations() {
-        final var tokenAssociationsStore = state.getTokenAssociations();
-        final var expectedSize = Math.toIntExact(tokenAssociationsStore.size());
-
-        final var associationsSchema = new InitialModServiceTokenSchema(null, null, null, null, null, CURRENT_VERSION);
-        final var associationsSchemas = associationsSchema.statesToCreate();
-        final var associationsStateDefinition = associationsSchemas.stream()
-                .filter(state -> state.stateKey().equals(TOKEN_RELS_KEY))
-                .findFirst()
-                .orElseThrow();
-        final var associationsSchemaMetadata = new StateMetadata<>(TokenService.NAME, associationsSchema, associationsStateDefinition);
-        final var contractMerkleMap =
-                new NonAtomicReference<SortedMap<Pair<Long, Long>, TokenRel>>(new TreeMap<>(getPairOfLongsComparator()));
-        final var toStore = new NonAtomicReference<SortedMap<Pair<Long, Long>, TokenRel>>(
-                new TreeMap<>(getPairOfLongsComparator()));
-
-
-        return toStore.get();
     }
 
     @NonNull
