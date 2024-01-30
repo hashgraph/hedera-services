@@ -22,7 +22,6 @@ import com.swirlds.common.merkle.utility.AbstractListLeaf;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.merkle.dummy.DummyListLeaf;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Test;
 class AbstractListLeafTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("AbstractListLeaf Test")
     void abstractListLeafTest() {

@@ -23,7 +23,6 @@ import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -35,7 +34,6 @@ class SelfSerializableTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void serializeDeserialize(boolean includeClassId) throws IOException {
@@ -52,7 +50,6 @@ class SelfSerializableTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void deserializeInvalidVersions() throws IOException {

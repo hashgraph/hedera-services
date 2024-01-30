@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
@@ -123,7 +124,7 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         try {
             final V value = codec.parse(in);
             return new OnDiskValue<>(md, value);
-        } catch (final IOException e) {
+        } catch (final ParseException e) {
             throw new RuntimeException(e);
         }
     }

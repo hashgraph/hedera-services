@@ -23,6 +23,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -71,7 +72,8 @@ class PlatformWiringTests {
                 mock(PcesSequencer.class),
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
-                mock(StateSignatureCollector.class));
+                mock(StateSignatureCollector.class),
+                mock(FutureEventBuffer.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

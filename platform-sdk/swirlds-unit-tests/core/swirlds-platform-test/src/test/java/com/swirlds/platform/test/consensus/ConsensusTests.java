@@ -21,8 +21,6 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGH
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,10 +42,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#orderInvarianceTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Order Invariance Tests")
     void orderInvarianceTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -58,7 +54,6 @@ class ConsensusTests {
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulation")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Reconnect Simulation")
@@ -72,10 +67,8 @@ class ConsensusTests {
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Stale Events Tests")
     @ParameterizedTest
     void staleEvent(final ConsensusTestParams params) {
@@ -88,10 +81,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#forkingTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Forking Tests")
     void forkingTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -103,10 +94,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#partitionTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Partition Tests")
     void partitionTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -118,10 +107,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumPartitionTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Sub Quorum Partition Tests")
     void subQuorumPartitionTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -133,10 +120,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#cliqueTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Clique Tests")
     void cliqueTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -148,10 +133,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#variableRateTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Variable Rate Tests")
     void variableRateTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -163,10 +146,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeUsesStaleOtherParents")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Node Uses Stale Other Parents")
     void nodeUsesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -178,10 +159,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeProvidesStaleOtherParents")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Node Provides Stale Other Parents")
     void nodeProvidesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -193,10 +172,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#quorumOfNodesGoDownTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Quorum Of Nodes Go Down Tests")
     void quorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -208,10 +185,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumOfNodesGoDownTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Sub Quorum Of Nodes Go Down Tests")
     void subQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
@@ -223,7 +198,6 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#orderInvarianceTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Repeated Timestamp Test")
@@ -237,7 +211,6 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#ancientEventTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Consensus Receives Ancient Event")
@@ -251,8 +224,6 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#restartWithEventsParams")
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Node restart with events")
@@ -266,7 +237,6 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeRemoveTestParams")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Remove a node from the address book at restart")
@@ -289,10 +259,8 @@ class ConsensusTests {
 
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#orderInvarianceTests")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Genesis Snapshot Tests")
     void genesisSnapshotTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
