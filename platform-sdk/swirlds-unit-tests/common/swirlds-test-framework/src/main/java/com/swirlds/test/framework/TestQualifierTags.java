@@ -29,7 +29,7 @@ public abstract class TestQualifierTags {
      * Denotes that a test is so resource sensitive (e.g. uses Thread.sleep()) that the test task running the test
      * needs to run without anything in parallel.
      * Tests in this category should be fixed to not being flaky, or moved to the 'hammer' category (that is also
-     * running in isolation) if the fit that category.
+     * running in isolation) if they fit that category.
      */
     @Deprecated
     public static final String TIMING_SENSITIVE = "TIMING_SENSITIVE";
