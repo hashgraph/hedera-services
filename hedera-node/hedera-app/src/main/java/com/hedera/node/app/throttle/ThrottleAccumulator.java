@@ -500,12 +500,11 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @Nullable final AccountID accountID, @NonNull final Configuration configuration) {
         final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        try {
+        if (accountID != null) {
             final long accountNum = accountID.accountNum().longValue();
             return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
-        } catch (NullPointerException e) {
-            return false;
         }
+        return false;
     }
 
     private void reclaimLastAllowedUse() {
