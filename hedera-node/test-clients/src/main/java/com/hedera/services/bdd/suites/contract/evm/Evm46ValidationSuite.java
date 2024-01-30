@@ -61,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +75,7 @@ import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -127,6 +127,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
 
+    private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
+    private static final String SELF_DESTRUCT_CALLABLE = "SelfDestructCallable";
+    private static final List<Long> nonExistingSystemAccounts =
+            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
+    private static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
     private static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
 
@@ -260,7 +265,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
                 internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey(),
-                testBalanceOfForSystemAccounts());
+                testBalanceOfForSystemAccounts(),
+                testSelfDestructForSystemAccounts(),
+                testSelfDestructForSystemAccountsWithSigRequiredTrue());
     }
 
     @HapiTest
@@ -1501,11 +1508,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec testBalanceOfForSystemAccounts() {
         final var contract = "BalanceChecker46Version";
-        final var BALANCE = 10L;
-        final var SYSTEM_ACCOUNT_BALANCE = 0L;
+        final var balance = 10L;
+        final var existingSystemAccountBalanceAfter2SelfDestructs = 200000000;
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
-        for (int i = 0; i < systemAccounts.size(); i++) {
 
+        for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list
             opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
@@ -1516,14 +1523,79 @@ public class Evm46ValidationSuite extends HapiSuite {
                     .has(ContractFnResultAsserts.resultWith()
                             .resultThruAbi(
                                     getABIFor(FUNCTION, BALANCE_OF, contract),
-                                    ContractFnResultAsserts.isLiteralResult(
-                                            new Object[] {BigInteger.valueOf(SYSTEM_ACCOUNT_BALANCE)})))
-                    .hasAnswerOnlyPrecheck(OK);
+                                    // selfDestruct tests might change the account's balance
+                                    // assert that 0 <= result < existingSystemAccountBalanceAfter2SelfDestructs + 1
+                                    ContractFnResultAsserts.isRandomResult(
+                                            new Object[] {existingSystemAccountBalanceAfter2SelfDestructs + 1})));
         }
         return defaultHapiSpec("verifiesSystemAccountBalanceOf")
-                .given(cryptoCreate("testAccount").balance(BALANCE), uploadInitCode(contract), contractCreate(contract))
+                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(opsArray);
+    }
+
+    @HapiTest
+    final HapiSpec testSelfDestructForSystemAccounts() {
+        final AtomicLong deployer = new AtomicLong();
+        final var nonExistingAccountsOps = createOpsArray(
+                nonExistingSystemAccounts,
+                SELF_DESTRUCT_CALLABLE,
+                DESTROY_EXPLICIT_BENEFICIARY,
+                INVALID_SOLIDITY_ADDRESS);
+        final var existingAccountsOps =
+                createOpsArray(existingSystemAccounts, SELF_DESTRUCT_CALLABLE, DESTROY_EXPLICIT_BENEFICIARY, SUCCESS);
+        final var opsArray = new HapiSpecOperation[nonExistingAccountsOps.length + existingAccountsOps.length];
+
+        System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
+        System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
+
+        return defaultHapiSpec("testSelfDestructForSystemAccounts")
+                .given(
+                        cryptoCreate(BENEFICIARY)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(false)
+                                .exposingCreatedIdTo(id -> deployer.set(id.getAccountNum())),
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE),
+                        contractCreate(SELF_DESTRUCT_CALLABLE).balance(ONE_HBAR))
+                .when()
+                .then(nonExistingAccountsOps);
+    }
+
+    @HapiTest
+    final HapiSpec testSelfDestructForSystemAccountsWithSigRequiredTrue() {
+        final AtomicLong deployer = new AtomicLong();
+        final var nonExistingAccountsOps = createOpsArray(
+                nonExistingSystemAccounts,
+                SELF_DESTRUCT_CALLABLE,
+                DESTROY_EXPLICIT_BENEFICIARY,
+                INVALID_SOLIDITY_ADDRESS);
+        final var existingAccountsOps =
+                createOpsArray(existingSystemAccounts, SELF_DESTRUCT_CALLABLE, DESTROY_EXPLICIT_BENEFICIARY, SUCCESS);
+        final var opsArray = new HapiSpecOperation[nonExistingAccountsOps.length + existingAccountsOps.length];
+
+        System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
+        System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
+
+        return defaultHapiSpec("testSelfDestructForSystemAccountsWithSigRequiredTrue")
+                .given(
+                        cryptoCreate(BENEFICIARY)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(true)
+                                .exposingCreatedIdTo(id -> deployer.set(id.getAccountNum())),
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE),
+                        contractCreate(SELF_DESTRUCT_CALLABLE).balance(ONE_HBAR))
+                .when()
+                .then(opsArray);
+    }
+
+    private HapiSpecOperation[] createOpsArray(
+            List<Long> accounts, String contract, String methodName, ResponseCodeEnum status) {
+        HapiSpecOperation[] opsArray = new HapiSpecOperation[accounts.size()];
+        for (int i = 0; i < accounts.size(); i++) {
+            opsArray[i] = contractCall(contract, methodName, mirrorAddrWith(accounts.get(i)))
+                    .hasKnownStatus(status);
+        }
+        return opsArray;
     }
 
     @Override
