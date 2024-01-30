@@ -58,7 +58,7 @@ public class StakingRewardsHelper {
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
      *
-     * @param writableAccountStore   The store to write to for updated values and original values
+     * @param writableAccountStore The store to write to for updated values and original values
      * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
@@ -84,6 +84,7 @@ public class StakingRewardsHelper {
      * Returns true if the account is staked to a node and the current transaction modified the stakedToMe field
      * (by changing balance of the current account or the account which is staking to current account) or
      * declineReward or the stakedId field
+     *
      * @param modifiedAccount the account which is modified in the current transaction and is in modifications
      * @param originalAccount the account before the current transaction
      * @return true if the account is staked to a node and the current transaction modified the stakedToMe field
@@ -102,6 +103,24 @@ public class StakingRewardsHelper {
         // We do this for backward compatibility with mono-service
         final var isCalledContract = modifiedAccount.smartContract();
         return (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
+    }
+
+    /**
+     * Returns true if there is a non-zero reward paid.
+     *
+     * @param rewardsPaid the rewards paid (possibly empty or all zero)
+     * @return true if there is a non-zero reward paid
+     */
+    public static boolean requiresExternalization(@NonNull final Map<AccountID, Long> rewardsPaid) {
+        if (rewardsPaid.isEmpty()) {
+            return false;
+        }
+        for (final var reward : rewardsPaid.values()) {
+            if (reward != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -207,17 +226,21 @@ public class StakingRewardsHelper {
     }
 
     /**
-     * Display the rewards paid map values as AccountAmounts
-     * @param rewardsPaid The rewards paid
-     * @return The rewards paid as AccountAmounts
+     * Translates any non-zero balance adjustments in the given map into a list of
+     * {@link AccountAmount}s ordered by account id.
+     *
+     * @param balanceAdjustments the balance adjustments
+     * @return the list of account amounts (excluding zero adjustments)
      */
-    public static List<AccountAmount> asAccountAmounts(@NonNull final Map<AccountID, Long> rewardsPaid) {
+    public static List<AccountAmount> asAccountAmounts(@NonNull final Map<AccountID, Long> balanceAdjustments) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        for (final var entry : rewardsPaid.entrySet()) {
-            accountAmounts.add(AccountAmount.newBuilder()
-                    .accountID(entry.getKey())
-                    .amount(entry.getValue())
-                    .build());
+        for (final var entry : balanceAdjustments.entrySet()) {
+            if (entry.getValue() != 0) {
+                accountAmounts.add(AccountAmount.newBuilder()
+                        .accountID(entry.getKey())
+                        .amount(entry.getValue())
+                        .build());
+            }
         }
         accountAmounts.sort(ACCOUNT_AMOUNT_COMPARATOR);
         return accountAmounts;
