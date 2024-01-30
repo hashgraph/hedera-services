@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app;
+package com.hedera.node.app.fixtures;
 
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
