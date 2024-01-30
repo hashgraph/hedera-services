@@ -99,14 +99,16 @@ public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
         }
-        if (updater.contractIsTokenTreasury(toBeDeleted)) {
-            return HederaExceptionalHaltReason.CONTRACT_IS_TREASURY;
-        }
-        if (updater.contractHasAnyBalance(toBeDeleted)) {
-            return HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-        }
-        if (updater.contractOwnsNfts(toBeDeleted)) {
-            return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+        if (updater.trackingAccounts() != null) {
+            if (updater.contractIsTokenTreasury(toBeDeleted)) {
+                return HederaExceptionalHaltReason.CONTRACT_IS_TREASURY;
+            }
+            if (updater.contractHasAnyBalance(toBeDeleted)) {
+                return HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+            }
+            if (updater.contractOwnsNfts(toBeDeleted)) {
+                return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+            }
         }
         if (!HederaOperationUtilV038.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier, globalDynamicProperties)) {
             return HederaExceptionalHaltReason.INVALID_SIGNATURE;
