@@ -16,11 +16,24 @@
 
 plugins { id("me.champeau.jmh") }
 
-jmh { jmhVersion.set("1.36") }
+jmh {
+    jmhVersion = "1.36"
+    includeTests = false
+}
 
 tasks.jmh { outputs.upToDateWhen { false } }
 
 tasks.jmhJar { manifest { attributes(mapOf("Multi-Release" to true)) } }
+
+configurations {
+    // Disable module Jar patching for the JMH runtime classpath.
+    // The way the JMH plugin interacts with this in the 'jmhJar' task triggers this Gradle issue:
+    // https://github.com/gradle/gradle/issues/27372
+    // And since 'jmhJar' builds a fat jar, module information is not needed here anyway.
+    jmhRuntimeClasspath {
+        attributes { attribute(Attribute.of("javaModule", Boolean::class.javaObjectType), false) }
+    }
+}
 
 tasks.assemble {
     // 'assemble' compiles all sources, including 'jmh'
