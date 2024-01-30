@@ -325,47 +325,12 @@ public class DumpStateCommand extends AbstractCommand {
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit summary information")
-                    final boolean emitSummary,
-            @Option(
-                            names = {"--migrate"},
-                            description =
-                                    "migrate from mono-service representation to modular-service representation (before dump)")
-                    final boolean withMigration,
-            @Option(
-                            names = {"--validate-migration"},
-                            description = "validate the migrated token associations")
-                    final boolean withValidationOfMigration) {
+                    final boolean emitSummary) {
         Objects.requireNonNull(associationsPath);
         init();
         System.out.println("=== token associations ===");
         DumpTokenAssociationsSubcommand.doit(
-                parent.signedState,
-                associationsPath,
-                emitSummary ? EmitSummary.YES : EmitSummary.NO,
-                withMigration ? WithMigration.YES : WithMigration.NO,
-                withValidationOfMigration ? WithValidation.YES : WithValidation.NO,
-                parent.verbosity);
-        finish();
-    }
-
-    @Command(name = "topics", description = "Dump topics")
-    void topics(
-            @Option(
-                            names = {"--topic"},
-                            required = true,
-                            arity = "1",
-                            description = "Output file for topics dump")
-                    @NonNull
-                    final Path topicsPath,
-            @Option(
-                            names = {"-s", "--summary"},
-                            description = "Emit summary information")
-                    final boolean emitSummary) {
-        Objects.requireNonNull(topicsPath);
-        init();
-        System.out.println("=== Topics ===");
-        DumpTopicsSubcommand.doit(
-                parent.signedState, topicsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+                parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 
