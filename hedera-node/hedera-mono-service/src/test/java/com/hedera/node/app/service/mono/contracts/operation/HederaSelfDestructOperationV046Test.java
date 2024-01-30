@@ -27,9 +27,13 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -76,6 +80,9 @@ class HederaSelfDestructOperationV046Test {
 
     @Mock
     private GlobalDynamicProperties globalDynamicProperties;
+
+    @Mock
+    TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     private HederaSelfDestructOperationV046 subject;
 
@@ -142,6 +149,7 @@ class HederaSelfDestructOperationV046Test {
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        given(worldUpdater.trackingAccounts()).willReturn(trackingAccounts);
         given(worldUpdater.contractIsTokenTreasury(eip1014Address)).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -157,6 +165,7 @@ class HederaSelfDestructOperationV046Test {
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        given(worldUpdater.trackingAccounts()).willReturn(trackingAccounts);
         given(worldUpdater.contractHasAnyBalance(eip1014Address)).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -172,6 +181,7 @@ class HederaSelfDestructOperationV046Test {
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        given(worldUpdater.trackingAccounts()).willReturn(trackingAccounts);
         given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -188,6 +198,7 @@ class HederaSelfDestructOperationV046Test {
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
         given(frame.getContractAddress()).willReturn(eip1014Address);
+        given(worldUpdater.trackingAccounts()).willReturn(trackingAccounts);
         given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
         given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, beneficiaryMirror, eip1014Address, null, ContractCall))
@@ -210,6 +221,7 @@ class HederaSelfDestructOperationV046Test {
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
         given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+        given(worldUpdater.trackingAccounts()).willReturn(trackingAccounts);
         given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
         given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         true, beneficiaryMirror, eip1014Address, null, ContractCall))
