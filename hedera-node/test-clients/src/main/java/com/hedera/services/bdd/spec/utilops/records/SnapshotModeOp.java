@@ -657,7 +657,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param placeholderNum the placeholder number to use in normalization
      * @return the original message if not an entity id; or a normalized message if it is
      */
-    private GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
+    private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
             final var normalizedNum = placeholderNum < accountID.getAccountNum()
