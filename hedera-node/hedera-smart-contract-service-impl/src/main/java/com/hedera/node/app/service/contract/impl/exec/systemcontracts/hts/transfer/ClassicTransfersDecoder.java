@@ -105,8 +105,7 @@ public class ClassicTransfersDecoder {
                 this::convertingMaybeApprovedOwnershipChanges,
                 addressIdConverter));
 
-        if (transferList.accountAmounts() != null
-                && !transferList.accountAmounts().isEmpty()) {
+        if (!transferList.accountAmounts().isEmpty()) {
             return bodyOf(cryptoTransfersBody.transfers(transferList));
         }
         return bodyOf(cryptoTransfersBody);
