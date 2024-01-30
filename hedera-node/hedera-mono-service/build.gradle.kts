@@ -46,6 +46,7 @@ testModuleInfo {
 jmhModuleInfo {
     annotationProcessor("dagger.compiler")
     requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.service.mono.test.fixtures")
     requires("com.hedera.node.app.spi")
     requires("com.hedera.node.hapi")
     requires("com.github.spotbugs.annotations")
@@ -63,6 +64,7 @@ jmhModuleInfo {
     requires("org.apache.commons.lang3")
     requires("org.hyperledger.besu.datatypes")
     requires("org.hyperledger.besu.evm")
+    requires("org.mockito")
     requires("tuweni.bytes")
     requires("tuweni.units")
 }
