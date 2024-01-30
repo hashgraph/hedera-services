@@ -25,7 +25,6 @@ import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
@@ -33,10 +32,11 @@ import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-@Tag(TestTypeTags.INFREQUENT_EXEC_ONLY)
+@EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
 class MerkleMapMemoryTests {
 
     private static final Random PRNG_PROVIDER = new Random(System.currentTimeMillis());
@@ -63,7 +63,6 @@ class MerkleMapMemoryTests {
      */
     @ParameterizedTest
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("MerkleMap Memory Usage")
     @CsvSource(value = {"1000000, 1000, 10, 20"})
     void testCreationMemoryUsage(int numberOfAccounts, int numberOfCopies, int maxKeepCopies, int maxMemSamples) {
@@ -87,7 +86,6 @@ class MerkleMapMemoryTests {
      */
     @ParameterizedTest
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("MerkleMap Memory Usage")
     @CsvSource(value = {"1000000, 1000, 10, 20, -1"})
     void testModificationMemoryUsage(

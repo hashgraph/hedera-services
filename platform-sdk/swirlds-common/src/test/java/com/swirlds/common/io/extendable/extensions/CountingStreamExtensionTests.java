@@ -22,7 +22,6 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +56,6 @@ class CountingStreamExtensionTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Counting Test")
     void countingTest() throws IOException {

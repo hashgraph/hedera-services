@@ -42,7 +42,6 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
@@ -99,7 +98,6 @@ class MerkleCopyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Adopt Children Test")
     void adoptChildrenTest() {
@@ -120,7 +118,6 @@ class MerkleCopyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Find Child Index In Parent Test")
     void findChildIndexInParentTest() {
@@ -244,7 +241,6 @@ class MerkleCopyTests {
      * Copy a subtree from one location its parent to another within the same parent.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Tree To New Position In Parent Test")
     void moveTreeToNewPositionInParentTest() {
@@ -261,7 +257,6 @@ class MerkleCopyTests {
      * Copy a subtree to a new parent.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Tree To New Parent Test")
     void moveTreeToNewParentTest() {
@@ -279,7 +274,6 @@ class MerkleCopyTests {
      * Copy a subtree to a location already containing a node
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Replaces Node Test")
     void moveReplacesNodeTest() {
@@ -297,7 +291,6 @@ class MerkleCopyTests {
      * Copy a subtree to a location already containing a node
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Replaces Null Node Test")
     void moveReplacesNullNodeTest() {
@@ -315,7 +308,6 @@ class MerkleCopyTests {
      * Copy a node to a location that overrides an ancestor.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Replaces Ancestor Test")
     void moveReplacesAncestorTest() {
@@ -334,7 +326,6 @@ class MerkleCopyTests {
      * Make sure that the move semantics behave nicely with leaves.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Leaf Test")
     void moveLeafTest() {
@@ -352,7 +343,6 @@ class MerkleCopyTests {
      * Make sure that the move semantics behave nicely with null values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Leaf Test")
     void moveNullLeafTest() {
@@ -369,7 +359,6 @@ class MerkleCopyTests {
      * Make sure trees with null descendants can be properly moved.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Tree With Null Descendant")
     void moveTreeWithNullDescendantTest() {
@@ -386,7 +375,6 @@ class MerkleCopyTests {
      * Make sure there is no problem moving a tree with multiple references to nodes.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Tree With References")
     void moveTreeWithReferences() {
@@ -406,7 +394,6 @@ class MerkleCopyTests {
      * Move a large(ish) subtree
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Move Large Subtree Test")
     void moveLargeSubtreeTest() {
@@ -424,7 +411,6 @@ class MerkleCopyTests {
      * provoked when a node was copied via copyTreeToLocation() to a location with fewer children.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Copy Binary To Location With Different Child Counts")
     void copyBinaryToLocationWithDifferentChildCounts() {

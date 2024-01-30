@@ -22,7 +22,6 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
  * Benchmarks for merkle hashing.
@@ -111,7 +111,7 @@ public class MerkleHashBenchmarks {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Hash Small Trees")
     public void hashSmallTrees() throws IOException, InterruptedException, ExecutionException {
@@ -124,7 +124,7 @@ public class MerkleHashBenchmarks {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Hash Large Trees")
     public void hashLargeTrees() throws IOException, InterruptedException, ExecutionException {
@@ -137,7 +137,7 @@ public class MerkleHashBenchmarks {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Hash Huge Trees")
     public void hashHugeTrees() throws IOException, InterruptedException, ExecutionException {
