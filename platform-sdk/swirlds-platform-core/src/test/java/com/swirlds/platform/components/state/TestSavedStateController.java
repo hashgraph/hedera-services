@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig;
