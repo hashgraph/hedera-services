@@ -97,12 +97,18 @@ public class ClassicTransfersDecoder {
     public TransactionBody decodeCryptoTransferV2(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.decodeCall(encoded);
-        return bodyOf(tokenTransfers(convertTokenTransfers(
-                        call.get(1),
-                        this::convertingMaybeApprovedAdjustments,
-                        this::convertingMaybeApprovedOwnershipChanges,
-                        addressIdConverter))
-                .transfers(convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter)));
+        final var transferList = convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter);
+
+        final var cryptoTransfersBody = tokenTransfers(convertTokenTransfers(
+                call.get(1),
+                this::convertingMaybeApprovedAdjustments,
+                this::convertingMaybeApprovedOwnershipChanges,
+                addressIdConverter));
+
+        if (!transferList.accountAmounts().isEmpty()) {
+            return bodyOf(cryptoTransfersBody.transfers(transferList));
+        }
+        return bodyOf(cryptoTransfersBody);
     }
 
     /**
@@ -212,7 +218,7 @@ public class ClassicTransfersDecoder {
                 IsApproval.TRUE)));
     }
 
-    public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
+    public ResponseCodeEnum checkForFailureStatus(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
             if ((long) call.get(3) < 0) {
