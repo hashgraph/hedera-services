@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
+import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
+import org.gradle.api.tasks.testing.TestDescriptor
+import org.gradle.api.tasks.testing.TestListener
+import org.gradle.api.tasks.testing.TestResult
 import java.io.OutputStream
 import java.io.PrintStream
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 class Utils {
@@ -47,6 +53,32 @@ class Utils {
                     ostream.flush()
                 }
             }
+        }
+
+        @JvmStatic
+        fun Task.testLogger() = object : TestListener {
+            override fun beforeSuite(suite: TestDescriptor) {
+                logger.lifecycle(
+                    "=====> Starting Suite: " + suite.displayName + " <====="
+                )
+            }
+
+            override fun beforeTest(testDescriptor: TestDescriptor) {}
+
+            override fun afterTest(
+                testDescriptor: TestDescriptor,
+                result: TestResult
+            ) {
+                logger.lifecycle(
+                    SimpleDateFormat.getDateTimeInstance().format(Date()) +
+                            ": " +
+                            testDescriptor.displayName +
+                            " " +
+                            result.resultType.name
+                )
+            }
+
+            override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
         }
     }
 }

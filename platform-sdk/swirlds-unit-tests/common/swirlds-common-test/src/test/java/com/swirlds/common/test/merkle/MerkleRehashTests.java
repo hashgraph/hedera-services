@@ -42,7 +42,6 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +73,6 @@ class MerkleRehashTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Invalidate Behavior")
     void invalidateBehavior() {
@@ -115,7 +113,6 @@ class MerkleRehashTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Rehash Behavior")
     void rehashBehavior() {
@@ -159,7 +156,6 @@ class MerkleRehashTests {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Failed Rehash Behavior")
     public void failedRehash() {
