@@ -170,12 +170,7 @@ public class TransactionProcessor {
         try {
             return computeInvolvedParties(transaction, updater, config);
         } catch (HandleException e) {
-            // Aborted ContractCall transactions before processing in the evm result in charging intrinsic gas
-            if (transaction.isContractCall()) {
-                gasCharging.chargeGasForAbortedTransaction(transaction.senderId(), context, updater, transaction);
-                throw new AbortException(e.getStatus(), transaction.senderId());
-            }
-            throw e;
+            throw new AbortException(e.getStatus(), transaction.senderId(), null, true);
         }
     }
 

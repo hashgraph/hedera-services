@@ -44,7 +44,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCreate;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -358,10 +359,11 @@ class TransactionProcessorTest {
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(null);
 
-        assertThatThrownBy(() -> subject.processTransaction(
-                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config))
-                .isInstanceOf(AbortException.class);
-        verify(gasCharging).chargeGasForAbortedTransaction(transaction.senderId(), context, worldUpdater, transaction);
+        final var abortException = catchThrowableOfType(
+                () -> subject.processTransaction(
+                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
+                AbortException.class);
+        assertThat(abortException.isChargeable()).isTrue();
     }
 
     @Test

@@ -102,7 +102,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // if an exception occurs during a ContractCall, charge fees to the sender and return a CallOutcome reflecting
         // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
-        if (hevmTransaction.isException()) {
+        if (hevmTransaction.isException() && contractsConfig.chargeGasOnPreEvmException()) {
             return chargeFeesAndReturnOutcome(hevmTransaction);
         }
 
@@ -123,6 +123,14 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         } catch (AbortException e) {
+            if (e.isChargeable() && contractsConfig.chargeGasOnPreEvmException()) {
+                gasCharging.chargeForGas(
+                        requireNonNull(rootProxyWorldUpdater.getHederaAccount(e.senderId())),
+                        e.relayerId() == null ? null : rootProxyWorldUpdater.getHederaAccount(e.relayerId()),
+                        hederaEvmContext,
+                        rootProxyWorldUpdater,
+                        hevmTransaction);
+            }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
             final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
