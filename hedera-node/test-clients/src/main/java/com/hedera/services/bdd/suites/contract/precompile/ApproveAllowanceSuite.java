@@ -455,6 +455,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("hapiNftGetApproved")
                 .given(
@@ -492,7 +493,15 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(allowanceTxn)
-                                .hasKnownStatus(SUCCESS))))
+                                .hasKnownStatus(SUCCESS)
+                        //                        ,contractCall(
+                        //                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                        //                                "htsGetApproved",
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                BigInteger.ONE)
+                        //                                .via("fakeAddressGetApproved")
+                        //                                .payingWith(OWNER)
+                        )))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
@@ -507,7 +516,23 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                 SUCCESS,
                                                                 asAddress(
                                                                         spec.registry()
-                                                                                .getAccountID(theSpender)))))))));
+                                                                                .getAccountID(theSpender))))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressGetApproved",
+                        //                                SUCCESS,
+                        //                                recordWith()
+                        //                                        .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_GET_APPROVED)
+                        //                                                        .withApproved(
+                        //
+                        // INVALID_TOKEN_NFT_SERIAL_NUMBER,
+                        //
+                        // asAddress(AccountID.getDefaultInstance())
+                        //                                                        ))))
+                        )));
     }
 
     @HapiTest
