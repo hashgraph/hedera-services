@@ -44,11 +44,28 @@ class BucketMutation<K extends VirtualKey> {
      * @param value
      * 		The value (cannot be null)
      */
-    void put(K key, long value) {
+    void put(final K key, final long value) {
         BucketMutation<K> mutation = this;
         while (true) {
             if (mutation.key.equals(key)) {
                 mutation.value = value;
+                return;
+            } else if (mutation.next != null) {
+                mutation = mutation.next;
+            } else {
+                mutation.next = new BucketMutation<>(key, value);
+                return;
+            }
+        }
+    }
+
+    void putIfEquals(final K key, final long oldValue, final long value) {
+        BucketMutation<K> mutation = this;
+        while (true) {
+            if (mutation.key.equals(key)) {
+                if (mutation.value == oldValue) {
+                    mutation.value = value;
+                }
                 return;
             } else if (mutation.next != null) {
                 mutation = mutation.next;

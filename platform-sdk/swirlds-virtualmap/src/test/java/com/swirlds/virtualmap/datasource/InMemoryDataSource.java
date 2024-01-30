@@ -332,8 +332,13 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         final var itr = leafRecordsToDelete.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
-            this.keyToPathMap.remove(rec.getKey());
-            this.leafRecords.remove(rec.getPath());
+            final long path = rec.getPath();
+            final K key = rec.getKey();
+            final long oldPath = keyToPathMap.get(key);
+            if (path == oldPath) {
+                this.keyToPathMap.remove(key);
+                this.leafRecords.remove(path);
+            }
         }
     }
 

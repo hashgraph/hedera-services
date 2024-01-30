@@ -21,7 +21,9 @@ import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -46,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
@@ -543,5 +546,175 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
         copy.release();
         teacherTree.release();
         learnerTree.release();
+    }
+
+    @Nested
+    class OldLearnerLeavesRemoved {
+
+        private void assertNoKeys(final VirtualMap<TestKey, TestValue> map, final TestKey ... keys) {
+            for (final TestKey key : keys) {
+                assertNull(map.get(key), "Key " + key + " must not be in the map after reconnect");
+                assertFalse(map.containsKey(key), "Key " + key + " must not be in the map after reconnect");
+            }
+        }
+
+        @Test
+        void leafRemovedThenAdded() throws Exception {
+            teacherMap.put(A_KEY, APPLE);
+            teacherMap.put(B_KEY, BANANA);
+            teacherMap.put(C_KEY, CHERRY);
+            teacherMap.put(D_KEY, DATE);
+            // Teacher paths: 3=A, 4=C, 5=B, 6=D
+
+            learnerMap.put(B_KEY, BEAR);
+            learnerMap.put(E_KEY, EMU);
+            learnerMap.put(F_KEY, FOX);
+            learnerMap.put(G_KEY, GOOSE);
+            // Learner paths: 3=B, 4=F, 5=E, 6=G
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            // reconnect happening
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            // not sure what is the better way to get the embedded Virtual map
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            assertNoKeys(afterMap, E_KEY, F_KEY, G_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
+
+        @Test
+        void leafAddedThenRemoved() throws Exception {
+            teacherMap.put(A_KEY, APPLE);
+            teacherMap.put(B_KEY, BANANA);
+            teacherMap.put(C_KEY, CHERRY);
+            teacherMap.put(D_KEY, DATE);
+            // Teacher paths: 3=A, 4=C, 5=B, 6=D
+
+            learnerMap.put(E_KEY, EMU);
+            learnerMap.put(A_KEY, AARDVARK);
+            learnerMap.put(F_KEY, FOX);
+            learnerMap.put(G_KEY, GOOSE);
+            // Learner paths: 3=E, 4=F, 5=A, 6=G
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            assertNoKeys(afterMap, E_KEY, F_KEY, G_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
+
+        @Test
+        void teacherHasMoreLeaves() throws Exception {
+            teacherMap.put(A_KEY, APPLE);
+            teacherMap.put(B_KEY, BANANA);
+            teacherMap.put(C_KEY, CHERRY);
+            teacherMap.put(D_KEY, DATE);
+            // Teacher paths: 3=A, 4=C, 5=B, 6=D
+
+            learnerMap.put(E_KEY, EMU);
+            learnerMap.put(F_KEY, FOX);
+            learnerMap.put(G_KEY, GOOSE);
+            // Learner paths: 2=F, 3=E, 4=G
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            assertNoKeys(afterMap, E_KEY, F_KEY, G_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
+
+        @Test
+        void learnerHasMoreLeaves() throws Exception {
+            teacherMap.put(A_KEY, APPLE);
+            teacherMap.put(B_KEY, BANANA);
+            teacherMap.put(C_KEY, CHERRY);
+            // Teacher paths: 2=B, 3=A, 4=C
+
+            learnerMap.put(D_KEY, DOG);
+            learnerMap.put(E_KEY, EMU);
+            learnerMap.put(F_KEY, FOX);
+            learnerMap.put(G_KEY, GOOSE);
+            // Learner paths: 3=D, 4=F, 5=E, 6=G
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            assertNoKeys(afterMap, D_KEY, E_KEY, F_KEY, G_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
+
+        @Test
+        void updatedLeafMustNotBeDeleted() throws Exception {
+            teacherMap.put(A_KEY, APPLE);
+            teacherMap.put(B_KEY, BANANA);
+            teacherMap.put(C_KEY, CHERRY);
+            // Teacher paths: 2=B, 3=A, 4=C
+
+            learnerMap.put(A_KEY, AARDVARK);
+            learnerMap.put(D_KEY, DOG);
+            learnerMap.put(E_KEY, EMU);
+            // Learner paths: 2=D, 3=A, 4=E
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            assertTrue(afterMap.containsKey(A_KEY));
+            assertNoKeys(afterMap, D_KEY, E_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
     }
 }

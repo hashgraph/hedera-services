@@ -313,14 +313,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         writingThread = Thread.currentThread();
     }
 
-    /**
-     * Put a key/value during the current writing session. The value will not be retrievable until
-     * it is committed in the {@link #endWriting()} call.
-     *
-     * @param key the key to store the value for
-     * @param value the value to store for given key
-     */
-    public void put(final K key, final long value) {
+    private BucketMutation<K> findBucketForUpdate(final K key, final long value) {
         if (key == null) {
             throw new IllegalArgumentException("Can not write a null key");
         }
@@ -333,9 +326,24 @@ public class HalfDiskHashMap<K extends VirtualKey>
         }
         // store key and value in transaction cache
         final int bucketIndex = computeBucketIndex(key.hashCode());
-        final BucketMutation<K> bucketMap =
-                oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, value));
+        return oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, value));
+    }
+
+    /**
+     * Put a key/value during the current writing session. The value will not be retrievable until
+     * it is committed in the {@link #endWriting()} call.
+     *
+     * @param key the key to store the value for
+     * @param value the value to store for given key
+     */
+    public void put(final K key, final long value) {
+        final BucketMutation<K> bucketMap = findBucketForUpdate(key, value);
         bucketMap.put(key, value);
+    }
+
+    public void putIfEquals(final K key, final long oldValue, final long value) {
+        final BucketMutation<K> bucketMap = findBucketForUpdate(key, value);
+        bucketMap.putIfEquals(key, oldValue, value);
     }
 
     /**
@@ -345,6 +353,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     public void delete(final K key) {
         put(key, SPECIAL_DELETE_ME_VALUE);
+    }
+
+    public void deleteIfEquals(final K key, final long oldValue) {
+        putIfEquals(key, oldValue, SPECIAL_DELETE_ME_VALUE);
     }
 
     /**

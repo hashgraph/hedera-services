@@ -621,6 +621,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             return null;
         }
 
+//        assert validLeafPathRange.withinRange(path);
+
         // If the key returns a value from the map, but it lies outside the first/last
         // leaf path, then return null. This can happen if the map contains old keys
         // that haven't been removed.
@@ -1230,11 +1232,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         // iterate over leaf records to delete
         deletedLeaves.forEach(leafRecord -> {
+            final long path = leafRecord.getPath();
             // update objectKeyToPath
             if (isLongKeyMode) {
-                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
+                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
+//                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
+                longKeyToPath.putIfEqual(key, path, INVALID_PATH);
             } else {
-                objectKeyToPath.delete(leafRecord.getKey());
+                objectKeyToPath.deleteIfEquals(leafRecord.getKey(), path);
             }
             statisticsUpdater.countFlushLeavesDeleted();
 
