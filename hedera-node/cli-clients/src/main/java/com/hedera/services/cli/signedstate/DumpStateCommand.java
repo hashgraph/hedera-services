@@ -20,15 +20,14 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.ParentCommand;
-
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.ParentCommand;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 @Command(
@@ -335,7 +334,7 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "associations", description = "Dump block info")
+    @Command(name = "block-info", description = "Dump block info")
     void blockInfo(
             @Option(
                             names = {"--block-info"},
@@ -353,6 +352,27 @@ public class DumpStateCommand extends AbstractCommand {
         System.out.println("=== Block info ===");
         DumpTokenAssociationsSubcommand.doit(
                 parent.signedState, blockInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "topics", description = "Dump topics")
+    void topics(
+            @Option(
+                            names = {"--topic"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for topics dump")
+                    @NonNull
+                    final Path topicsPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(topicsPath);
+        init();
+        System.out.println("=== Topics ===");
+        DumpTopicsSubcommand.doit(
+                parent.signedState, topicsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 
