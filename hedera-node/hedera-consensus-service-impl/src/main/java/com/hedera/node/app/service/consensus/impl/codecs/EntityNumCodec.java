@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.codecs;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,13 +27,13 @@ import java.io.IOException;
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
-    public EntityNum parse(final @NonNull ReadableSequentialData input) throws IOException {
+    public EntityNum parse(final @NonNull ReadableSequentialData input) throws ParseException {
         return new EntityNum(input.readInt());
     }
 
     @NonNull
     @Override
-    public EntityNum parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+    public EntityNum parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
         return parse(dataInput);
     }
 
@@ -42,7 +43,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
     }
 
     @Override
-    public int measure(final @NonNull ReadableSequentialData input) throws IOException {
+    public int measure(final @NonNull ReadableSequentialData input) throws ParseException {
         throw new UnsupportedOperationException();
     }
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl.codec;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,15 +31,19 @@ import java.io.IOException;
 public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
-    public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws IOException {
-        final var length = input.readInt();
-        final var javaIn = new byte[length];
-        input.readBytes(javaIn);
-        final var bais = new ByteArrayInputStream(javaIn);
-        final var context = new MerkleSpecialFiles();
-        final var merkleIn = new SerializableDataInputStream(bais);
-        context.deserialize(merkleIn, MerkleSpecialFiles.CURRENT_VERSION);
-        return context;
+    public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws ParseException {
+        try {
+            final var length = input.readInt();
+            final var javaIn = new byte[length];
+            input.readBytes(javaIn);
+            final var bais = new ByteArrayInputStream(javaIn);
+            final var context = new MerkleSpecialFiles();
+            final var merkleIn = new SerializableDataInputStream(bais);
+            context.deserialize(merkleIn, MerkleSpecialFiles.CURRENT_VERSION);
+            return context;
+        } catch (final IOException e) {
+            throw new ParseException(e);
+        }
     }
 
     @Override
@@ -69,7 +74,7 @@ public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
 
     @NonNull
     @Override
-    public MerkleSpecialFiles parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+    public MerkleSpecialFiles parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
         return parse(dataInput);
     }
 }
