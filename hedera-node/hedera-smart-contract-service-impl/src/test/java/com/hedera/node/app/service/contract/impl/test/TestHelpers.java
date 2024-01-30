@@ -619,7 +619,7 @@ public class TestHelpers {
     }
 
     public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
-        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
+        return org.apache.tuweni.bytes.Bytes.wrap(UInt256.valueOf(status.protoOrdinal()));
     }
 
     public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {

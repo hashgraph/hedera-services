@@ -83,8 +83,4 @@ public enum SnapshotMatchMode {
      * Allows for non-deterministic token names.
      */
     NONDETERMINISTIC_TOKEN_NAMES,
-    /**
-     * Allows for empty error messages in contract call results.
-     */
-    ALLOW_EMPTY_ERROR_MSG,
 }
