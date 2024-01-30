@@ -20,6 +20,7 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -308,14 +309,49 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
     @NonNull
     public VirtualMapLike<ContractKey, IterableContractValue> getBlockInfo() {
+        /**
+         * Information about ongoing, most recently completed, and last 256 blocks.
+         *
+         * @param lastBlockNumber <b>(1)</b> The last block number, this is the last completed immutable block.
+         * @param firstConsTimeOfLastBlock <b>(2)</b> The consensus time of the first transaction of the last block, this is the last completed immutable block.
+         * @param blockHashes <b>(3)</b> SHA384 48 byte hashes of the last 256 blocks in single byte array.
+         *                    First 48 bytes is the oldest block.
+         *                    Last 48 bytes is the newest block, which is the last fully completed immutable block.
+         *                    If we are shortly after genesis and there are less than 256 blocks then this could contain less than 256 hashes.
+         * @param consTimeOfLastHandledTxn <b>(4)</b> The consensus time of the last transaction that was handled by the node. This property is how we 'advance the
+         *                                 consensus clock', i.e. continually setting this property to the latest consensus timestamp (and thus transaction)
+         *                                 handled by the node.
+         * @param migrationRecordsStreamed <b>(5)</b> A flag indicating whether migration records have been published. This property should be marked 'false'
+         *                                 immediately following a node upgrade, and marked 'true' once the migration records (if any) are published, which
+         *                                 should happen during the first transaction handled by the node.
+         * @param firstConsTimeOfCurrentBlock <b>(6)</b> The consensus time of the first transaction in the current block; necessary for reconnecting nodes to detect
+         *                                    when the current block is finished.
+         */
+
+
         final var runningHashLeaf = servicesState.runningHashLeaf();
         final var runningHash1 = runningHashLeaf.getNMinus1RunningHash().getHash();
         final var runningHash2 = runningHashLeaf.getNMinus2RunningHash().getHash();
         final var runningHash3 = runningHashLeaf.getNMinus3RunningHash().getHash();
 
+        final var networkContext = servicesState.networkCtx();
+        final var lastBlockNumber = networkContext.getAlignmentBlockNo();
+        final var ls = networkContext.getBlockHashByNumber(lastBlockNumber);
+        final var blockHashes = networkContext.stringifiedBlockHashes();
+        final var consTimeOfLastHandledTxn = servicesState.getTimeOfLastHandledTxn();
+        final var areMigrationRecordsStreamed = networkContext.areMigrationRecordsStreamed();
+        final var firstConsTimeOfCurrentBlock = networkContext.firstConsTimeOfCurrentBlock();
 
-        assertSignedStateComponentExists(rawContractStorage, "contractStorage");
+        assertSignedStateComponentExists(rawContractStorage, "blockInfo");
         return rawContractStorage;
+    }
+
+    @NonNull
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> getStakingInfo() {
+        final var stakingInfo = servicesState.stakingInfo();
+
+        assertSignedStateComponentExists(stakingInfo, "stakingInfo");
+        return stakingInfo;
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */

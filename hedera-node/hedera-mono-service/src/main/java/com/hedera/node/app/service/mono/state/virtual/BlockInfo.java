@@ -3,8 +3,7 @@ package com.hedera.node.app.service.mono.state.virtual;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import org.jetbrains.annotations.NotNull;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public final class BlockInfo implements VirtualKey {
@@ -19,12 +18,12 @@ public final class BlockInfo implements VirtualKey {
     }
 
     @Override
-    public void serialize(@NotNull SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull SerializableDataOutputStream out) throws IOException {
 
     }
 
     @Override
-    public void deserialize(@NotNull SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(@NonNull SerializableDataInputStream in, int version) throws IOException {
 
     }
 
