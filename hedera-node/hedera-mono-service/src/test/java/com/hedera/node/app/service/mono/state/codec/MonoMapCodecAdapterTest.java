@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -45,7 +46,7 @@ class MonoMapCodecAdapterTest {
     private DataOutput output;
 
     @Test
-    void canGetACodec() throws IOException {
+    void canGetACodec() throws IOException, ParseException {
         final var longCodec = MonoMapCodecAdapter.codecForSelfSerializable(1, MerkleLong::new);
 
         final var baos = new ByteArrayOutputStream();

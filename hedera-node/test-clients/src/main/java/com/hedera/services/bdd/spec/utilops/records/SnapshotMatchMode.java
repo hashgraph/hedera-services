@@ -83,6 +83,4 @@ public enum SnapshotMatchMode {
      * Allows for non-deterministic token names.
      */
     NONDETERMINISTIC_TOKEN_NAMES,
-
-    ALLOW_EMPTY_ERROR_MSG,
 }

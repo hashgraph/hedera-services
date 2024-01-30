@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.List;
@@ -104,7 +105,7 @@ class ScheduleServiceStateTranslatorTest extends ScheduleTestBase {
     }
 
     @Test
-    void verifyTypicalReverseTranslation() throws IOException {
+    void verifyTypicalReverseTranslation() throws ParseException {
         final Codec<SchedulableTransactionBody> protobufCodec = SchedulableTransactionBody.PROTOBUF;
         final Schedule actual = ScheduleServiceStateTranslator.convertScheduleVirtualValueToSchedule(subject);
         // original create has different values from the schedule for test purposes, but SVV uses original create only.

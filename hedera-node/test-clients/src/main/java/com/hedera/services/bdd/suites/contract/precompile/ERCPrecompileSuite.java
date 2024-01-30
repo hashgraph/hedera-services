@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EMPTY_ERROR_MSG;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -162,8 +161,6 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM = "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
     private static final String MSG_SENDER_IS_THE_SAME_AS_FROM = "MSG_SENDER_IS_THE_SAME_AS_FROM";
-    private static final String MISSING_TOKEN = "MISSING_TOKEN";
-    private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
     public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
@@ -714,7 +711,6 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "transferErc20TokenFromContractWithNoApproval",
-                        ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -1463,7 +1459,6 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc721NegativeTransferFromScenariosPass",
-                        ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
@@ -1579,7 +1574,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                         "someErc721ApproveAndRemoveScenariosPass",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
@@ -1779,7 +1773,6 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc20ApproveAllowanceScenariosPass",
-                        ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
@@ -1934,10 +1927,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "someErc20NegativeTransferFromScenariosPass",
-                        ALLOW_EMPTY_ERROR_MSG,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("someErc20NegativeTransferFromScenariosPass", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2403,7 +2393,6 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc721SetApprovedForAllScenariosPass",
-                        ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
@@ -2824,7 +2813,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec erc20TransferFromSelf() {
-        return defaultHapiSpec("erc20TransferFromSelf", NONDETERMINISTIC_FUNCTION_PARAMETERS, ALLOW_EMPTY_ERROR_MSG)
+        return defaultHapiSpec("erc20TransferFromSelf", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(RECIPIENT),
