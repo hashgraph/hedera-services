@@ -26,7 +26,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +47,6 @@ class ReconnectThrottleTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Simultaneous Reconnect Test")
     void simultaneousReconnectTest() {
@@ -62,7 +60,6 @@ class ReconnectThrottleTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Simultaneous Reconnect Test")
     void repeatedReconnectTest() {
@@ -90,7 +87,6 @@ class ReconnectThrottleTest {
      * indefinitely.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Many Node Test")
     void manyNodeTest() {

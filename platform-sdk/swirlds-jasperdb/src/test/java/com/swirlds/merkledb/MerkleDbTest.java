@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,9 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,10 +40,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 public class MerkleDbTest {
 
     @BeforeAll
