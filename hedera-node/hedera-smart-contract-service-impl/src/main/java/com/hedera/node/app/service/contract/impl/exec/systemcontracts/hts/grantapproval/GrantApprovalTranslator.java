@@ -126,7 +126,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
 
     private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {
         final var call = GrantApprovalTranslator.ERC_GRANT_APPROVAL.decodeCall(attempt.inputBytes());
-        final var spender = attempt.addressIdConverter().convert(call.get(0));
+        final var spenderId = attempt.addressIdConverter().convert(call.get(0));
         final var amount = call.get(1);
         return new ERCGrantApprovalCall(
                 attempt.enhancement(),
@@ -134,7 +134,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
                 Objects.requireNonNull(attempt.redirectTokenId()),
-                spender,
+                spenderId,
                 (BigInteger) amount,
                 Objects.requireNonNull(attempt.redirectTokenType()));
     }

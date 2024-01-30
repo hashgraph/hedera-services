@@ -56,10 +56,10 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
     @NonNull
     @Override
     public PricedResult execute() {
-        if (token == null) {
+        if (tokenId == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
-        final var body = callGrantApproval();
+        final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
         final var status = recordBuilder.status();
@@ -86,7 +86,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         final var result = execute();
 
         if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenAddress = asLongZeroAddress(token.tokenNum());
+            final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
 
             if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
                 frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
@@ -103,7 +103,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
-                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(spenderId.accountNum()))
                 .forDataItem(amount)
                 .build();
     }
@@ -113,7 +113,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
-                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(spenderId.accountNum()))
                 .forIndexedArgument(amount)
                 .build();
     }
