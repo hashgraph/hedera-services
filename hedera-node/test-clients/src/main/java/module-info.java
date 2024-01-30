@@ -19,6 +19,7 @@ module com.hedera.node.test.clients {
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
+    requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
@@ -43,5 +44,4 @@ module com.hedera.node.test.clients {
     requires org.opentest4j;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
-    requires com.hedera.node.app.service.contract.impl;
 }
