@@ -359,10 +359,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             } else {
                 if (!OK.equals(isUsableContract)) {
                     // call to non-existing contract flow
-                    validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue((isTokenAccount || properties.allowCallsToNonContractAccounts()), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || properties.allowCallsToNonContractAccounts(), isUsableContract);
                 }
             }
 
