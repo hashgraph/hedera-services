@@ -201,7 +201,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final PrecompileContractResult result,
             @NonNull final ContractActionType type,
             @NonNull final ActionSidecarContentTracer tracer) {
-        if (frame.getState() == MessageFrame.State.REVERT) {
+        if (result.getState() == MessageFrame.State.REVERT) {
             frame.setRevertReason(result.getOutput());
         } else {
             frame.setOutputData(result.getOutput());
