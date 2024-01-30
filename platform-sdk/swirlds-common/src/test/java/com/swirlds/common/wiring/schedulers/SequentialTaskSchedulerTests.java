@@ -28,8 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -934,7 +936,8 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValueB = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final ObjectCounter backpressure = new BackpressureObjectCounter("test", 11, Duration.ofMillis(1));
+        final ObjectCounter backpressure =
+                new BackpressureObjectCounter("test", 11, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
                 .withType(type)
@@ -1994,7 +1997,8 @@ class SequentialTaskSchedulerTests {
         // There are three components, A, B, and C.
         // We want to control the number of elements in all three, not individually.
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
@@ -2115,7 +2119,8 @@ class SequentialTaskSchedulerTests {
         // There are three components, A, B, and C.
         // The pipeline as a whole has a capacity of 10. Each step individually has a capacity of 5;
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)

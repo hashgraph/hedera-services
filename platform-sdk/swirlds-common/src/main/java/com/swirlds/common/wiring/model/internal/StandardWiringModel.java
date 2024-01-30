@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
@@ -53,6 +54,7 @@ public class StandardWiringModel implements WiringModel {
 
     private final Metrics metrics;
     private final Time time;
+    private final ThreadDumpGenerator threadDumpGenerator;
 
     /**
      * A map of vertex names to vertices.
@@ -87,12 +89,18 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Constructor.
      *
-     * @param metrics provides metrics
-     * @param time    provides wall clock time
+     * @param metrics             provides metrics
+     * @param time                provides wall clock time
+     * @param threadDumpGenerator a utility for generating and logging thread dumps, used to provide extra debug context
+     *                            for certain types of errors
      */
-    public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
+    public StandardWiringModel(
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
+            @NonNull final ThreadDumpGenerator threadDumpGenerator) {
         this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
+        this.threadDumpGenerator = Objects.requireNonNull(threadDumpGenerator);
     }
 
     /**
@@ -314,6 +322,15 @@ public class StandardWiringModel implements WiringModel {
         for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ThreadDumpGenerator getThreadDumpGenerator() {
+        return threadDumpGenerator;
     }
 
     /**

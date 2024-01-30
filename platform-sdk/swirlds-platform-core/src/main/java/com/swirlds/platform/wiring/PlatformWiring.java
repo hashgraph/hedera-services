@@ -125,7 +125,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .getConfiguration()
                         .getConfigData(PlatformSchedulersConfig.class)
                         .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
+                Duration.ofNanos(100),
+                model.getThreadDumpGenerator());
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 

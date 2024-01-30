@@ -19,9 +19,11 @@ package com.swirlds.common.wiring.benchmark;
 import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -60,7 +62,8 @@ class WiringBenchmark {
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
 
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
-        final ObjectCounter backpressure = new BackpressureObjectCounter("backpressure", 10_000, Duration.ZERO);
+        final ObjectCounter backpressure =
+                new BackpressureObjectCounter("backpressure", 10_000, Duration.ZERO, mock(ThreadDumpGenerator.class));
 
         final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.schedulerBuilder("verification")
                 .withPool(executor)

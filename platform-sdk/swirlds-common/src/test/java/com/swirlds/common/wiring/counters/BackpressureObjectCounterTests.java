@@ -24,8 +24,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,7 +46,8 @@ class BackpressureObjectCounterTests {
     void countWithHighCapacityTest() {
         final Random random = getRandomPrintSeed();
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 1_000_000_000, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter(
+                "test", 1_000_000_000, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {
@@ -77,7 +80,8 @@ class BackpressureObjectCounterTests {
     void onRampTest(final int sleepMillis) throws InterruptedException {
         final Duration sleepDuration = Duration.ofMillis(sleepMillis);
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, sleepDuration);
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 10, sleepDuration, mock(ThreadDumpGenerator.class));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -122,7 +126,8 @@ class BackpressureObjectCounterTests {
 
     @Test
     void attemptOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -139,7 +144,8 @@ class BackpressureObjectCounterTests {
 
     @Test
     void forceOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -156,7 +162,8 @@ class BackpressureObjectCounterTests {
 
     @Test
     void waitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 1000, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 1000, Duration.ofMillis(1), mock(ThreadDumpGenerator.class));
 
         for (int i = 0; i < 100; i++) {
             counter.onRamp();

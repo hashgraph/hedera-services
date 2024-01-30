@@ -20,12 +20,14 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -43,7 +45,10 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @NonNull
     static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        return new StandardWiringModel(platformContext.getMetrics(), time);
+        // TODO: if this feature goes to production, we should use configuration for the thread dump generator
+        final ThreadDumpGenerator threadDumpGenerator = new ThreadDumpGenerator(time, Duration.ofMinutes(10));
+
+        return new StandardWiringModel(platformContext.getMetrics(), time, threadDumpGenerator);
     }
 
     /**
@@ -54,8 +59,11 @@ public interface WiringModel extends Startable, Stoppable {
      * @return a new wiring model instance
      */
     @NonNull
-    static WiringModel create(@NonNull final Metrics metrics, @NonNull final Time time) {
-        return new StandardWiringModel(metrics, time);
+    static WiringModel create(@NonNull final Metrics metrics, @NonNull final Time time) { // TODO remove this method
+        // TODO: if this feature goes to production, we should use configuration for the thread dump generator
+        final ThreadDumpGenerator threadDumpGenerator = new ThreadDumpGenerator(time, Duration.ofMinutes(10));
+
+        return new StandardWiringModel(metrics, time, threadDumpGenerator);
     }
 
     /**
@@ -139,4 +147,12 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @Override
     void stop();
+
+    /**
+     * Get the thread dump generator.
+     *
+     * @return the thread dump generator
+     */
+    @NonNull
+    ThreadDumpGenerator getThreadDumpGenerator();
 }

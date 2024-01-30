@@ -22,8 +22,10 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,8 +67,10 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA =
+                new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
+        final ObjectCounter counterB =
+                new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
@@ -95,8 +99,10 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA =
+                new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
+        final ObjectCounter counterB =
+                new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
@@ -120,8 +126,10 @@ class MultiObjectCounterTests {
 
     @Test
     void waitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA =
+                new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
+        final ObjectCounter counterB =
+                new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), mock(ThreadDumpGenerator.class));
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);

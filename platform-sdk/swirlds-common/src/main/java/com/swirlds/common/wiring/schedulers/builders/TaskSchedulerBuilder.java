@@ -281,7 +281,8 @@ public class TaskSchedulerBuilder<O> {
         // then we shouldn't use one.
 
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
-            innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
+            innerCounter = new BackpressureObjectCounter(
+                    name, unhandledTaskCapacity, sleepDuration, model.getThreadDumpGenerator());
         } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
                 || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);

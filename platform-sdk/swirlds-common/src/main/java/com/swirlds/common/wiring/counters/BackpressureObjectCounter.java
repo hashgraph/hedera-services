@@ -16,11 +16,13 @@
 
 package com.swirlds.common.wiring.counters;
 
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -32,6 +34,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
     private final String name;
     private final AtomicLong count = new AtomicLong(0);
     private final long capacity;
+    private final ThreadDumpGenerator threadDumpGenerator;
 
     /**
      * When back pressure needs to be applied due to lack of capacity, this object is used to efficiently sleep on the
@@ -47,18 +50,26 @@ public class BackpressureObjectCounter extends ObjectCounter {
     /**
      * Constructor.
      *
-     * @param name          the name of the object counter, used creating more informative exceptions
-     * @param capacity      the maximum number of objects that can be in the part of the system that this object is
-     *                      being used to monitor before backpressure is applied
-     * @param sleepDuration when a method needs to block, the duration to sleep while blocking
+     * @param name                the name of the object counter, used creating more informative exceptions
+     * @param capacity            the maximum number of objects that can be in the part of the system that this object
+     *                            is being used to monitor before backpressure is applied
+     * @param sleepDuration       when a method needs to block, the duration to sleep while blocking
+     * @param threadDumpGenerator a utility for generating and logging thread dumps, used to provide extra debug context
+     *                            for certain types of errors
      */
     public BackpressureObjectCounter(
-            @NonNull final String name, final long capacity, @NonNull final Duration sleepDuration) {
+            @NonNull final String name,
+            final long capacity,
+            @NonNull final Duration sleepDuration,
+            @NonNull final ThreadDumpGenerator threadDumpGenerator) {
+
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
 
         this.name = Objects.requireNonNull(name);
+        this.threadDumpGenerator = Objects.requireNonNull(threadDumpGenerator);
+
         this.capacity = capacity;
 
         final long sleepNanos = sleepDuration.toNanos();
@@ -104,6 +115,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
             // This should be impossible.
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
+        } catch (final RejectedExecutionException ex) {
+            threadDumpGenerator.logThreadDump();
+            throw ex;
         }
     }
 

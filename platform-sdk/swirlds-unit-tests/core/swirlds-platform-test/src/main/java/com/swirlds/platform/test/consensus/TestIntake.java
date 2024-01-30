@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.ThreadDumpGenerator;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
@@ -102,7 +103,8 @@ public class TestIntake implements LoadableFromSignedState {
                         .getConfiguration()
                         .getConfigData(PlatformSchedulersConfig.class)
                         .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
+                Duration.ofNanos(100),
+                mock(ThreadDumpGenerator.class));
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 
