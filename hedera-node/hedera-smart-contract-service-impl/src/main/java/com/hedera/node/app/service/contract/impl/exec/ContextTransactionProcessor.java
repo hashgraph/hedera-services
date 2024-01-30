@@ -124,12 +124,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         } catch (AbortException e) {
             if (e.isChargeable() && contractsConfig.chargeGasOnPreEvmException()) {
-                gasCharging.chargeForGas(
-                        requireNonNull(rootProxyWorldUpdater.getHederaAccount(e.senderId())),
-                        e.relayerId() == null ? null : rootProxyWorldUpdater.getHederaAccount(e.relayerId()),
-                        hederaEvmContext,
-                        rootProxyWorldUpdater,
-                        hevmTransaction);
+                gasCharging.chargeGasForAbortedTransaction(
+                        requireNonNull(e.senderId()), hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
             }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
