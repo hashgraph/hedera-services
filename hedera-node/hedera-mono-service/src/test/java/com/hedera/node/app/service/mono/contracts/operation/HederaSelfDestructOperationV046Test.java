@@ -87,13 +87,10 @@ class HederaSelfDestructOperationV046Test {
     }
 
     @Test
-    void delegatesToSuperWhenValid() {
-        givenRubberstampValidator();
-
+    void reversionForStaticCallWithIllegalStateChange() {
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
-        given(worldUpdater.get(any())).willReturn(account);
         given(frame.isStatic()).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
