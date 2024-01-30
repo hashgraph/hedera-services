@@ -105,7 +105,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -2950,10 +2949,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
         final var depositAmount = 1000;
 
-        return defaultHapiSpec(
-                        "htsTransferFromForNFTViaContractCreateLazyCreate",
-                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                        NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec("htsTransferFromForNFTViaContractCreateLazyCreate", NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
