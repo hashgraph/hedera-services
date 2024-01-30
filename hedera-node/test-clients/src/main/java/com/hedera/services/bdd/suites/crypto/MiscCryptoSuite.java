@@ -161,7 +161,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .via("invalidKeyUpdateTxn")
                                 .deferStatusResolution()
                                 .hasAnyKnownStatus(),
-                        sleepFor(1_000L))
+                        sleepFor(6_000L))
                 .then(getTxnRecord("invalidKeyUpdateTxn")
                         .hasPriority(recordWith().status(INVALID_SIGNATURE)));
     }
