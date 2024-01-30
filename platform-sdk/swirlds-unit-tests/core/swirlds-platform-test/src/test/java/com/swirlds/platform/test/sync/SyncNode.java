@@ -21,7 +21,6 @@ import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
@@ -34,9 +33,9 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -69,7 +68,7 @@ public class SyncNode {
     private final EventEmitter<?> eventEmitter;
     private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
     private final Consensus consensus;
     private ParallelExecutor executor;
     private Connection connection;
@@ -83,10 +82,12 @@ public class SyncNode {
     private Exception syncException;
     private final AtomicInteger sleepAfterEventReadMillis = new AtomicInteger(0);
     /**
-     * the value returned by the {@link ShadowGraphSynchronizer}, set to null if: no sync occurred OR an exception was
+     * the value returned by the {@link ShadowgraphSynchronizer}, set to null if: no sync occurred OR an exception was
      * thrown
      */
     private final AtomicReference<Boolean> synchronizerReturn = new AtomicReference<>(null);
+
+    private final PlatformContext platformContext;
 
     public SyncNode(final int numNodes, final long nodeId, final EventEmitter<?> eventEmitter) {
         this(numNodes, nodeId, eventEmitter, new CachedPoolParallelExecutor(getStaticThreadManager(), "sync-node"));
@@ -114,7 +115,16 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        shadowGraph = new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class));
+        // The original sync tests are incompatible with event filtering.
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("sync.filterLikelyDuplicates", false)
+                .getOrCreateConfig();
+
+        platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
         consensus = mock(Consensus.class);
         this.executor = executor;
     }
@@ -129,12 +139,12 @@ public class SyncNode {
 
     /**
      * Generates new events using the current seed value provided and adds the events to the current
-     * {@link ShadowGraph}'s queue to be inserted into the shadow graph. The {@link SyncNode#eventEmitter} should be
-     * setup such that it only generates events that can be added to the {@link ShadowGraph} (i.e. no events with an
+     * {@link Shadowgraph}'s queue to be inserted into the shadow graph. The {@link SyncNode#eventEmitter} should be
+     * setup such that it only generates events that can be added to the {@link Shadowgraph} (i.e. no events with an
      * other parent that is unknown to this node). Failure to do so may result in invalid test results.
      *
-     * @param numEvents the number of events to generate and add to the {@link ShadowGraph}
-     * @return an immutable list of the events added to the {@link ShadowGraph}
+     * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
+     * @return an immutable list of the events added to the {@link Shadowgraph}
      */
     public List<IndexedEvent> generateAndAdd(final int numEvents) {
         return generateAndAdd(numEvents, (e) -> true);
@@ -142,16 +152,16 @@ public class SyncNode {
 
     /**
      * <p>Generates new events using the current seed value provided. Each event is added current {@link
-     * ShadowGraph}'s queue if the provided {@code shouldAddToGraph} predicate passes. Any events that do not pass the
+     * Shadowgraph}'s queue if the provided {@code shouldAddToGraph} predicate passes. Any events that do not pass the
      * {@code shouldAddToGraph} predicate are added to {@link SyncNode#discardedEvents}. Events that do pass the
      * {@code shouldAddToGraph} predicate are added to {@link SyncNode#generatedEvents}.</p>
      *
      * <p>The {@link SyncNode#eventEmitter} should be setup such that it only generates events that can be added to
-     * the {@link ShadowGraph} (i.e. no events with an other parent that is unknown to this node). Failure to do so may
+     * the {@link Shadowgraph} (i.e. no events with an other parent that is unknown to this node). Failure to do so may
      * result in invalid test results.</p>
      *
-     * @param numEvents the number of events to generate and add to the {@link ShadowGraph}
-     * @return an immutable list of the events added to the {@link ShadowGraph}
+     * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
+     * @return an immutable list of the events added to the {@link Shadowgraph}
      */
     public List<IndexedEvent> generateAndAdd(final int numEvents, final Predicate<IndexedEvent> shouldAddToGraph) {
         if (eventEmitter == null) {
@@ -182,7 +192,7 @@ public class SyncNode {
     private void addToShadowGraph(final IndexedEvent newEvent) {
         try {
             shadowGraph.addEvent(newEvent);
-        } catch (ShadowGraphInsertionException e) {
+        } catch (ShadowgraphInsertionException e) {
             fail("Something went wrong adding initial events to the shadow graph.", e);
         }
     }
@@ -197,10 +207,10 @@ public class SyncNode {
     }
 
     /**
-     * Creates a new instance of {@link ShadowGraphSynchronizer} with the current {@link SyncNode} settings and returns
+     * Creates a new instance of {@link ShadowgraphSynchronizer} with the current {@link SyncNode} settings and returns
      * it.
      */
-    public ShadowGraphSynchronizer getSynchronizer() {
+    public ShadowgraphSynchronizer getSynchronizer() {
         final Consumer<GossipEvent> eventHandler = event -> {
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
@@ -222,9 +232,8 @@ public class SyncNode {
                 .build();
 
         // Lazy initialize this in case the parallel executor changes after construction
-        return new ShadowGraphSynchronizer(
+        return new ShadowgraphSynchronizer(
                 platformContext,
-                Time.getCurrent(),
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
@@ -239,7 +248,7 @@ public class SyncNode {
 
     /**
      * <p>Calls the
-     * {@link ShadowGraph#updateNonExpiredEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and
+     * {@link Shadowgraph#updateNonExpiredEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and
      * saves the {@code expireBelow} value for use in validation. For the purposes of these tests, the
      * {@code expireBelow} value becomes the oldest non-expired generation in the shadow graph returned by
      * {@link SyncNode#getOldestGeneration()} . In order words, these tests assume there are no generation reservations
@@ -269,7 +278,7 @@ public class SyncNode {
         return eventEmitter;
     }
 
-    public ShadowGraph getShadowGraph() {
+    public Shadowgraph getShadowGraph() {
         return shadowGraph;
     }
 

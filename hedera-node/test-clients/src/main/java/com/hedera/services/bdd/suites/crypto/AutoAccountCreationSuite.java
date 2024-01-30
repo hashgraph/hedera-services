@@ -1643,7 +1643,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             getHollowAccountInfoAfterTransfers);
                 }))
                 .then(getTxnRecord(NFT_XFER)
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 

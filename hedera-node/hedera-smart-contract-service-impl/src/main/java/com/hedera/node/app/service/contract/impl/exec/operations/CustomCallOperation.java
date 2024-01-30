@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
@@ -45,7 +46,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  *
  * <p><b>IMPORTANT:</b> This operation no longer enforces for receiver signature requirements
  * when value is being transferred; that will now happen in the call the {@link MessageCallProcessor}
- * makes to {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+ * makes to {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, AccountID, AccountID, VerificationStrategy)}.
  */
 public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =

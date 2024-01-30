@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -448,7 +448,7 @@ class PcesFileReaderTests {
             @NonNull final PlatformContext platformContext)
             throws IOException {
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
         final RecycleBinConfig recycleBinConfig =
                 platformContext.getConfiguration().getConfigData(RecycleBinConfig.class);
 

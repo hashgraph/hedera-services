@@ -369,6 +369,10 @@ public class TestHelpers {
     public static final List<Long> NFT_SERIAL_NUMBERS_LIST =
             Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
 
+    public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
+            .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
+            .build();
+
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
@@ -378,7 +382,8 @@ public class TestHelpers {
             .treasuryAccountId(NON_SYSTEM_ACCOUNT_ID)
             .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
             .build();
-
+    public static final ContractID A_NEW_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(191919L).build();
     public static final AccountID A_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(191919L).build();
     public static final AccountID B_NEW_ACCOUNT_ID =
@@ -401,9 +406,6 @@ public class TestHelpers {
             .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
-    public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
-            .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
-            .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
     public static final Address PERMITTED_ADDRESS_CALLER =
             Address.wrap((org.apache.tuweni.bytes.Bytes.wrap(asEvmAddress(1062787L))));
@@ -515,10 +517,11 @@ public class TestHelpers {
             null,
             null);
 
-    public static final StorageAccesses ONE_STORAGE_ACCESSES =
-            new StorageAccesses(123L, List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+    public static final StorageAccesses ONE_STORAGE_ACCESSES = new StorageAccesses(
+            ContractID.newBuilder().contractNum(123L).build(),
+            List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
     public static final StorageAccesses TWO_STORAGE_ACCESSES = new StorageAccesses(
-            456L,
+            ContractID.newBuilder().contractNum(456L).build(),
             List.of(
                     StorageAccess.newRead(UInt256.MAX_VALUE, UInt256.MIN_VALUE),
                     StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
@@ -575,8 +578,8 @@ public class TestHelpers {
     public static final TransactionBody MOCK_ETH =
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
-    public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
-            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true, UseTopLevelSigs.NO);
+    public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY = new ActiveContractVerificationStrategy(
+            ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
@@ -612,7 +615,7 @@ public class TestHelpers {
     }
 
     public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
-        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
+        return org.apache.tuweni.bytes.Bytes.wrap(UInt256.valueOf(status.protoOrdinal()));
     }
 
     public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {

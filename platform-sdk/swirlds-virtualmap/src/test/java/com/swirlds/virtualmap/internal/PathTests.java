@@ -147,6 +147,32 @@ class PathTests {
         assertEquals(6, Path.getParentPath(14), "unexpected value from getParentPath(internal path 14)");
     }
 
+    private long dumbGetGrandParentPath(final long path, final int levels) {
+        long result = path;
+        for (int i = 0; i < levels; i++) {
+            result = Path.getParentPath(result);
+            if (result == Path.INVALID_PATH) {
+                return Path.INVALID_PATH;
+            }
+        }
+        return result;
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    @DisplayName("Check grand parent path")
+    void testGetGrandParentPath() {
+        for (long path = 0; path < 2048; path++) {
+            for (int levels = 0; levels < 5; levels++) {
+                assertEquals(
+                        dumbGetGrandParentPath(path, levels),
+                        Path.getGrandParentPath(path, levels),
+                        "Wrong grand parent path path=" + path + " levels=" + levels);
+            }
+        }
+    }
+
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
@@ -173,6 +199,29 @@ class PathTests {
         assertEquals(9, Path.getLeftChildPath(4), "unexpected value from getLeftChildPath(internal path 4)");
         assertEquals(11, Path.getLeftChildPath(5), "unexpected value from getLeftChildPath(internal path 5)");
         assertEquals(13, Path.getLeftChildPath(6), "unexpected value from getLeftChildPath(internal path 6)");
+    }
+
+    private long dumbGetLeftGrandChild(final long path, final int levels) {
+        long result = path;
+        for (int i = 0; i < levels; i++) {
+            result = Path.getLeftChildPath(result);
+        }
+        return result;
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    @DisplayName("Check left grand child path computation")
+    void testGetLeftGrandChild() {
+        for (long path = 0; path < 2048; path++) {
+            for (int levels = 0; levels < 5; levels++) {
+                assertEquals(
+                        dumbGetLeftGrandChild(path, levels),
+                        Path.getLeftGrandChildPath(path, levels),
+                        "Wrong left grand chilf path path=" + path + " levels=" + levels);
+            }
+        }
     }
 
     @Test

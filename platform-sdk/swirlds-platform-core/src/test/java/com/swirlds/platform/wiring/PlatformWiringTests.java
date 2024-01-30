@@ -24,6 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -35,7 +36,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
@@ -67,11 +68,12 @@ class PlatformWiringTests {
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
-                mock(ShadowGraph.class),
+                mock(Shadowgraph.class),
                 mock(PcesSequencer.class),
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
-                mock(StateSignatureCollector.class));
+                mock(StateSignatureCollector.class),
+                mock(FutureEventBuffer.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

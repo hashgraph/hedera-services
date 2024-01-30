@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;

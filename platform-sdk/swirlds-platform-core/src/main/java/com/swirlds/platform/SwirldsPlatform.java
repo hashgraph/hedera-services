@@ -35,8 +35,6 @@ import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -67,7 +65,9 @@ import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -79,6 +79,7 @@ import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -104,7 +105,7 @@ import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -198,7 +199,7 @@ public class SwirldsPlatform implements Platform {
      * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
      * Hashgraph Event graph. Used for gossiping.
      */
-    private final ShadowGraph shadowGraph;
+    private final Shadowgraph shadowGraph;
 
     /**
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
@@ -383,7 +384,7 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook);
+        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -675,6 +676,8 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
+        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -692,7 +695,8 @@ public class SwirldsPlatform implements Platform {
                 sequencer,
                 eventCreationManager,
                 swirldStateManager,
-                stateSignatureCollector);
+                stateSignatureCollector,
+                futureEventBuffer);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -725,7 +729,7 @@ public class SwirldsPlatform implements Platform {
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,
-                platformWiring.getEventInput()::put,
+                platformWiring.getGossipEventInput()::put,
                 platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 swirldStateManager,
                 latestCompleteState,
@@ -894,7 +898,7 @@ public class SwirldsPlatform implements Platform {
         Objects.requireNonNull(signedState);
 
         consensusRef.get().loadFromSignedState(signedState);
-        shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
+        shadowGraph.startWithExpiredThreshold(consensusRef.get().getMinGenerationNonAncient());
 
         gossip.loadFromSignedState(signedState);
     }

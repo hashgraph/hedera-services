@@ -18,8 +18,8 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
