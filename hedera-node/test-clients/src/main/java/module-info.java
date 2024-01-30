@@ -43,4 +43,5 @@ module com.hedera.node.test.clients {
     requires org.opentest4j;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
+    requires com.hedera.node.app.service.contract.impl;
 }

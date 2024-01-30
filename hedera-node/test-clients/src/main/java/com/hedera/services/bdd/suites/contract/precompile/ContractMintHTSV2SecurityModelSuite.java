@@ -854,6 +854,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     final HapiSpec V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
+        final String precompileAddress = "0000000000000000000000000000000000000167";
 
         return propertyPreservingHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -890,7 +891,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(
                                         MINT_TOKEN_VIA_CALLCODE,
                                         "callCodeToContractWithoutAmount",
-                                        asHeadlongAddress("0000000000000000000000000000000000000167"),
+                                        asHeadlongAddress(precompileAddress),
                                         Bytes.wrap(MintTranslator.MINT_V2
                                                         .encodeCallWithArgs(
                                                                 asHeadlongAddress(asAddress(spec.registry()
