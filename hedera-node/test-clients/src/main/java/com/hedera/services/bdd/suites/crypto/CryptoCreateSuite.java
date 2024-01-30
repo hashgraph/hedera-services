@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -118,7 +119,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEVMAddressAliasFromDifferentKey(),
                 createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
                 createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
-                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
+                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress(),
+                successfullyRecreateAccountWithSameAliasAfterDeletion());
     }
 
     @HapiTest
@@ -765,6 +767,39 @@ public class CryptoCreateSuite extends HapiSuite {
                     allRunFor(spec, op);
                 }))
                 .then();
+    }
+
+    @HapiTest
+    final HapiSpec successfullyRecreateAccountWithSameAliasAfterDeletion() {
+        return defaultHapiSpec("successfullyRecreateAccountWithSameAliasAfterDeletion")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var addressBytes = recoverAddressFromPubKey(
+                            ecdsaKey.getECDSASecp256K1().toByteArray());
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+
+                    final var op1 = cryptoCreate(ACCOUNT)
+                            .key(ED_25519_KEY)
+                            .alias(evmAddressBytes)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                            .balance(ONE_HBAR);
+
+                    final var op2 = cryptoDelete(ACCOUNT);
+
+                    final var op3 = cryptoCreate(ACCOUNT)
+                            .key(ED_25519_KEY)
+                            .alias(evmAddressBytes)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                            .balance(ONE_HBAR);
+
+                    allRunFor(spec, op1, op2, op3);
+                }))
+                .then(getAccountInfo(ACCOUNT).has(accountWith().balance(ONE_HBAR)));
     }
 
     @Override

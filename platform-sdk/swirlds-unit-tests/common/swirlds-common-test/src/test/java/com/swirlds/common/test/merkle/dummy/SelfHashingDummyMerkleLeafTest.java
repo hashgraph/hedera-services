@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.Test;
 class SelfHashingDummyMerkleLeafTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("SelfHashingDummyMerkleLeaf is immutable after copy")
     void isImmutableAfterCopy() {
@@ -43,7 +41,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Serializes and Deserializes")
     void serializeAndDeserialize() throws IOException {
@@ -58,7 +55,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Reflexive property for equals")
     void equalsAgainstItself() {
@@ -67,7 +63,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Equals handles other types")
     void equalsAgainstNull() {
@@ -77,7 +72,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     void equalsMatchesHashCode() {
         final SelfHashingDummyMerkleLeaf leaf = new SelfHashingDummyMerkleLeaf("This is a leaf");
@@ -87,7 +81,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     void hashCodeAfterNullValue() {
         final SelfHashingDummyMerkleLeaf leaf = new SelfHashingDummyMerkleLeaf("This is a leaf");
@@ -97,7 +90,6 @@ class SelfHashingDummyMerkleLeafTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     void releaseInternalNode() {
         final SelfHashingDummyMerkleLeaf leaf = new SelfHashingDummyMerkleLeaf("This is a leaf");

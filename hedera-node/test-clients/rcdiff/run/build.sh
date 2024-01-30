@@ -16,5 +16,5 @@ fi
 SCRIPT_PATH="$(cd "$(dirname "${SCRIPT_SOURCE}")" && pwd)"
 
 cd "${SCRIPT_PATH}/../../../../"
-./gradlew assemble cleanRcdiff rcdiffJar copyRcdiff
+./gradlew assemble rcdiffJar
 cd "${SCRIPT_PATH}/.."

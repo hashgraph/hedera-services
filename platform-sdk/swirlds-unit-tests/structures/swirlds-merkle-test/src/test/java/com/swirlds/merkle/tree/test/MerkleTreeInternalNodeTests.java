@@ -35,7 +35,6 @@ import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -61,7 +60,6 @@ class MerkleTreeInternalNodeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @Tag(TIME_CONSUMING)
     @DisplayName("NullifyIntervalNodeTest")
@@ -88,7 +86,6 @@ class MerkleTreeInternalNodeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     void copyThrowsIfDeletedTest() {
         final MerkleTreeInternalNode fcmNode = new MerkleTreeInternalNode();

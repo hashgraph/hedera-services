@@ -50,7 +50,6 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -120,7 +119,6 @@ class MerkleSerializationTests {
      * Serialize and deserialize a variety of merkle trees.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Then Deserialize")
@@ -133,7 +131,6 @@ class MerkleSerializationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.IO)
     @DisplayName("Test External Serialization")
@@ -175,7 +172,6 @@ class MerkleSerializationTests {
      * Make sure that previously written merkle trees can be deserialized from file.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.IO)
     @DisplayName("Deserialize Tree From File")
@@ -215,7 +211,6 @@ class MerkleSerializationTests {
      * Attempt to deserialize versions that are not supported.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Deserialize Invalid Trees")
     void deserializeInvalidTrees() throws IOException {
@@ -253,7 +248,6 @@ class MerkleSerializationTests {
      * if a change occurs.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Hash From File")
     void testHashFromFile() throws IOException {
