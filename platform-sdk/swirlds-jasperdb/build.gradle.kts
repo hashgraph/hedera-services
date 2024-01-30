@@ -18,6 +18,7 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
+    id("java-test-fixtures")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
@@ -34,4 +35,17 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
+}
+
+hammerModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.merkledb.test.fixtures")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.virtualmap")
+    requires("org.apache.logging.log4j")
+    requires("org.apache.logging.log4j.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    runtimeOnly("com.swirlds.config.impl")
 }

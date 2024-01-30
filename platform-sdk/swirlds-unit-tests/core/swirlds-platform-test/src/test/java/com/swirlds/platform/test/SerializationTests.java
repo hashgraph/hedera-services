@@ -26,13 +26,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,7 +45,6 @@ public class SerializationTests {
     }
 
     @ParameterizedTest
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Serialize then deserialize SelfSerializable class")
     @MethodSource("selfSerializableProvider")
     public <T extends SelfSerializable> void serializeDeserializeTest(T generated) throws IOException {

@@ -116,12 +116,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
+@Singleton
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
