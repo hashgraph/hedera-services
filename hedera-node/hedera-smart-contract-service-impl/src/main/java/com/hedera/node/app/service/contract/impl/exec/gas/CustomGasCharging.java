@@ -132,7 +132,7 @@ public class CustomGasCharging {
 
             // Increment nonce right before the gas is charged
             sender.incrementNonce();
-            context.recordBuilder().signerNonce(sender.getNonce());
+            requireNonNull(context.recordBuilder()).signerNonce(sender.getNonce());
 
             return new GasCharges(intrinsicGas, allowanceUsed);
         } else {

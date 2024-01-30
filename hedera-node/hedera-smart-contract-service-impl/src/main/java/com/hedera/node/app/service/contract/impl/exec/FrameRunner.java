@@ -103,6 +103,9 @@ public class FrameRunner {
 
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
+        final Long signerNonce =
+                context.recordBuilder() != null ? context.recordBuilder().getSignerNonce() : null;
+
         if (frame.getState() == COMPLETED_SUCCESS) {
             return successFrom(
                     gasUsed,
@@ -111,15 +114,9 @@ public class FrameRunner {
                     asEvmContractId(recipientAddress),
                     frame,
                     tracer,
-                    context.recordBuilder().getSignerNonce());
+                    signerNonce);
         } else {
-            return failureFrom(
-                    gasUsed,
-                    senderId,
-                    frame,
-                    recipientMetadata.postFailureHederaId(),
-                    tracer,
-                    context.recordBuilder().getSignerNonce());
+            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId(), tracer, signerNonce);
         }
     }
 
