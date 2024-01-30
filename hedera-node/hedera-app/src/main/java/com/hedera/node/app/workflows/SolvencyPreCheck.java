@@ -140,23 +140,10 @@ public class SolvencyPreCheck {
         if (authorizer.hasWaivedFees(payerID, functionality, txBody)) {
             return;
         }
-
         final var totalFee = ingestCheck ? fees.totalWithoutServiceFee() : fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
-        final ResponseCodeEnum insufficientFeeResponseCode;
-        //        // Use this response code for either ingest or triggered schedule transaction
-        //        if (ingestCheck || fees.totalWithoutServiceFee() == 0L) {
-        //            insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
-        //        } else {
-        //            insufficientFeeResponseCode = INSUFFICIENT_ACCOUNT_BALANCE;
-        //        }
-        if (txBody.hasTokenAssociate() && txBody.tokenAssociate().account().accountNum() == 3027557) {
-            System.out.println("totalFee: " + totalFee + ", availableBalance: "
-                    + availableBalance + ", offeredFee: " + offeredFee + ", insufficientFeeResponseCode: "
-                    + INSUFFICIENT_PAYER_BALANCE + " fees "
-                    + fees);
-        }
+
         if (offeredFee < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
@@ -171,10 +158,12 @@ public class SolvencyPreCheck {
             throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
 
-        final long additionalCosts;
+        long additionalCosts = 0L;
         try {
             final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
-            additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
+            if (ingestCheck) {
+                additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
+            }
         } catch (final NullPointerException ex) {
             // One of the required fields was not present
             throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
