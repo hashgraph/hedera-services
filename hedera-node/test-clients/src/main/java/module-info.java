@@ -1,24 +1,5 @@
 module com.hedera.node.test.clients {
-    requires transitive com.hedera.node.app.hapi.fees;
-    requires transitive com.hedera.node.app.hapi.utils;
-    requires transitive com.hedera.node.app;
-    requires transitive com.hedera.node.hapi;
-    requires transitive com.fasterxml.jackson.annotation;
-    requires transitive com.google.common;
-    requires transitive com.google.protobuf;
-    requires transitive com.swirlds.common;
-    requires transitive headlong;
-    requires transitive info.picocli;
-    requires transitive io.grpc;
-    requires transitive net.i2p.crypto.eddsa;
-    requires transitive org.apache.commons.io;
-    requires transitive org.apache.logging.log4j;
-    requires transitive org.junit.jupiter.api;
-    requires transitive org.junit.platform.commons;
-    requires transitive org.junit.platform.engine;
-    requires transitive org.testcontainers;
-    requires transitive org.yaml.snakeyaml;
-    requires transitive tuweni.bytes;
+    requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
@@ -42,6 +23,4 @@ module com.hedera.node.test.clients {
     requires org.json;
     requires org.opentest4j;
     requires tuweni.units;
-    requires static com.github.spotbugs.annotations;
-    requires com.hedera.node.app.service.contract.impl;
 }
