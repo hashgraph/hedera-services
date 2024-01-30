@@ -3,8 +3,11 @@
 ## Purpose
 
 There Ethereum "Cancun" hard introduces a number of changes to the EVM that will need to be implemented to maintain EVM
-Equivalence. There are four different HIPs covering this feature (//TODO link hips once numbers are assigned and
-published). This document describes how the HIPs will be implemented in Hedera Services.
+Equivalence. There are four different HIPs covering this feature (HIP-865: Add EVM Support for transient storage and
+memory copy Cancun opcodes, HIP-866: Add EVM compatibility for non-supported Cancun blob features, HIP-867: Add Smart
+Contract Services Support for KZG Point Evaluation Precompiled Function, and HIP-868: Support Cancun Self-Destruct
+Semantics in Smart Contract Services //TODO link hips once numbers are assigned and published). This document describes
+how the HIPs will be implemented in Hedera Services.
 
 Generally speaking there are four strategies that will be adopted:
 
