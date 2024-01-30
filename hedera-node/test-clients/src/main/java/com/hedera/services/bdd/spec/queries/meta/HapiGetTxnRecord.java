@@ -713,7 +713,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             assertTrue(actualByteString.isEmpty());
             assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
         }
-        if(hasScheduledTransactionId){
+        if (hasScheduledTransactionId) {
             final var scheduledTransactionId = actualRecord.getReceipt().getScheduledTransactionID();
             assertNotNull(scheduledTransactionId);
         }
