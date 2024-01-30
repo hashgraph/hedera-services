@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.logging.legacy.payload.AbstractLogPayload;
 import com.swirlds.logging.legacy.payload.PayloadParsingException;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +31,6 @@ class AbstractLogPayloadTest {
      * Simple unit test for bean
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     void payloadErrors() {
         assertEquals("", AbstractLogPayload.extractPayloadType(""), "Should be empty");

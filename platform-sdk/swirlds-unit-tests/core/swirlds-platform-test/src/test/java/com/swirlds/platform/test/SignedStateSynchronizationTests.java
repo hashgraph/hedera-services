@@ -23,7 +23,6 @@ import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +41,6 @@ public class SignedStateSynchronizationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Signed State Synchronization")

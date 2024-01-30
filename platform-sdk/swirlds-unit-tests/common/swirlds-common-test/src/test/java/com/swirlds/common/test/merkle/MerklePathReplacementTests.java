@@ -41,7 +41,6 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -381,7 +380,6 @@ class MerklePathReplacementTests {
      * Test path replacements under a wide variety of conditions.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TIME_CONSUMING)
     @DisplayName("Test Path Replacement")
@@ -400,7 +398,6 @@ class MerklePathReplacementTests {
      * invalidated by a path replacement operation in a different tree.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Nodes In Other Trees Are Not Invalidated Test")
     void nodesInOtherTreesAreNotInvalidatedTest() {

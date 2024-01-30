@@ -67,7 +67,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.security.Security;
 import java.time.Duration;
@@ -281,7 +280,6 @@ class ExpectedFCMFamilyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.EXPECTED_MAP)
     @DisplayName("Add Entities during Reconnect test")
     public void addEntitiesFromActualFCMsReconnectTest(int size) {
