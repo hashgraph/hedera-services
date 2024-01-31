@@ -30,6 +30,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.RunningEventHashUpdate;
@@ -80,8 +81,13 @@ public class ConsensusRoundHandler {
 
     /**
      * a RunningHash object which calculates running hash of all consensus events so far with their transactions handled
+     * <p>
+     * Future work: this will need to be changed to a proper null hash when this component is updated to handle empty
+     * rounds, since a hash of all 0s isn't valid when deserializing a state. In the current system, this hash is
+     * always overwritten before being put into the state, so it doesn't matter that it starts as all 0s.
      */
-    private RunningHash consensusEventsRunningHash;
+    private RunningHash consensusEventsRunningHash =
+            new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /**
      * A queue that accepts signed states for hashing and signature collection.
@@ -148,8 +154,6 @@ public class ConsensusRoundHandler {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
-        this.consensusEventsRunningHash =
-                new RunningHash(platformContext.getCryptography().getNullHash(DigestType.SHA_384));
 
         // Future work: This metric should be moved to a suitable component once the stateHashSignQueue is migrated
         // to the framework
@@ -160,6 +164,11 @@ public class ConsensusRoundHandler {
 
     /**
      * Update the consensus event running hash
+     * <p>
+     * Future work: in the current system, it isn't actually necessary to update this running hash when a new state
+     * is loaded. The running hash will be overwritten anyway by the first round that contains events, before the
+     * initial hash is ever set in the state. This method is being called anyway, though, since it will be a necessary
+     * workflow in the future to support handling of empty rounds by this component.
      *
      * @param runningHashUpdate the update to the running hash
      */
@@ -173,6 +182,14 @@ public class ConsensusRoundHandler {
      * @param consensusRound the consensus round to apply
      */
     public void handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
+        // consensus rounds with no events are ignored
+        if (consensusRound.isEmpty()) {
+            // Future work: the long term goal is for empty rounds to not be ignored here. For now, the way that the
+            // running hash of consensus events is calculated by the EventStreamManager prevents that from being
+            // possible.
+            return;
+        }
+
         // Once there is a saved state created in a freeze period, we will never apply any more rounds to the state.
         if (freezeRoundReceived) {
             return;
@@ -229,8 +246,9 @@ public class ConsensusRoundHandler {
         platformState.setRoundsNonAncient(roundsNonAncient);
         platformState.setSnapshot(round.getSnapshot());
 
-        // update the running hash object
-        // if there are no events, the running hash does not change
+        // Update the running hash object. If there are no events, the running hash does not change.
+        // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
+        // anyway, for when that changes in the future.
         if (!round.isEmpty()) {
             consensusEventsRunningHash = round.getConsensusEvents().getLast().getRunningHash();
         }
