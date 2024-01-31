@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
@@ -48,7 +49,7 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
     }
 
     @Override
-    public void finalizeChildRecord(@NonNull final ChildFinalizeContext context) {
+    public void finalizeChildRecord(@NonNull final ChildFinalizeContext context, final HederaFunctionality function) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -78,9 +79,10 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
-        final var fungibleChanges =
-                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
-        final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
+        final var isCryptoTransfer = function == HederaFunctionality.CRYPTO_TRANSFER;
+        final var fungibleChanges = tokenRelChangesFrom(
+                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
+        final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges, !isCryptoTransfer);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------

@@ -25,6 +25,7 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
@@ -70,7 +71,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     }
 
     @Override
-    public void finalizeParentRecord(@NonNull final AccountID payer, @NonNull final FinalizeContext context) {
+    public void finalizeParentRecord(
+            @NonNull final AccountID payer,
+            @NonNull final FinalizeContext context,
+            @NonNull final HederaFunctionality functionality) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -108,13 +112,14 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
             throw e;
         }
-        final var tokenChanges =
-                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
+        final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
+        final var tokenChanges = tokenRelChangesFrom(
+                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
 
         if (nftChanges.isEmpty()) {
-            final var nonFungibleTokenChanges =
-                    tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+            final var nonFungibleTokenChanges = tokenRelChangesFrom(
+                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
             nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
         }
 
@@ -134,7 +139,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
         final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
         if (hasTokenTransferLists) {
-            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges);
+            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges, !isCryptoTransfer);
             final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
             tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
