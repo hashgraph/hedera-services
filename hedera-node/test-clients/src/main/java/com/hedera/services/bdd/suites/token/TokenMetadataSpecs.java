@@ -79,10 +79,7 @@ public class TokenMetadataSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                creationValidatesMetadata(),
-                creationRequiresAppropriateSigs(),
-                creationHappyPath());
+        return List.of(creationValidatesMetadata(), creationRequiresAppropriateSigs(), creationHappyPath());
     }
 
     @Override
@@ -97,6 +94,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                 .when()
                 .then(tokenCreate(PRIMARY).metaData("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
+
     @HapiTest
     public HapiSpec creationRequiresAppropriateSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
@@ -152,28 +150,26 @@ public class TokenMetadataSpecs extends HapiSuite {
                         newKeyNamed("feeScheduleKey"),
                         newKeyNamed(METADATA_KEY),
                         newKeyNamed(pauseKey))
-                .when(
-                        tokenCreate(PRIMARY)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(memo)
-                                .name(saltedName)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey("freezeKey")
-                                .kycKey("kycKey")
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey("wipeKey")
-                                .feeScheduleKey("feeScheduleKey")
-                                .pauseKey(pauseKey)
-                                .metadataKey(METADATA_KEY)
-                                .metaData(String.valueOf(ByteString.copyFromUtf8(metadata)))
-                                .via(CREATE_TXN)
-        )
+                .when(tokenCreate(PRIMARY)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(memo)
+                        .name(saltedName)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey("wipeKey")
+                        .feeScheduleKey("feeScheduleKey")
+                        .pauseKey(pauseKey)
+                        .metadataKey(METADATA_KEY)
+                        .metaData(String.valueOf(ByteString.copyFromUtf8(metadata)))
+                        .via(CREATE_TXN))
                 .then(
                         withOpContext((spec, opLog) -> {
                             var createTxn = getTxnRecord(CREATE_TXN);
@@ -212,7 +208,6 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(PRIMARY)
                                         .balance(500)
                                         .kyc(TokenKycStatus.Granted)
-                                        .freeze(TokenFreezeStatus.Unfrozen))
-                                        );
+                                        .freeze(TokenFreezeStatus.Unfrozen)));
     }
 }

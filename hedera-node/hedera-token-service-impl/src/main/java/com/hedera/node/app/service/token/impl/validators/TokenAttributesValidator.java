@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -71,6 +73,14 @@ public class TokenAttributesValidator {
      */
     public void validateTokenName(@Nullable final String name, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
+    }
+
+    /**
+     * Validates the token metadata, if it is exists and is not empty or not too long.
+     * @param metadata the token metadata to validate
+     */
+    public void validateTokenMetadata(@Nullable final String metadata, @NonNull final TokensConfig tokensConfig) {
+        tokenStringCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), MISSING_TOKEN_METADATA, METADATA_TOO_LONG);
     }
 
     /**
