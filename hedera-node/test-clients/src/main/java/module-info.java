@@ -14,6 +14,7 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app;
     requires com.hedera.node.config;
