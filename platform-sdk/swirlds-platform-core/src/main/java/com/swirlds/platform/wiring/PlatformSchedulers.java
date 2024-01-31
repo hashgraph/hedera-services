@@ -75,7 +75,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
-        @NonNull TaskScheduler<ConsensusRound> consensusRoundHandlerScheduler,
+        @NonNull TaskScheduler<Void> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler) {

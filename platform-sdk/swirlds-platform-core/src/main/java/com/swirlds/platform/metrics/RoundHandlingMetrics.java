@@ -48,8 +48,7 @@ public class RoundHandlingMetrics {
             .withUnit("milliseconds");
     private final LongGauge consensusTimeDeviation;
 
-    private static final LongGauge.Config eventsPerRoundConfig = new LongGauge.Config(
-                    INTERNAL_CATEGORY, "events/round")
+    private static final LongGauge.Config eventsPerRoundConfig = new LongGauge.Config(INTERNAL_CATEGORY, "events/round")
             .withDescription("The number of events per round")
             .withUnit("count");
     private final LongGauge eventsPerRound;

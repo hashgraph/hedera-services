@@ -42,7 +42,7 @@ public record ConsensusRoundHandlerWiring(
      * @return the new wiring instance
      */
     @NonNull
-    public static ConsensusRoundHandlerWiring create(@NonNull final TaskScheduler<ConsensusRound> taskScheduler) {
+    public static ConsensusRoundHandlerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
                 taskScheduler.buildInputWire("running hash update"),
