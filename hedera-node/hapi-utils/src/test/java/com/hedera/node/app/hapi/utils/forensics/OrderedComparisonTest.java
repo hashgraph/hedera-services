@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.utils.forensics;
+package com.hedera.node.app.hapi.utils.forensics;
 
-import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
-import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.statusHistograms;
-import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
-import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
-import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
+import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
+import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.statusHistograms;
+import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
+import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.visitWithSidecars;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.RESULTDATA_NOT_SET;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.*;
@@ -45,11 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class OrderedComparisonTest {
     private static final Path WRONG_NONCE_STREAMS_DIR =
             Paths.get("src", "test", "resources", "forensics", "CaseOfTheObviouslyWrongNonce");
@@ -59,18 +53,12 @@ class OrderedComparisonTest {
     private static final Instant THEN = Instant.ofEpochSecond(1_234_567, 890);
     private static final Instant NOW = Instant.ofEpochSecond(9_999_999, 001);
 
-    @Mock
-    private TxnAccessor aAccessor;
-
-    @Mock
-    private TxnAccessor bAccessor;
-
     @Test
     void detectsDifferenceInCaseOfObviouslyWrongNonce() throws IOException {
         final var issStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node5";
         final var consensusStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node0";
 
-        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc);
+        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc, null, null);
         assertEquals(1, diffs.size());
         final var soleDiff = diffs.get(0);
         final var issEntry = soleDiff.firstEntry();
@@ -84,34 +72,50 @@ class OrderedComparisonTest {
 
     @Test
     void onlyEqualLengthsCanBeDiffed() {
-        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, NOW);
+        final var parts = new TransactionParts(
+                Transaction.getDefaultInstance(), TransactionBody.getDefaultInstance(), FileAppend);
+        final var aEntry = new RecordStreamEntry(parts, MOCK_RECORD, NOW);
         final var firstList = Collections.<RecordStreamEntry>emptyList();
         final var secondList = List.of(aEntry);
-        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
+        final var diffs = OrderedComparison.diff(firstList, secondList, null);
+        assertEquals(1, diffs.size());
+        final var soleDiff = diffs.get(0);
+        assertEquals(aEntry, soleDiff.secondEntry());
+        assertNull(soleDiff.firstEntry());
     }
 
     @Test
     void allTimestampsMustMatch() {
-        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
-        final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, NOW);
+        final var parts = new TransactionParts(
+                Transaction.getDefaultInstance(), TransactionBody.getDefaultInstance(), FileAppend);
+        final var aEntry = new RecordStreamEntry(parts, MOCK_RECORD, THEN);
+        final var bEntry = new RecordStreamEntry(parts, MOCK_RECORD, NOW);
         final var firstList = List.of(aEntry);
         final var secondList = List.of(bEntry);
-        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
+        final var diffs = OrderedComparison.diff(firstList, secondList, null);
+        assertEquals(1, diffs.size());
+        final var soleDiff = diffs.get(0);
+        assertEquals(aEntry, soleDiff.firstEntry());
+        assertEquals(bEntry, soleDiff.secondEntry());
     }
 
     @Test
     void allTransactionsMustMatch() {
-        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
-        final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, THEN);
         final var aMockTxn = Transaction.getDefaultInstance();
         final var bMockTxn = Transaction.newBuilder()
                 .setSignedTransactionBytes(ByteString.copyFromUtf8("ABCDEFG"))
                 .build();
-        given(aAccessor.getSignedTxnWrapper()).willReturn(aMockTxn);
-        given(bAccessor.getSignedTxnWrapper()).willReturn(bMockTxn);
+        final var aParts = new TransactionParts(aMockTxn, TransactionBody.getDefaultInstance(), FileAppend);
+        final var bParts = new TransactionParts(bMockTxn, TransactionBody.getDefaultInstance(), FileAppend);
+        final var aEntry = new RecordStreamEntry(aParts, MOCK_RECORD, THEN);
+        final var bEntry = new RecordStreamEntry(bParts, MOCK_RECORD, THEN);
         final var firstList = List.of(aEntry);
         final var secondList = List.of(bEntry);
-        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
+        final var diffs = OrderedComparison.diff(firstList, secondList, null);
+        assertEquals(1, diffs.size());
+        final var soleDiff = diffs.get(0);
+        assertEquals(aEntry, soleDiff.firstEntry());
+        assertEquals(bEntry, soleDiff.secondEntry());
     }
 
     @Test
@@ -138,8 +142,8 @@ class OrderedComparisonTest {
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
         visitWithSidecars(entries, sidecarRecords, (entry, records) -> {
-            final var accessor = entry.accessor();
-            if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+            final var parts = entry.parts();
+            if (parts.function() == HederaFunctionality.EthereumTransaction) {
                 final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
                 final var actual = records.stream()
                         .filter(TransactionSidecarRecord::hasActions)
