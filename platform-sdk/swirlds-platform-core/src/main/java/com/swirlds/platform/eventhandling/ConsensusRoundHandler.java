@@ -221,12 +221,12 @@ public class ConsensusRoundHandler {
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
 
-            handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
-            updatePlatformStateRunningHash(consensusRound);
-
             handlerMetrics.setPhase(MARKING_ROUND_COMPLETE);
             // this calls into the ConsensusHashManager
             roundAppliedToStateConsumer.accept(consensusRound.getRoundNum());
+
+            handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
+            updatePlatformStateRunningHash(consensusRound);
 
             createSignedState();
         } catch (final InterruptedException e) {
