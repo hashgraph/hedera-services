@@ -73,7 +73,26 @@ public class OrderedComparison {
         System.out.println("Parsing stream @ " + secondStreamDir);
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, watchingPredicate);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
+        alignConsensusTimes(firstEntries, secondEntries);
         return diff(firstEntries, secondEntries, recordDiffSummarizer);
+    }
+
+    private static void alignConsensusTimes(final List<RecordStreamEntry> firstEntries,
+                                            final List<RecordStreamEntry> secondEntries) {
+        int i = 0;
+        int j = 0;
+        // We assume that only second entries list will be missing entries
+        for(; i < firstEntries.size(); i++, j++) {
+            final var firstEntry = firstEntries.get(i);
+            for (; j < secondEntries.size(); j++) {
+                final var secondEntry = secondEntries.get(j);
+                if (firstEntry.consensusTime().equals(secondEntry.consensusTime())) {
+                    break;
+                } else {
+                    secondEntries.add(j, null);
+                }
+            }
+        }
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
@@ -153,6 +172,9 @@ public class OrderedComparison {
             @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
         final var secondEntry = entries.get(i);
+        if(secondEntry == null) {
+            throw new UnmatchableException("No matching entry found for entry at position " + i);
+        }
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
             throw new UnmatchableException("Entries at position "
                     + i
