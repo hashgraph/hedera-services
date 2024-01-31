@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -33,8 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -53,7 +53,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
     private HtsCallAttempt attempt;
 
     @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     @Mock
     private AddressIdConverter addressIdConverter;
@@ -105,7 +105,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
 
         // Then
         assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(ResponseCodeEnum.ACCOUNT_DELETED), result.getOutput());
+        assertEquals(readableRevertReason(ResponseCodeEnum.ACCOUNT_DELETED), result.getOutput());
     }
 
     @Test
