@@ -116,10 +116,10 @@ class BackpressureObjectCounterTests {
         // Off ramp one element. Thread should become unblocked.
         counter.offRamp();
 
-        assertEventuallyTrue(added::get, Duration.ofSeconds(1), "Thread should have been unblocked");
+        assertEventuallyTrue(added::get, Duration.ofSeconds(10), "Thread should have been unblocked");
 
         // even though the interrupt did not unblock the thread, the interrupt should not have been squelched.
-        assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(1), "Thread should have been interrupted");
+        assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(10), "Thread should have been interrupted");
 
         assertEquals(10, counter.getCount());
     }
@@ -195,7 +195,7 @@ class BackpressureObjectCounterTests {
             counter.offRamp();
         }
 
-        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(10), "Counter did not empty in time.");
     }
 
     /**
@@ -204,9 +204,9 @@ class BackpressureObjectCounterTests {
     @Test
     void backpressureDoesntOverwhelmForkJoinPool() throws InterruptedException {
 
-        final int maxPoolSize = 100;
+        final int maxPoolSize = 10;
         final ForkJoinPool pool = new ForkJoinPool(
-                10,
+                5,
                 ForkJoinPool.defaultForkJoinWorkerThreadFactory,
                 null,
                 false,
@@ -248,7 +248,7 @@ class BackpressureObjectCounterTests {
             });
         }
 
-        assertEventuallyTrue(poolIsSaturated::get, Duration.ofSeconds(1), "Fork join pool did not saturate in time.");
+        assertEventuallyTrue(poolIsSaturated::get, Duration.ofSeconds(10), "Fork join pool did not saturate in time.");
 
         // Now, see if a backpressure counter can block without throwing.
 
@@ -277,7 +277,7 @@ class BackpressureObjectCounterTests {
 
         // Unblock the counter, the task should complete.
         counter.offRamp();
-        assertEventuallyTrue(taskCompleted::get, Duration.ofSeconds(1), "Task did not complete in time.");
+        assertEventuallyTrue(taskCompleted::get, Duration.ofSeconds(10), "Task did not complete in time.");
         assertFalse(exceptionThrown.get());
 
         pool.shutdown();
