@@ -44,6 +44,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.schemas to
             com.hedera.node.app,
-            com.hedera.node.app.service.token.impl.api.test,
-            com.hedera.node.services.cli;
+            com.hedera.node.app.service.token.impl.api.test;
 }
