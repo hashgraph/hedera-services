@@ -29,7 +29,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -199,52 +198,5 @@ class ConsensusRoundHandlerTests {
         verify(platformState)
                 .setRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
-    }
-
-    @Test
-    @DisplayName("Set running hash")
-    void setRunningHash() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        final PlatformState platformState = mock(PlatformState.class);
-        final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
-
-        final BlockingQueue<ReservedSignedState> stateHashSignQueue = mock(BlockingQueue.class);
-        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
-        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
-
-        final AtomicLong roundAppliedToState = new AtomicLong(0);
-        final Consumer<Long> roundAppliedToStateConsumer = roundAppliedToState::set;
-
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                stateHashSignQueue,
-                waitForEventDurability,
-                statusActionSubmitter,
-                roundAppliedToStateConsumer,
-                mock(SoftwareVersion.class));
-
-        // manually update the running hash
-        final Hash updatedRunningHash = mock(Hash.class);
-        final RunningEventHashUpdate runningEventHashUpdate = mock(RunningEventHashUpdate.class);
-        when(runningEventHashUpdate.runningEventHash()).thenReturn(updatedRunningHash);
-        consensusRoundHandler.updateRunningHash(runningEventHashUpdate);
-
-        final EventImpl keystoneEvent = mockEvent();
-        final long consensusRoundNumber = 5L;
-
-        // an empty round following a manual hash update should cause the platform state to be updated with that hash
-        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, List.of(), consensusRoundNumber);
-
-        consensusRoundHandler.handleConsensusRound(consensusRound);
-
-        verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
-        verify(swirldStateManager).handleConsensusRound(consensusRound);
-        assertEquals(consensusRoundNumber, roundAppliedToState.get());
-        verify(swirldStateManager, never()).savedStateInFreezePeriod();
-        verify(stateHashSignQueue).put(any(ReservedSignedState.class));
-        verify(platformState).setRunningEventHash(updatedRunningHash);
     }
 }
