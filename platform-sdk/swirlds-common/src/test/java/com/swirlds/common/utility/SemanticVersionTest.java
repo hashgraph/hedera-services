@@ -44,7 +44,6 @@ public class SemanticVersionTest {
             "Expected %s to throw %s, but no exception of the correct type was " + "thrown";
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testValidSemanticVersionParsing(
@@ -72,7 +71,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("invalidVersionSupplier")
     void testInvalidSemanticVersionParsing(
@@ -92,7 +90,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSemanticVersionToString(
@@ -108,7 +105,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSerialization(

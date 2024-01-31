@@ -36,7 +36,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ThreadPoolTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Basic Threading Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -89,7 +88,6 @@ class ThreadPoolTests {
     }
 
     @ParameterizedTest
-    @Tag(TestTypeTags.PERFORMANCE)
     @Tag(TestComponentTags.THREADING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Ensure threads are properly disposed")
@@ -108,7 +106,6 @@ class ThreadPoolTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Catch exception on thread")

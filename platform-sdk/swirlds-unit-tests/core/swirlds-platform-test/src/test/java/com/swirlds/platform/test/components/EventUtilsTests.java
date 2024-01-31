@@ -41,7 +41,6 @@ import org.mockito.Mockito;
 class EventUtilsTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("getTimeCreated() Test")
     void getTimeCreatedTest() {
@@ -80,7 +79,6 @@ class EventUtilsTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("getEventGeneration() Test")
     void getEventGenerationTest() {
@@ -96,7 +94,6 @@ class EventUtilsTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("getEventHash() Test")
     void getEventHashTest() {
@@ -112,7 +109,6 @@ class EventUtilsTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("getOtherParentCreatorId() Test")
     void getOtherParentCreatorIdTest() {

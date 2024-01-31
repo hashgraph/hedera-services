@@ -45,7 +45,6 @@ import org.junit.jupiter.api.Test;
 class MerkleMapEntryTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals With Key Test")
     void equalsWithKeyTest() {
@@ -133,7 +132,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Leaf With Null Value")
     void leafWithNullValue() {
@@ -143,7 +141,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Test")
     void copyTest() {
@@ -159,7 +156,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Throws If Deleted Test")
     void copyThrowsIfDeletedTest() {
@@ -171,7 +167,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("setKey fails after being destroyed")
     void setKeyAfterDestroyTest() {
@@ -227,7 +222,6 @@ class MerkleMapEntryTests {
      * we promise to release it in the contract and so we need to verify that we release it in a test.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("setKey fails after being destroyed")
     void keyIsReleased() {

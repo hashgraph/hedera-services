@@ -107,7 +107,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Console Test")
     void consoleTest(final Supplier<FCQueue<FCInt>> supplier) {
@@ -158,7 +157,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Hash Test 1")
     void hashTest1(final Supplier<FCQueue<FCInt>> supplier) {
@@ -187,7 +185,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Hash Test 2")
     void hashTest2(final Supplier<FCQueue<FCInt>> supplier) {
@@ -227,7 +224,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Hash Test 3")
     void hashTest3(final Supplier<FCQueue<FCInt>> supplier) {
@@ -313,7 +309,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Hash Test 4")
     void hashTest4(final Supplier<FCQueue<FCInt>> supplier) throws Exception {
@@ -337,7 +332,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Hash Test 5")
     void hashTest5(final Supplier<FCQueue<FCInt>> supplier) {
@@ -363,7 +357,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock Hash Test 6")
     void hashTest6(final int queueSize, final Supplier<FCQueue<FCInt>> mockSupplier) {
@@ -395,7 +388,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock Hash Test 7")
     @Tag(TIME_CONSUMING)
@@ -434,7 +426,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock Hash Test 8")
     void hashTest8(final int queueSize, final Supplier<FCQueue<FCInt>> supplier) {
@@ -482,7 +473,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock Mutability Test")
     void mutabilityTest(final Supplier<FCQueue<FCInt>> supplier) {
@@ -574,7 +564,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock multithread Hash Test 1")
     @Tag(TIME_CONSUMING)
@@ -655,7 +644,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildSmallArgs")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Mock multithread Hash Test 2")
     void multithreadHashTest2(final int removeThreadsNum, final Supplier<FCQueue<FCInt>> supplier) {
@@ -745,7 +733,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Add Test")
     void addTest(final int targetSize, final Supplier<FCQueue<FCInt>> supplier) {
@@ -762,7 +749,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildRemovalArgs")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Remove Test")
     void removeTest(int size, double removeRatio, final Supplier<FCQueue<FCInt>> supplier) {
@@ -798,7 +784,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @Tag(TIME_CONSUMING)
     @DisplayName("toArray Test")
@@ -878,7 +863,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Serialize And Recover Test")
     void serializeAndRecoverTest(final int numElements, final Supplier<FCQueue<FCInt>> supplier) throws IOException {
@@ -977,7 +961,6 @@ class MockFCQueueTest {
 
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Serialization and deserialization of MockFCQueue with zero elements")
     void validateSerializeDeserializeWithZeroElements(final Supplier<FCQueue<FCInt>> supplier) {
@@ -1002,7 +985,6 @@ class MockFCQueueTest {
 
     @ParameterizedTest
     @MethodSource("buildOnlySuppliers")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Adding empty list doesn't change the internals of MockFCQueue")
     void noChangesWhenAddingEmpty(final Supplier<FCQueue<FCInt>> supplier) {
@@ -1027,7 +1009,6 @@ class MockFCQueueTest {
      */
     @ParameterizedTest
     @MethodSource("buildSmallArgs")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Multiple threads write on a MockFCQueue")
     void multipleWriteThreadsTest(final int writeThreadsNum, final Supplier<FCQueue<FCInt>> supplier) {
@@ -1071,7 +1052,6 @@ class MockFCQueueTest {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     void testCopyAndMutability(final int size, final Supplier<FCQueue<FCInt>> mockSupplier) {
         final FCQueue<FCInt> fcq = new FCQueue<>();
@@ -1108,7 +1088,6 @@ class MockFCQueueTest {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(FUNCTIONAL)
     @Tag(FCQUEUE)
     @DisplayName("Validates removal of hash tail from queue")
     void hashTestRemovalHashTail(int queueSize, final Supplier<FCQueue<FCInt>> supplier) {

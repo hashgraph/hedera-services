@@ -64,7 +64,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathRankIndexArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Rank of valid paths")
     void testRanks(final long path, final int rank, final long index) {
@@ -73,7 +72,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathRankIndexArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Index within rank")
     void testIndexInRank(final long path, final int rank, final long index) {
@@ -82,7 +80,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathRankIndexArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Compute path given a rank and index")
     void testPathForRankAndIndex(final long path, final int rank, final long index) {
@@ -91,7 +88,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathRankIndexArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check isLeft")
     void testIsLeft(final long path, final int rank, final long index) {
@@ -102,7 +98,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathRankIndexArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check isFarRight")
     void testIsFarRight(final long path, final int rank, final long index) {
@@ -112,7 +107,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check parent path")
     void testGetParentPath() {
@@ -159,7 +153,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check grand parent path")
     void testGetGrandParentPath() {
@@ -174,7 +167,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check left child path computation")
     void testGetLeftChild() {
@@ -210,7 +202,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check left grand child path computation")
     void testGetLeftGrandChild() {
@@ -225,7 +216,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check right child path computation")
     void testGetRightChild() {
@@ -274,7 +264,6 @@ class PathTests {
 
     @ParameterizedTest
     @MethodSource("providePathWalkingArgs")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check walking down paths")
     void testGetNextStep(final long terminalPath, final List<Long> expectedPaths) {
@@ -286,7 +275,6 @@ class PathTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Check right child path computation")
     void testGetSiblingPath() {
@@ -315,7 +303,6 @@ class PathTests {
      * MerkleRoutes should be the same.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     void getRouteStepsFromRoot() {
         final List<Integer> emptyRoute = Path.getRouteStepsFromRoot(0);

@@ -81,6 +81,7 @@ xtestModuleInfo {
     requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.hedera.node.app.service.contract.impl")
+    requires("com.hedera.node.app.service.file")
     requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.mono")
     requires("com.hedera.node.app.service.network.admin.impl")

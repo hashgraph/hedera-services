@@ -230,7 +230,6 @@ class NftLedgerTests {
     @ParameterizedTest
     @ValueSource(doubles = {1.0, 0.99, 0.75, 0.5, 0.25, 0.01, 0.0})
     @Tag(TestComponentTags.TESTING)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TIME_CONSUMING)
     @DisplayName("Randomized Test")
     void randomizedTest(final double tokenTrackingFraction) {

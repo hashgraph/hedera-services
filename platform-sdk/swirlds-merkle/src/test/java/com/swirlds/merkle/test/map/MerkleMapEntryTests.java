@@ -51,7 +51,6 @@ class MerkleMapEntryTests {
     Path testDirectory;
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Getter And Setter Test")
     void getterAndSetterTest() {
@@ -100,7 +99,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals and Hash Test")
     void equalsAndHashTest() {
@@ -169,7 +167,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Serialization Test")
     void serializationTest() throws IOException, ConstructableRegistryException {
@@ -197,7 +194,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Test")
     void copyTest() {

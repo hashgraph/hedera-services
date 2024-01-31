@@ -40,7 +40,6 @@ public class MerkleMetaTests {
      * A sanity check on test logic that compares two merkle trees for similarity.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Merkle Comparison")
     public void testMerkleComparison() {
@@ -65,7 +64,6 @@ public class MerkleMetaTests {
      * Verify that the measureTreeDepth function returns sane values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Merkle Depth")
     public void testMerkleDepth() {
@@ -86,7 +84,6 @@ public class MerkleMetaTests {
      * Verify that measureNumberOfLeafNodes returns sane values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Leaf Node Count")
     public void testLeafNodeCount() {
@@ -107,7 +104,6 @@ public class MerkleMetaTests {
      * Verify that measureNumberOfNodes returns sane values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Node Count")
     public void testNodeCount() {
@@ -128,7 +124,6 @@ public class MerkleMetaTests {
      * Verify that measureAverageLeafDepth returns sane values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Average Leaf Depth")
     public void testAverageLeafDepth() {
@@ -157,7 +152,6 @@ public class MerkleMetaTests {
      * Verify that measureAverageLeafSize returns sane values.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Average Leaf Size")
     public void testAverageLeafSize() {

@@ -61,7 +61,6 @@ class MerkleTreeInternalNodeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @Tag(TIME_CONSUMING)
     @DisplayName("NullifyIntervalNodeTest")
@@ -88,7 +87,6 @@ class MerkleTreeInternalNodeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     void copyThrowsIfDeletedTest() {
         final MerkleTreeInternalNode fcmNode = new MerkleTreeInternalNode();

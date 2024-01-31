@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 class CryptographyBenchmarkTests {
     private static Cryptography cryptoProvider;
@@ -80,7 +80,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @DisplayName("Verify Ed25519")
     void verifyEd25519() {
         final int count = 50_000;
@@ -122,7 +122,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @DisplayName("Verify EcdsaSecp256k1")
     void verifyEcdsaSecp256k1() {
         final int count = 50_000;
@@ -164,7 +164,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @DisplayName("SHA384 Hash")
     void sha384Hash() throws NoSuchAlgorithmException {
         final int count = 5_000_000;

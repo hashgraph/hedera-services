@@ -182,7 +182,10 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             AccountID senderAccountId;
-            final var token = requireNonNull(writableTokenStore.get(nftId.tokenIdOrThrow()));
+            final var tokenId = nftId.tokenId();
+            requireNonNull(tokenId);
+            final var token = writableTokenStore.get(tokenId);
+            requireNonNull(token);
             if (persistedNft != null) {
                 // If the NFT did not have an owner before set it to the treasury account
                 senderAccountId = persistedNft.hasOwnerId() ? persistedNft.ownerId() : token.treasuryAccountIdOrThrow();

@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 class SyncPhaseParallelExecutorTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test phases in order")
     @Disabled("ticket opened #5316")
@@ -82,7 +81,6 @@ class SyncPhaseParallelExecutorTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test single thread option")
     void testSingleThreadOption() {

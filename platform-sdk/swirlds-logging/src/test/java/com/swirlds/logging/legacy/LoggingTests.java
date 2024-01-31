@@ -52,7 +52,6 @@ public class LoggingTests {
      * Sanity check on payload parsing.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Payload Parsing Test")
     public void payloadParsingTest() throws IOException {
@@ -151,7 +150,6 @@ public class LoggingTests {
      * that is is directly simulated.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Simulation Should Match File")
@@ -257,7 +255,6 @@ public class LoggingTests {
      * Sanity checks on the SwirldsLogReader.collect method.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Collect Test")
     public void collectTest() throws IOException {
@@ -296,7 +293,6 @@ public class LoggingTests {
      * Sanity checks on the SwirldsLogReader.collect method with a limit in place.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Limited Collect Test")
     public void limitedCollectTest() throws IOException {
@@ -333,7 +329,6 @@ public class LoggingTests {
      * Sanity checks on the SwirldsLogReader.count method.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Count Test")
     public void countTest() throws IOException {
@@ -365,7 +360,6 @@ public class LoggingTests {
      * Sanity checks on the SwirldsLogReader.addAction method.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Action Test")
     public void actionTest() throws IOException {
@@ -397,7 +391,6 @@ public class LoggingTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Payload With No Javabean Properties")
     public void payloadWithNoJavabeanProperties() {

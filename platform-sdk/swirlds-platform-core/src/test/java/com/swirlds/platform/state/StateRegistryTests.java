@@ -62,7 +62,6 @@ class StateRegistryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Active State Count Test")
     void activeStateCountTest() throws IOException {

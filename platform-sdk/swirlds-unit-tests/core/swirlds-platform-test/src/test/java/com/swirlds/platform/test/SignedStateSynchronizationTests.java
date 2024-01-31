@@ -42,7 +42,6 @@ public class SignedStateSynchronizationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Signed State Synchronization")

@@ -74,7 +74,6 @@ class NetworkTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Validates that the local ip is retrieved as internal ip")
     void getInternalIPAddressTest() {
         final String internalIp = Network.getInternalIPAddress();
@@ -84,7 +83,6 @@ class NetworkTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("No ip is found running as unit test")
     void getExternalIpAddressWithNoIpFound() {

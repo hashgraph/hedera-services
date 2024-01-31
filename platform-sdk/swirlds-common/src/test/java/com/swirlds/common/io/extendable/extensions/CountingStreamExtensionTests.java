@@ -57,7 +57,6 @@ class CountingStreamExtensionTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Counting Test")
     void countingTest() throws IOException {

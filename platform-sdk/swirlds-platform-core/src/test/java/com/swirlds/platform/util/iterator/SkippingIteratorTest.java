@@ -50,8 +50,6 @@ public class SkippingIteratorTest {
         return Stream.of(Arguments.of(Collections.emptySet()), Arguments.of(NULL_SET));
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @ParameterizedTest
     @MethodSource("skipParams")
@@ -69,8 +67,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - some skipped indices")
@@ -95,8 +91,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - unordered skipped indices")
@@ -121,8 +115,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - first index skipped")
@@ -139,8 +131,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - last index skipped")
@@ -157,8 +147,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - skip all indices")
@@ -171,8 +159,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - null array")
@@ -180,8 +166,6 @@ public class SkippingIteratorTest {
         assertThrows(NullPointerException.class, () -> new SkippingIterator<>(null, Collections.emptySet()));
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - empty array")
@@ -191,8 +175,6 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - skip invalid indices")

@@ -28,13 +28,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 class DispatcherTests {
 
     @Test
-    @Tags({@Tag(TestTypeTags.FUNCTIONAL), @Tag(TestComponentTags.NOTIFICATION)})
+    @Tag(TestComponentTags.NOTIFICATION)
     @DisplayName("Notification Engine: Dispatcher Sync Exception Handling")
     void validateSyncExceptionHandling() throws InterruptedException, TimeoutException {
         final Dispatcher<SyncOrderedIntegerListener> syncDispatcher =
@@ -73,7 +72,7 @@ class DispatcherTests {
     }
 
     @Test
-    @Tags({@Tag(TestTypeTags.FUNCTIONAL), @Tag(TestComponentTags.NOTIFICATION)})
+    @Tag(TestComponentTags.NOTIFICATION)
     @DisplayName("Notification Engine: Dispatcher ASync Exception Handling")
     void validateASyncExceptionHandling() throws InterruptedException, TimeoutException {
         final Dispatcher<AsyncOrderedIntegerListener> asyncDispatcher =

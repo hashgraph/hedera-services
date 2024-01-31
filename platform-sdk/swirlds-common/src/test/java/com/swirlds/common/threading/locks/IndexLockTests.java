@@ -18,6 +18,7 @@ package com.swirlds.common.threading.locks;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,8 +49,8 @@ class IndexLockTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Same Index Blocks")
     void sameIndexBlocks() throws InterruptedException {
         final int size = 100;
@@ -89,8 +90,8 @@ class IndexLockTests {
      * than hte total size of the array then they will not block.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Different Index Does Not Block")
     void differentIndexDoesNotBlock() throws InterruptedException {
         final int size = 100;
@@ -120,8 +121,8 @@ class IndexLockTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Same Index Autocloseable")
     void sameIndexBlocksAutocloseable() throws InterruptedException {
         final int size = 100;
@@ -156,8 +157,8 @@ class IndexLockTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Negative Index Equivalent")
     void negativeIndex() throws InterruptedException {
         final int size = 100;
@@ -193,8 +194,8 @@ class IndexLockTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("All Locks Initialized")
     void allLocksInitialized() {
         final int size = 100;
@@ -209,6 +210,7 @@ class IndexLockTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("fullLock() Test")
     void fullLockTest() throws InterruptedException {
         final int size = 10;
@@ -243,6 +245,7 @@ class IndexLockTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("autoFullLock() Test")
     void autoFullLockTest() throws InterruptedException {
         final int size = 10;

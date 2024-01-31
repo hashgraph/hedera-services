@@ -27,8 +27,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
  * This tool provides a set of benchmarks that can be used to profile the memory usage of a MerkleMap.
@@ -76,7 +76,7 @@ class MerkleMapMemoryBenchmark {
      * Build a map of a given size then pause forever.
      */
     @Test
-    @Tag(TestTypeTags.PROFILING_ONLY)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     void runBenchmark() throws ExecutionException, InterruptedException {
         buildMap(new Random(), 3_000_000);
         pauseForever();

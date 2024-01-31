@@ -63,7 +63,6 @@ class StateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.IO)
     @DisplayName("State Serialization Test")
@@ -82,7 +81,6 @@ class StateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("State Copy Test")
     void stateCopyTest() {

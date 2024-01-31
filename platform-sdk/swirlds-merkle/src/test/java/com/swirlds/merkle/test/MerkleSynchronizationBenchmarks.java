@@ -41,6 +41,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 public class MerkleSynchronizationBenchmarks {
 
@@ -162,7 +163,7 @@ public class MerkleSynchronizationBenchmarks {
 
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Sync Small Trees")
     public void syncSmallTrees() {
@@ -174,7 +175,7 @@ public class MerkleSynchronizationBenchmarks {
      */
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Sync Small Trees Full")
     public void syncSmallTreesFull() {
@@ -183,7 +184,7 @@ public class MerkleSynchronizationBenchmarks {
 
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Sync Large Trees")
     public void syncLargeTrees() {
@@ -194,8 +195,8 @@ public class MerkleSynchronizationBenchmarks {
      * Same as syncLargeTrees, but instead copy the entire tree.
      */
     @Test
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    @Tag(TestTypeTags.PERFORMANCE)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Sync Large Trees Full")
     public void syncLargeTreesFull() {

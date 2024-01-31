@@ -281,7 +281,6 @@ class ExpectedFCMFamilyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.EXPECTED_MAP)
     @DisplayName("Add Entities during Reconnect test")
     public void addEntitiesFromActualFCMsReconnectTest(int size) {

@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 class CachedPoolParallelExecutorTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Simple 2 parallel task test")
     void simpleTasks() throws Exception {
@@ -66,7 +65,6 @@ class CachedPoolParallelExecutorTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Exception test")
     void testException() {

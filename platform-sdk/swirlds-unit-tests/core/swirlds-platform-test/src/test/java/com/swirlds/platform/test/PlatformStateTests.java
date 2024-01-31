@@ -54,7 +54,6 @@ class PlatformStateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test Copy")
     void testCopy() {
@@ -74,7 +73,6 @@ class PlatformStateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.IO)

@@ -26,6 +26,7 @@ import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 public class MerkleMemoryEstimator {
 
@@ -39,7 +40,7 @@ public class MerkleMemoryEstimator {
      * Estimate the memory size of a merkle tree.
      */
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Estimate Balanced Tree Size")
     void estimateBalancedTreeSize() {

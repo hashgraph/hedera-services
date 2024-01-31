@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 class StateTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test Copy")
     void testCopy() {
@@ -58,7 +57,6 @@ class StateTest {
      * Verify behavior when something tries to reserve a state.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {

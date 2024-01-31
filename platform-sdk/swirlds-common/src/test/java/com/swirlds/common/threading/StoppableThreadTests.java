@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,7 +58,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 class StoppableThreadTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Interruptable Thread")
     void testInterruptableThread() throws InterruptedException {
@@ -76,7 +76,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Uninterruptable Thread")
     void testUninterruptableThread() throws InterruptedException {
@@ -112,7 +111,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Blocking Stop Override")
     void testBlockingStopOverride() throws InterruptedException {
@@ -150,7 +148,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Interrupting Stop Override")
     void testInterruptingStopOverride() throws InterruptedException {
@@ -176,7 +173,6 @@ class StoppableThreadTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Final Run Test")
     void finalRunTest(final boolean doFinalCycle) throws InterruptedException {
@@ -262,7 +258,7 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TIMING_SENSITIVE)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Pause Test")
     void pauseTest() throws InterruptedException {
@@ -307,7 +303,6 @@ class StoppableThreadTests {
      * Tests a bug that used to exist where the thread would not pause if LogAfterPauseDuration was set to ZERO
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Pause Test where LogAfterPause is set to 0")
     void zeroLogPauseTest() throws InterruptedException {
@@ -341,7 +336,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Hanging Thread Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -388,7 +382,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Hanging Thread Disabled Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -456,6 +449,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Max Rate Test")
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
@@ -657,6 +651,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Pause Then Stop Test")
     void pauseThenStopTest() throws InterruptedException {
         final AtomicInteger count = new AtomicInteger();
@@ -687,6 +682,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Join Before Start Test")
     void joinBeforeStartTest() throws InterruptedException {
         final StoppableThread stoppableThread = new StoppableThreadConfiguration<>(getStaticThreadManager())
@@ -708,6 +704,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Join Before Start Seed Test")
     void joinBeforeStartSeedTest() throws InterruptedException {
         final StoppableThread stoppableThread1 = new StoppableThreadConfiguration<>(getStaticThreadManager())

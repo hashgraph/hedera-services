@@ -108,7 +108,6 @@ class MerkleIterationTests {
      * A tree with no nodes is a valid root. Verify that iterators do not choke on an empty root.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Empty Tree Depth-First Post-Ordered")
     void iterateEmptyTreeDepthFirstPostOrdered() {
@@ -122,7 +121,6 @@ class MerkleIterationTests {
      * A tree with no nodes is a valid root. Verify that iterators do not choke on an empty root.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Empty Tree Reverse Depth-First Post-Ordered")
     void iterateEmptyTreeReverseDepthFirstPostOrdered() {
@@ -136,7 +134,6 @@ class MerkleIterationTests {
      * A tree with no nodes is a valid root. Verify that iterators do not choke on an empty root.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Empty Tree Depth-First Pre-Ordered")
     void iterateEmptyTreeDepthFirstPreOrdered() {
@@ -150,7 +147,6 @@ class MerkleIterationTests {
      * A tree with no nodes is a valid root. Verify that iterators do not choke on an empty root.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Empty Tree Breadth First")
     void iterateEmptyTreeBreadthFirst() {
@@ -164,7 +160,6 @@ class MerkleIterationTests {
      * Ensure that a MerkleIterator can handle a tree with only a single node.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Single Node Tree Depth-First Post-Ordered")
     void iterateSingleNodeTreeDepthFirstPostOrdered() {
@@ -180,7 +175,6 @@ class MerkleIterationTests {
      * Ensure that a MerkleIterator can handle a tree with only a single node.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Single Node Tree Reverse Depth-First Post-Ordered")
     void iterateSingleNodeTreeReverseDepthFirstPostOrdered() {
@@ -196,7 +190,6 @@ class MerkleIterationTests {
      * Ensure that a MerkleIterator can handle a tree with only a single node.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Single Node Tree Depth-First Pre-Ordered")
     void iterateSingleNodeTreeDepthFirstPreOrdered() {
@@ -209,7 +202,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Single Node Tree Breadth First")
     void iterateSingleNodeTreeBreadthFirst() {
@@ -222,7 +214,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Simple Tree Depth-First Post-Ordered")
     void iterateSimpleTreeDepthFirstPostOrdered() {
@@ -235,7 +226,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Simple Tree Reverse Depth-First Post-Ordered")
     void iterateSimpleTreeReverseDepthFirstPostOrdered() {
@@ -248,7 +238,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Simple Tree Depth-First Pre-Ordered")
     void iterateSimpleTreeDepthFirstPreOrdered() {
@@ -261,7 +250,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Simple Tree Breadth First")
     void iterateSimpleTreeBreadthFirst() {
@@ -274,7 +262,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Less Simple Tree Depth-First Post-Ordered")
     void iterateLessSimpleTreeDepthFirstPostOrdered() {
@@ -293,7 +280,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Less Simple Tree Reverse Depth-First Post-Ordered")
     void iterateLessSimpleTreeReverseDepthFirstPostOrdered() {
@@ -312,7 +298,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Less Simple Tree Depth-First Pre-Ordered")
     void iterateLessSimpleTreeDepthFirstPreOrdered() {
@@ -331,7 +316,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Do Not Ignore Null Depth-First Post-Ordered")
     void doNotIgnoreNullDepthFirstPostOrdered() {
@@ -350,7 +334,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Do Not Ignore Null Reverse Depth-First Post-Ordered")
     void doNotIgnoreNullReverseDepthFirstPostOrdered() {
@@ -370,7 +353,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Do Not Ignore Null Depth-First Pre-Ordered")
     void doNotIgnoreNullDepthFirstPreOrdered() {
@@ -392,7 +374,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Less Simple Tree Breadth First")
     void iterateLessSimpleTreeBreadthFirst() {
@@ -410,7 +391,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Do Not Ignore Null Breadth First")
     void doNotIgnoreNullBreadthFirst() {
@@ -431,7 +411,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Leaf Filter Depth-First Post-Ordered")
     void leafFilterDepthPostOrderedFirst() {
@@ -447,7 +426,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Leaf Filter Depth-First Pre-Ordered")
     void leafFilterDepthPreOrderedFirst() {
@@ -464,7 +442,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Leaf Filter Include Null Depth-First Post-Ordered")
     void leafFilterIncludeNullDepthPostOrderedFirst() {
@@ -484,7 +461,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Leaf Filter Breadth First")
     void leafFilterBreadthFirst() {
@@ -500,7 +476,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Leaf Filter Include Null Breadth First")
     void leafFilterIncludeNullBreadthFirst() {
@@ -524,7 +499,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Targeted Filter")
     void targetedFilter() {
@@ -540,7 +514,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Descendant Filter Depth-First Post-Ordered")
     void descendantFilterDepthFirstPostOrdered() {
@@ -561,7 +534,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Descendant Filter Depth-First Pre-Ordered")
     void descendantFilterDepthFirstPreOrdered() {
@@ -583,7 +555,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Descendant Filter Breadth First")
     void descendantFilterBreadthFirst() {
@@ -604,7 +575,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Filter And Descendant Filter Depth-First Post-Ordered")
     void filterAndDescendantFilterDepthFirstPostOrdered() {
@@ -625,7 +595,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Filter And Descendant Filter Depth-First Pre-Ordered")
     void filterAndDescendantFilterDepthFirstPreOrdered() {
@@ -647,7 +616,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Filter And Descendant Filter Breadth First")
     void filterAndDescendantFilterBreadthFirst() {
@@ -668,7 +636,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Transformation Test")
     void transformationTest() {
@@ -692,7 +659,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Null Transformation Test")
     void nullTransformationTest() {
@@ -721,7 +687,6 @@ class MerkleIterationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Null Filter Test")
     void nullFilterTest() {

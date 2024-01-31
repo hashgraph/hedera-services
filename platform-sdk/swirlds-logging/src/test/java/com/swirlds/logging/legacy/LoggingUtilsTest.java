@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 class LoggingUtilsTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Test Plural")
     void testPlural() {

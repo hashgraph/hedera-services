@@ -56,7 +56,6 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -88,7 +87,6 @@ final class ReconnectTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Successfully reconnects multiple times and stats are updated")
     void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
         final int numberOfReconnects = 11;

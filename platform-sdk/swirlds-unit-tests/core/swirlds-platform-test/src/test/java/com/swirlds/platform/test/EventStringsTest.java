@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Event Strings Test")
 class EventStringsTest {
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test event strings")
     void testCopy() {

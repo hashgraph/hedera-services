@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 class AbstractListLeafTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("AbstractListLeaf Test")
     void abstractListLeafTest() {

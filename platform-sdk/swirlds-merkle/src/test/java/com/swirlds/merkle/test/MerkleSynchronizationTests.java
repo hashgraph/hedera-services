@@ -149,7 +149,6 @@ public class MerkleSynchronizationTests {
 
     @Test
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Synchronization Tests")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -249,7 +248,6 @@ public class MerkleSynchronizationTests {
      * </p>
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Verify result is a tree")
     void verifyResultIsATree() throws Exception {
@@ -264,7 +262,6 @@ public class MerkleSynchronizationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Verify exception handling")
@@ -278,7 +275,6 @@ public class MerkleSynchronizationTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Send Invalid Tree")
     void sendInvalidTree() throws Exception {

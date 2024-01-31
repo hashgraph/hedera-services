@@ -50,7 +50,6 @@ class KeyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals Compare To Null")
     void equalsCompareToNull() {
@@ -60,7 +59,6 @@ class KeyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Serialize And Deserialize Test")
     void serializeAndDeserializeTest() throws IOException {

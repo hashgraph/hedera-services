@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @DisplayName("MerkleMap Benchmark")
 class MerkleMapBenchmark {
@@ -59,7 +60,7 @@ class MerkleMapBenchmark {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Standard MerkleMap Benchmark")
     void standardMerkleMapBenchmark() throws InterruptedException {

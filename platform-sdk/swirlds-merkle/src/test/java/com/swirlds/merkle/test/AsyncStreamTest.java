@@ -57,7 +57,6 @@ class AsyncStreamTest {
     private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.RECONNECT)
     @Tag(TIME_CONSUMING)
     @DisplayName("Basic Operation")
@@ -90,7 +89,6 @@ class AsyncStreamTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.RECONNECT)
     @Tag(TIME_CONSUMING)
     @DisplayName("Pre-Anticipation")
@@ -126,7 +124,6 @@ class AsyncStreamTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.RECONNECT)
     @Tag(TIME_CONSUMING)
     @DisplayName("Max Output Queue Size")
@@ -192,8 +189,8 @@ class AsyncStreamTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.RECONNECT)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Max Input Queue Size")
     void maxInputQueueSize() throws IOException, InterruptedException {
 
@@ -267,8 +264,8 @@ class AsyncStreamTest {
      * stream to deadlock during an abort.
      */
     @Test()
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("AsyncInputStream Deadlock")
     void asyncInputStreamAbortDeadlock() throws InterruptedException {
         try (final PairedStreams pairedStreams = new PairedStreams()) {

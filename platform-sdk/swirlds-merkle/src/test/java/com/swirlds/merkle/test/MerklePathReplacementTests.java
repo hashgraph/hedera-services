@@ -381,7 +381,6 @@ class MerklePathReplacementTests {
      * Test path replacements under a wide variety of conditions.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TIME_CONSUMING)
     @DisplayName("Test Path Replacement")
@@ -400,7 +399,6 @@ class MerklePathReplacementTests {
      * invalidated by a path replacement operation in a different tree.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Nodes In Other Trees Are Not Invalidated Test")
     void nodesInOtherTreesAreNotInvalidatedTest() {

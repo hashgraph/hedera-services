@@ -77,7 +77,6 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterator Test")
     void iteratorTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -109,7 +108,6 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Get Node At Route Test")
     void getNodeAtRouteTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -136,7 +134,6 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("ReverseIteratorTest")
     void reverseIteratorTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -169,7 +166,6 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Route Fidelity Test")
     void routeFidelityTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -289,7 +285,6 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Route Comparison Test")
     void routeComparisonTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -306,9 +301,7 @@ class MerkleRouteTests {
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
-    @Tag(TestQualifierTags.AT_SCALE)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Route Large Comparison Test")
     void routeLargeComparisonTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -320,9 +313,7 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Route Ancestry Test")
     void routeAncestryTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
         setRouteEncodingStrategy(encoding);
@@ -354,9 +345,7 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Route Descendant Test")
     void routeDescendantTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
         setRouteEncodingStrategy(encoding);
@@ -415,7 +404,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Add Multiple Steps Test")
     void addMultipleStepsTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -438,7 +426,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Serialization Test")
     void serializationTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -466,7 +453,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("isEmpty() Test")
     void isEmptyTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -479,7 +465,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("getStep() Test")
     void getStepTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -524,7 +509,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("getParent() Test")
     void getParentTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
@@ -548,7 +532,6 @@ class MerkleRouteTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Path Format Test")
     void pathFormatTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {

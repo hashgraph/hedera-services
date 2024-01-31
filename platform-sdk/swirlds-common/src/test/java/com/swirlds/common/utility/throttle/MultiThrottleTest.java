@@ -33,7 +33,6 @@ class MultiThrottleTest {
     private static final int ONE_SECOND_SLEEP = 1_000;
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Validate Throttling")
     void testValidateThrottling() throws InterruptedException {
@@ -75,7 +74,6 @@ class MultiThrottleTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Validate Creation")
     void testValidateCreation() {
         assertThrows(

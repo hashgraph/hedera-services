@@ -74,7 +74,6 @@ class MerkleRehashTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Invalidate Behavior")
     void invalidateBehavior() {
@@ -115,7 +114,6 @@ class MerkleRehashTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Rehash Behavior")
     void rehashBehavior() {
@@ -159,7 +157,6 @@ class MerkleRehashTests {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Failed Rehash Behavior")
     public void failedRehash() {

@@ -32,7 +32,6 @@ class AbstractLogPayloadTest {
      * Simple unit test for bean
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     void payloadErrors() {
         assertEquals("", AbstractLogPayload.extractPayloadType(""), "Should be empty");

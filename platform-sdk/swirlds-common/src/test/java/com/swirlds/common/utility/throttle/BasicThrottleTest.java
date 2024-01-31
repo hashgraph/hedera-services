@@ -32,7 +32,6 @@ public class BasicThrottleTest {
     private static final int ONE_SECOND_SLEEP = 1_000;
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify Accessor Behavior")
     public void testVerifyAccessorBehavior() {
         final Throttle throttle = new Throttle(10);
@@ -63,7 +62,6 @@ public class BasicThrottleTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Validate Throttling")
     public void testValidateThrottling() throws InterruptedException {

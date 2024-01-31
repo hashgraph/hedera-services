@@ -42,7 +42,6 @@ class MerkleReferenceCountingTests {
      * A newly initialized tree should have a reference count of 1 for each node (except for the root)
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Reference Count Initialization Test")
     void referenceCountInitializationTest() {
@@ -66,7 +65,6 @@ class MerkleReferenceCountingTests {
      * Basic sanity check for deletion.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Deletion Test")
     void deletionTest() {
@@ -93,7 +91,6 @@ class MerkleReferenceCountingTests {
      * Verify behavior when a node has multiple references.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Multiple Reference Test")
     void multipleReferenceTest() {
@@ -145,7 +142,6 @@ class MerkleReferenceCountingTests {
      * Verify behavior when a child node is removed from its parent.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Child Replacement Test")
     void childReplacementTest() {
@@ -168,7 +164,6 @@ class MerkleReferenceCountingTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Exception Throwing Tests")
     void exceptionThrowingTests() {

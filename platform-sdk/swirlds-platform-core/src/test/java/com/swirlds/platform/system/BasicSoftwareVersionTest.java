@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("Basic SoftwareVersion Tests")
@@ -32,7 +31,6 @@ class BasicSoftwareVersionTest {
     public final SoftwareVersion VERSION_TWO = new BasicSoftwareVersion(2);
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify compareTo functionality")
     @SuppressWarnings("EqualsWithItself")
     void testCompareTo() {
@@ -56,7 +54,6 @@ class BasicSoftwareVersionTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify toString functionality")
     void testToString() {
         assertEquals("1", VERSION_ONE.toString(), "VERSION_ONE not reporting its version as 1.");

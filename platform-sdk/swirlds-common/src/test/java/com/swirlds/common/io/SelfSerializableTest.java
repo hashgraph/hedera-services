@@ -35,7 +35,6 @@ class SelfSerializableTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void serializeDeserialize(boolean includeClassId) throws IOException {
@@ -52,7 +51,6 @@ class SelfSerializableTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void deserializeInvalidVersions() throws IOException {

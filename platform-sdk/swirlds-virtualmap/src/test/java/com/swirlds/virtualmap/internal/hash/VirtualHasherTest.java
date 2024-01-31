@@ -32,6 +32,9 @@ import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -59,7 +62,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If the stream is null, an NPE will be raised.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Null stream produces NPE")
     void nullStreamProducesNPE() {
@@ -75,7 +77,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If the stream is empty, a null hash is returned.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Empty stream results in a null hash")
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "RedundantOperationOnEmptyContainer"})
@@ -90,7 +91,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If either the firstLeafPath or lastLeafPath is &lt; 1, then a null hash is returned.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Invalid leaf paths returns null for hash")
     void invalidFirstOrLastLeafPathProducesNull() {
@@ -119,7 +119,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      */
     @ParameterizedTest
     @MethodSource("hashingPermutations")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test various dirty nodes in a tree")
     void hashingPermutations(final long firstLeafPath, final long lastLeafPath, final List<Long> dirtyPaths) {
@@ -270,7 +269,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * *may* not have a problem. So if this is intermittent, then we have a problem.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test the same situation over and over and over")
     void repeatedTest() {
@@ -295,7 +293,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * in these javadocs. Instead, look for the images in the design docs.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Verify methods on the listener are called at the right frequency")
     void listenerCallCounts() {
@@ -325,7 +322,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * needless performance problem). This test covers that specific case.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Verify the hasher does not ask for internal records it will recreate")
     void hasherDoesNotAskForInternalsItWillRecreate() {

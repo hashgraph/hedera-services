@@ -55,7 +55,6 @@ class EventObserverDispatcherTests {
     SimpleEvent e2 = new SimpleEvent(2);
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Verify Observations")
     void test() {

@@ -54,7 +54,6 @@ class MMSerializeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Add value to deserialized map")
     void serializeDeserializeAdd() throws IOException {
