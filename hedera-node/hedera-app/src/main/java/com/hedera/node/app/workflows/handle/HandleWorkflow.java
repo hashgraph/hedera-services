@@ -421,7 +421,6 @@ public class HandleWorkflow {
 
             networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
-
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
@@ -443,7 +442,11 @@ public class HandleWorkflow {
                             // the network fee in case of a very low payer balance)
                             feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
                         } else {
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                            final var feesToCharge =
+                                    validationResult.responseCodeEnum().equals(DUPLICATE_TRANSACTION)
+                                            ? fees.withoutServiceComponent()
+                                            : fees;
+                            feeAccumulator.chargeFees(payer, creator.accountId(), feesToCharge);
                         }
                     }
                 } catch (final HandleException ex) {
@@ -544,7 +547,10 @@ public class HandleWorkflow {
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
-                    recordBuilder.status(fileUpdateResult);
+
+                    recordBuilder
+                            .exchangeRate(exchangeRateManager.exchangeRates())
+                            .status(fileUpdateResult);
 
                     // Notify if platform state was updated
                     platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);

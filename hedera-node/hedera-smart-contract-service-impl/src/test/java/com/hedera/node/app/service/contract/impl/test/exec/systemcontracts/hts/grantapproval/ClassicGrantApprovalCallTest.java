@@ -34,8 +34,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ClassicGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.math.BigInteger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
     private VerificationStrategy verificationStrategy;
 
     @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
@@ -80,9 +80,9 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(
-                        GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long)
-                                ResponseCodeEnum.SUCCESS.protoOrdinal())),
+                asBytesResult(GrantApprovalTranslator.GRANT_APPROVAL
+                        .getOutputs()
+                        .encodeElements(ResponseCodeEnum.SUCCESS.protoOrdinal(), true)),
                 result.getOutput());
     }
 

@@ -73,6 +73,11 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Override
+        public void onNewRecoveredState(@NotNull MerkleHederaState recoveredState) {
+            // No-op
+        }
+
+        @Override
         public void onHandleConsensusRound(
                 @NotNull Round round, @NotNull PlatformState platformState, @NotNull HederaState state) {
             onHandleCalled.set(true);

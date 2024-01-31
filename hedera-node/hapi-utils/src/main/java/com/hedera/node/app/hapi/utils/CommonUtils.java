@@ -72,12 +72,14 @@ import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Base64;
 
 public final class CommonUtils {
@@ -212,5 +214,9 @@ public final class CommonUtils {
         final byte[] evmAddress = new byte[20];
         arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
         return evmAddress;
+    }
+
+    public static Instant timestampToInstant(final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 }

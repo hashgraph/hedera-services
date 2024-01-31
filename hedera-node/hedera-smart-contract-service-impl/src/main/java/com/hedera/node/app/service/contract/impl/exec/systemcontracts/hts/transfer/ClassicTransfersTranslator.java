@@ -111,6 +111,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
 
     private boolean isClassicCall(@NonNull final byte[] selector) {
         return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
