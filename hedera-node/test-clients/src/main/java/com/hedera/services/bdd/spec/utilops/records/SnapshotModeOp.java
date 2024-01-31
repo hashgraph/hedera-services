@@ -16,45 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.records;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.bdd.junit.HapiTestEngine;
-import com.hedera.services.bdd.junit.RecordStreamAccess;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
-import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
-import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -78,6 +39,44 @@ import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_N
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.bdd.junit.HapiTestEngine;
+import com.hedera.services.bdd.junit.RecordStreamAccess;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
+import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
+import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * A utility operation that either,
