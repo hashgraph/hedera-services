@@ -1187,11 +1187,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         // iterate over leaf records
         dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
+            final long path = leafRecord.getPath();
             // update objectKeyToPath
             if (isLongKeyMode) {
-                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());
+                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
+                longKeyToPath.put(key, path);
             } else {
-                objectKeyToPath.put(leafRecord.getKey(), leafRecord.getPath());
+                objectKeyToPath.put(leafRecord.getKey(), path);
             }
             statisticsUpdater.countFlushLeafKeysWritten();
 
@@ -1214,8 +1216,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // update objectKeyToPath
             if (isLongKeyMode) {
                 final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-                //                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(),
-                // INVALID_PATH);
                 longKeyToPath.putIfEqual(key, path, INVALID_PATH);
             } else {
                 objectKeyToPath.deleteIfEquals(leafRecord.getKey(), path);

@@ -26,13 +26,26 @@ import java.util.Objects;
  *     The key.
  */
 class BucketMutation<K extends VirtualKey> {
+
     private final K key;
+    private final long oldValue;
+    private boolean hasOldValue;
     private long value;
     private BucketMutation<K> next;
 
-    BucketMutation(K key, long value) {
+    BucketMutation(final K key, final long value) {
         this.key = Objects.requireNonNull(key);
         this.value = value;
+        this.oldValue = 0;
+        this.hasOldValue = false;
+        this.next = null;
+    }
+
+    BucketMutation(final K key, final long oldValue, final long value) {
+        this.key = Objects.requireNonNull(key);
+        this.value = value;
+        this.oldValue = oldValue;
+        this.hasOldValue = true;
         this.next = null;
     }
 
@@ -48,6 +61,7 @@ class BucketMutation<K extends VirtualKey> {
         BucketMutation<K> mutation = this;
         while (true) {
             if (mutation.key.equals(key)) {
+                mutation.hasOldValue = false;
                 mutation.value = value;
                 return;
             } else if (mutation.next != null) {
@@ -70,7 +84,7 @@ class BucketMutation<K extends VirtualKey> {
             } else if (mutation.next != null) {
                 mutation = mutation.next;
             } else {
-                mutation.next = new BucketMutation<>(key, value);
+                mutation.next = new BucketMutation<>(key, oldValue, value);
                 return;
             }
         }
@@ -91,6 +105,26 @@ class BucketMutation<K extends VirtualKey> {
         return size;
     }
 
+    // For testing purposes
+    long getValue() {
+        return value;
+    }
+
+    // For testing purposes
+    long getOldValue() {
+        return oldValue;
+    }
+
+    // For testing purposes
+    boolean hasOldValue() {
+        return hasOldValue;
+    }
+
+    // For testing purposes
+    BucketMutation getNext() {
+        return next;
+    }
+
     /**
      * Visit each mutation in the list, starting from this mutation.
      * @param consumer
@@ -99,7 +133,7 @@ class BucketMutation<K extends VirtualKey> {
     void forEachKeyValue(MutationCallback<K> consumer) {
         BucketMutation<K> mutation = this;
         while (mutation != null) {
-            consumer.accept(mutation.key, mutation.value);
+            consumer.accept(mutation.key, mutation.oldValue, mutation.hasOldValue, mutation.value);
             mutation = mutation.next;
         }
     }
@@ -110,6 +144,6 @@ class BucketMutation<K extends VirtualKey> {
      *     The key.
      */
     interface MutationCallback<K extends VirtualKey> {
-        void accept(K key, long value);
+        void accept(final K key, final long oldValue, final boolean checkOldValue, final long value);
     }
 }

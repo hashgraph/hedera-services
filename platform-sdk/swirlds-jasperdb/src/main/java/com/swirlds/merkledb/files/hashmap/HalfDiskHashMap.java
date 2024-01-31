@@ -510,47 +510,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
     }
 
-    /** Useful debug method to print the current state of the transaction cache */
-    public void debugDumpTransactionCacheCondensed() {
-        logger.info(MERKLE_DB.getMarker(), "=========== TRANSACTION CACHE ==========================");
-        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
-            final BucketMutation<K> bucketMap = oneTransactionsData.get(bucketIndex);
-            if (bucketMap != null) {
-                final String tooBig = (bucketMap.size() > GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
-                        ? ("TOO MANY! > " + GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
-                        : "";
-                logger.info(
-                        MERKLE_DB.getMarker(), "bucketIndex [{}] , count={} {}", bucketIndex, bucketMap.size(), tooBig);
-            } else {
-                logger.info(MERKLE_DB.getMarker(), "bucketIndex [{}] , EMPTY!", bucketIndex);
-            }
-        }
-        logger.info(MERKLE_DB.getMarker(), "========================================================");
-    }
-
-    /** Useful debug method to print the current state of the transaction cache */
-    public void debugDumpTransactionCache() {
-        logger.info(MERKLE_DB.getMarker(), "=========== TRANSACTION CACHE ==========================");
-        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
-            final BucketMutation<K> bucketMap = oneTransactionsData.get(bucketIndex);
-            if (bucketMap != null) {
-                final String tooBig = (bucketMap.size() > GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
-                        ? ("TOO MANY! > " + GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
-                        : "";
-                logger.info(
-                        MERKLE_DB.getMarker(), "bucketIndex [{}] , count={} {}", bucketIndex, bucketMap.size(), tooBig);
-                bucketMap.forEachKeyValue((k, l) -> logger.info(
-                        MERKLE_DB.getMarker(),
-                        "        keyHash [{}] bucket [{}]  key [{}] value [{}]",
-                        k.hashCode(),
-                        computeBucketIndex(k.hashCode()),
-                        k,
-                        l));
-            }
-        }
-        logger.info(MERKLE_DB.getMarker(), "========================================================");
-    }
-
     public DataFileCollection<Bucket<K>> getFileCollection() {
         return fileCollection;
     }
