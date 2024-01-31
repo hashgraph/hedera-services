@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -85,14 +86,23 @@ public class StandardWiringModel implements WiringModel {
     private final Set<InputWireDescriptor> boundInputWires = new HashSet<>();
 
     /**
+     * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
+     */
+    private final ForkJoinPool defaultPool;
+
+    /**
      * Constructor.
      *
-     * @param metrics provides metrics
-     * @param time    provides wall clock time
+     * @param metrics     provides metrics
+     * @param time        provides wall clock time
+     * @param defaultPool the default fork join pool, schedulers not explicitly assigned a pool will use this one
      */
-    public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
+    public StandardWiringModel(
+            @NonNull final Metrics metrics, @NonNull final Time time, @NonNull final ForkJoinPool defaultPool) {
+
         this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
+        this.defaultPool = Objects.requireNonNull(defaultPool);
     }
 
     /**
@@ -101,7 +111,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
-        return new TaskSchedulerBuilder<>(this, name);
+        return new TaskSchedulerBuilder<>(this, name, defaultPool);
     }
 
     /**
