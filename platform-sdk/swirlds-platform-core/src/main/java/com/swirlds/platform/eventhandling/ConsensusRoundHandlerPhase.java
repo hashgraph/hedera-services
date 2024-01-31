@@ -42,6 +42,10 @@ public enum ConsensusRoundHandlerPhase {
      */
     UPDATING_PLATFORM_STATE,
     /**
+     * The platform state is being updated with the running hash of the round.
+     */
+    UPDATING_PLATFORM_STATE_RUNNING_HASH,
+    /**
      * The consensus hash manager is being informed that the round has been handled.
      */
     MARKING_ROUND_COMPLETE,

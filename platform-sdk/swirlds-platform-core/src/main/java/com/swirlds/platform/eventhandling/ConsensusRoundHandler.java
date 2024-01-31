@@ -24,6 +24,7 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.MARKING_ROUND_COMPLETE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
+import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
 
 import com.swirlds.base.function.CheckedConsumer;
@@ -212,11 +213,14 @@ public class ConsensusRoundHandler {
                 event.consensusReached();
             }
 
+            handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
+            updatePlatformState(consensusRound);
+
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
 
-            handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
-            updatePlatformState(consensusRound);
+            handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
+            updatePlatformStateRunningHash(consensusRound);
 
             handlerMetrics.setPhase(MARKING_ROUND_COMPLETE);
             // this calls into the ConsensusHashManager
@@ -236,7 +240,7 @@ public class ConsensusRoundHandler {
      *
      * @param round the consensus round
      */
-    private void updatePlatformState(@NonNull final ConsensusRound round) throws InterruptedException {
+    private void updatePlatformState(@NonNull final ConsensusRound round) {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
@@ -245,6 +249,20 @@ public class ConsensusRoundHandler {
         platformState.setCreationSoftwareVersion(softwareVersion);
         platformState.setRoundsNonAncient(roundsNonAncient);
         platformState.setSnapshot(round.getSnapshot());
+    }
+
+    /**
+     * Update the running hash of the consensus events in the platform state
+     * <p>
+     * This method is called after the consensus round has been applied to the state, to minimize the chance that
+     * we have to wait for the running hash to finish being calculated.
+     *
+     * @param round the consensus round
+     * @throws InterruptedException if this thread is interrupted
+     */
+    private void updatePlatformStateRunningHash(@NonNull final ConsensusRound round) throws InterruptedException {
+        final PlatformState platformState =
+                swirldStateManager.getConsensusState().getPlatformState();
 
         // Update the running hash object. If there are no events, the running hash does not change.
         // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
