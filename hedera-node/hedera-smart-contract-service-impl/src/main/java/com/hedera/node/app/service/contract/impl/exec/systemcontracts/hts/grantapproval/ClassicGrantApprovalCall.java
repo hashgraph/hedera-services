@@ -75,7 +75,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                 frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
             }
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
-                    ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long) status.protoOrdinal())
+                    ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements(status.protoOrdinal(), true)
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
