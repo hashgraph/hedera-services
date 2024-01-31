@@ -16,7 +16,6 @@
 
 package com.swirlds.logging;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
