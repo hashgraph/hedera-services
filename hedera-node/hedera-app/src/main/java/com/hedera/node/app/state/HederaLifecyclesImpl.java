@@ -100,4 +100,9 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             logger.warn("Token service state is empty to update weights from StakingInfo Map");
         }
     }
+
+    @Override
+    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
+        hedera.onNewRecoveredState(recoveredState);
+    }
 }

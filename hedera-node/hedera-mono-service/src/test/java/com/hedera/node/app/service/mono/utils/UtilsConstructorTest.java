@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.utils;
 
+import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
+import com.hedera.node.app.hapi.utils.forensics.RecordParsers;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils;
@@ -88,8 +90,6 @@ import com.hedera.node.app.service.mono.txns.util.TokenUpdateValidator;
 import com.hedera.node.app.service.mono.txns.util.UtilLogicModule;
 import com.hedera.node.app.service.mono.txns.validation.PureValidation;
 import com.hedera.node.app.service.mono.txns.validation.TokenListChecks;
-import com.hedera.node.app.service.mono.utils.forensics.OrderedComparison;
-import com.hedera.node.app.service.mono.utils.forensics.RecordParsers;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
