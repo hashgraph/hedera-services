@@ -423,6 +423,7 @@ public class SingleTransactionRecordBuilderImpl
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
         this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
 

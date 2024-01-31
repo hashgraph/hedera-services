@@ -18,7 +18,7 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;

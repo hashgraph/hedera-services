@@ -86,6 +86,7 @@ import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.validation.EmulatesMapValidator;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -94,7 +95,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -226,7 +226,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                     ServicesConfigurationList.PROTOBUF.parseStrict(propertyFileContent.toReadableSequentialData());
             final var configSource = new SettingsConfigSource(configurationList.nameValueOrThrow(), 101);
             builder.withSource(configSource);
-        } catch (IOException | NullPointerException e) {
+        } catch (ParseException | NullPointerException e) {
             // Ignore. This method may be called with a partial file during regular execution.
         }
     }

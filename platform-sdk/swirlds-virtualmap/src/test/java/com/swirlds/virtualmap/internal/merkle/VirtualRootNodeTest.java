@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.virtualmap.VirtualMapTestUtils.createRoot;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,16 +34,17 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
-import com.swirlds.virtualmap.datasource.InMemoryBuilder;
-import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
+import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
+import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -24,7 +24,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -34,7 +33,6 @@ class VirtualHashRecordTest {
     private static final Cryptography CRYPTO = CryptographyHolder.get();
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the path Constructor works")
     void createInternalRecordUsingPathConstructor() {
@@ -44,7 +42,6 @@ class VirtualHashRecordTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the full constructor works")
     void createInternalRecordUsingPathHashConstructor() {
@@ -55,7 +52,6 @@ class VirtualHashRecordTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("toString with a null hash is OK")
     void toStringWithNullHashDoesNotThrow() {
