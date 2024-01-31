@@ -212,7 +212,7 @@ class HederaStackedWorldStateUpdaterTest {
             given(trackingLedgers.aliases()).willReturn(aliases);
             given(trackingLedgers.accounts()).willReturn(accountsLedger);
             given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
-            given(customizerFactory.apply(any(), any())).willReturn(customizer);
+            given(customizerFactory.apply(any(), any(), any())).willReturn(customizer);
             given(customizer.accountCustomizer()).willReturn(accountCustomizer);
 
             final var created = subject.newAliasedContractAddress(sponsor, alias);
@@ -323,7 +323,8 @@ class HederaStackedWorldStateUpdaterTest {
 
             final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
             given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
-            given(customizerFactory.apply(sponsorAid, accountsLedger)).willReturn(customizer);
+            given(customizerFactory.apply(sponsorAid, accountsLedger, sponsoredAddr))
+                    .willReturn(customizer);
 
             final var allocated = subject.newContractAddress(alias);
             final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());

@@ -16,15 +16,18 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import dagger.Binds;
 import dagger.Module;
 
 @Module
@@ -47,4 +50,7 @@ public interface FileServiceInjectionModule {
     FileUpdateHandler fileUpdateHandler();
 
     FileHandlers fileHandlers();
+
+    @Binds
+    FileSignatureWaivers fileSignatureWaivers(FileSignatureWaiversImpl impl);
 }

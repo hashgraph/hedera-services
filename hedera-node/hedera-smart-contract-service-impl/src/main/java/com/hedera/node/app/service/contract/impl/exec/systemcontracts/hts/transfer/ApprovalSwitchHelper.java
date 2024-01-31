@@ -20,6 +20,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -46,23 +47,26 @@ public class ApprovalSwitchHelper {
      * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} that is identical except any debits
      * whose linked signing keys do not have active signatures are switched to approvals.
      *
-     * @param original         the synthetic {@link CryptoTransferTransactionBody} to switch
-     * @param signatureTest    the {@link Predicate} that determines whether a given key has an active signature
+     * @param original the synthetic {@link CryptoTransferTransactionBody} to switch
+     * @param signatureTest the {@link Predicate} that determines whether a given key has an active signature
      * @param nativeOperations the {@link HederaNativeOperations} that provides account key access
+     * @param senderId the {@link AccountID} of the sender of the synthetic transaction
      * @return the new {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}
      */
     public CryptoTransferTransactionBody switchToApprovalsAsNeededIn(
             @NonNull final CryptoTransferTransactionBody original,
             @NonNull final Predicate<Key> signatureTest,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AccountID senderId) {
         requireNonNull(original);
+        requireNonNull(senderId);
         requireNonNull(signatureTest);
         requireNonNull(nativeOperations);
         final var revision = CryptoTransferTransactionBody.newBuilder();
         if (original.hasTransfers()) {
             final var originalAdjusts = original.transfersOrThrow().accountAmountsOrElse(emptyList());
             revision.transfers(TransferList.newBuilder()
-                    .accountAmounts(revisedAdjusts(originalAdjusts, signatureTest, nativeOperations))
+                    .accountAmounts(revisedAdjusts(originalAdjusts, signatureTest, nativeOperations, senderId))
                     .build());
         }
         if (original.hasTokenTransfers()) {
@@ -73,10 +77,10 @@ public class ApprovalSwitchHelper {
                 final var revisedTokenTransfer = TokenTransferList.newBuilder().token(originalTokenTransfer.token());
                 if (originalTokenTransfer.transfersOrElse(emptyList()).isEmpty()) {
                     revisedTokenTransfer.nftTransfers(revisedOwnershipChanges(
-                            originalTokenTransfer.nftTransfersOrThrow(), signatureTest, nativeOperations));
+                            originalTokenTransfer.nftTransfersOrThrow(), signatureTest, nativeOperations, senderId));
                 } else {
-                    revisedTokenTransfer.transfers(
-                            revisedAdjusts(originalTokenTransfer.transfersOrThrow(), signatureTest, nativeOperations));
+                    revisedTokenTransfer.transfers(revisedAdjusts(
+                            originalTokenTransfer.transfersOrThrow(), signatureTest, nativeOperations, senderId));
                 }
                 revisedTokenTransfers[i] = revisedTokenTransfer.build();
             }
@@ -88,10 +92,11 @@ public class ApprovalSwitchHelper {
     private AccountAmount[] revisedAdjusts(
             @NonNull final List<AccountAmount> original,
             @NonNull final Predicate<Key> signatureTest,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AccountID senderId) {
         final AccountAmount[] revision = new AccountAmount[original.size()];
         for (int i = 0, n = original.size(); i < n; i++) {
-            revision[i] = revisedAdjust(original.get(i), signatureTest, nativeOperations);
+            revision[i] = revisedAdjust(original.get(i), signatureTest, nativeOperations, senderId);
         }
         return revision;
     }
@@ -99,10 +104,14 @@ public class ApprovalSwitchHelper {
     private AccountAmount revisedAdjust(
             @NonNull final AccountAmount original,
             @NonNull final Predicate<Key> signatureTest,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AccountID senderId) {
         if (original.amount() < 0) {
-            final var key =
-                    nativeOperations.getAccountKey(original.accountIDOrThrow().accountNumOrElse(0L));
+            final var debitedAccount = original.accountIDOrThrow();
+            if (senderId.equals(debitedAccount)) {
+                return original;
+            }
+            final var key = nativeOperations.getAccountKey(debitedAccount.accountNumOrElse(0L));
             if (key != null && !signatureTest.test(key)) {
                 return original.copyBuilder().isApproval(true).build();
             }
@@ -113,10 +122,11 @@ public class ApprovalSwitchHelper {
     private NftTransfer[] revisedOwnershipChanges(
             @NonNull final List<NftTransfer> original,
             @NonNull final Predicate<Key> signatureTest,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AccountID senderId) {
         final NftTransfer[] revision = new NftTransfer[original.size()];
         for (int i = 0, n = original.size(); i < n; i++) {
-            revision[i] = revisedNftTransfer(original.get(i), signatureTest, nativeOperations);
+            revision[i] = revisedNftTransfer(original.get(i), signatureTest, nativeOperations, senderId);
         }
         return revision;
     }
@@ -124,9 +134,13 @@ public class ApprovalSwitchHelper {
     private NftTransfer revisedNftTransfer(
             @NonNull final NftTransfer original,
             @NonNull final Predicate<Key> signatureTest,
-            @NonNull final HederaNativeOperations nativeOperations) {
-        final var key =
-                nativeOperations.getAccountKey(original.senderAccountIDOrThrow().accountNumOrElse(0L));
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AccountID senderId) {
+        final var transferAccountId = original.senderAccountIDOrThrow();
+        if (senderId.equals(transferAccountId)) {
+            return original;
+        }
+        final var key = nativeOperations.getAccountKey(transferAccountId.accountNumOrElse(0L));
         if (key != null && !signatureTest.test(key)) {
             return original.copyBuilder().isApproval(true).build();
         }

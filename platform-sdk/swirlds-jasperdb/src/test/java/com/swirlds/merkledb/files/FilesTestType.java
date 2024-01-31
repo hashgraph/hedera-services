@@ -16,13 +16,14 @@
 
 package com.swirlds.merkledb.files;
 
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongKeyVariableSize;
-import com.swirlds.merkledb.ExampleLongLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongLongKeyVariableSize;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 
 /**

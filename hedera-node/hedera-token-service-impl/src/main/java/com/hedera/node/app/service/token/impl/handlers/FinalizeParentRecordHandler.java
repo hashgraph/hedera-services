@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
@@ -88,7 +89,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
             final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
-            if (!rewardsPaid.isEmpty()) {
+            if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
         }

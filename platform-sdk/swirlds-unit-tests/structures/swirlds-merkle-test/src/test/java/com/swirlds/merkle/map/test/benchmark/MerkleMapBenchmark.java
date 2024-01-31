@@ -31,7 +31,6 @@ import com.swirlds.merkle.map.test.benchmark.operations.DeleteAccountOperation;
 import com.swirlds.merkle.map.test.benchmark.operations.ReadBalanceOperation;
 import com.swirlds.merkle.map.test.benchmark.operations.TransferOperation;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @DisplayName("MerkleMap Benchmark")
 class MerkleMapBenchmark {
@@ -56,7 +56,7 @@ class MerkleMapBenchmark {
     }
 
     @Test
-    @Tag(TestTypeTags.PERFORMANCE)
+    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Standard MerkleMap Benchmark")
     void standardMerkleMapBenchmark() throws InterruptedException {
