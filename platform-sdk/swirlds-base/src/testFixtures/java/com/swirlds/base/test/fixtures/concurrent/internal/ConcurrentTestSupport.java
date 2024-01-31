@@ -20,12 +20,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.System.Logger;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -33,32 +34,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * A utility class for executing and waiting for concurrent tasks using a thread pool.
  */
 public class ConcurrentTestSupport implements TestExecutor {
 
+    private static final Logger logger = System.getLogger(ConcurrentTestSupport.class.getName());
+
+    public static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
     private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         final Thread thread = new Thread(r);
-        thread.setName("ParallelStressTester-SingleExecutor");
-        thread.setDaemon(true);
-        return thread;
-    });
-
-    private final AtomicLong poolThreadCounter = new AtomicLong(0);
-
-    private final ExecutorService poolExecutor = Executors.newCachedThreadPool(r -> {
-        final Thread thread = new Thread(r);
-        thread.setName("ParallelStressTester-Pool-" + poolThreadCounter.getAndIncrement());
+        thread.setName(NAME_PREFIX + "-SingleExecutor");
         thread.setDaemon(true);
         return thread;
     });
 
     private final Duration maxWaitTime;
+
+    private final String name;
 
     /**
      * Constructs a ConcurrentTestSupport instance with the specified maximum wait time.
@@ -68,6 +65,7 @@ public class ConcurrentTestSupport implements TestExecutor {
      */
     public ConcurrentTestSupport(@NonNull final Duration maxWaitTime) {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
+        this.name = UUID.randomUUID().toString();
     }
 
     /**
@@ -115,6 +113,8 @@ public class ConcurrentTestSupport implements TestExecutor {
         return submitAndWait(callables.toArray(new Callable[0]));
     }
 
+    private static Lock SINGLE_EXECUTOR_LOCK = new ReentrantLock();
+
     /**
      * Submits an array of Callables for execution concurrently and waits for their results.
      *
@@ -125,39 +125,27 @@ public class ConcurrentTestSupport implements TestExecutor {
     @SafeVarargs
     @NonNull
     public final <V> List<V> submitAndWait(@NonNull final Callable<V>... callables) {
-        final Lock callLock = new ReentrantLock();
-        final Condition allPassedToExecutor = callLock.newCondition();
-        callLock.lock();
+        SINGLE_EXECUTOR_LOCK.lock();
         try {
             final Future<List<V>> futureForAll = SINGLE_EXECUTOR.submit(() -> {
                 final List<Future<V>> futures = new ArrayList<>();
-                callLock.lock();
-                try {
-                    Arrays.stream(callables).map(poolExecutor::submit).forEach(futures::add);
-                    allPassedToExecutor.signal(); // now all futures in results and the original method can return
-                    // In the single executor singleton we will wait until all tasks are done.
-                    // By doing so we ensure that only 1 call to this utils is executed in parallel. All other calls
-                    // will be queued.
-                    try {
-                        return waitForAllDone(futures);
-                    } catch (Exception e) {
-                        futures.forEach(f -> f.cancel(true));
-                        throw new RuntimeException("Error in wait", e);
-                    }
-                } finally {
-                    callLock.unlock();
-                }
+                final AtomicLong poolThreadCounter = new AtomicLong(0);
+                final ExecutorService poolExecutor = Executors.newCachedThreadPool(r -> {
+                    final Thread thread = new Thread(r);
+                    thread.setName(NAME_PREFIX + "-Pool-" + name + "-" + poolThreadCounter.getAndIncrement());
+                    thread.setDaemon(true);
+                    return thread;
+                });
+
+                Stream.of(callables).map(poolExecutor::submit).forEach(futures::add);
+
+                return waitForAllDone(futures);
             });
-            allPassedToExecutor.await();
-            try {
-                return waitForDone(futureForAll);
-            } catch (Exception e) {
-                throw new RuntimeException("Error in wait", e);
-            }
+            return waitForDone(futureForAll);
         } catch (Exception e) {
-            throw new RuntimeException("Error in parallel execution", e);
+            throw new RuntimeException("Error in submitAndWait", e);
         } finally {
-            callLock.unlock();
+            SINGLE_EXECUTOR_LOCK.unlock();
         }
     }
 
@@ -192,9 +180,6 @@ public class ConcurrentTestSupport implements TestExecutor {
             throws InterruptedException, ExecutionException, TimeoutException {
         final List<T> results = new ArrayList<>();
         final long startTime = System.currentTimeMillis();
-        if (futures.isEmpty()) {
-            return List.of();
-        }
         for (final Future<T> future : futures) {
             final long maxWaitTimeMs = maxWaitTime.toMillis() - (System.currentTimeMillis() - startTime);
             final T val = future.get(maxWaitTimeMs, MILLISECONDS);
