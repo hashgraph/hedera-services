@@ -47,7 +47,7 @@ sourceSets {
     // https://github.com/hashgraph/hedera-services/issues/3361
     main { resources { srcDir("src/main/resource") } }
 
-    create("rcdiff") { java.srcDir("src/rcdiff/java") }
+    create("rcdiff")
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -236,6 +236,7 @@ val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
         from(sourceSets["rcdiff"].output)
+        destinationDirectory.set(project.file("rcdiff"))
         archiveFileName.set("rcdiff.jar")
         configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
 
@@ -273,19 +274,6 @@ val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
         group = "build"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
-    }
-
-val cleanRcdiff =
-    tasks.register<Delete>("cleanRcdiff") {
-        group = "build"
-        delete(File(project.file("rcdiff"), "rcdiff.jar"))
-    }
-
-val copyRcdiff =
-    tasks.register<Copy>("copyRcdiff") {
-        group = "copy"
-        from(rcdiffJar)
-        into(project.file("rcdiff"))
     }
 
 val copyYahCli =
