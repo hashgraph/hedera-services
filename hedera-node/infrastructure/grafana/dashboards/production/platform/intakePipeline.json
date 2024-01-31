@@ -73,6 +73,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the event hasher",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -82,7 +83,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -173,6 +174,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the post hash collector",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -182,7 +184,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -273,6 +275,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the internal event validator",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -282,7 +285,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -373,6 +376,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the event deduplicator",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -382,7 +386,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -473,6 +477,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the event signature validator",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -482,7 +487,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -573,6 +578,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
+      "description": "Number of tasks waiting to be handled by the event orphan buffer",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -582,7 +588,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -683,7 +689,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "orphan events",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -774,7 +780,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
-      "description": "",
+      "description": "Number of tasks waiting to be handled by the in order event linker",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -784,7 +790,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -875,7 +881,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
-      "description": "",
+      "description": "Number of tasks waiting to be handled by the linked event intake",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -885,7 +891,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -986,7 +992,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "milliseconds",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -1087,7 +1093,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "events",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -1178,7 +1184,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
-      "description": "",
+      "description": "Number of tasks waiting to be handled by the PCES writer",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1188,7 +1194,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -1334,13 +1340,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Intake Pipeline",
   "uid": "c3475af5-4598-4279-a024-494eb4c4d66d",
-  "version": 9,
+  "version": 11,
   "weekStart": ""
 }
