@@ -62,7 +62,7 @@ public class TaskSchedulerBuilder<O> {
     private boolean externalBackPressure = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
-    private ForkJoinPool pool = ForkJoinPool.commonPool();
+    private ForkJoinPool pool;
     private UncaughtExceptionHandler uncaughtExceptionHandler;
 
     private Duration sleepDuration = Duration.ofNanos(100);
