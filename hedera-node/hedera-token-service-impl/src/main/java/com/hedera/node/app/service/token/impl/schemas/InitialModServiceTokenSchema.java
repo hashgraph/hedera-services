@@ -98,6 +98,7 @@ public class InitialModServiceTokenSchema extends Schema {
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
+    private static final long MAX_TOKENS = 10_000_000_000L;
     private static final long MAX_ACCOUNTS = 10_000_000_000L;
     private static final long MAX_TOKEN_RELS = 10_000_000_000L;
     private static final long MAX_MINTABLE_NFTS = 10_000_000_000L;
@@ -145,7 +146,7 @@ public class InitialModServiceTokenSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
+                StateDefinition.onDisk(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF, MAX_TOKENS),
                 StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
                 StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                 StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
