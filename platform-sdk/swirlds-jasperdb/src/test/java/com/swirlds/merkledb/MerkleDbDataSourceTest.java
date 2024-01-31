@@ -18,10 +18,11 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
-import static com.swirlds.merkledb.MerkleDbTestUtils.shuffle;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.shuffle;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.datasource.VirtualDataSource.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +35,8 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -100,6 +103,7 @@ class MerkleDbDataSourceTest {
     // Tests
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @MethodSource("provideParameters")
     void createAndCheckInternalNodeHashes(final TestType testType, final int hashesRamToDiskThreshold)
             throws IOException, InterruptedException {
@@ -161,6 +165,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void testRandomHashUpdates(final TestType testType) throws IOException {
         final int testSize = 1000;
@@ -212,6 +217,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void createAndCheckLeaves(final TestType testType) throws IOException {
         final int count = 10_000;
@@ -307,6 +313,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void moveLeaf(final TestType testType) throws IOException {
         final int incFirstLeafPath = 1;
@@ -349,6 +356,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void preservesInterruptStatusWhenInterruptedSavingRecords() throws IOException, InterruptedException {
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 createDataSource(testDirectory, "test6", TestType.fixed_fixed, 1000);
@@ -378,6 +386,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void createCloseSnapshotCheckDelete(final TestType testType) throws IOException {
         final int count = 10_000;
@@ -515,6 +524,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructWithOnDiskInternalHashStore() throws InterruptedException {
         final long finiteInMemHashThreshold = 1_000_000;
         assertDoesNotThrow(
@@ -528,6 +538,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructWithNoRamInternalHashStore() {
         assertDoesNotThrow(
                 () -> createDataSource(testDirectory, "test10", TestType.fixed_fixed, 1000, 0)
@@ -539,6 +550,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructStandardStoreWithMergingDisabled() {
         assertDoesNotThrow(
                 () -> TestType.fixed_fixed
@@ -552,6 +564,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void testKeyIndexTypes(final TestType testType) throws Exception {
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =

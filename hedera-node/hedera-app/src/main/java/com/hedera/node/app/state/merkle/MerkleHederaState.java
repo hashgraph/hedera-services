@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -59,6 +60,7 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -177,6 +179,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        // If we are initialized for event stream recovery, we have to register an
+        // extra listener to make sure we call all the required Hedera lifecycles
+        if (trigger == EVENT_STREAM_RECOVERY) {
+            final var notificationEngine = platform.getNotificationEngine();
+            notificationEngine.register(
+                    NewRecoveredStateListener.class,
+                    notification -> lifecycles.onNewRecoveredState(notification.getSwirldState()));
+        }
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
@@ -417,7 +427,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @param stateKey the state key
      * @return -1 if not found, otherwise the index into the children
      */
-    private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
+    public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);

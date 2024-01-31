@@ -80,9 +80,9 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(
-                        GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long)
-                                ResponseCodeEnum.SUCCESS.protoOrdinal())),
+                asBytesResult(GrantApprovalTranslator.GRANT_APPROVAL
+                        .getOutputs()
+                        .encodeElements(ResponseCodeEnum.SUCCESS.protoOrdinal(), true)),
                 result.getOutput());
     }
 

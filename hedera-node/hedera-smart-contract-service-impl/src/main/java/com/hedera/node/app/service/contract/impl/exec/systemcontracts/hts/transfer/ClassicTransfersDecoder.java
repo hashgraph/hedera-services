@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -39,7 +38,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,12 +96,18 @@ public class ClassicTransfersDecoder {
     public TransactionBody decodeCryptoTransferV2(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.decodeCall(encoded);
-        return bodyOf(tokenTransfers(convertTokenTransfers(
-                        call.get(1),
-                        this::convertingMaybeApprovedAdjustments,
-                        this::convertingMaybeApprovedOwnershipChanges,
-                        addressIdConverter))
-                .transfers(convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter)));
+        final var transferList = convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter);
+
+        final var cryptoTransfersBody = tokenTransfers(convertTokenTransfers(
+                call.get(1),
+                this::convertingMaybeApprovedAdjustments,
+                this::convertingMaybeApprovedOwnershipChanges,
+                addressIdConverter));
+
+        if (!transferList.accountAmounts().isEmpty()) {
+            return bodyOf(cryptoTransfersBody.transfers(transferList));
+        }
+        return bodyOf(cryptoTransfersBody);
     }
 
     /**
@@ -217,7 +221,7 @@ public class ClassicTransfersDecoder {
                 IsApproval.TRUE)));
     }
 
-    public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
+    public ResponseCodeEnum checkForFailureStatus(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
             if ((long) call.get(3) < 0) {
@@ -336,10 +340,8 @@ public class ClassicTransfersDecoder {
             final long amount,
             final IsApproval isApproval) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        accountAmounts.add(credit(to, amount));
         accountAmounts.add(debit(from, amount, isApproval));
-        accountAmounts.sort(Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR));
-
+        accountAmounts.add(credit(to, amount));
         return TokenTransferList.newBuilder()
                 .token(tokenId)
                 .transfers(accountAmounts)
