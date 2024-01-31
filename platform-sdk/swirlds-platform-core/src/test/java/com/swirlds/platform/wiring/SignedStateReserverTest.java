@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -33,7 +33,9 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -50,7 +52,10 @@ class SignedStateReserverTest {
                 "create",
                 false);
 
-        final WiringModel model = WiringModel.create(new NoOpMetrics(), Time.getCurrent());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()

@@ -40,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -111,7 +112,9 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     }
 
     private TransactionBody syntheticTransfer(@NonNull final AccountID spenderId) {
-        final var ownerId = addressIdConverter.convert(from);
+        // To get isApproval we need the actual owner, which can be different from 'from'
+        final var ownerId = getOwner();
+        final var fromId = addressIdConverter.convert(from);
         final var receiverId = addressIdConverter.convertCredit(to);
         return TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
@@ -119,11 +122,18 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                                 .token(tokenId)
                                 .nftTransfers(NftTransfer.newBuilder()
                                         .serialNumber(serialNo)
-                                        .senderAccountID(ownerId)
+                                        .senderAccountID(fromId)
                                         .receiverAccountID(receiverId)
                                         .isApproval(!spenderId.equals(ownerId))
                                         .build())
                                 .build()))
                 .build();
+    }
+
+    @Nullable
+    private AccountID getOwner() {
+        final var nft = nativeOperations().getNft(tokenId.tokenNum(), serialNo);
+        final var token = nativeOperations().getToken(tokenId.tokenNum());
+        return nft != null ? nft.ownerIdOrElse(token.treasuryAccountIdOrThrow()) : null;
     }
 }

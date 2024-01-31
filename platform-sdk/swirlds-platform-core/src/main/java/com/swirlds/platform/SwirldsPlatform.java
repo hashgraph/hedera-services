@@ -55,7 +55,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
@@ -507,10 +506,6 @@ public class SwirldsPlatform implements Platform {
         transactionPool = new TransactionPool(platformContext);
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
-
-        // FUTURE WORK: at some point this should be part of the unified platform wiring
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
-        components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 

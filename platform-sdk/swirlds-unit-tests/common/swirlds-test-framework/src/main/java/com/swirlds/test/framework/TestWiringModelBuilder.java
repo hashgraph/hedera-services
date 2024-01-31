@@ -21,6 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * A simple version of a wiring model for scenarios where the wiring model is not needed.
@@ -38,6 +39,6 @@ public final class TestWiringModelBuilder {
     public static WiringModel create() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        return WiringModel.create(platformContext, Time.getCurrent());
+        return WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
     }
 }
