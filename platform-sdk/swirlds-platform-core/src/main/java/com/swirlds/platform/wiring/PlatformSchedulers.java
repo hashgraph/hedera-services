@@ -227,11 +227,10 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
+                // though the eventStreamManager is of DIRECT_STATELESS type, it isn't actually stateless: it just
+                // is thread safe, and can therefore be treated as if it were stateless by the framework
                 model.schedulerBuilder("eventStreamManager")
-                        .withType(config.eventStreamManagerSchedulerType())
-                        .withUnhandledTaskCapacity(config.eventStreamManagerUnhandledCapacity())
-                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true)
+                        .withType(TaskSchedulerType.DIRECT_STATELESS)
                         .build()
                         .cast(),
                 model.schedulerBuilder("runningHashUpdate")

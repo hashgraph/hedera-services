@@ -18,6 +18,7 @@ package com.swirlds.common.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
 
 import com.swirlds.base.time.Time;
@@ -232,6 +233,16 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * @param runningEventHashUpdate the hash to update the running hash with
      */
     public void updateRunningHash(@NonNull final RunningEventHashUpdate runningEventHashUpdate) {
+        try {
+            hashQueueThread.pause();
+            if (writeQueueThread != null) {
+                writeQueueThread.pause();
+            }
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Failed to pause queue threads", e);
+            Thread.currentThread().interrupt();
+        }
+
         if (streamFileWriter != null) {
             streamFileWriter.setStartWriteAtCompleteWindow(runningEventHashUpdate.isReconnect());
         }
@@ -239,6 +250,11 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
         initialHash = new Hash(runningEventHashUpdate.runningEventHash());
         logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", initialHash);
         multiStream.setRunningHash(initialHash);
+
+        hashQueueThread.resume();
+        if (writeQueueThread != null) {
+            writeQueueThread.resume();
+        }
     }
 
     /**

@@ -175,8 +175,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
-                consensusRoundHandlerWiring,
-                eventStreamManagerWiring);
+                consensusRoundHandlerWiring);
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
