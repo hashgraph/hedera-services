@@ -30,7 +30,6 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Event Strings Test")
 class EventStringsTest {
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test event strings")
     void testCopy() {

@@ -31,7 +31,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.Test;
 class ThreadTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Default Configuration Test")
     void defaultConfigurationTest() throws InterruptedException {
@@ -82,7 +80,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Thread Group Test")
     void threadGroupTest() throws InterruptedException {
@@ -120,7 +117,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Daemon Test")
     void daemonTest() throws InterruptedException {
@@ -166,7 +162,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Class Loader Test")
     void classLoaderTest() throws InterruptedException {
@@ -205,7 +200,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Priority Test")
     void priorityTest() throws InterruptedException {
@@ -253,7 +247,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Exception Handler Test")
     void exceptionHandlerTest() throws InterruptedException {
@@ -280,7 +273,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Factory Test")
     void factoryTest() {
