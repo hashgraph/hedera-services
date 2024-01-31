@@ -16,6 +16,17 @@
 
 package com.hedera.node.app.bbm;
 
+import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
+import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
+import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
+import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
+import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -31,22 +42,10 @@ import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Optional;
-
-import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
-import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
-import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
-import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A utility class for dumping the state of the {@link MerkleHederaState} to a directory.
