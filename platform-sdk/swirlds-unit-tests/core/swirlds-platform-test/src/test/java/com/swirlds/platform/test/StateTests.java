@@ -28,7 +28,6 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -63,7 +62,6 @@ class StateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.IO)
     @DisplayName("State Serialization Test")
@@ -82,7 +80,6 @@ class StateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("State Copy Test")
     void stateCopyTest() {

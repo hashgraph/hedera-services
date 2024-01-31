@@ -46,6 +46,6 @@ public class TotalSupplyCall extends AbstractRevertibleTokenViewCall {
     protected @NonNull FullResult resultOfViewingToken(@NonNull Token token) {
         final var output =
                 TotalSupplyTranslator.TOTAL_SUPPLY.getOutputs().encodeElements(BigInteger.valueOf(token.totalSupply()));
-        return successResult(output, 0L);
+        return successResult(output, gasCalculator.viewGasRequirement());
     }
 }

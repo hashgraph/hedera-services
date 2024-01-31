@@ -25,7 +25,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,7 +49,6 @@ class KeyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals Compare To Null")
     void equalsCompareToNull() {
@@ -60,7 +58,6 @@ class KeyTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Serialize And Deserialize Test")
     void serializeAndDeserializeTest() throws IOException {

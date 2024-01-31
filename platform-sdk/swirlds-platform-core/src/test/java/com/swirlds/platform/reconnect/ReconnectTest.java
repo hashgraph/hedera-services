@@ -43,7 +43,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -56,7 +55,6 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -88,7 +86,6 @@ final class ReconnectTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Successfully reconnects multiple times and stats are updated")
     void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
         final int numberOfReconnects = 11;
