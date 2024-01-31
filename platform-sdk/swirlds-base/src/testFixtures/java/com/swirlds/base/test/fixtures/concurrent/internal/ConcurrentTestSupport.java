@@ -74,7 +74,7 @@ public class ConcurrentTestSupport implements TestExecutor {
      * Constructs a ConcurrentTestSupport instance with a default maximum wait time of 1 minute.
      */
     public ConcurrentTestSupport() {
-        this(Duration.ofMinutes(3));
+        this(Duration.ofMinutes(1));
     }
 
     /**
