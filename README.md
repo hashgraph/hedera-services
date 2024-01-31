@@ -8,7 +8,7 @@
 [![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](hedera-node/docs/gradle-quickstart.md)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
-# Hedera Services TEST TEST
+# Hedera Services
 
 Implementation of the Platform and the [services offered](https://github.com/hashgraph/hedera-protobufs) by
 nodes in the [Hedera public network](https://hedera.com).
