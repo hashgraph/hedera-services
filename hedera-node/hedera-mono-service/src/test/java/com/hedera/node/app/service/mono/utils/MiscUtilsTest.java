@@ -731,14 +731,14 @@ class MiscUtilsTest {
     void asTimestampRichInstantTest() {
         final var instant = RichInstant.fromJava(Instant.now());
         final var timestamp = MiscUtils.asTimestamp(instant);
-        assertEquals(instant.toJava(), MiscUtils.timestampToInstant(timestamp));
+        assertEquals(instant.toJava(), CommonUtils.timestampToInstant(timestamp));
     }
 
     @Test
     void asTimestampJavaTest() {
         final var instant = Instant.now();
         final var timestamp = MiscUtils.asTimestamp(instant);
-        assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
+        assertEquals(instant, CommonUtils.timestampToInstant(timestamp));
     }
 
     @Test

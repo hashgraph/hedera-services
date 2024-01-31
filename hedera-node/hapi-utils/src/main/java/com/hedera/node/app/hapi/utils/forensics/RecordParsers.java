@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.utils.forensics;
+package com.hedera.node.app.hapi.utils.forensics;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readSidecarFile;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
-import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -79,7 +78,7 @@ public class RecordParsers {
                     .ifPresent(records -> records.getRecordStreamItemsList().forEach(item -> {
                         final var itemRecord = item.getRecord();
                         entries.add(new RecordStreamEntry(
-                                uncheckedFrom(item.getTransaction()),
+                                TransactionParts.from(item.getTransaction()),
                                 itemRecord,
                                 timestampToInstant(itemRecord.getConsensusTimestamp())));
                     }));
