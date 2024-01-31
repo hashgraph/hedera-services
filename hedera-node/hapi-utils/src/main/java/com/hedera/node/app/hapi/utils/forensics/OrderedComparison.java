@@ -77,12 +77,12 @@ public class OrderedComparison {
         return diff(firstEntries, secondEntries, recordDiffSummarizer);
     }
 
-    private static void alignConsensusTimes(final List<RecordStreamEntry> firstEntries,
-                                            final List<RecordStreamEntry> secondEntries) {
+    private static void alignConsensusTimes(
+            final List<RecordStreamEntry> firstEntries, final List<RecordStreamEntry> secondEntries) {
         int i = 0;
         int j = 0;
         // We assume that only second entries list will be missing entries
-        for(; i < firstEntries.size(); i++, j++) {
+        for (; i < firstEntries.size(); i++, j++) {
             final var firstEntry = firstEntries.get(i);
             for (; j < secondEntries.size(); j++) {
                 final var secondEntry = secondEntries.get(j);
@@ -172,7 +172,7 @@ public class OrderedComparison {
             @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
         final var secondEntry = entries.get(i);
-        if(secondEntry == null) {
+        if (secondEntry == null) {
             throw new UnmatchableException("No matching entry found for entry at position " + i);
         }
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
