@@ -214,6 +214,8 @@ public class ConsensusRoundHandler {
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
+            // it is important to update the platform state before handling the consensus round, since the platform
+            // state is passed into the application handle method, and should contain the data for the current round
             updatePlatformState(consensusRound);
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
