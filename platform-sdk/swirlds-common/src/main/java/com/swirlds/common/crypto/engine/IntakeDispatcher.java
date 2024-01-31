@@ -148,7 +148,7 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
         while (running) {
             final List<Element> workItems = backingQueue.poll();
             if (workItems == null) {
-                Thread.yield();
+                Thread.onSpinWait();
                 continue;
             }
             if (!workItems.isEmpty()) {
