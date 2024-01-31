@@ -127,7 +127,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
 
-    private static final List<Long> systemAccounts =
+    public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
 
     public static void main(String... args) {
