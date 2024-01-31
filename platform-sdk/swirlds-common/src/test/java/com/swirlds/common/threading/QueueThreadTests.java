@@ -97,8 +97,8 @@ class QueueThreadTests {
 
     static final String THREAD_NAME = "myThread";
     static final String METRIC_CATEGORY = "myCategory";
-    static final String MAX_SIZE_METRIC_NAME = THREAD_NAME + "-queueMaxSize";
-    static final String MIN_SIZE_METRIC_NAME = THREAD_NAME + "-queueMinSize";
+    static final String MAX_SIZE_METRIC_NAME = THREAD_NAME + "_queueMaxSize";
+    static final String MIN_SIZE_METRIC_NAME = THREAD_NAME + "_queueMinSize";
 
     private static Stream<Arguments> queueTypes() {
         return Stream.of(

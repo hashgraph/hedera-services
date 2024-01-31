@@ -61,8 +61,7 @@ class UptimeMetrics {
             .withDescription("The time, in microseconds, required to compute uptime information each round.");
     private final RunningAverageMetric uptimeComputationTime;
 
-    private static final String ROUNDS_SINCE_LAST_CONSENSUS_EVENT = "roundsSinceLastConsensusEvent-";
-    private static final String ROUNDS_SINCE_LAST_JUDGE = "roundsSinceLastJudge-";
+    private static final String ROUNDS_SINCE_LAST_CONSENSUS_EVENT = "roundsSinceLastConsensusEvent_";
 
     /**
      * Construct a new uptime metrics object.

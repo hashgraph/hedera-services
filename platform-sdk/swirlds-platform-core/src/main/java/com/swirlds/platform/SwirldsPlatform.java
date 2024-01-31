@@ -598,7 +598,7 @@ public class SwirldsPlatform implements Platform {
                 components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                         .setNodeId(selfId)
                         .setComponent(PLATFORM_THREAD_POOL_NAME)
-                        .setThreadName("state-hash-sign")
+                        .setThreadName("state_hash_sign")
                         .setHandler(newSignedStateFromTransactionsConsumer)
                         .setCapacity(1)
                         .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())

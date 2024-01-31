@@ -469,7 +469,7 @@ class LegacyCsvWriterTest {
                                 RunningAverageMetric Info:,RunningAverageMetric Info,
                                 SpeedometerMetric Info:,SpeedometerMetric Info,
 
-                                ,,platform,platform,platform\\.info,platform\\.info,
+                                ,,platform,platform,platform:info,platform:info,
                                 ,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
                                 ,,0\\.0,0\\.0,0\\.0,0\\.0,
                                 ,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
@@ -519,7 +519,7 @@ class LegacyCsvWriterTest {
                                 RunningAverageMetric Info:,RunningAverageMetric Info,
                                 SpeedometerMetric Info:,SpeedometerMetric Info,
 
-                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform:info,platform:info,
                                 ,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
                                 ,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
                                 ,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
