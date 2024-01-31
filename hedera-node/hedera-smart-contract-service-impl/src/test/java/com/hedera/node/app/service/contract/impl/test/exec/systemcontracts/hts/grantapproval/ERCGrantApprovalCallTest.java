@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.grantapproval;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
@@ -24,9 +28,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -43,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import java.math.BigInteger;
-import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
@@ -95,7 +99,6 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
-        given(nativeOperations.getAccount(anyLong())).willReturn(account);
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())
@@ -130,8 +133,6 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        given(nativeOperations.getAccount(anyLong())).willReturn(account);
-        given(nft.ownerIdOrElse(any())).willReturn(OWNER_ID);
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())
@@ -160,15 +161,17 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        given(nativeOperations.getAccount(anyLong())).willReturn(null).willReturn(account);
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(OWNER_ID),
+                        eq(ContractCallRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_ALLOWANCE_SPENDER_ID);
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(State.REVERT, result.getState());
-        assertEquals(
-                Bytes.wrap(ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID
-                        .protoName()
-                        .getBytes()),
-                result.getOutput());
+        assertEquals(UInt256.valueOf(INVALID_ALLOWANCE_SPENDER_ID.protoOrdinal()), result.getOutput());
     }
 
     @Test
@@ -185,18 +188,21 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        // sender account is found, but it is not the owner account
-        given(nativeOperations.getAccount(anyLong())).willReturn(account);
-        given(nft.ownerIdOrElse(any())).willReturn(UNAUTHORIZED_SPENDER_ID);
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(OWNER_ID),
+                        eq(ContractCallRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status())
+                .willReturn(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL)
+                .willReturn(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(State.REVERT, result.getState());
-        assertEquals(
-                Bytes.wrap(ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO
-                        .protoName()
-                        .getBytes()),
-                result.getOutput());
+        assertEquals(UInt256.valueOf(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoOrdinal()), result.getOutput());
+        verify(recordBuilder).status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
     }
 
     @Test
@@ -212,18 +218,18 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 TokenType.NON_FUNGIBLE_UNIQUE);
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(null);
-        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        // sender account is found, but it is not the owner account
-        given(nativeOperations.getAccount(anyLong())).willReturn(account);
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(OWNER_ID),
+                        eq(ContractCallRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(State.REVERT, result.getState());
-        assertEquals(
-                Bytes.wrap(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER
-                        .protoName()
-                        .getBytes()),
-                result.getOutput());
+        assertEquals(UInt256.valueOf(INVALID_TOKEN_NFT_SERIAL_NUMBER.protoOrdinal()), result.getOutput());
     }
 
     @Test
@@ -246,8 +252,6 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        given(nativeOperations.getAccount(anyLong())).willReturn(account);
-        given(nft.ownerIdOrElse(any())).willReturn(OWNER_ID);
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())

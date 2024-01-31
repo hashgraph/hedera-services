@@ -64,7 +64,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
-    private final AccountID spenderId;
+    private final AccountID senderId;
     private final ResponseCodeEnum preemptingFailureStatus;
     private final TransactionBody syntheticTransfer;
     private final Configuration configuration;
@@ -83,7 +83,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final byte[] selector,
-            @NonNull final AccountID spenderId,
+            @NonNull final AccountID senderId,
             @Nullable final ResponseCodeEnum preemptingFailureStatus,
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
@@ -93,7 +93,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
-        this.spenderId = requireNonNull(spenderId);
+        this.senderId = requireNonNull(senderId);
         this.preemptingFailureStatus = preemptingFailureStatus;
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
@@ -108,7 +108,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
-        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         if (preemptingFailureStatus != null) {
             return reversionWith(preemptingFailureStatus, gasRequirement);
         }
@@ -130,11 +130,12 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                                 .switchToApprovalsAsNeededIn(
                                         syntheticTransfer.cryptoTransferOrThrow(),
                                         systemContractOperations().activeSignatureTestWith(verificationStrategy),
-                                        nativeOperations()))
+                                        nativeOperations(),
+                                        senderId))
                         .build()
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
-                .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
+                .dispatch(transferToDispatch, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(op, frame);

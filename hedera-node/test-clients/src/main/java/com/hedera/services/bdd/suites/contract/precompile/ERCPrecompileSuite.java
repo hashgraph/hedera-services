@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -1567,11 +1569,12 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return onlyDefaultHapiSpec(
                         "someErc721ApproveAndRemoveScenariosPass",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -1646,6 +1649,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoTransfer(movingUnique(NF_TOKEN, 3L, 4L).between(SOME_ERC_721_SCENARIOS, B_CIVILIAN)),
                         getTokenNftInfo(NF_TOKEN, 1L).hasAccountID(A_CIVILIAN),
                         getTokenNftInfo(NF_TOKEN, 2L).hasAccountID(A_CIVILIAN),
+                        getAccountDetails(B_CIVILIAN).logged(),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,

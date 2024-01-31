@@ -146,6 +146,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
     private static final String PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC = "hedera-node/test-clients/record-snapshots";
+    public static final long UNADJUSTED_NUM_CUTOFF = 666_666_666L;
 
     private final SnapshotMode mode;
     private final Set<SnapshotMatchMode> matchModes;
@@ -624,37 +625,48 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
-            final var normalizedNum = placeholderNum < accountID.getAccountNum()
-                    ? accountID.getAccountNum() - placeholderNum
-                    : accountID.getAccountNum();
-            return accountID.toBuilder().setAccountNum(normalizedNum).build();
+            return accountID.toBuilder()
+                    .setAccountNum(numOrOffsetBetween(accountID.getAccountNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ContractID contractID) {
-            final var normalizedNum = placeholderNum < contractID.getContractNum()
-                    ? contractID.getContractNum() - placeholderNum
-                    : contractID.getContractNum();
-            return contractID.toBuilder().setContractNum(normalizedNum).build();
+            return contractID.toBuilder()
+                    .setContractNum(numOrOffsetBetween(contractID.getContractNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TopicID topicID) {
-            final var normalizedNum = placeholderNum < topicID.getTopicNum()
-                    ? topicID.getTopicNum() - placeholderNum
-                    : topicID.getTopicNum();
-            return topicID.toBuilder().setTopicNum(normalizedNum).build();
+            return topicID.toBuilder()
+                    .setTopicNum(numOrOffsetBetween(topicID.getTopicNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TokenID tokenID) {
-            final var normalizedNum = placeholderNum < tokenID.getTokenNum()
-                    ? tokenID.getTokenNum() - placeholderNum
-                    : tokenID.getTokenNum();
-            return tokenID.toBuilder().setTokenNum(normalizedNum).build();
+            return tokenID.toBuilder()
+                    .setTokenNum(numOrOffsetBetween(tokenID.getTokenNum(), placeholderNum))
+                    .build();
         } else if (message instanceof FileID fileID) {
-            final var normalizedNum =
-                    placeholderNum < fileID.getFileNum() ? fileID.getFileNum() - placeholderNum : fileID.getFileNum();
-            return fileID.toBuilder().setFileNum(normalizedNum).build();
+            return fileID.toBuilder()
+                    .setFileNum(numOrOffsetBetween(fileID.getFileNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ScheduleID scheduleID) {
-            final var normalizedNum = placeholderNum < scheduleID.getScheduleNum()
-                    ? scheduleID.getScheduleNum() - placeholderNum
-                    : scheduleID.getScheduleNum();
-            return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
+            return scheduleID.toBuilder()
+                    .setScheduleNum(numOrOffsetBetween(scheduleID.getScheduleNum(), placeholderNum))
+                    .build();
         } else {
             return message;
         }
+    }
+
+    /**
+     * For numbers smaller than a cutoff used to create intentionally missing entity
+     * ids; but greater than the placeholder num, returns the number minus the placeholder
+     * num.
+     *
+     * @param num the number to maybe offset
+     * @param placeholderNum the placeholder number to use in normalization
+     * @return the number or the number minus the placeholder number
+     */
+    private long numOrOffsetBetween(final long num, final long placeholderNum) {
+        if (num >= UNADJUSTED_NUM_CUTOFF) {
+            return num;
+        }
+        return placeholderNum < num ? num - placeholderNum : num;
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {

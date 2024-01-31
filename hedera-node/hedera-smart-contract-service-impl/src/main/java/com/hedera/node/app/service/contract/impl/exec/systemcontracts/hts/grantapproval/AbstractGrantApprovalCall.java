@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -29,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -60,6 +65,14 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         this.spenderId = spenderId;
         this.amount = amount;
         this.tokenType = tokenType;
+    }
+
+    protected ContractCallRecordBuilder withMonoStandard(@NonNull final ContractCallRecordBuilder recordBuilder) {
+        if (recordBuilder.status() == DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL
+                || recordBuilder.status() == INVALID_SIGNATURE) {
+            recordBuilder.status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+        }
+        return recordBuilder;
     }
 
     protected TransactionBody synthApprovalBody() {
