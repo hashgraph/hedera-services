@@ -48,10 +48,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -64,6 +60,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Navigates a signed state "file" and returns information from it
@@ -327,8 +326,6 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
          * @param firstConsTimeOfCurrentBlock <b>(6)</b> The consensus time of the first transaction in the current block; necessary for reconnecting nodes to detect
          *                                    when the current block is finished.
          */
-
-
         final var runningHashLeaf = servicesState.runningHashLeaf();
         final var runningHash1 = runningHashLeaf.getNMinus1RunningHash().getHash();
         final var runningHash2 = runningHashLeaf.getNMinus2RunningHash().getHash();
@@ -349,7 +346,6 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     @NonNull
     public MerkleMapLike<EntityNum, MerkleStakingInfo> getStakingInfo() {
         final var stakingInfo = servicesState.stakingInfo();
-
         assertSignedStateComponentExists(stakingInfo, "stakingInfo");
         return stakingInfo;
     }

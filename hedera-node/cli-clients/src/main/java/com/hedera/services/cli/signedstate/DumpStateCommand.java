@@ -350,8 +350,29 @@ public class DumpStateCommand extends AbstractCommand {
         Objects.requireNonNull(blockInfoPath);
         init();
         System.out.println("=== Block info ===");
-        DumpTokenAssociationsSubcommand.doit(
+        DumpBlockInfoSubcommand.doit(
                 parent.signedState, blockInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "staking-info", description = "Dump staking info")
+    void stakingInfo(
+            @Option(
+                            names = {"--staking-info"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for staking info dump")
+                    @NonNull
+                    final Path stakingInfoPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(stakingInfoPath);
+        init();
+        System.out.println("=== Staking info ===");
+        DumpStakingInfoSubcommand.doit(
+                parent.signedState, stakingInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 
