@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;

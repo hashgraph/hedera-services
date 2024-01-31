@@ -33,7 +33,6 @@ import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import org.junit.jupiter.api.DisplayName;

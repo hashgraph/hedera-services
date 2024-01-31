@@ -24,7 +24,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.LinkedList;
 import java.util.Queue;

@@ -18,7 +18,11 @@ package com.swirlds.merkledb.files;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;

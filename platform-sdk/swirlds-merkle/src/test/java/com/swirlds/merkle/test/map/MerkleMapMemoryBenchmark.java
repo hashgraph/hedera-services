@@ -21,7 +21,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;

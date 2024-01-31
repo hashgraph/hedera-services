@@ -38,7 +38,6 @@ import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.route.ReverseMerkleRouteIterator;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import java.util.ArrayList;

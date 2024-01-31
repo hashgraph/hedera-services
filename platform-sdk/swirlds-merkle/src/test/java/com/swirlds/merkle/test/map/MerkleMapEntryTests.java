@@ -30,7 +30,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.map.internal.MerkleMapEntry;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

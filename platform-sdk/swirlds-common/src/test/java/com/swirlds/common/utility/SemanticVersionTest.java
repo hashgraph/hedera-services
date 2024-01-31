@@ -26,7 +26,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;

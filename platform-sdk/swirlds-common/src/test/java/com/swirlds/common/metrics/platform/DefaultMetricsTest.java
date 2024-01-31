@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.ADDED;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.REMOVED;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

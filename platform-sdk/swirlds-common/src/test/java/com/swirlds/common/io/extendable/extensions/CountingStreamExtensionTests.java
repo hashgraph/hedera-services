@@ -22,7 +22,6 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

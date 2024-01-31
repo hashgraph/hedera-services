@@ -18,7 +18,6 @@ package com.swirlds.merkle.test.tree.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.tree.internal.BitUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.fixtures.crypto.EcdsaSignedTxnPool;
 import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;

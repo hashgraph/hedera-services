@@ -21,8 +21,6 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;

@@ -25,7 +25,6 @@ import com.swirlds.common.test.fixtures.benchmark.BenchmarkConfiguration;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkOperation;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkStatistic;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.benchmark.BenchmarkAccount;
 import com.swirlds.merkle.map.test.benchmark.BenchmarkKey;

@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.internal;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.KNOWN;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.NOT_KNOWN;

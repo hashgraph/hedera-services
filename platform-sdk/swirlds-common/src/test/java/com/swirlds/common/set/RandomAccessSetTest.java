@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.test.fixtures.set.Hotspot;
 import com.swirlds.common.test.fixtures.set.HotspotHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;

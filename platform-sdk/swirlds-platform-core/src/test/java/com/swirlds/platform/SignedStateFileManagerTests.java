@@ -18,12 +18,12 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
