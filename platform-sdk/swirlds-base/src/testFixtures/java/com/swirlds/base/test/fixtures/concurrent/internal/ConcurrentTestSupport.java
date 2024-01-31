@@ -20,7 +20,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.System.Logger;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,9 +42,8 @@ import java.util.stream.Stream;
  */
 public class ConcurrentTestSupport implements TestExecutor {
 
-    private static final Logger logger = System.getLogger(ConcurrentTestSupport.class.getName());
-
     public static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
+    private static final Lock SINGLE_EXECUTOR_LOCK = new ReentrantLock();
     private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         final Thread thread = new Thread(r);
         thread.setName(NAME_PREFIX + "-SingleExecutor");
@@ -60,8 +58,7 @@ public class ConcurrentTestSupport implements TestExecutor {
     /**
      * Constructs a ConcurrentTestSupport instance with the specified maximum wait time.
      *
-     * @param maxWaitTime The maximum time to wait for task completion.
-     *                    Must not be null.
+     * @param maxWaitTime The maximum time to wait for task completion. Must not be null.
      */
     public ConcurrentTestSupport(@NonNull final Duration maxWaitTime) {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
@@ -112,8 +109,6 @@ public class ConcurrentTestSupport implements TestExecutor {
         Objects.requireNonNull(callables, "callables must not be null");
         return submitAndWait(callables.toArray(new Callable[0]));
     }
-
-    private static Lock SINGLE_EXECUTOR_LOCK = new ReentrantLock();
 
     /**
      * Submits an array of Callables for execution concurrently and waits for their results.
