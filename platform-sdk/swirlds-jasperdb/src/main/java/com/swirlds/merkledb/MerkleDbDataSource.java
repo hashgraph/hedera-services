@@ -17,7 +17,6 @@
 package com.swirlds.merkledb;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
@@ -43,7 +42,6 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.collections.OffHeapUser;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
@@ -52,17 +50,13 @@ import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
-import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
-import com.swirlds.merkledb.files.hashmap.VirtualKeySetSerializer;
 import com.swirlds.merkledb.serialize.KeyIndexType;
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -447,22 +441,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         compactionCoordinator.stopAndDisableBackgroundCompaction();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override
-    public VirtualKeySet<K> buildKeySet() {
-        final KeySerializer<K> keySerializer =
-                isLongKeyMode ? (KeySerializer<K>) new VirtualKeySetSerializer() : objectKeyToPath.getKeySerializer();
-        final MerkleDbConfig config = database.getConfig();
-        return new HalfDiskVirtualKeySet<>(
-                database.getConfig(),
-                keySerializer,
-                config.keySetBloomFilterHashCount(),
-                config.keySetBloomFilterSizeInBytes() * BYTES_TO_BITS,
-                config.keySetHalfDiskHashMapSize(),
-                config.keySetHalfDiskHashMapBuffer());
-    }
-
     /**
      * Get the count of open database instances. This is databases that have been opened but not yet
      * closed.
@@ -621,7 +599,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             return null;
         }
 
-//        assert validLeafPathRange.withinRange(path);
+        //        assert validLeafPathRange.withinRange(path);
 
         // If the key returns a value from the map, but it lies outside the first/last
         // leaf path, then return null. This can happen if the map contains old keys
@@ -1236,7 +1214,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // update objectKeyToPath
             if (isLongKeyMode) {
                 final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-//                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
+                //                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(),
+                // INVALID_PATH);
                 longKeyToPath.putIfEqual(key, path, INVALID_PATH);
             } else {
                 objectKeyToPath.deleteIfEquals(leafRecord.getKey(), path);

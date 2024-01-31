@@ -23,7 +23,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -266,14 +265,6 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     @Override
     public void registerMetrics(final Metrics metrics) {
         // this database has no statistics
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualKeySet<K> buildKeySet() {
-        return new InMemoryKeySet<>();
     }
 
     // =================================================================================================================

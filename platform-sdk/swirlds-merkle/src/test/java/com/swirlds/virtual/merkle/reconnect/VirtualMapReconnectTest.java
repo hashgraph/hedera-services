@@ -16,8 +16,6 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,15 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.config.MerkleDbConfig_;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
@@ -46,7 +41,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -59,17 +53,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Virtual Map Reconnect Test")
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
-
-    @BeforeAll
-    static void beforeAll() throws Exception {
-        final Configuration config = new TestConfigBuilder()
-                .withValue(MerkleDbConfig_.KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES, 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
-                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_SIZE, "10000")
-                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_BUFFER, "1000")
-                .getOrCreateConfig();
-
-        ConfigurationHolder.getInstance().setConfiguration(config);
-    }
 
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.1")})
@@ -551,7 +534,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Nested
     class OldLearnerLeavesRemoved {
 
-        private void assertNoKeys(final VirtualMap<TestKey, TestValue> map, final TestKey ... keys) {
+        private void assertNoKeys(final VirtualMap<TestKey, TestValue> map, final TestKey... keys) {
             for (final TestKey key : keys) {
                 assertNull(map.get(key), "Key " + key + " must not be in the map after reconnect");
                 assertFalse(map.containsKey(key), "Key " + key + " must not be in the map after reconnect");
