@@ -29,7 +29,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -75,11 +74,7 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
-                body,
-                systemContractGasCalculator,
-                mockEnhancement(),
-                AccountID.DEFAULT,
-                ClassicTransfersTranslator.TRANSFER_NFTS.selector());
+                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }
 
@@ -100,11 +95,7 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
-                body,
-                systemContractGasCalculator,
-                mockEnhancement(),
-                AccountID.DEFAULT,
-                ClassicTransfersTranslator.CRYPTO_TRANSFER.selector());
+                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }
 

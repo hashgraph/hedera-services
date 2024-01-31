@@ -22,8 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -95,9 +93,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
-        final var selector = (from == null) ? ERC_20_TRANSFER.selector() : ERC_20_TRANSFER_FROM.selector();
-        final var gasRequirement =
-                transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
+        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         if (tokenId == null) {
             return reversionWith(INVALID_TOKEN_ID, gasRequirement);
         }
@@ -112,8 +108,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
         } else {
             final var encodedOutput = (from == null)
-                    ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
-                    : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
+                    ? Erc20TransfersTranslator.ERC_20_TRANSFER.getOutputs().encodeElements(true)
+                    : Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
             recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
                     .contractCallResult(Bytes.wrap(encodedOutput.array()))
                     .build());

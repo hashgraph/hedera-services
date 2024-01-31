@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Objects.requireNonNull;
 
@@ -85,8 +84,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_NFT));
         }
         final var syntheticTransfer = syntheticTransfer(senderId);
-        final var gasRequirement = transferGasRequirement(
-                syntheticTransfer, gasCalculator, enhancement, senderId, ERC_721_TRANSFER_FROM.selector());
+        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
@@ -101,7 +99,12 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                     .get(0);
             logSuccessfulNftTransfer(tokenId, nftTransfer, readableAccountStore(), frame);
             return gasOnly(
-                    successResult(ERC_721_TRANSFER_FROM.getOutputs().encodeElements(), gasRequirement, recordBuilder),
+                    successResult(
+                            Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
+                                    .getOutputs()
+                                    .encodeElements(),
+                            gasRequirement,
+                            recordBuilder),
                     status,
                     false);
         }
