@@ -814,7 +814,8 @@ class SequentialTaskSchedulerTests {
             value = hash32(value, string.hashCode());
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(10), "Wire value did not match expected value");
+        assertEventuallyEquals(
+                value, wireValue::get, Duration.ofSeconds(10), "Wire value did not match expected value");
 
         model.stop();
     }
