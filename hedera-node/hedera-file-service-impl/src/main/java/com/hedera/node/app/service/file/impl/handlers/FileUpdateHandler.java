@@ -37,6 +37,7 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -65,10 +66,12 @@ public class FileUpdateHandler implements TransactionHandler {
     private static final Timestamp EXPIRE_NEVER =
             Timestamp.newBuilder().seconds(Long.MAX_VALUE - 1).build();
     private final FileOpsUsage fileOpsUsage;
+    private final FileSignatureWaivers fileSignatureWaivers;
 
     @Inject
-    public FileUpdateHandler(final FileOpsUsage fileOpsUsage) {
+    public FileUpdateHandler(final FileOpsUsage fileOpsUsage, final FileSignatureWaivers fileSignatureWaivers1) {
         this.fileOpsUsage = fileOpsUsage;
+        this.fileSignatureWaivers = fileSignatureWaivers1;
     }
 
     /**
@@ -96,14 +99,19 @@ public class FileUpdateHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var transactionBody = context.body().fileUpdateOrThrow();
+        final var body = context.body();
+        final var op = body.fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        final var transactionFileId = requireNonNull(op.fileID());
         preValidate(transactionFileId, fileStore, context);
+        final var areSignaturesWaived = fileSignatureWaivers.areFileUpdateSignaturesWaived(body, context.payer());
+        if (areSignaturesWaived) {
+            return;
+        }
 
         var file = fileStore.getFileLeaf(transactionFileId);
-        if (wantsToMutateNonExpiryField(transactionBody)) {
-            validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        if (wantsToMutateNonExpiryField(op)) {
+            validateAndAddRequiredKeys(file, op.keys(), context);
         }
     }
 
