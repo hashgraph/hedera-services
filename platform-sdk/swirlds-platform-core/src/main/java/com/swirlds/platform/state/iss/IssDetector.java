@@ -492,7 +492,7 @@ public class IssDetector {
      * @param n the notification to wrap
      * @return a list containing the notification, or null if the notification is null
      */
-    private List<IssNotification> returnList(@Nullable final IssNotification n) {
+    private static List<IssNotification> returnList(@Nullable final IssNotification n) {
         return n == null ? null : List.of(n);
     }
 
@@ -500,7 +500,7 @@ public class IssDetector {
      * @param list the list to filter
      * @return the list, or null if the list is null or empty
      */
-    private List<IssNotification> returnList(@Nullable final List<IssNotification> list) {
+    private static List<IssNotification> returnList(@Nullable final List<IssNotification> list) {
         return list == null
                 ? null
                 : list.stream()

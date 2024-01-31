@@ -90,7 +90,7 @@ public class RoundHashValidator {
     /**
      * Get the hash that this node computed for the round if it is known, or null if it is not known.
      */
-    public Hash getSelfStateHash() { // TODO remove all synchronized
+    public Hash getSelfStateHash() {
         return selfStateHash;
     }
 

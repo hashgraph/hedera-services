@@ -79,7 +79,7 @@ public class ConsensusHashFinder {
     private Hash consensusHash;
 
     /**
-     * Create a new object for tracking agreement on the hash of a particular round. against the consensus hash
+     * Create a new object for tracking agreement on the hash of a particular round against the consensus hash
      *
      * @param round       the current round
      * @param totalWeight the total weight contained within the network for this round
