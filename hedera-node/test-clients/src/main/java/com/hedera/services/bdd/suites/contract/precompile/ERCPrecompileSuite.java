@@ -16,28 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -101,6 +79,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
@@ -1571,7 +1570,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc721ApproveAndRemoveScenariosPass",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         EXPECT_STREAMLINED_INGEST_RECORDS)
