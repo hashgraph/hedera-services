@@ -469,7 +469,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      *
      * @return Count of open databases.
      */
-    static long getCountOfOpenDatabases() {
+    public static long getCountOfOpenDatabases() {
         return COUNT_OF_OPEN_DATABASES.sum();
     }
 

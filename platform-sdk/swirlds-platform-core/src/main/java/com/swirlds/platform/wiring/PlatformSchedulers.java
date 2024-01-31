@@ -54,6 +54,7 @@ import java.util.List;
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
+ * @param futureEventBufferScheduler                the scheduler for the future event buffer
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -76,7 +77,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<ConsensusRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
-        @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler) {
+        @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
+        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -234,6 +236,13 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("runningHashUpdate")
                         .withType(TaskSchedulerType.DIRECT_STATELESS)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("futureEventBuffer")
+                        .withType(config.futureEventBufferSchedulerType())
+                        .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }

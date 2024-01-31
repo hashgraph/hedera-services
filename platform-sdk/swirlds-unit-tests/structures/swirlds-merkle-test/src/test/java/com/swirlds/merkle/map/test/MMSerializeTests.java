@@ -29,7 +29,6 @@ import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.util.KeyValueProvider;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +53,6 @@ class MMSerializeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Add value to deserialized map")
     void serializeDeserializeAdd() throws IOException {

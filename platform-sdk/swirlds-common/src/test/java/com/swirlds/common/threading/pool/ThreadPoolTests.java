@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +35,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ThreadPoolTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Basic Threading Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -89,7 +87,6 @@ class ThreadPoolTests {
     }
 
     @ParameterizedTest
-    @Tag(TestTypeTags.PERFORMANCE)
     @Tag(TestComponentTags.THREADING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Ensure threads are properly disposed")
@@ -108,7 +105,6 @@ class ThreadPoolTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Catch exception on thread")

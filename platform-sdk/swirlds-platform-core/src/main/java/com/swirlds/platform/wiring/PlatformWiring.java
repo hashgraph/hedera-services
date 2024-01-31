@@ -36,6 +36,7 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -68,6 +69,7 @@ import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
+import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
@@ -104,6 +106,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
+    private final FutureEventBufferWiring futureEventBufferWiring;
     private final GossipWiring gossipWiring;
     private final EventWindowManagerWiring eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -179,6 +182,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
+        futureEventBufferWiring = FutureEventBufferWiring.create(schedulers.futureEventBufferScheduler());
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
@@ -209,6 +213,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.nonExpiredEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(futureEventBufferWiring.eventWindowInput(), INJECT);
     }
 
     /**
@@ -226,7 +231,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.eventInput());
+        futureEventBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
         orphanBufferWiring
                 .eventOutput()
@@ -309,6 +315,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param stateSignatureCollector the signed state manager to bind
      * @param consensusRoundHandler   the consensus round handler to bind
      * @param eventStreamManager      the event stream manager to bind
+     * @param futureEventBuffer       the future event buffer to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -329,7 +336,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final EventStreamManager<EventImpl> eventStreamManager) {
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final FutureEventBuffer futureEventBuffer) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -350,6 +358,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         eventStreamManagerWiring.bind(eventStreamManager);
+        futureEventBufferWiring.bind(futureEventBuffer);
     }
 
     /**

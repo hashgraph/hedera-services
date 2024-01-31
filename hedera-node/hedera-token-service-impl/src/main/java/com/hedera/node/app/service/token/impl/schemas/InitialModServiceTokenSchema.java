@@ -206,6 +206,11 @@ public class InitialModServiceTokenSchema extends Schema {
                                     var fromNft = entry.right();
                                     var fromNft2 = new MerkleUniqueToken(
                                             fromNft.getOwner(), fromNft.getMetadata(), fromNft.getCreationTime());
+                                    fromNft2.setKey(nftId.toEntityNumPair());
+                                    fromNft2.setPrev(fromNft.getPrev());
+                                    fromNft2.setNext(fromNft.getNext());
+                                    fromNft2.setSpender(fromNft.getSpender());
+
                                     var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
                                     nftsToState.get().put(toNftId, translated);
                                     if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
@@ -270,7 +275,9 @@ public class InitialModServiceTokenSchema extends Schema {
             log.info("BBM: doing accounts");
 
             final var numAccountInsertions = new AtomicLong();
+            final var numAliasesInsertions = new AtomicLong();
             final var acctsToState = new AtomicReference<>(ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY));
+            final var aliasesState = new AtomicReference<>(ctx.newStates().<ProtoBytes, AccountID>get(ALIASES_KEY));
             try {
                 VirtualMapLike.from(acctsFs)
                         .extractVirtualMapData(
@@ -292,6 +299,18 @@ public class InitialModServiceTokenSchema extends Schema {
                                         ctx.copyAndReleaseOnDiskState(ACCOUNTS_KEY);
                                         // And ensure we have the latest writable state
                                         acctsToState.set(ctx.newStates().get(ACCOUNTS_KEY));
+                                    }
+                                    if (toAcct.alias().length() > 0) {
+                                        aliasesState
+                                                .get()
+                                                .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
+                                        if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
+                                            // Make sure we are flushing data to disk as we go
+                                            ((WritableKVStateBase) aliasesState.get()).commit();
+                                            ctx.copyAndReleaseOnDiskState(ALIASES_KEY);
+                                            // And ensure we have the latest writable state
+                                            aliasesState.set(ctx.newStates().get(ALIASES_KEY));
+                                        }
                                     }
                                 },
                                 1);

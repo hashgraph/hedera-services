@@ -33,7 +33,6 @@ import com.swirlds.demo.platform.nft.ReferenceNftLedger;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -230,7 +229,6 @@ class NftLedgerTests {
     @ParameterizedTest
     @ValueSource(doubles = {1.0, 0.99, 0.75, 0.5, 0.25, 0.01, 0.0})
     @Tag(TestComponentTags.TESTING)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TIME_CONSUMING)
     @DisplayName("Randomized Test")
     void randomizedTest(final double tokenTrackingFraction) {

@@ -75,6 +75,9 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventStreamManagerSchedulerType                   the event stream manager scheduler type
  * @param eventStreamManagerUnhandledCapacity               number of unhandled tasks allowed for the event stream
  *                                                          manager
+ * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
+ * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
+ *                                                          buffer
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -112,4 +115,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventStreamManagerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventStreamManagerUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int eventStreamManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
+        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity) {}

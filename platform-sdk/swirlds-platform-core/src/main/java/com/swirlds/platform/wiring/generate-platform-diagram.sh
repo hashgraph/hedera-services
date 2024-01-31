@@ -20,6 +20,7 @@ pcli diagram \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g' \
+    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \

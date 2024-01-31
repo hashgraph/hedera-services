@@ -253,6 +253,16 @@ public class UtilVerbs {
         return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(HAPI_TEST_NETWORK)), ops);
     }
 
+    public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {
+        requireNonNull(ops);
+        return new EnvFilterOp(EnvFilterOp.EnvType.CI, ops);
+    }
+
+    public static EnvFilterOp ifNotCi(@NonNull final HapiSpecOperation... ops) {
+        requireNonNull(ops);
+        return new EnvFilterOp(EnvFilterOp.EnvType.NOT_CI, ops);
+    }
+
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
         return new SourcedOp(source);
     }

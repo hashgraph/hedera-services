@@ -1062,10 +1062,6 @@ saved.txt
 *.pces
 *.pcesD
 
-### Hedera Node Files
-hedera-node/hapi/hedera-protobufs
-hedera-node/hapi/checkouts.bin
-
 # Do not ignore the files required by the Platform Core tests
 !platform-sdk/**/src/test/resources/**/*.jar
 !platform-sdk/**/src/test/resources/**/*.pfx
@@ -1084,3 +1080,5 @@ gha-creds-*.json
 /platform-sdk/swirlds-config-processor/src/main/java/com/swirlds/config/processor/antlr/generated/*.interp
 /platform-sdk/swirlds-config-processor/src/main/java/com/swirlds/config/processor/antlr/generated/*.tokens
 
+### Temporary ignore for differential testing
+hedera-node/test-clients/rcdiff/diff.txt

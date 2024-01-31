@@ -514,10 +514,6 @@ public final class MiscUtils {
                 .build();
     }
 
-    public static Instant timestampToInstant(final Timestamp timestamp) {
-        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
-    }
-
     public static Optional<QueryHeader> activeHeaderFrom(final Query query) {
         switch (query.getQueryCase()) {
             case TOKENGETNFTINFO:
