@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DAT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT_WITH_SIGNER_NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -185,5 +186,41 @@ class ContextTransactionProcessorTest {
                 processors);
 
         assertFailsWith(INVALID_ETHEREUM_TRANSACTION, subject::call);
+    }
+
+    @Test
+    void returnedResultContainsSignerNonce() {
+        final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
+        final var processors = Map.of(VERSION_046, processor);
+
+        final var subject = new ContextTransactionProcessor(
+                HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
+                context,
+                contractsConfig,
+                CONFIGURATION,
+                hederaEvmContext,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processors);
+
+        given(context.body()).willReturn(TransactionBody.DEFAULT);
+        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
+                .willReturn(HEVM_CREATION);
+        given(processor.processTransaction(
+                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
+
+        final var protoResult =
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
+        final var expectedResult = new CallOutcome(
+                protoResult,
+                SUCCESS,
+                HEVM_CREATION.contractId(),
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.gasPrice(),
+                null,
+                null);
+        assertEquals(expectedResult, subject.call());
     }
 }

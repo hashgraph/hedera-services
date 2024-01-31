@@ -479,6 +479,7 @@ public class TestHelpers {
     public static final PrecompileContractResult PRECOMPILE_CONTRACT_FAILED_RESULT =
             PrecompiledContract.PrecompileContractResult.halt(
                     org.apache.tuweni.bytes.Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+    public static final Long SIGNER_NONCE = 5L;
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
             SENDER_ID,
@@ -503,6 +504,19 @@ public class TestHelpers {
             null,
             null,
             null);
+
+    public static final HederaEvmTransactionResult SUCCESS_RESULT_WITH_SIGNER_NONCE =
+            HederaEvmTransactionResult.successFrom(
+                    GAS_LIMIT / 2,
+                    Wei.of(NETWORK_GAS_PRICE),
+                    SENDER_ID,
+                    CALLED_CONTRACT_ID,
+                    CALLED_CONTRACT_EVM_ADDRESS,
+                    pbjToTuweniBytes(CALL_DATA),
+                    List.of(BESU_LOG),
+                    null,
+                    null,
+                    SIGNER_NONCE);
 
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
