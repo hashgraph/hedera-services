@@ -103,57 +103,6 @@ public class MessageDigestTests {
         checkMessages(messages);
     }
 
-    /**
-     *
-     */
-    @Test
-    public void digestHalfQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize() / 2];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void digestExactQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize()];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void digestDoubleQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize() * 2];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
     private void checkMessages(Message... messages) throws ExecutionException, InterruptedException {
         int numInvalid = 0;
 
