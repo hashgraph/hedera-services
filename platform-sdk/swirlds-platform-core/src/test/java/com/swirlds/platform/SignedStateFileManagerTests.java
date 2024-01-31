@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateF
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -35,8 +36,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.StateConfig_;
+import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,6 +50,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -85,6 +88,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("SignedStateFileManager Tests")
+@Tag(TIMING_SENSITIVE)
 class SignedStateFileManagerTests {
 
     private static final NodeId SELF_ID = new NodeId(1234);
@@ -110,12 +114,13 @@ class SignedStateFileManagerTests {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
-        signedStateFilePath = new SignedStateFilePath(context.getConfiguration().getConfigData(StateConfig.class));
+        signedStateFilePath =
+                new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
     }
 
     private SignedStateMetrics buildMockMetrics() {
@@ -261,7 +266,7 @@ class SignedStateFileManagerTests {
                 .withValue(StateConfig_.SAVE_STATE_PERIOD, stateSavePeriod)
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
@@ -381,7 +386,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())

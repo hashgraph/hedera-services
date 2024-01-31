@@ -36,7 +36,6 @@ import com.swirlds.platform.test.observers.ObservationType;
 import com.swirlds.platform.test.observers.SimpleEventTracker;
 import com.swirlds.platform.test.observers.StaleObserver;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -55,7 +54,6 @@ class EventObserverDispatcherTests {
     SimpleEvent e2 = new SimpleEvent(2);
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Verify Observations")
     void test() {

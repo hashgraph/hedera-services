@@ -284,11 +284,7 @@ public class ConversionUtils {
                                 : tuweniToPbjBytes(
                                         requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
-            allStateChanges.add(new ContractStateChange(
-                    ContractID.newBuilder()
-                            .contractNum(storageAccess.contractNumber())
-                            .build(),
-                    changes));
+            allStateChanges.add(new ContractStateChange(storageAccess.contractID(), changes));
         }
         return new ContractStateChanges(allStateChanges);
     }

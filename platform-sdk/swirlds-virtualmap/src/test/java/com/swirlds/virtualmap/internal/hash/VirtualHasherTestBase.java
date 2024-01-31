@@ -19,14 +19,14 @@ package com.swirlds.virtualmap.internal.hash;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +91,9 @@ public class VirtualHasherTestBase extends VirtualTestBase {
                 final VirtualHashRecord internal = ds.getInternal(path);
                 assert internal != null;
                 ds.setInternal(new VirtualHashRecord(path));
+                if (path == 0) {
+                    break;
+                }
                 path = Path.getParentPath(path);
             }
         });

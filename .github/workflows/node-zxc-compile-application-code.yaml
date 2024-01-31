@@ -130,6 +130,10 @@ on:
       snyk-token:
         description: "The Snyk access token is used by Snyk to analyze the code for vulnerabilities "
         required: false
+      codacy-project-token:
+        description: "The Codacy project token used to report code coverage."
+        required: false
+
 defaults:
   run:
     shell: bash
@@ -161,18 +165,18 @@ jobs:
         run: git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
         with:
           cache-read-only: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
+        uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
         with:
           node-version: ${{ inputs.node-version }}
 
@@ -215,20 +219,20 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble --scan --no-daemon
+        run: ${GRADLE_EXEC} assemble --scan
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        run: ${GRADLE_EXEC} spotlessCheck --scan --no-daemon
+        run: ${GRADLE_EXEC} spotlessCheck --scan
 
       - name: Gradle Dependency Scopes Check
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} checkAllModuleInfo --scan --continue --no-daemon
+        run: ${GRADLE_EXEC} checkAllModuleInfo --scan --continue
 
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} check --continue --scan --no-daemon
+        run: ${GRADLE_EXEC} test jacocoTestReport --continue --scan
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -247,12 +251,12 @@ jobs:
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} createDockerImage --scan --no-daemon
+        run: ${GRADLE_EXEC} createDockerImage --scan
 
       - name: Integration Testing
         id: gradle-itest
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} itest --scan --no-daemon
+        run: ${GRADLE_EXEC} itest --scan
 
       - name: Publish Integration Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -264,7 +268,7 @@ jobs:
           junit_files: "**/build/test-results/itest/TEST-*.xml"
 
       - name: Publish Integration Test Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-integration-tests && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: Integration Test Network Logs
@@ -289,7 +293,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestMisc/TEST-*.xml"
 
       - name: Publish HAPI Test (Misc) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-misc && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Misc) Network Logs
@@ -302,7 +306,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestCrypto -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestCrypto -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Crypto) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -314,7 +318,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestCrypto/TEST-*.xml"
 
       - name: Publish HAPI Test (crypto) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-crypto && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Crypto) Network Logs
@@ -327,7 +331,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestToken -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestToken -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Token) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -339,7 +343,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestToken/TEST-*.xml"
 
       - name: Publish HAPI Test (Token) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-token && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Token) Network Logs
@@ -352,7 +356,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestSmartContract -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestSmartContract -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Smart Contract) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -364,7 +368,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestSmartContract/TEST-*.xml"
 
       - name: Publish HAPI Test (Smart Contract) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-smart-contract && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Smart Contract) Network Logs
@@ -377,7 +381,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestTimeConsuming -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestTimeConsuming -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Time Consuming) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -389,7 +393,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestTimeConsuming/TEST-*.xml"
 
       - name: Publish HAPI Test (Time Consuming) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-time-consuming && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Time Consuming) Network Logs
@@ -402,7 +406,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestRestart -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestRestart -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Restart) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -414,7 +418,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestRestart/TEST-*.xml"
 
       - name: Publish HAPI Test (Restart) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-restart && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Restart) Network Logs
@@ -428,7 +432,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestNDReconnect -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestNDReconnect -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Node Death Reconnect) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -440,7 +444,7 @@ jobs:
           junit_files: "**/build/test-results/hapiTestNDReconnect/TEST-*.xml"
 
       - name: Publish HAPI Test (Node Death Reconnect) Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (Node Death Reconnect) Network Logs
@@ -451,7 +455,7 @@ jobs:
       - name: E2E Testing
         id: gradle-eet
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} eet --scan --no-daemon
+        run: ${GRADLE_EXEC} eet --scan
 
       - name: Publish E2E Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -463,7 +467,7 @@ jobs:
           junit_files: "**/build/test-results/eet/TEST-*.xml"
 
       - name: Publish E2E Test Network Logs
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-e2e-tests && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: E2E Test Network Logs
@@ -474,8 +478,14 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
 
+      - name: Publish to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java $(find . -name 'jacoco*.xml' -printf '-r %p ')
+
       - name: Publish Test Reports
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
@@ -598,14 +608,29 @@ jobs:
             !cancelled()
           }}
         run: |
-          if [[ -f "snyk-test.json" ]]; then
+          if [[ -f "snyk-test.json" && -n "$(cat snyk-test.json | tr -d '[:space:]')" ]]; then
             snyk-to-html -i snyk-test.json -o snyk-test.html --summary
             html-to-markdown snyk-test.html -o snyk
             cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [[ -f "snyk-code.json" ]]; then
+          if [[ -f "snyk-code.json" && -n "$(cat snyk-code.json | tr -d '[:space:]')" ]]; then
             snyk-to-html -i snyk-code.json -o snyk-code.html --summary
             html-to-markdown snyk-code.html -o snyk
             cat snyk/snyk-code.html.md >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Check Snyk Files
+        if: ${{ always() }}
+        run: |
+          echo "::group::Snyk File List"
+            ls -lah snyk* || true
+          echo "::endgroup::"
+
+          echo "::group::Snyk Test Contents"
+            cat snyk-test.json || true
+          echo "::endgroup::"
+
+          echo "::group::Snyk Code Contents"
+            cat snyk-code.json || true
+          echo "::endgroup::"

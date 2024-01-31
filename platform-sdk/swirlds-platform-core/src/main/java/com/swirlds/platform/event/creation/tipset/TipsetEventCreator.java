@@ -20,16 +20,15 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
-import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
@@ -431,7 +430,7 @@ public class TipsetEventCreator implements EventCreator {
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
                 nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
                         ? nonAncientEventWindow.pendingConsensusRound()
-                        : addressBook.getRound(),
+                        : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
@@ -443,29 +442,6 @@ public class TipsetEventCreator implements EventCreator {
         cryptography.digestSync(event);
         event.buildDescriptor();
         return event;
-    }
-
-    /**
-     * Get the generation of a descriptor, handle null appropriately.
-     */
-    private static long getGeneration(@Nullable final EventDescriptor descriptor) {
-        if (descriptor == null) {
-            return GENERATION_UNDEFINED;
-        } else {
-            return descriptor.getGeneration();
-        }
-    }
-
-    /**
-     * Get the hash of a descriptor, handle null appropriately.
-     */
-    @Nullable
-    private static Hash getHash(@Nullable final EventDescriptor descriptor) {
-        if (descriptor == null) {
-            return null;
-        } else {
-            return descriptor.getHash();
-        }
     }
 
     /**

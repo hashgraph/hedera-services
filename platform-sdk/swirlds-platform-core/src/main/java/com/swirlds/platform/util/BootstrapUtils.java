@@ -23,9 +23,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
-import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.BasicCommonConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -49,8 +48,11 @@ import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -135,7 +137,9 @@ public final class BootstrapUtils {
         configurationBuilder
                 .withSource(mappedSettingsConfigSource)
                 .withConfigDataType(BasicConfig.class)
+                .withConfigDataType(BasicCommonConfig.class)
                 .withConfigDataType(StateConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)

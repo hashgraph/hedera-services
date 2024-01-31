@@ -81,9 +81,8 @@ import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.BasicCommonConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
@@ -93,7 +92,10 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.appcomm.WiringConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -123,12 +125,14 @@ public final class HederaTestConfigBuilder {
         return new TestConfigBuilder(false)
                 // Configuration Data Types from the Hashgraph Platform.
                 .withConfigDataType(BasicConfig.class)
+                .withConfigDataType(BasicCommonConfig.class)
                 .withConfigDataType(ConsensusConfig.class)
                 .withConfigDataType(EventConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(SocketConfig.class)
                 .withConfigDataType(StateConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(WiringConfig.class)
                 .withConfigDataType(CryptoConfig.class)

@@ -19,13 +19,13 @@ package com.swirlds.platform.state.signed;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;

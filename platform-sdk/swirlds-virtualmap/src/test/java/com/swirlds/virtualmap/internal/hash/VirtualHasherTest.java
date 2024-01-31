@@ -25,13 +25,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -59,7 +58,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If the stream is null, an NPE will be raised.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Null stream produces NPE")
     void nullStreamProducesNPE() {
@@ -75,7 +73,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If the stream is empty, a null hash is returned.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Empty stream results in a null hash")
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "RedundantOperationOnEmptyContainer"})
@@ -90,7 +87,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * If either the firstLeafPath or lastLeafPath is &lt; 1, then a null hash is returned.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Invalid leaf paths returns null for hash")
     void invalidFirstOrLastLeafPathProducesNull() {
@@ -119,7 +115,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      */
     @ParameterizedTest
     @MethodSource("hashingPermutations")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test various dirty nodes in a tree")
     void hashingPermutations(final long firstLeafPath, final long lastLeafPath, final List<Long> dirtyPaths) {
@@ -147,7 +142,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         assertTrue(savedInternals.contains(0L), "Expected true");
         assertEquals(savedInternals.size(), seenInternals.size() + 1, "Expected equals");
         assertCallsAreBalanced(listener);
-        assertRecordsInRankAreAscendingPathOrder(listener);
     }
 
     /**
@@ -271,7 +265,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * *may* not have a problem. So if this is intermittent, then we have a problem.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test the same situation over and over and over")
     void repeatedTest() {
@@ -296,7 +289,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * in these javadocs. Instead, look for the images in the design docs.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Verify methods on the listener are called at the right frequency")
     void listenerCallCounts() {
@@ -312,11 +304,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
 
         // Check the different callbacks were called the correct number of times
         assertEquals(1, listener.onHashingStartedCallCount, "Unexpected count");
-        assertEquals(3, listener.onBatchStartedCallCount, "Unexpected count");
-        assertEquals(12, listener.onRankStartedCallCount, "Unexpected count");
         assertEquals(61, listener.onNodeHashedCallCount, "Unexpected count");
-        assertEquals(12, listener.onRankCompletedCallCount, "Unexpected count");
-        assertEquals(3, listener.onBatchCompletedCallCount, "Unexpected count");
         assertEquals(1, listener.onHashingCompletedCallCount, "Unexpected count");
 
         // Validate the calls were all balanced
@@ -330,7 +318,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      * needless performance problem). This test covers that specific case.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Verify the hasher does not ask for internal records it will recreate")
     void hasherDoesNotAskForInternalsItWillRecreate() {
@@ -361,30 +348,15 @@ class VirtualHasherTest extends VirtualHasherTestBase {
     @SuppressWarnings("SpellCheckingInspection")
     private static void assertCallsAreBalanced(final HashingListener listener) {
         // Check the call order was correct. Something like:
-        // {[<LLLLLL><IIII><II>][<LLLLLL><IIII><II>]}
         final Deque<Character> tokenStack = new ArrayDeque<>();
         final String tokens = listener.callHistory.toString();
         for (int i = 0; i < tokens.length(); i++) {
             final char token = tokens.charAt(i);
             switch (token) {
                 case HashingListener.ON_HASHING_STARTED_SYMBOL:
-                case HashingListener.ON_BATCH_STARTED_SYMBOL:
-                case HashingListener.ON_RANK_STARTED_SYMBOL:
                     tokenStack.push(token);
                     break;
                 case HashingListener.ON_INTERNAL_SYMBOL:
-                    break;
-                case HashingListener.ON_RANK_COMPLETED_SYMBOL:
-                    assertEquals(
-                            HashingListener.ON_RANK_STARTED_SYMBOL,
-                            tokenStack.pop(),
-                            "Unbalanced calls: expected onRankCompleted to be called");
-                    break;
-                case HashingListener.ON_BATCH_COMPLETED_SYMBOL:
-                    assertEquals(
-                            HashingListener.ON_BATCH_STARTED_SYMBOL,
-                            tokenStack.pop(),
-                            "Unbalanced calls: expected onBatchCompleted to be called");
                     break;
                 case HashingListener.ON_HASHING_COMPLETED_SYMBOL:
                     assertEquals(
@@ -398,96 +370,44 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         }
     }
 
-    private static void assertRecordsInRankAreAscendingPathOrder(final HashingListener listener) {
-        for (final List<VirtualHashRecord> rank : listener.ranks) {
-            long prevPath = Path.INVALID_PATH;
-            for (final VirtualHashRecord r : rank) {
-                assertTrue(
-                        prevPath < r.path(),
-                        "Path not in ascending path order. prevPath=" + prevPath + ", path=" + r.path());
-                prevPath = r.path();
-            }
-        }
-    }
-
     /**
      * An implementation of {@link VirtualHashListener} used during testing. Specifically, we need to capture
      * the set of internal and leaf records that are sent to the listener during hashing to validate
      * that hashing visited everything we expect.
      */
     private static final class HashingListener implements VirtualHashListener<TestKey, TestValue> {
+
         static final char ON_HASHING_STARTED_SYMBOL = '{';
         static final char ON_HASHING_COMPLETED_SYMBOL = '}';
-        static final char ON_BATCH_STARTED_SYMBOL = '[';
-        static final char ON_BATCH_COMPLETED_SYMBOL = ']';
-        static final char ON_RANK_STARTED_SYMBOL = '<';
-        static final char ON_RANK_COMPLETED_SYMBOL = '>';
         static final char ON_INTERNAL_SYMBOL = 'I';
 
         private int onHashingStartedCallCount = 0;
-        private int onBatchStartedCallCount = 0;
-        private int onRankStartedCallCount = 0;
         private int onNodeHashedCallCount = 0;
-        private int onRankCompletedCallCount = 0;
-        private int onBatchCompletedCallCount = 0;
         private int onHashingCompletedCallCount = 0;
         private final StringBuilder callHistory = new StringBuilder();
 
-        private final Deque<List<VirtualHashRecord>> ranks = new ArrayDeque<>();
-        private final Deque<List<VirtualHashRecord>> internalBatches = new ArrayDeque<>();
+        private final List<VirtualHashRecord> internals = new ArrayList<>();
 
-        List<VirtualHashRecord> unsortedInternals() {
-            List<VirtualHashRecord> records = new ArrayList<>();
-            for (List<VirtualHashRecord> list : internalBatches) {
-                records.addAll(list);
-            }
-            return records;
+        synchronized List<VirtualHashRecord> unsortedInternals() {
+            return new ArrayList<>(internals);
         }
 
         @Override
-        public void onHashingStarted() {
+        public synchronized void onHashingStarted() {
             onHashingStartedCallCount++;
             callHistory.append(ON_HASHING_STARTED_SYMBOL);
-            internalBatches.clear();
+            internals.clear();
         }
 
         @Override
-        public void onBatchStarted() {
-            onBatchStartedCallCount++;
-            callHistory.append(ON_BATCH_STARTED_SYMBOL);
-            internalBatches.add(new ArrayList<>());
-        }
-
-        @Override
-        public void onRankStarted() {
-            onRankStartedCallCount++;
-            callHistory.append(ON_RANK_STARTED_SYMBOL);
-            ranks.add(new ArrayList<>());
-        }
-
-        @Override
-        public void onNodeHashed(final long path, final Hash hash) {
+        public synchronized void onNodeHashed(final long path, final Hash hash) {
             onNodeHashedCallCount++;
             callHistory.append(ON_INTERNAL_SYMBOL);
-            final VirtualHashRecord rec = new VirtualHashRecord(path, hash);
-            internalBatches.getLast().add(rec);
-            ranks.getLast().add(rec);
+            internals.add(new VirtualHashRecord(path, hash));
         }
 
         @Override
-        public void onRankCompleted() {
-            onRankCompletedCallCount++;
-            callHistory.append(ON_RANK_COMPLETED_SYMBOL);
-        }
-
-        @Override
-        public void onBatchCompleted() {
-            onBatchCompletedCallCount++;
-            callHistory.append(ON_BATCH_COMPLETED_SYMBOL);
-        }
-
-        @Override
-        public void onHashingCompleted() {
+        public synchronized void onHashingCompleted() {
             onHashingCompletedCallCount++;
             callHistory.append(ON_HASHING_COMPLETED_SYMBOL);
         }

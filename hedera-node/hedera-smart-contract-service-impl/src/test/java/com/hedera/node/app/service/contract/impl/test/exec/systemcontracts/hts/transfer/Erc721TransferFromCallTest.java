@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RECEIVER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -105,7 +106,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(Bytes.wrap(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName().getBytes()), result.getOutput());
+        assertEquals(readableRevertReason(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO), result.getOutput());
     }
 
     private void givenSynthIdHelperForToAccount() {
