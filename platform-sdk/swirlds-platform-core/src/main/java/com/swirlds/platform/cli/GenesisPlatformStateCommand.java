@@ -60,7 +60,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
     }
 
     /**
-     * The path to state to edit
+     * The path to the output directory
      */
     @CommandLine.Parameters(description = "The path to the output directory", index = "1")
     private void setOutputDir(final Path outputDir) {

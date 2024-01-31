@@ -59,7 +59,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
     }
 
     /**
-     * The path to state to edit
+     * The path to the address book to validate
      */
     @CommandLine.Parameters(description = "The path to the address book to validate as a successor", index = "1")
     private void setAddressBookPath(final Path addressBookPath) {
