@@ -156,6 +156,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.memo()).isEqualTo(fungibleToken.memo());
         assertThat(token.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+        assertThat(token.metadataKey()).isEqualTo(fungibleToken.metadataKey());
+        assertThat(token.metadata()).isEqualTo(fungibleToken.metadata());
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 

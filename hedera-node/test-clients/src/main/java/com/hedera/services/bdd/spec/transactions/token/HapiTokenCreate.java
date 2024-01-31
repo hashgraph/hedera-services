@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
@@ -326,6 +327,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                             symbol.ifPresent(b::setSymbol);
                             name.ifPresent(b::setName);
                             entityMemo.ifPresent(s -> b.setMemo(s));
+                            metadata.ifPresent(s -> b.setMetadata(ByteString.copyFromUtf8(s)));
                             initialSupply.ifPresent(b::setInitialSupply);
                             maxSupply.ifPresent(b::setMaxSupply);
                             decimals.ifPresent(b::setDecimals);
@@ -415,6 +417,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             return;
         }
         final var registry = spec.registry();
+        metadata.ifPresent(s ->  registry.saveMetadata(token, s));
         symbol.ifPresent(s -> registry.saveSymbol(token, s));
         name.ifPresent(s -> registry.saveName(token, s));
         registry.saveMemo(token, memo.orElse(""));
