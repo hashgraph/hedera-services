@@ -27,6 +27,7 @@ import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -64,7 +65,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -92,7 +93,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();

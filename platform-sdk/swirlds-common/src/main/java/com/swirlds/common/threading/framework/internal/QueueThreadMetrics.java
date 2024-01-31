@@ -56,7 +56,7 @@ public class QueueThreadMetrics {
      * @return the name of the busy time metric
      */
     public static String buildBusyTimeMetricName(@NonNull final String threadName) {
-        return "thread-busy-" + threadName;
+        return "thread_busy_" + threadName;
     }
 
     /**
