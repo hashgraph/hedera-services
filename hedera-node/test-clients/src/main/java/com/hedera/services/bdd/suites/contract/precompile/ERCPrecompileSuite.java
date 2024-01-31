@@ -1648,7 +1648,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoTransfer(movingUnique(NF_TOKEN, 3L, 4L).between(SOME_ERC_721_SCENARIOS, B_CIVILIAN)),
                         getTokenNftInfo(NF_TOKEN, 1L).hasAccountID(A_CIVILIAN),
                         getTokenNftInfo(NF_TOKEN, 2L).hasAccountID(A_CIVILIAN),
-                        getAccountDetails(B_CIVILIAN).logged(),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,
