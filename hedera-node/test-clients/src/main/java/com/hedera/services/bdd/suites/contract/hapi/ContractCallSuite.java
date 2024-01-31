@@ -98,6 +98,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Address;
@@ -255,7 +256,8 @@ public class ContractCallSuite extends HapiSuite {
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
-                repeatedCreate2FailsWithInterpretableActionSidecars());
+                repeatedCreate2FailsWithInterpretableActionSidecars(),
+                callStaticCallToLargeAddress());
     }
 
     @HapiTest
@@ -2415,6 +2417,27 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
                                         .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+    }
+
+    @HapiTest
+    final HapiSpec callStaticCallToLargeAddress() {
+        final var txn = "txn";
+        final var contract = "CallInConstructor";
+        return defaultHapiSpec("callStaticAddress")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(txn).hasKnownStatus(SUCCESS))
+                .when(contractCall(contract, "callSomebody").via(txn))
+                .then(getTxnRecord(txn).logged(), withOpContext((spec, opLog) -> {
+                    final var op = getTxnRecord(txn);
+                    allRunFor(spec, op);
+                    final var record = op.getResponseRecord();
+                    final var callResult = record.getContractCallResult();
+                    final var callContractID = callResult.getContractID();
+                    assertTrue(
+                            callContractID.getContractNum() < 10000,
+                            "Expected contract num < 10000 but got " + callContractID.getContractNum());
+                }));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {
