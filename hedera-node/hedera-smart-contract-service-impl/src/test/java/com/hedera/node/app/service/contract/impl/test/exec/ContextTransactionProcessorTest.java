@@ -225,10 +225,9 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(transactionBody.hasContractCall()).willReturn(true);
         given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
-        given(hevmTransactionFactory.fromContractCallException(any(), any())).willReturn(HEVM_Exception);
+        given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
 
@@ -256,11 +255,15 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(transactionBody.hasContractCall()).willReturn(false);
+        given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
+        given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
         given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
+        given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
 
-        assertFailsWith(INVALID_CONTRACT_ID, subject::call);
+        final var outcome = subject.call();
+        verify(rootProxyWorldUpdater).commit();
+        assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
 
     @Test

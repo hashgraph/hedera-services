@@ -159,17 +159,35 @@ public class CustomGasCharging {
         requireNonNull(worldUpdater);
         requireNonNull(transaction);
 
-        final var senderAccount = worldUpdater.getHederaAccount(sender);
-        requireNonNull(senderAccount);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
-        // If for some reason the account does not have enough to pay the intrinsic gas cost, then charge the entire
-        // balance
+
+        if (transaction.isEthereumTransaction()) {
+            final var fee = feeForAborted(transaction.relayerId(), context, worldUpdater, intrinsicGas);
+            worldUpdater.collectFee(transaction.relayerId(), fee);
+        } else {
+            final var fee = feeForAborted(sender, context, worldUpdater, intrinsicGas);
+            worldUpdater.collectFee(sender, fee);
+        }
+    }
+
+    private long feeForAborted(
+            @NonNull final AccountID accountID,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            final long intrinsicGas) {
+        requireNonNull(accountID);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+
+        final var hederaAccount = worldUpdater.getHederaAccount(accountID);
+        requireNonNull(hederaAccount);
         final var fee = Math.min(
                 gasCostGiven(intrinsicGas, context.gasPrice()),
-                senderAccount.getBalance().toLong());
+                hederaAccount.getBalance().toLong());
         // protective check to ensure that the fee is not excessive
         final var protectedFee = Math.min(fee, ONE_HBAR_IN_TINYBARS);
-        worldUpdater.collectFee(sender, protectedFee);
+        validateTrue(hederaAccount.getBalance().toLong() >= protectedFee, INSUFFICIENT_PAYER_BALANCE);
+        return protectedFee;
     }
 
     private void chargeWithOnlySender(

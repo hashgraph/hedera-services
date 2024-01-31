@@ -202,7 +202,6 @@ class HevmTransactionFactoryTest {
         final var transaction = getManufacturedCallException(
                 b -> b.contractID(CALLED_CONTRACT_ID).gas(30_000L));
         assertEquals(AccountID.DEFAULT, transaction.senderId());
-        assertEquals(CALLED_CONTRACT_ID, transaction.contractId());
         assertNull(transaction.relayerId());
         assertFalse(transaction.hasExpectedNonce());
         assertEquals(Bytes.EMPTY, transaction.payload());
@@ -640,12 +639,11 @@ class HevmTransactionFactoryTest {
 
     private HederaEvmTransaction getManufacturedCallException(
             @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
-        return subject.fromContractCallException(
+        return subject.fromContractTxException(
                 TransactionBody.newBuilder()
                         .transactionID(TransactionID.newBuilder())
                         .contractCall(callWith(spec))
-                        .build()
-                        .contractCallOrThrow(),
+                        .build(),
                 new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 

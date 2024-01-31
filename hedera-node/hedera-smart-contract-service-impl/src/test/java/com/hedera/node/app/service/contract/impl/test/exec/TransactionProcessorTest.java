@@ -363,7 +363,7 @@ class TransactionProcessorTest {
                 () -> subject.processTransaction(
                         transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
                 AbortException.class);
-        assertThat(abortException.isChargeable()).isTrue();
+        assertThat(abortException.isChargeable()).isFalse();
     }
 
     @Test

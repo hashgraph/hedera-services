@@ -169,6 +169,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context) {
         try {
             return computeInvolvedParties(transaction, updater, config);
+        } catch (AbortException e) {
+            throw e;
         } catch (HandleException e) {
             throw new AbortException(e.getStatus(), transaction.senderId(), null, true);
         }

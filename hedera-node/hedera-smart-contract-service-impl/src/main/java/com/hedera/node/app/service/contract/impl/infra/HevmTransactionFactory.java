@@ -244,17 +244,28 @@ public class HevmTransactionFactory {
      * @param exception the {@link Exception} to wrap
      * @return the  {@link HederaEvmTransaction} containing the exception
      */
-    public HederaEvmTransaction fromContractCallException(
-            @NonNull final ContractCallTransactionBody body, HandleException exception) {
+    public HederaEvmTransaction fromContractTxException(
+            @NonNull final TransactionBody body, @NonNull final HandleException exception) {
+        final var gasPrice =
+                switch (body.data().kind()) {
+                    case CONTRACT_CREATE_INSTANCE -> body.contractCreateInstanceOrThrow()
+                            .gas();
+                    case CONTRACT_CALL -> body.contractCallOrThrow().gas();
+                    case ETHEREUM_TRANSACTION -> {
+                        final var ethTxData = assertValidEthTx(body.ethereumTransactionOrThrow());
+                        yield ethTxData.gasLimit();
+                    }
+                    default -> throw new IllegalArgumentException("Not a contract operation");
+                };
         return new HederaEvmTransaction(
                 AccountID.DEFAULT,
                 null,
-                asPriorityId(body.contractIDOrThrow(), accountStore),
+                null,
                 NOT_APPLICABLE,
                 Bytes.EMPTY,
                 null,
                 0,
-                body.gas(),
+                gasPrice,
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
                 null,
