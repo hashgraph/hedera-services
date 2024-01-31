@@ -17,6 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -80,12 +81,18 @@ import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring implements Startable, Stoppable, Clearable {
+
+    private static final Logger logger = LogManager.getLogger(PlatformWiring.class);
+
     private final WiringModel model;
 
     private final EventHasherWiring eventHasherWiring;
@@ -122,7 +129,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        model = WiringModel.create(platformContext, time);
+
+        final PlatformSchedulersConfig schedulersConfig =
+                platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
+        final int coreCount = Runtime.getRuntime().availableProcessors();
+        final int parallelism = (int) Math.max(
+                1, schedulersConfig.defaultPoolMultiplier() * coreCount + schedulersConfig.defaultPoolConstant());
+        final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
+        logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
+
+        model = WiringModel.create(platformContext, time, defaultPool);
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
