@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
@@ -415,7 +416,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "ContractKeysStillHaveSpecificityNoMatterTopLevelSignatures",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(managementContract, PAY_RECEIVABLE_CONTRACT),
                         newKeyNamed(tmpAdminKey),
