@@ -20,14 +20,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.Closeable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,12 +40,18 @@ import java.util.stream.Collectors;
 /**
  * A utility class for executing and waiting for concurrent tasks using a thread pool.
  */
-public class ConcurrentTestSupport implements TestExecutor, Closeable {
+public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
 
-    public static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
-
-    private static final Object LOCK = new Object();
+    private static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
     private static final AtomicInteger ID = new AtomicInteger(0);
+
+    /**
+     * It is intended for all tests utilizing {@code ConcurrentTestSupport} to execute sequentially.
+     * A potential drawback is that tests may spend a significant portion of execution time waiting to acquire this lock.
+     * In tests with external configurations tracking elapsed time and timeout values, this waiting time is accounted
+     * for as test time.
+     */
+    private static final Object LOCK = new Object();
 
     private final Duration maxWaitTime;
     private final ExecutorService executorService;
@@ -55,9 +63,9 @@ public class ConcurrentTestSupport implements TestExecutor, Closeable {
      */
     public ConcurrentTestSupport(@NonNull final Duration maxWaitTime) {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
-        executorService = Executors.newCachedThreadPool(r -> {
+        this.executorService = Executors.newCachedThreadPool(r -> {
             final Thread thread = new Thread(r);
-            thread.setName(NAME_PREFIX + "-" + ConcurrentTestSupport.this.hashCode() + ID.getAndDecrement());
+            thread.setName(NAME_PREFIX + "-pool-" + ConcurrentTestSupport.this.hashCode() + ID.getAndDecrement());
             thread.setDaemon(true);
             return thread;
         });
@@ -71,9 +79,9 @@ public class ConcurrentTestSupport implements TestExecutor, Closeable {
     }
 
     /**
-     * Executes a collection of Runnables concurrently and waits for their completion.
+     * Executes a collection of {@code Runnable} concurrently and waits for their completion.
      *
-     * @param runnables The collection of Runnables to execute.
+     * @param runnables The collection of {@code Runnable} to execute.
      */
     public void executeAndWait(@NonNull final Collection<Runnable> runnables) {
         Objects.requireNonNull(runnables, "runnables must not be null");
@@ -92,10 +100,11 @@ public class ConcurrentTestSupport implements TestExecutor, Closeable {
     /**
      * Executes an array of Runnables concurrently and waits for their completion.
      *
-     * @param runnable An array of Runnables to execute.
+     * @param runnables An array of Runnables to execute.
+     * @see ConcurrentTestSupport#executeAndWait(Collection)
      */
-    public void executeAndWait(@NonNull final Runnable... runnable) {
-        executeAndWait(List.of(Objects.requireNonNull(runnable, "runnables must not be null")));
+    public void executeAndWait(@NonNull final Runnable... runnables) {
+        executeAndWait(List.of(Objects.requireNonNull(runnables, "runnables must not be null")));
     }
 
     /**
@@ -103,57 +112,57 @@ public class ConcurrentTestSupport implements TestExecutor, Closeable {
      *
      * @param callables The collection of Callables to submit.
      * @param <V>       The type of the results returned by the Callables.
-     * @return A list of results from the executed Callables.
+     * @return A list of results from the executed Callables. The order of the elements in the list is not guaranteed
+     * @see ConcurrentTestSupport#executeAndWait(Collection)
      */
     @NonNull
     public <V> List<V> submitAndWait(@NonNull final Collection<Callable<V>> callables) {
         Objects.requireNonNull(callables, "callables must not be null");
-
-        List<V> result = new ArrayList<>();
+        Deque<V> result = new ConcurrentLinkedDeque<>();
         executeAndWait(callablesToRunners(callables, result));
-        return result;
+        return List.copyOf(result);
     }
 
     /**
-     * Submits an array of Callables for execution concurrently and waits for their results.
+     * Submits a Callable for execution concurrently and waits for its results.
      *
      * @param callable A callable to submit.
      * @param <V>      The type of the results returned by the Callables.
-     * @return A list of results from the executed Callables.
+     * @return result from the executed Callables. It can be null.
+     * @see ConcurrentTestSupport#executeAndWait(Runnable...)
      */
-    @NonNull
-    public final <V> List<V> submitAndWait(@NonNull final Callable<V> callable) {
-        Objects.requireNonNull(callable, "callables must not be null");
-        return submitAndWait(List.of(callable));
-    }
-
-    private static <V> Collection<Runnable> callablesToRunners(
-            final Collection<Callable<V>> callables, final List<V> result) {
-        return callables.stream().map(c -> toRunnableInto(c, result)).collect(Collectors.toList());
-    }
-
-    private static <V> Runnable toRunnableInto(final Callable<V> c, final List<V> result) {
-        return () -> {
-            try {
-                result.add(c.call());
-            } catch (Exception e) {
-                throw new RuntimeException("Error in submitAndWait", e);
-            }
-        };
+    @Nullable
+    public final <V> V submitAndWait(@NonNull final Callable<V> callable) {
+        Objects.requireNonNull(callable, "callable must not be null");
+        final Deque<V> result = new ArrayDeque<>();
+        executeAndWait(toRunnableInto(callable, result));
+        return result.peek();
     }
 
     /**
-     * Closes this stream and releases any system resources associated with it. If the stream is already closed then
-     * invoking this method has no effect.
-     *
-     * <p> As noted in {@link AutoCloseable#close()}, cases where the
-     * close may fail require careful attention. It is strongly advised to relinquish the underlying resources and to
-     * internally
-     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-     * the {@code IOException}.
+     * Closes this the underlying executorService so all pending activity is finished before finishing the test
      */
     @Override
     public void close() {
         executorService.close();
+    }
+
+    // Return a collections of runners from a collection of callables.
+    // Results are accumulated  in result
+    private static <V> Collection<Runnable> callablesToRunners(
+            final Collection<Callable<V>> callables, final Deque<V> result) {
+        return callables.stream().map(c -> toRunnableInto(c, result)).collect(Collectors.toList());
+    }
+
+    // Return a runners from a callable.
+    // The result is accumulated  in result
+    private static <V> Runnable toRunnableInto(final Callable<V> c, final Deque<V> result) {
+        return () -> {
+            try {
+                result.addLast(c.call());
+            } catch (Exception e) {
+                throw new RuntimeException("Error in submitAndWait", e);
+            }
+        };
     }
 }

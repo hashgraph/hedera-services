@@ -17,6 +17,7 @@
 package com.swirlds.base.test.fixtures.concurrent;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -37,7 +38,7 @@ public interface TestExecutor {
      *
      * @param runnables the runnables to execute
      */
-    void executeAndWait(Collection<Runnable> runnables);
+    void executeAndWait(@NonNull Collection<Runnable> runnables);
 
     /**
      * Executes the given runnables in parallel. This method will block until all the callables have completed. If the
@@ -46,7 +47,7 @@ public interface TestExecutor {
      *
      * @param runnables the runnables to execute
      */
-    void executeAndWait(Runnable... runnables);
+    void executeAndWait(@NonNull Runnable... runnables);
 
     /**
      * Executes the given callables in parallel. This method will block until all the callables have completed. If the
@@ -57,7 +58,7 @@ public interface TestExecutor {
      * @param <V>       the type of the callable result
      * @return the results of the callables
      */
-    <V> List<V> submitAndWait(Collection<Callable<V>> callables);
+    <V> @NonNull List<V> submitAndWait(Collection<Callable<V>> callables);
 
     /**
      * Executes the given callable in parallel. This method will block until all the callable have completed. If the
@@ -66,7 +67,7 @@ public interface TestExecutor {
      *
      * @param callable the callable array to execute
      * @param <V>      the type of the callable result
-     * @return the results of the callable
+     * @return the result of the callable
      */
-    <V> @NonNull List<V> submitAndWait(@NonNull Callable<V> callable);
+    <V> @Nullable V submitAndWait(@NonNull Callable<V> callable);
 }
