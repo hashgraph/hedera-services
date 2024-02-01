@@ -98,7 +98,7 @@ class EventSignatureValidatorTests {
         final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
         when(serializablePublicKey.getPublicKey()).thenReturn(publicKey);
 
-        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, null, "");
+        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, "");
     }
 
     /**
@@ -207,7 +207,7 @@ class EventSignatureValidatorTests {
         final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
         when(serializablePublicKey.getPublicKey()).thenReturn(null);
         final Address nodeAddress =
-                new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, null, "");
+                new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, "");
 
         currentAddressBook.add(nodeAddress);
 

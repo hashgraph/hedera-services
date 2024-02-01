@@ -189,7 +189,7 @@ public final class CryptoStatic {
      * by a Certificate Authority (CA), whose name is CaDistinguishedName and whose key pair is CaPair.
      * <p>
      * In Swirlds, each member creates a separate certificate for each of their 3 key pairs (signing,
-     * agreement, encryption). The signing certificate is self-signed, and is treated as if it were a CA.
+     * agreement). The signing certificate is self-signed, and is treated as if it were a CA.
      * The other two certificates are each signed by the signing key pair. So for either of them, the
      * complete certificate chain consists of two certificates.
      * <p>
@@ -205,7 +205,7 @@ public final class CryptoStatic {
      * @return the self-signed certificate
      * @throws KeyGeneratingException in any issue occurs
      */
-    static X509Certificate generateCertificate(
+    public static X509Certificate generateCertificate(
             String distinguishedName,
             KeyPair pair,
             String caDistinguishedName,

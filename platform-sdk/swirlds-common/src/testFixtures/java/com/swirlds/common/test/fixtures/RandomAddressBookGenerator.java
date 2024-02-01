@@ -158,7 +158,6 @@ public class RandomAddressBookGenerator {
         Objects.requireNonNull(id, "NodeId must not be null");
 
         final SerializablePublicKey sigPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, id.id());
-        final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
         final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
 
         final String nickname = NameUtils.getName(id.id());
@@ -195,7 +194,6 @@ public class RandomAddressBookGenerator {
                 addressExternalHostname,
                 portExternalIpv4,
                 sigPublicKey,
-                encPublicKey,
                 agreePublicKey,
                 memo);
     }

@@ -80,8 +80,6 @@ public class Address implements SelfSerializable {
     private int portExternal;
     /** public key of the member used for signing */
     private SerializablePublicKey sigPublicKey;
-    /** public key of the member used for encrypting */
-    private SerializablePublicKey encPublicKey;
     /** public key of the member used for TLS key agreement */
     private SerializablePublicKey agreePublicKey;
     /**
@@ -102,7 +100,6 @@ public class Address implements SelfSerializable {
                 -1,
                 null,
                 -1,
-                (SerializablePublicKey) null,
                 (SerializablePublicKey) null,
                 (SerializablePublicKey) null,
                 "");
@@ -128,7 +125,6 @@ public class Address implements SelfSerializable {
                 hostnameExternal,
                 portExternal,
                 null,
-                null,
                 (SerializablePublicKey) null,
                 memo);
     }
@@ -149,7 +145,6 @@ public class Address implements SelfSerializable {
      * @param hostnameExternal    the IP or DNS name outside the NATing firewall
      * @param portExternal        port for the external address
      * @param sigPublicKey        public key used for signing
-     * @param encPublicKey        public key used for encryption
      * @param agreePublicKey      public key used for key agreement in TLS
      * @param memo                additional information about the node, can be null
      */
@@ -163,7 +158,6 @@ public class Address implements SelfSerializable {
             @Nullable final String hostnameExternal,
             final int portExternal,
             @Nullable final SerializablePublicKey sigPublicKey,
-            @Nullable final SerializablePublicKey encPublicKey,
             @Nullable final SerializablePublicKey agreePublicKey,
             @NonNull final String memo) {
         this.id = Objects.requireNonNull(id, "id must not be null");
@@ -175,7 +169,6 @@ public class Address implements SelfSerializable {
         this.hostnameInternal = hostnameInternal;
         this.hostnameExternal = hostnameExternal;
         this.sigPublicKey = sigPublicKey;
-        this.encPublicKey = encPublicKey;
         this.agreePublicKey = agreePublicKey;
         this.memo = Objects.requireNonNull(memo, "memo must not be null");
     }
@@ -336,16 +329,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Get public key of the member used for encrypting.
-     *
-     * @return This member's PublicKey for encrypting.
-     */
-    @Nullable
-    public PublicKey getEncPublicKey() {
-        return encPublicKey.getPublicKey();
-    }
-
-    /**
      * Get the public key of the member used for TLS key agreement.
      *
      * @return The member's PublicKey used for TLS key agreement.
@@ -489,20 +472,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different PublicKey for encrypting.
-     *
-     * @param encPublicKey New encPublicKey for the created Address.
-     * @return The new Address.
-     */
-    @NonNull
-    public Address copySetEncPublicKey(@NonNull final PublicKey encPublicKey) {
-        Objects.requireNonNull(encPublicKey, "encPublicKey must not be null");
-        Address a = copy();
-        a.encPublicKey = new SerializablePublicKey(encPublicKey);
-        return a;
-    }
-
-    /**
      * Create a new Address object based this one with different PublicKey for TLS key agreement.
      *
      * @param agreePublicKey New agreePublicKey for the created Address.
@@ -546,7 +515,6 @@ public class Address implements SelfSerializable {
                 hostnameExternal,
                 portExternal,
                 sigPublicKey,
-                encPublicKey,
                 agreePublicKey,
                 memo);
     }
@@ -565,7 +533,6 @@ public class Address implements SelfSerializable {
         outStream.writeNormalisedString(hostnameExternal);
         outStream.writeInt(portExternal);
         outStream.writeSerializable(sigPublicKey, false);
-        outStream.writeSerializable(encPublicKey, false);
         outStream.writeSerializable(agreePublicKey, false);
         outStream.writeNormalisedString(memo);
     }
@@ -606,25 +573,20 @@ public class Address implements SelfSerializable {
         switch (version) {
             case 1:
                 sigPublicKey = new SerializablePublicKey();
-                encPublicKey = new SerializablePublicKey();
                 agreePublicKey = new SerializablePublicKey();
                 // before version 2, the key type was not written
                 sigPublicKey.deserializeVersion0(inStream, "RSA");
-                encPublicKey.deserializeVersion0(inStream, "EC");
                 agreePublicKey.deserializeVersion0(inStream, "EC");
                 break;
             case 2:
                 // in version 2 the key type was written as a string and the key version was not written
                 sigPublicKey = new SerializablePublicKey();
-                encPublicKey = new SerializablePublicKey();
                 agreePublicKey = new SerializablePublicKey();
                 sigPublicKey.deserialize(inStream, 1);
-                encPublicKey.deserialize(inStream, 1);
                 agreePublicKey.deserialize(inStream, 1);
                 break;
             default:
                 sigPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
-                encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
                 agreePublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
         }
         memo = inStream.readNormalisedString(STRING_MAX_BYTES);

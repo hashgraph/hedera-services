@@ -45,7 +45,6 @@ public class AddresBookUtils {
                 "123456789",
                 -1,
                 new SerializablePublicKey(pubKey),
-                null,
                 new SerializablePublicKey(pubKey),
                 "");
         final var address2 = new Address(
@@ -58,7 +57,6 @@ public class AddresBookUtils {
                 "123456789",
                 -1,
                 new SerializablePublicKey(pubKey),
-                null,
                 new SerializablePublicKey(pubKey),
                 "");
         return new AddressBook(List.of(address1, address2));
