@@ -16,8 +16,6 @@
 
 package com.swirlds.logging;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
-
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
@@ -31,11 +29,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
-@Tag(TIMING_SENSITIVE)
 public class LoggingSystemStressTest {
 
     @Test
