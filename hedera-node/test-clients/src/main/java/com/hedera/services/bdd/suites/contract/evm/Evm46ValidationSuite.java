@@ -61,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -127,7 +126,10 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
 
-    private static final List<Long> systemAccounts =
+    public static final List<Long> nonExistingSystemAccounts =
+            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
+    public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
+    public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
 
     public static void main(String... args) {
@@ -1501,11 +1503,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec testBalanceOfForSystemAccounts() {
         final var contract = "BalanceChecker46Version";
-        final var BALANCE = 10L;
-        final var SYSTEM_ACCOUNT_BALANCE = 0L;
+        final var balance = 10L;
+        final var systemAccountBalance = 0;
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
-        for (int i = 0; i < systemAccounts.size(); i++) {
 
+        for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list
             opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
@@ -1517,11 +1519,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                             .resultThruAbi(
                                     getABIFor(FUNCTION, BALANCE_OF, contract),
                                     ContractFnResultAsserts.isLiteralResult(
-                                            new Object[] {BigInteger.valueOf(SYSTEM_ACCOUNT_BALANCE)})))
-                    .hasAnswerOnlyPrecheck(OK);
+                                            new Object[] {BigInteger.valueOf(systemAccountBalance)})));
         }
         return defaultHapiSpec("verifiesSystemAccountBalanceOf")
-                .given(cryptoCreate("testAccount").balance(BALANCE), uploadInitCode(contract), contractCreate(contract))
+                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(opsArray);
     }
