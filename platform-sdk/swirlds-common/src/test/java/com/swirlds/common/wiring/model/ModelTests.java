@@ -30,6 +30,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 
 class ModelTests {
@@ -66,15 +67,15 @@ class ModelTests {
 
     @Test
     void emptyModelTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
         validateModel(model, false, false);
     }
 
     @Test
     void singleVertexTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -90,8 +91,8 @@ class ModelTests {
 
     @Test
     void shortChainTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -118,8 +119,8 @@ class ModelTests {
 
     @Test
     void loopSizeOneTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -140,8 +141,8 @@ class ModelTests {
 
     @Test
     void loopSizeOneBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -162,8 +163,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -189,8 +190,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -216,8 +217,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByMissingBoundTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -243,8 +244,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -275,8 +276,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -307,8 +308,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByMissingBoundTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -339,8 +340,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -377,8 +378,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -415,8 +416,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByMissingBoundTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -453,8 +454,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -531,8 +532,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -609,8 +610,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByMissingBoundTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -687,8 +688,8 @@ class ModelTests {
 
     @Test
     void multiLoopTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -769,8 +770,8 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByInjectionTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -851,8 +852,8 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByMissingBoundTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -933,8 +934,8 @@ class ModelTests {
 
     @Test
     void filterInCycleTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1016,8 +1017,8 @@ class ModelTests {
 
     @Test
     void transformerInCycleTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1099,8 +1100,8 @@ class ModelTests {
 
     @Test
     void splitterInCycleTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1180,8 +1181,8 @@ class ModelTests {
 
     @Test
     void multipleOutputCycleTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1274,8 +1275,8 @@ class ModelTests {
      */
     @Test
     void heartbeatTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1316,8 +1317,8 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingDirectTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1404,8 +1405,8 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingMultipleDirectTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1496,8 +1497,8 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1590,8 +1591,8 @@ class ModelTests {
      */
     @Test
     void multipleSequentialSchedulerTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1678,8 +1679,8 @@ class ModelTests {
 
     @Test
     void unboundInputWireTest() {
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(
+                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();

@@ -37,7 +37,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testATaskThatRunsShort() {
         // given
-        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final Runnable runnable = () -> sleep(10);
 
             // then
@@ -48,7 +48,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testMultipleTasksThatRunsShort() {
         // given
-        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final List<Runnable> runnables = IntStream.range(10, 20)
                     .mapToObj(i -> (Runnable) () -> sleep(i))
                     .toList();
@@ -61,7 +61,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testATaskThatRunsTooLong() {
         // given
-        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final Runnable runnable = () -> sleep(1_010);
 
             // then
@@ -73,7 +73,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testMultipleTasksThatRunsTooLong() {
         // given
-        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
             final List<Runnable> runnables = IntStream.range(500, 2_000)
                     .mapToObj(i -> (Runnable) () -> sleep(i))
                     .toList();
@@ -87,7 +87,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testMultipleCallsInOneConcurrentTestSupport() {
         // given
-        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
             final Runnable shortRunningTask = () -> sleep(10);
             final Runnable longRunningTask = () -> sleep(2_000);
             final ExecutorService executor = Executors.newFixedThreadPool(2);

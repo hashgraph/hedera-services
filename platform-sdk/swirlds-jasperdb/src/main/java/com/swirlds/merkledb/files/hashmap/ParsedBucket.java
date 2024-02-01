@@ -98,10 +98,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     /** Get the size of this bucket in bytes, including header */
     public int sizeInBytes() {
         int size = 0;
-        if (bucketIndex > 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
-                    + Integer.BYTES;
-        }
+        // Include bucket index even if it has default value (zero)
+        size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
         for (final BucketEntry entry : entries) {
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
         }
@@ -198,10 +196,9 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     public void writeTo(final WritableSequentialData out) {
-        if (bucketIndex > 0) {
-            ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
-            out.writeInt(bucketIndex);
-        }
+        // Bucket index is not optional, write the value even if default (zero)
+        ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
+        out.writeInt(bucketIndex);
         for (final BucketEntry entry : entries) {
             ProtoWriterTools.writeTag(out, FIELD_BUCKET_ENTRIES);
             out.writeVarInt(entry.sizeInBytes(), false);
