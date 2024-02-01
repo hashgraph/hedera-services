@@ -55,7 +55,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
