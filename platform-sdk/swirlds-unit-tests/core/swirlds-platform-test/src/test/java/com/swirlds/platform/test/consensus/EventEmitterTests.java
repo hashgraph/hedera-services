@@ -34,7 +34,6 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -229,7 +228,6 @@ public class EventEmitterTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Standard Emitter")
@@ -245,7 +243,6 @@ public class EventEmitterTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Shuffled Emitter")
@@ -272,7 +269,6 @@ public class EventEmitterTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Priority Emitter")
@@ -301,7 +297,6 @@ public class EventEmitterTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TIME_CONSUMING)
@@ -341,7 +336,6 @@ public class EventEmitterTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Collecting Emitter Equivalence")

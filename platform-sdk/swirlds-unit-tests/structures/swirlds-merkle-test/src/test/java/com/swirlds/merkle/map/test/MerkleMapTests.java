@@ -58,7 +58,6 @@ import com.swirlds.merkle.map.test.util.MerkleMapTestUtil;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -135,7 +134,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @EnumSource(KeyValueProvider.class)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Replaces Invalid Key")
     <V extends MerkleNode & Keyed<Key>> void replacesInvalidKey(final KeyValueProvider provider) {
@@ -151,7 +149,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Put Multiple Values")
     <V extends MerkleNode & Keyed<Key>> void putMultipleValues(final int size, final KeyValueProvider provider) {
@@ -167,9 +164,8 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Put Multiple Values Twice")
     <V extends MerkleNode & Keyed<Key>> void putsMultipleValuesTwice(final int size, final KeyValueProvider provider) {
         final MerkleMap<Key, V> mm = new MerkleMap<>();
@@ -183,7 +179,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Inserts One Million Elements")
     <V extends MerkleNode & Keyed<Key>> void insertsOneMillionElements(
@@ -198,7 +193,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Puts Elements From Another MM")
     <V extends MerkleNode & Keyed<Key>> void putsElementsFromAnotherMM(
@@ -216,7 +210,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Deletes Values")
     <V extends MerkleNode & Keyed<Key>> void deletesValues(final int size, final KeyValueProvider provider) {
@@ -236,7 +229,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @EnumSource(KeyValueProvider.class)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Replace Invalid Key")
     void replaceInvalidKey(final KeyValueProvider provider) {
@@ -249,7 +241,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Get Null Key")
     <V extends MerkleNode & Keyed<Key>> void getNullKey() {
@@ -264,7 +255,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Clears Values")
     <V extends MerkleNode & Keyed<Key>> void clearsValues(final int size, final KeyValueProvider provider) {
@@ -281,7 +271,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @EnumSource(KeyValueProvider.class)
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Replace First Element")
     <V extends MerkleNode & Keyed<Key>> void replaceFirstElement(final KeyValueProvider provider) {
@@ -302,7 +291,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Puts and Deletes One Element Multiple Times")
     <V extends MerkleNode & Keyed<Key>> void putsAndDeletesOneElementMultipleTimes(
@@ -320,7 +308,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Key Set Remains Invariant After Changes")
     <V extends MerkleNode & Keyed<Key>> void keySetRemainsInvariantAfterChanges(
@@ -342,7 +329,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Values Remains Invariant After Changes")
     <V extends MerkleNode & Keyed<Key>> void valuesRemainsInvariantAfterChanges(
@@ -364,7 +350,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Original mm Is Immutable For Put")
     <V extends MerkleNode & Keyed<Key>> void originalIsImmutableForPut(int size, final KeyValueProvider provider) {
@@ -389,7 +374,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Original MerkleMap Is Immutable For Remove")
     <V extends MerkleNode & Keyed<Key>> void copyIsImmutableForRemove(final int size, final KeyValueProvider provider) {
@@ -410,7 +394,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Is Immutable For Replace")
     <V extends MerkleNode & Keyed<Key>> void originalIsImmutableForReplace(
@@ -434,7 +417,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Is Immutable For getForModify")
     <V extends MerkleNode & Keyed<Key>> void originalIsImmutableForGetForModify(
@@ -459,7 +441,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Original MM Is Immutable For Clear")
     <V extends MerkleNode & Keyed<Key>> void originalMMIsImmutableForClear(
@@ -480,9 +461,8 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Original MM Remains Immutable")
     <V extends MerkleNode & Keyed<Key>> void originalMMRemainsImmutable(
             final int size, final KeyValueProvider provider) {
@@ -501,7 +481,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Valid For Current Generation For Small Tree")
     void hashIsValidForCurrentGenerationForSmallTree() throws IOException {
@@ -525,7 +504,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Valid For Current Generation")
     void hashIsValidForCurrentGeneration() throws IOException {
@@ -549,7 +527,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Valid For Old Generation")
     void hashIsValidForOldGeneration() throws IOException {
@@ -577,7 +554,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Valid For Six Generations")
     void hashIsValidForSixGenerations() throws IOException {
@@ -616,7 +592,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Valid For Six Generations With Insertions")
     void hashIsValidForSixGenerationsWithInsertions() {
@@ -693,7 +668,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Hash Is Null After Modify With Copy Test")
     void hashIsNullAfterModifyWithCopyTest() {
@@ -723,9 +697,8 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Serialized And Deserialized FCQ Test")
     void serializedAndDeserializedFCQTest() throws IOException {
         MerkleMap<Key, FCQValue<TransactionRecord>> map = new MerkleMap<>();
@@ -835,9 +808,8 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Merkle serialization/deserialization")
     <V extends MerkleNode & Keyed<Key>> void serializeAndDeserializeAsMerkle(
             final int size, final KeyValueProvider provider) throws IOException {
@@ -868,9 +840,8 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Validates copy doesn't affect the original structure of MerkleBinaryTree")
     <V extends MerkleNode & Keyed<Key>> void deletesCopyAfterUsage(final int size, final KeyValueProvider provider) {
         MerkleMap<Key, V> mm = new MerkleMap<>();
@@ -887,7 +858,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Makes sure that a MerkleMap in a merkle tree is properly deleted")
     void deletionTest() {
@@ -917,7 +887,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Throws If Deleted Test")
     void copyThrowsIfDeletedTest() {
@@ -971,7 +940,6 @@ class MerkleMapTests {
      * fewer than the number of children of the replacing node. Before the fix to that problem, this test would fail.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Tree To Location Bug")
     void copyTreeToLocationBug() throws ConstructableRegistryException {
@@ -1003,7 +971,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Null Not Supported Test")
     void nullNotSupportedTest() {
@@ -1023,7 +990,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Entry Set Test")
     <V extends MerkleNode & Keyed<Key>> void entrySetTest(final int size, final KeyValueProvider provider) {
         final MerkleMap<Key, V> mm = new MerkleMap<>();
@@ -1044,7 +1010,6 @@ class MerkleMapTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Entry Set Iterator")
     <V extends MerkleNode & Keyed<Key>> void entrySetIterator(final int size, final KeyValueProvider provider) {
         final MerkleMap<Key, V> mm = new MerkleMap<>();
@@ -1063,7 +1028,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Entry Set Iterator Remove")
     void entrySetIteratorRemove() {
         final MerkleMap<SerializableLong, KeyedMerkleLong<SerializableLong>> mm = new MerkleMap<>();
@@ -1079,7 +1043,6 @@ class MerkleMapTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Entry Set Unsupported Equals")
     void entrySetUnsupportedEquals() {
         final MerkleMap<SerializableLong, KeyedMerkleLong<SerializableLong>> mm = new MerkleMap<>();

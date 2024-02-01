@@ -52,6 +52,7 @@ import java.util.List;
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
+ * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
  */
 public record PlatformSchedulers(
@@ -73,6 +74,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
+        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
 
     /**
@@ -207,6 +209,13 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("shadowgraph")
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("futureEventBuffer")
+                        .withType(config.futureEventBufferSchedulerType())
+                        .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
                         .build()

@@ -84,7 +84,7 @@ public class ReconnectMetrics {
                             metrics,
                             new CountPerSecond.Config(
                                             PLATFORM_CATEGORY,
-                                            String.format("reconnectRejections/sec_%02d", nodeId.id()))
+                                            String.format("reconnectRejections_per_sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of reconnections rejected per second from node %02d", nodeId.id()))
                                     .withUnit("rejectionsPerSec")

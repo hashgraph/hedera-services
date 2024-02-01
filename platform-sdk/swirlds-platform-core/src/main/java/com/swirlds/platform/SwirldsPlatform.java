@@ -77,6 +77,7 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -483,10 +484,6 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
-        // FUTURE WORK: at some point this should be part of the unified platform wiring
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
-        components.add(model);
-
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 
         savedStateController = new SavedStateController(stateConfig);
@@ -573,7 +570,7 @@ public class SwirldsPlatform implements Platform {
         stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("state-hash-sign")
+                .setThreadName("state_hash_sign")
                 .setHandler(newSignedStateFromTransactionsConsumer)
                 .setCapacity(1)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
@@ -646,6 +643,8 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
+        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+
         // wire ISS output
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
@@ -677,6 +676,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 swirldStateManager,
                 stateSignatureCollector,
+                futureEventBuffer,
                 issDetector);
 
         // Load the minimum generation into the pre-consensus event writer
