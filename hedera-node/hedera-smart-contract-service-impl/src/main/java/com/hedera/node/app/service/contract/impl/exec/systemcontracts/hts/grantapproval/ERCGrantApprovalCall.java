@@ -16,80 +16,67 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
+    // too many parameters
+    @SuppressWarnings("java:S107")
     public ERCGrantApprovalCall(
             @NonNull final Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final AccountID sender,
-            @NonNull final TokenID token,
-            @NonNull final AccountID spender,
+            @NonNull final AccountID senderId,
+            @NonNull final TokenID tokenId,
+            @NonNull final AccountID spenderId,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement, verificationStrategy, sender, token, spender, amount, tokenType, false);
+        super(gasCalculator, enhancement, verificationStrategy, senderId, tokenId, spenderId, amount, tokenType, false);
     }
 
     @NonNull
     @Override
-    public PricedResult execute() {
-        if (token == null) {
+    public PricedResult execute(@NonNull final MessageFrame frame) {
+        if (tokenId == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
-        final var spenderAccount = enhancement.nativeOperations().getAccount(spender.accountNum());
-        final var body = callGrantApproval();
-        if (spenderAccount == null && spender.accountNum() != 0) {
-            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
-            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
-
-            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
-            var contractFunctionResult = contractFunctionResultFailedForProto(
-                    gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
-
-            enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_ALLOWANCE_SPENDER_ID);
-
-            return result;
-        }
+        final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+        final var status = withMonoStandard(recordBuilder).status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
-        final var status = recordBuilder.status();
-        if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, gasRequirement), status, false);
+        if (status != SUCCESS) {
+            return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
         } else {
+            if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+                GrantApprovalLoggingUtils.logSuccessfulNFTApprove(
+                        tokenId, senderId, spenderId, amount.longValue(), readableAccountStore(), frame);
+            } else {
+                GrantApprovalLoggingUtils.logSuccessfulFTApprove(
+                        tokenId, senderId, spenderId, amount.longValue(), readableAccountStore(), frame);
+            }
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                             .getOutputs()
                             .encodeElements();
-            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
+            return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
 }
