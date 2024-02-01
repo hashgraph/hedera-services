@@ -78,7 +78,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
     /**
      * A marker to indicate that a value should be deleted from the map, or that there is
-     * no old value to compare against in putIfEquals/deleteIfEquals
+     * no old value to compare against in putIfEqual/deleteIfEqual
      */
     protected static final long INVALID_VALUE = Long.MIN_VALUE;
 
@@ -349,7 +349,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
     }
 
     /**
-     * Put a key/valur during the current writing session. This method is similar to {@link
+     * Put a key/value during the current writing session. This method is similar to {@link
      * #put(VirtualKey, long)}, but the new value is set only if the current value is equal to
      * the given {@code oldValue}.
      *
