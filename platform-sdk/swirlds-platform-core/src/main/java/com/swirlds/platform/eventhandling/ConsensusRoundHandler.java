@@ -293,8 +293,6 @@ public class ConsensusRoundHandler {
         }
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        // create a new signed state, sign it, and send out a new transaction with the signature
-        // the signed state keeps a copy that never changes.
         final State immutableStateCons = swirldStateManager.getStateForSigning();
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
