@@ -35,7 +35,6 @@ import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.merkle.map.internal.MerkleMapEntry;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -45,7 +44,6 @@ import org.junit.jupiter.api.Test;
 class MerkleMapEntryTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals With Key Test")
     void equalsWithKeyTest() {
@@ -133,7 +131,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Leaf With Null Value")
     void leafWithNullValue() {
@@ -143,7 +140,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Test")
     void copyTest() {
@@ -159,7 +155,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Throws If Deleted Test")
     void copyThrowsIfDeletedTest() {
@@ -171,7 +166,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("setKey fails after being destroyed")
     void setKeyAfterDestroyTest() {
@@ -227,7 +221,6 @@ class MerkleMapEntryTests {
      * we promise to release it in the contract and so we need to verify that we release it in a test.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("setKey fails after being destroyed")
     void keyIsReleased() {

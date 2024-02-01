@@ -41,7 +41,6 @@ import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -480,7 +479,6 @@ public class GraphGeneratorTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Standard Generator")
@@ -496,7 +494,6 @@ public class GraphGeneratorTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Forking Source Test")
@@ -516,7 +513,6 @@ public class GraphGeneratorTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Dynamic Value Tests")
@@ -602,7 +598,6 @@ public class GraphGeneratorTests {
      * verify that behavior.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -700,7 +695,6 @@ public class GraphGeneratorTests {
      * matches expected value.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Repeated Timestamp Tests")

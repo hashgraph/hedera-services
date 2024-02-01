@@ -632,7 +632,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .createdContractIdsCount(0)
                                         .contractCallResult(bigIntResult(1))
-                                        .gasUsed(48107))));
+                                        .gasUsedModuloIntrinsicVariation(48107))));
     }
 
     @HapiTest

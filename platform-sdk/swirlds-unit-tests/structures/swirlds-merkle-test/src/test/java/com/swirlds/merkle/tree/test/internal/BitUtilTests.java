@@ -19,16 +19,13 @@ package com.swirlds.merkle.tree.test.internal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.merkle.tree.internal.BitUtil;
-import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("Bit Util Tests")
 class BitUtilTests {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Basic Left-most")
     void basicLeftMost() {
         assertEquals(0, BitUtil.findLeftMostBit(0L), "Left most bit is: 0000...0000");

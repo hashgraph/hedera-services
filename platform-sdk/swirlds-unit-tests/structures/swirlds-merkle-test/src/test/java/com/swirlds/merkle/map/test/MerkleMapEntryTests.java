@@ -31,7 +31,6 @@ import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.merkle.map.internal.MerkleMapEntry;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,7 +50,6 @@ class MerkleMapEntryTests {
     Path testDirectory;
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Getter And Setter Test")
     void getterAndSetterTest() {
@@ -100,7 +98,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Equals and Hash Test")
     void equalsAndHashTest() {
@@ -169,7 +166,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Serialization Test")
     void serializationTest() throws IOException, ConstructableRegistryException {
@@ -197,7 +193,6 @@ class MerkleMapEntryTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Copy Test")
     void copyTest() {
