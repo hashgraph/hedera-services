@@ -197,7 +197,7 @@ public class IssDetector {
         previousRound = round;
 
         roundData.put(round, new RoundHashValidator(round, roundWeight, issMetrics));
-        return returnList(removedRounds.stream().map(this::handleRemovedRound).toList());
+        return listOrNull(removedRounds.stream().map(this::handleRemovedRound).toList());
     }
 
     /**
@@ -237,7 +237,7 @@ public class IssDetector {
      */
     public @Nullable List<IssNotification> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return returnList(
+        return listOrNull(
                 transactions.stream().map(this::handlePostconsensusSignature).toList());
     }
 
@@ -315,7 +315,7 @@ public class IssDetector {
      */
     public @Nullable List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
         try (state) {
-            return returnList(newStateHashed(
+            return listOrNull(newStateHashed(
                     state.get().getRound(), state.get().getState().getHash()));
         }
     }
@@ -356,8 +356,11 @@ public class IssDetector {
         try (state) {
             final long round = state.get().getRound();
             final Hash stateHash = state.get().getState().getHash();
+            // this is not practically possible for this to happen. Even if it were to happen, on a reconnect,
+            // we are receiving a new state that is fully signed, so any ISSs in the past should be ignored.
+            // so we will ignore any ISSs from removed rounds
             roundCompleted(round);
-            return returnList(newStateHashed(round, stateHash));
+            return listOrNull(newStateHashed(round, stateHash));
         }
     }
 
@@ -492,7 +495,7 @@ public class IssDetector {
      * @param n the notification to wrap
      * @return a list containing the notification, or null if the notification is null
      */
-    private static List<IssNotification> returnList(@Nullable final IssNotification n) {
+    private static List<IssNotification> listOrNull(@Nullable final IssNotification n) {
         return n == null ? null : List.of(n);
     }
 
@@ -500,7 +503,7 @@ public class IssDetector {
      * @param list the list to filter
      * @return the list, or null if the list is null or empty
      */
-    private static List<IssNotification> returnList(@Nullable final List<IssNotification> list) {
+    private static List<IssNotification> listOrNull(@Nullable final List<IssNotification> list) {
         return list == null
                 ? null
                 : list.stream()

@@ -1041,13 +1041,14 @@ public class SwirldsPlatform implements Platform {
         }
 
         // we have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is
-        // done
-        // the PCES replay will flush the intake pipeline, so we have to flush the hasher
+        // done the PCES replay will flush the intake pipeline, so we have to flush the hasher
         try {
             stateHashSignQueue.waitUntilNotBusy();
         } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
+        // FUTURE WORK: once the state hasher is moved to the platform wiring, this flush can be done by the PCES
+        // replayer. the same goes for the flush of the state hasher
         platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
 
         platformStatusManager.submitStatusAction(
