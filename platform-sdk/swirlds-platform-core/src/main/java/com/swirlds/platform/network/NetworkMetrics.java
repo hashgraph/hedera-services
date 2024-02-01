@@ -47,7 +47,7 @@ public class NetworkMetrics {
             .withDescription("average time for a round trip message between 2 computers (in milliseconds)")
             .withFormat(FloatFormats.FORMAT_7_0);
     private static final SpeedometerMetric.Config BYTES_PER_SECOND_SENT_CONFIG = new SpeedometerMetric.Config(
-                    Metrics.INTERNAL_CATEGORY, "bytes/sec_sent")
+                    Metrics.INTERNAL_CATEGORY, "bytes_per_sec_sent")
             .withDescription("number of bytes sent per second over the network (total for this member)")
             .withFormat(FloatFormats.FORMAT_16_2);
     private static final RunningAverageMetric.Config AVG_CONNS_CREATED_CONFIG = new RunningAverageMetric.Config(
@@ -108,7 +108,7 @@ public class NetworkMetrics {
             avgBytePerSecSent.put(
                     nodeId,
                     metrics.getOrCreate(new SpeedometerMetric.Config(
-                                    BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
+                                    BPSS_CATEGORY, String.format("bytes_per_sec_sent_%02d", nodeId.id()))
                             .withDescription(String.format("bytes per second sent to node %02d", nodeId.id()))
                             .withFormat(FloatFormats.FORMAT_16_2)));
             disconnectFrequency.put(
@@ -117,7 +117,7 @@ public class NetworkMetrics {
                             metrics,
                             new CountPerSecond.Config(
                                             Metrics.PLATFORM_CATEGORY,
-                                            String.format("disconnects/sec_%02d", nodeId.id()))
+                                            String.format("disconnects_per_sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of disconnects per second from node %02d", nodeId.id()))
                                     .withFormat(FloatFormats.FORMAT_10_0)));

@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -298,7 +299,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(Bytes.wrap(TOKEN_HAS_NO_SUPPLY_KEY.protoName().getBytes()), result.getOutput());
+        assertEquals(readableRevertReason(recordBuilder.status()), result.getOutput());
     }
 
     private void commonGivens() {

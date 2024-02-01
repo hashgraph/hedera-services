@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -157,7 +158,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
             final K k = codec.parse(in);
             Objects.requireNonNull(k);
             return new OnDiskKey<>(md, k);
-        } catch (final IOException e) {
+        } catch (final ParseException e) {
             throw new RuntimeException(e);
         }
     }
@@ -172,7 +173,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         // Future work: https://github.com/hashgraph/pbj/issues/73
         try {
             return codec.fastEquals(keyToCompare.getKey(), bufferedData);
-        } catch (final IOException e) {
+        } catch (final ParseException e) {
             throw new RuntimeException(e);
         }
     }

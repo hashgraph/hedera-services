@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.networkadmin.impl.serdes.MonoRunningHashesAdapterCodec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -53,7 +54,8 @@ class MonoRunningHashesAdapterSerdesTest {
     }
 
     @Test
-    void canSerializeAndDeserializeFromAppropriateStream() throws IOException, ConstructableRegistryException {
+    void canSerializeAndDeserializeFromAppropriateStream()
+            throws IOException, ParseException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new WritableStreamingData(baos) {};

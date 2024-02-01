@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +53,6 @@ class PlatformStateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test Copy")
     void testCopy() {
@@ -74,7 +72,6 @@ class PlatformStateTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.IO)

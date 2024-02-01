@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator.TRANSFER_TOKEN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Collections.emptyList;
@@ -64,7 +65,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
-    private final AccountID spenderId;
+    private final AccountID senderId;
     private final ResponseCodeEnum preemptingFailureStatus;
     private final TransactionBody syntheticTransfer;
     private final Configuration configuration;
@@ -83,7 +84,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final byte[] selector,
-            @NonNull final AccountID spenderId,
+            @NonNull final AccountID senderId,
             @Nullable final ResponseCodeEnum preemptingFailureStatus,
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
@@ -93,7 +94,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
-        this.spenderId = requireNonNull(spenderId);
+        this.senderId = requireNonNull(senderId);
         this.preemptingFailureStatus = preemptingFailureStatus;
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
@@ -108,7 +109,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
-        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        final var gasRequirement =
+                transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
         if (preemptingFailureStatus != null) {
             return reversionWith(preemptingFailureStatus, gasRequirement);
         }
@@ -130,11 +132,12 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                                 .switchToApprovalsAsNeededIn(
                                         syntheticTransfer.cryptoTransferOrThrow(),
                                         systemContractOperations().activeSignatureTestWith(verificationStrategy),
-                                        nativeOperations()))
+                                        nativeOperations(),
+                                        senderId))
                         .build()
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
-                .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
+                .dispatch(transferToDispatch, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(op, frame);
@@ -152,13 +155,15 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      * @param systemContractGasCalculator the gas calculator to use
      * @param enhancement the enhancement to use
      * @param payerId the payer of the transaction
+     * @param selector
      * @return the gas requirement for the transaction to be dispatched
      */
     public static long transferGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @NonNull final AccountID payerId) {
+            @NonNull final AccountID payerId,
+            @NonNull final byte[] selector) {
         final var op = body.cryptoTransferOrThrow();
         final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
         // For fungible there are always at least two operations, so only charge half for each
@@ -183,7 +188,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 baseHbarAdjustTinybarPrice,
                 baseNftTransferTinybarPrice,
                 baseLazyCreationPrice,
-                extantAccounts);
+                extantAccounts,
+                selector);
         return systemContractGasCalculator.gasRequirement(body, payerId, minimumTinybarPrice);
     }
 
@@ -193,7 +199,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             final long baseHbarAdjustTinybarPrice,
             final long baseNftTransferTinybarPrice,
             final long baseLazyCreationPrice,
-            @NonNull final ReadableAccountStore extantAccounts) {
+            @NonNull final ReadableAccountStore extantAccounts,
+            @NonNull final byte[] selector) {
         long minimumTinybarPrice = 0L;
         final var numHbarAdjusts = op.transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(emptyList())
@@ -202,7 +209,9 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
         for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
             final var unitAdjusts = tokenTransfers.transfersOrElse(emptyList());
-            minimumTinybarPrice += unitAdjusts.size() * baseUnitAdjustTinybarPrice;
+            // (FUTURE) Remove this divisor special case, done only for mono-service fidelity
+            final var sizeDivisor = Arrays.equals(selector, TRANSFER_TOKEN.selector()) ? 2 : 1;
+            minimumTinybarPrice += (unitAdjusts.size() / sizeDivisor) * baseUnitAdjustTinybarPrice;
             for (final var unitAdjust : unitAdjusts) {
                 if (unitAdjust.amount() > 0
                         && unitAdjust.accountIDOrElse(AccountID.DEFAULT).hasAlias()) {

@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpc
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.NO_TOKENS;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -97,7 +97,7 @@ public class ExpirableTxnRecordTestHelper {
             builder.setPseudoRandomNumber(record.getPrngNumber());
         }
         if (record.hasParentConsensusTimestamp()) {
-            builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
+            builder.setParentConsensusTime(CommonUtils.timestampToInstant(record.getParentConsensusTimestamp()));
         }
         return builder.build();
     }

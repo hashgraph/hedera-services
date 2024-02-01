@@ -37,7 +37,6 @@ import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -165,7 +164,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Reference Count For One Leaf In Tree")
     void referenceCountForOneLeafInTree() {
@@ -196,7 +194,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Reference Count For One Leaf In Tree With Copy")
     void referenceCountForOneLeafInTreeWithCopy() {
@@ -228,9 +225,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Reference Count With Multiple Leaves")
     void referenceCountWithMultipleLeaves(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -245,9 +241,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Reference Count With Insertions And Updates")
     void referenceCountWithInsertionsAndUpdates(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -272,7 +267,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Reference Count Delete With One Leaf")
     void referenceCountDeleteWithOneLeaf() {
@@ -289,9 +283,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Reference Count With Insertions, Updates, And Deletes")
     void referenceCountWithInsertionsAndUpdatesAndDeletes(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -319,9 +312,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Reference Count With Multiple Leaves With Copy")
     void referenceCountWithMultipleLeavesWithCopy(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -341,9 +333,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArguments")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Reference Count WIth Multiple Copies")
     void referenceCountWithMultipleCopies(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -378,7 +369,6 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @MethodSource("buildSizeArgumentsToCheckBalance")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Inserts Leaves")
     void insertsLeaves(final int size) {
@@ -390,7 +380,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Clear After 1024 Insertions")
     void clearAfter1024Insertions() {
@@ -403,7 +392,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces First Leaf")
     void replacesFirstLeaf() {
@@ -428,7 +416,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces Null Leaf")
     void replacesNullLeaf() {
@@ -440,7 +427,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces Invalid Leaf")
     void replacesInvalidLeaf() {
@@ -452,7 +438,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces With Null Leaf")
     void replacesWithNullLeaf() {
@@ -467,7 +452,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces First Leaf After Second Insertion")
     void replacesFirstLeafAfterSecondInsertion() {
@@ -492,7 +476,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces First Leaf After Eighth Insertions")
     void replacesFirstLeafAfterEightInsertions() {
@@ -518,7 +501,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces Last Leaf After Eighth Insertion")
     void replacesLastLeafAfterEightInsertion() {
@@ -544,9 +526,8 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Replaces Last Leaf After 1K Insertions")
     void replacesLastLeafAfter16KInsertions() {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -571,7 +552,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Replaces Second Leaf")
     void replacesSecondLeaf() {
@@ -601,7 +581,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Inserts And Deletes One Leaf")
     void insertsAndDeletesOneLeaf() {
@@ -617,7 +596,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Inserts And Deletes First Leaf After Second Insertion")
     void insertsAndDeletesFirstLeafAfterSecondInsertion() {
@@ -637,7 +615,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes Invalid Leaf")
     void deletesInvalidLeaf() {
@@ -651,7 +628,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes Null Leaf")
     void deletesNullLeaf() {
@@ -664,7 +640,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes Second Leaf After Second Insertion")
     void deletesSecondLeafAfterSecondInsertion() {
@@ -684,7 +659,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes On Empty Tree")
     void deletesOnEmptyTree() {
@@ -700,7 +674,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes First Leaf After 4 Insertions")
     void deletesFirstLeafAfter4Insertions() {
@@ -721,7 +694,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes First Leaf After 8 Insertions")
     void deletesFirstLeafAfter8Insertions() {
@@ -743,7 +715,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes Last Leaf After 3 Insertions")
     void deletesLastLeafAfter3Insertions() {
@@ -775,9 +746,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @ValueSource(ints = {1_000, 1_024 /*, 8_000, 16_384 */})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Deletes Elements")
     void deletesElements(final int size) {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -787,7 +757,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Deletes 1K Elements Randomly")
     void deletes16KElementsRandomly() {
@@ -810,9 +779,8 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Inserts 2K Leaves And Iterates Over Fast Serializables")
     void inserts8MLeavesAndIteratesOverFastSerializables() {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -829,9 +797,8 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Original FCMTree Is Immutable")
     void copyIsImmutable() {
         final int sizeOfTree = 1_000;
@@ -877,7 +844,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Is Path Unique One Leaf Test")
     void isPathUniqueOneLeafTest() {
@@ -923,7 +889,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     @DisplayName("Is Path Unique Multi Leaves Test")
     void isPathUniqueMultiLeavesTest() {
@@ -958,9 +923,8 @@ class MerkleBinaryTreeTests {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3, 102, 1024 /* 1_000_000, 1_048_576 */})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
-    @Tag(TestQualifierTags.AT_SCALE)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Serialize And Deserialize")
     void serializeAndDeserialize(final int size) throws IOException {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();
@@ -986,7 +950,6 @@ class MerkleBinaryTreeTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLETREE)
     void copyThrowsIfDeletedTest() {
         final MerkleBinaryTree<Value> tree = new MerkleBinaryTree<>();

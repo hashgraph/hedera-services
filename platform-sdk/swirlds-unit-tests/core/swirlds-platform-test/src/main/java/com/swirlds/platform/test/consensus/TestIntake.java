@@ -52,6 +52,7 @@ import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -60,6 +61,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
@@ -93,7 +95,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-        final WiringModel model = WiringModel.create(platformContext, time);
+        final WiringModel model = WiringModel.create(platformContext, time, ForkJoinPool.commonPool());
 
         hashingObjectCounter = new BackpressureObjectCounter(
                 "hashingObjectCounter",
@@ -136,15 +138,19 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
+        final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
+
         hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        linkedEventIntakeWiring
+        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        linkedEventIntakeWiring
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 

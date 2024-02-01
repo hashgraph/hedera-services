@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
  */
 class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
 
-    static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
-    static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
+    static final String QUEUE_MAX_SIZE_SUFFIX = "_queueMaxSize";
+    static final String QUEUE_MIN_SIZE_SUFFIX = "_queueMinSize";
 
     private final IntegerAccumulator maxSizeMetric;
     private final IntegerAccumulator minSizeMetric;
