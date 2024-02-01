@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public class MerkleDbStatistics {
 
-    public static final String STAT_CATEGORY = "merkle-db";
+    public static final String STAT_CATEGORY = "merkle_db";
 
     /** Prefix for all data source related metrics */
     private static final String DS_PREFIX = "ds_";
