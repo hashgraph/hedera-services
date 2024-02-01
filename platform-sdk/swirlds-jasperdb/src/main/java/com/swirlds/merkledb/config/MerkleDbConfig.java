@@ -101,7 +101,9 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
-        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
+        @Min(1) @ConfigProperty(defaultValue = "8") int maxFileChannelsPerFileReader,
+        @Min(1) @ConfigProperty(defaultValue = "8") int maxThreadsPerFileChannel) {
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 
