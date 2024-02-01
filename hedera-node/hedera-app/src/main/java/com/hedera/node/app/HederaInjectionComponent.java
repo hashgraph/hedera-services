@@ -122,6 +122,8 @@ public interface HederaInjectionComponent {
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 
+    InitTrigger initTrigger();
+
     @Component.Builder
     interface Builder {
 

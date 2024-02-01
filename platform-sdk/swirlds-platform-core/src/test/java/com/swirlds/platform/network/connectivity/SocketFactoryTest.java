@@ -130,7 +130,7 @@ class SocketFactoryTest {
      * 		if anything goes wrong
      */
     @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void tlsFactoryTest(final AddressBook addressBook, final KeysAndCerts[] keysAndCerts) throws Throwable {
         // choose 2 random nodes to test

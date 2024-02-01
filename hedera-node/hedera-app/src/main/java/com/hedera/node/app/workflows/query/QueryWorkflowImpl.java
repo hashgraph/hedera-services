@@ -71,10 +71,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
+@Singleton
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);

@@ -18,21 +18,22 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.merkledb.MerkleDbTestUtils.createMetrics;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getMetric;
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
-import static com.swirlds.merkledb.TestType.fixed_fixed;
 import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.createMetrics;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getMetric;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
+import static com.swirlds.merkledb.test.fixtures.TestType.fixed_fixed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
@@ -79,7 +80,6 @@ class MerkleDbDataSourceMetricsTest {
                 1L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected only 1 db");
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     void createInternalNodeHashesAndCheckMemoryConsumption() throws IOException {
@@ -122,7 +122,6 @@ class MerkleDbDataSourceMetricsTest {
         assertNoMemoryForLeafAndKeyToPathLists();
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     void createAndCheckLeaves() throws IOException {

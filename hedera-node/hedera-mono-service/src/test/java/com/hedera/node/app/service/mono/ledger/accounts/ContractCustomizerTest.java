@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import java.time.Instant;
 import java.util.Map;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -62,6 +63,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCustomizerTest {
+    private static final Address newAddress = Address.fromHexString("0xabc");
+
     @Mock
     private HederaAccountCustomizer accountCustomizer;
 
@@ -88,7 +91,7 @@ class ContractCustomizerTest {
     void usesContractIdKeyIfInheritingFromJustCompletedHollowAccount() {
         final var captor = ArgumentCaptor.forClass(JKey.class);
 
-        subject = new ContractCustomizer(EMPTY_KEY, accountCustomizer);
+        subject = new ContractCustomizer(EMPTY_KEY, accountCustomizer, newAddress);
 
         subject.customize(newContractId, ledger);
 
@@ -102,7 +105,7 @@ class ContractCustomizerTest {
     void worksWithCryptoAdminKey() {
         final var captor = ArgumentCaptor.forClass(JKey.class);
 
-        subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+        subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer, newAddress);
 
         subject.customize(newContractId, ledger);
 
@@ -124,7 +127,7 @@ class ContractCustomizerTest {
         given(ledger.get(sponsorId, STAKED_ID)).willReturn(stakedId);
         given(ledger.get(sponsorId, DECLINE_REWARD)).willReturn(declineReward);
 
-        final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
+        final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger, newAddress);
 
         assertCustomizesWithCryptoKey(subject, true);
     }
@@ -142,7 +145,7 @@ class ContractCustomizerTest {
         given(ledger.get(sponsorId, STAKED_ID)).willReturn(stakedId);
         given(ledger.get(sponsorId, DECLINE_REWARD)).willReturn(declineReward);
 
-        final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
+        final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger, newAddress);
 
         assertCustomizesWithImmutableKey(subject);
     }
@@ -156,7 +159,7 @@ class ContractCustomizerTest {
                 .setMemo(memo)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op, newAddress);
 
         assertCustomizesWithImmutableKey(subject);
     }
@@ -171,7 +174,7 @@ class ContractCustomizerTest {
                 .setDeclineReward(true)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op, newAddress);
 
         final var captor = ArgumentCaptor.forClass(JKey.class);
 
@@ -210,7 +213,7 @@ class ContractCustomizerTest {
                 .setMemo(memo)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op, newAddress);
 
         assertCustomizesWithCryptoKey(subject);
     }
@@ -224,7 +227,7 @@ class ContractCustomizerTest {
                 .setMemo(memo)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op, newAddress);
 
         assertCustomizesWithCryptoKey(subject);
         verify(ledger).set(newContractId, AUTO_RENEW_ACCOUNT_ID, autoRenewAccount);
@@ -238,7 +241,7 @@ class ContractCustomizerTest {
                 .setMemo(memo)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op, newAddress);
 
         assertCustomizesWithCryptoKey(subject);
         // Should not set auto-renew account to missing entity id
@@ -253,7 +256,7 @@ class ContractCustomizerTest {
                 .setMemo(memo)
                 .build();
 
-        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op, newAddress);
 
         assertCustomizesWithCryptoKey(subject);
         verify(ledger).set(newContractId, MAX_AUTOMATIC_ASSOCIATIONS, 10);
@@ -261,7 +264,7 @@ class ContractCustomizerTest {
 
     @Test
     void customizesSyntheticWithCryptoKey() {
-        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer, newAddress);
         final var op = ContractCreateTransactionBody.newBuilder();
 
         subject.customizeSynthetic(op);
@@ -273,7 +276,7 @@ class ContractCustomizerTest {
     @Test
     void customizesSyntheticWithNegStakedId() {
         given(accountCustomizer.getChanges()).willReturn(Map.of(STAKED_ID, -1L));
-        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer, newAddress);
         final var op = ContractCreateTransactionBody.newBuilder();
         willCallRealMethod().given(accountCustomizer).customizeSynthetic(op);
 
@@ -288,7 +291,7 @@ class ContractCustomizerTest {
     @Test
     void customizesSyntheticWithPositiveStakedId() {
         given(accountCustomizer.getChanges()).willReturn(Map.of(STAKED_ID, 10L));
-        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+        final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer, newAddress);
         final var op = ContractCreateTransactionBody.newBuilder();
         willCallRealMethod().given(accountCustomizer).customizeSynthetic(op);
 

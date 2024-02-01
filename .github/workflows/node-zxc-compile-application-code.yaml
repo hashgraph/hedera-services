@@ -608,14 +608,29 @@ jobs:
             !cancelled()
           }}
         run: |
-          if [[ -f "snyk-test.json" ]]; then
+          if [[ -f "snyk-test.json" && -n "$(cat snyk-test.json | tr -d '[:space:]')" ]]; then
             snyk-to-html -i snyk-test.json -o snyk-test.html --summary
             html-to-markdown snyk-test.html -o snyk
             cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [[ -f "snyk-code.json" ]]; then
+          if [[ -f "snyk-code.json" && -n "$(cat snyk-code.json | tr -d '[:space:]')" ]]; then
             snyk-to-html -i snyk-code.json -o snyk-code.html --summary
             html-to-markdown snyk-code.html -o snyk
             cat snyk/snyk-code.html.md >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Check Snyk Files
+        if: ${{ always() }}
+        run: |
+          echo "::group::Snyk File List"
+            ls -lah snyk* || true
+          echo "::endgroup::"
+
+          echo "::group::Snyk Test Contents"
+            cat snyk-test.json || true
+          echo "::endgroup::"
+
+          echo "::group::Snyk Code Contents"
+            cat snyk-code.json || true
+          echo "::endgroup::"
