@@ -16,8 +16,9 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,7 +47,7 @@ class BucketMutationTest {
         }
 
         final AtomicLong index = new AtomicLong(1);
-        root.forEachKeyValue((k, ov, cov, v) -> {
+        root.forEachKeyValue((k, ov, v) -> {
             final long i = index.getAndIncrement();
             assertEquals(new ExampleLongKeyFixedSize(i), k, "Unexpected key " + k + " for iteration " + i);
             assertEquals(i * 10, v, "Unexpected value " + v + " for iteration " + i);
@@ -75,7 +76,7 @@ class BucketMutationTest {
 
         final var expectedValues = new LinkedList<>(List.of(100, 30, 200, 50, 400));
 
-        root.forEachKeyValue((k, ov, cov, v) -> {
+        root.forEachKeyValue((k, ov, v) -> {
             assertEquals(expectedKeys.removeFirst(), k, "Unexpected key");
             assertEquals((long) expectedValues.removeFirst(), v, "Unexpected value");
         });
@@ -89,36 +90,36 @@ class BucketMutationTest {
         final var mutation = new BucketMutation<>(new ExampleLongKeyFixedSize(1), 2);
         mutation.put(new ExampleLongKeyFixedSize(1), 3);
         assertEquals(3, mutation.getValue());
-        assertFalse(mutation.hasOldValue());
+        assertEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
-        mutation.putIfEquals(new ExampleLongKeyFixedSize(1), 3, 4);
+        mutation.putIfEqual(new ExampleLongKeyFixedSize(1), 3, 4);
         assertEquals(4, mutation.getValue());
-        assertFalse(mutation.hasOldValue());
+        assertEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
-        mutation.putIfEquals(new ExampleLongKeyFixedSize(1), 3, 5);
+        mutation.putIfEqual(new ExampleLongKeyFixedSize(1), 3, 5);
         assertEquals(4, mutation.getValue());
-        assertFalse(mutation.hasOldValue());
+        assertEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
         mutation.put(new ExampleLongKeyFixedSize(1), 6);
         assertEquals(6, mutation.getValue());
-        assertFalse(mutation.hasOldValue());
+        assertEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
     }
 
     @Test
     void updateWithOldValue() {
         final var mutation = new BucketMutation<>(new ExampleLongKeyFixedSize(1), -1, 2);
-        mutation.putIfEquals(new ExampleLongKeyFixedSize(1), 3, 4);
+        mutation.putIfEqual(new ExampleLongKeyFixedSize(1), 3, 4);
         assertEquals(2, mutation.getValue());
-        assertTrue(mutation.hasOldValue());
+        assertNotEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
-        mutation.putIfEquals(new ExampleLongKeyFixedSize(1), 2, 5);
+        mutation.putIfEqual(new ExampleLongKeyFixedSize(1), 2, 5);
         assertEquals(5, mutation.getValue());
-        assertTrue(mutation.hasOldValue());
+        assertNotEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
         mutation.put(new ExampleLongKeyFixedSize(1), 6);
         assertEquals(6, mutation.getValue());
-        assertFalse(mutation.hasOldValue());
+        assertEquals(INVALID_VALUE, mutation.getOldValue());
         assertNull(mutation.getNext());
     }
 

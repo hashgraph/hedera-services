@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
+
 import com.swirlds.virtualmap.VirtualKey;
 import java.util.Objects;
 
@@ -28,16 +30,15 @@ import java.util.Objects;
 class BucketMutation<K extends VirtualKey> {
 
     private final K key;
-    private final long oldValue;
-    private boolean hasOldValue;
+    // If old value is HDHM.INVALID_VALUE, it means the old value should not be checked
+    private long oldValue;
     private long value;
     private BucketMutation<K> next;
 
     BucketMutation(final K key, final long value) {
         this.key = Objects.requireNonNull(key);
         this.value = value;
-        this.oldValue = 0;
-        this.hasOldValue = false;
+        this.oldValue = INVALID_VALUE;
         this.next = null;
     }
 
@@ -45,7 +46,6 @@ class BucketMutation<K extends VirtualKey> {
         this.key = Objects.requireNonNull(key);
         this.value = value;
         this.oldValue = oldValue;
-        this.hasOldValue = true;
         this.next = null;
     }
 
@@ -61,8 +61,8 @@ class BucketMutation<K extends VirtualKey> {
         BucketMutation<K> mutation = this;
         while (true) {
             if (mutation.key.equals(key)) {
-                mutation.hasOldValue = false;
                 mutation.value = value;
+                mutation.oldValue = INVALID_VALUE;
                 return;
             } else if (mutation.next != null) {
                 mutation = mutation.next;
@@ -73,7 +73,7 @@ class BucketMutation<K extends VirtualKey> {
         }
     }
 
-    void putIfEquals(final K key, final long oldValue, final long value) {
+    void putIfEqual(final K key, final long oldValue, final long value) {
         BucketMutation<K> mutation = this;
         while (true) {
             if (mutation.key.equals(key)) {
@@ -116,12 +116,7 @@ class BucketMutation<K extends VirtualKey> {
     }
 
     // For testing purposes
-    boolean hasOldValue() {
-        return hasOldValue;
-    }
-
-    // For testing purposes
-    BucketMutation getNext() {
+    BucketMutation<K> getNext() {
         return next;
     }
 
@@ -133,7 +128,7 @@ class BucketMutation<K extends VirtualKey> {
     void forEachKeyValue(MutationCallback<K> consumer) {
         BucketMutation<K> mutation = this;
         while (mutation != null) {
-            consumer.accept(mutation.key, mutation.oldValue, mutation.hasOldValue, mutation.value);
+            consumer.accept(mutation.key, mutation.oldValue, mutation.value);
             mutation = mutation.next;
         }
     }
@@ -144,6 +139,6 @@ class BucketMutation<K extends VirtualKey> {
      *     The key.
      */
     interface MutationCallback<K extends VirtualKey> {
-        void accept(final K key, final long oldValue, final boolean checkOldValue, final long value);
+        void accept(final K key, final long oldValue, final long value);
     }
 }

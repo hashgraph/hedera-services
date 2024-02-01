@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -102,7 +102,7 @@ class BucketTest {
             checkKey(bucket, testKeys[j]);
         }
         // now delete last key and check
-        bucket.putValue(testKeys[9], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[9], INVALID_VALUE);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 9; j++) {
             checkKey(bucket, testKeys[j]);
@@ -112,7 +112,7 @@ class BucketTest {
                 bucket.findValue(testKeys[9].hashCode(), testKeys[9], -1),
                 "Should not find entry 10 any more we deleted it");
         // now delete a middle, index 5
-        bucket.putValue(testKeys[5], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[5], INVALID_VALUE);
         assertEquals(8, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -125,7 +125,7 @@ class BucketTest {
                 bucket.findValue(testKeys[5].hashCode(), testKeys[5], -1),
                 "Should not find entry 5 any more we deleted it");
         // now delete first, index 0
-        bucket.putValue(testKeys[0], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[0], INVALID_VALUE);
         assertEquals(7, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
             checkKey(bucket, testKeys[j]);

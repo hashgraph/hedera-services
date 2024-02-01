@@ -76,8 +76,11 @@ public class HalfDiskHashMap<K extends VirtualKey>
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.hdhm";
     /** Bucket index file name suffix with extension */
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
-    /** Nominal value for value to say please delete from map. */
-    protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
+    /**
+     * A marker to indicate that a value should be deleted from the map, or that there is
+     * no old value to compare against in putIfEquals/deleteIfEquals
+     */
+    protected static final long INVALID_VALUE = Long.MIN_VALUE;
 
     /**
      * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
@@ -333,6 +336,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * Put a key/value during the current writing session. The value will not be retrievable until
      * it is committed in the {@link #endWriting()} call.
      *
+     * <p>This method may be called multiple times for the same key in a single writing
+     * session. The value from the last call will be stored in this map after the session is
+     * ended.
+     *
      * @param key the key to store the value for
      * @param value the value to store for given key
      */
@@ -341,22 +348,49 @@ public class HalfDiskHashMap<K extends VirtualKey>
         bucketMap.put(key, value);
     }
 
-    public void putIfEquals(final K key, final long oldValue, final long value) {
+    /**
+     * Put a key/valur during the current writing session. This method is similar to {@link
+     * #put(VirtualKey, long)}, but the new value is set only if the current value is equal to
+     * the given {@code oldValue}.
+     *
+     * <p>This method may be called multiple times for the same key in a single writing
+     * session. If the new value from the first call is equal to the old value in the second
+     * call, the new value from the second call will be stored in this map after the session
+     * is ended, otherwise the value from the second call will be ignored.
+     *
+     * <p>If the value for {@code oldValue} is {@link #INVALID_VALUE}, it's ignored, and this
+     * method is identical to {@link #put(VirtualKey, long)}.
+     *
+     * @param key the key to store the value for
+     * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
+     *                 if no current value check is needed
+     * @param value the value to store for the given key
+     */
+    public void putIfEqual(final K key, final long oldValue, final long value) {
         final BucketMutation<K> bucketMap = findBucketForUpdate(key, value);
-        bucketMap.putIfEquals(key, oldValue, value);
+        bucketMap.putIfEqual(key, oldValue, value);
     }
 
     /**
-     * Delete a key entry from map
+     * Delete a key entry from the map.
      *
      * @param key The key to delete entry for
      */
     public void delete(final K key) {
-        put(key, SPECIAL_DELETE_ME_VALUE);
+        put(key, INVALID_VALUE);
     }
 
-    public void deleteIfEquals(final K key, final long oldValue) {
-        putIfEquals(key, oldValue, SPECIAL_DELETE_ME_VALUE);
+    /**
+     * Delete a key entry from the map, if the current value is equal to the given {@code oldValue}.
+     * If {@code oldValue} is {@link #INVALID_VALUE}, no current value check is performed, and this
+     * method is identical to {@link #delete(VirtualKey)}.
+     *
+     * @param key the key to delete the entry for
+     * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
+     *                 if no current value check is needed
+     */
+    public void deleteIfEqual(final K key, final long oldValue) {
+        putIfEqual(key, oldValue, INVALID_VALUE);
     }
 
     /**

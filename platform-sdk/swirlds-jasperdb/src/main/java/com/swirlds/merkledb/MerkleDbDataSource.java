@@ -599,8 +599,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             return null;
         }
 
-        //        assert validLeafPathRange.withinRange(path);
-
         // If the key returns a value from the map, but it lies outside the first/last
         // leaf path, then return null. This can happen if the map contains old keys
         // that haven't been removed.
@@ -1185,10 +1183,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             objectKeyToPath.startWriting();
         }
 
-        // iterate over leaf records
+        // Iterate over leaf records
         dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
             final long path = leafRecord.getPath();
-            // update objectKeyToPath
+            // Update key to path index
             if (isLongKeyMode) {
                 final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
                 longKeyToPath.put(key, path);
@@ -1197,7 +1195,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             }
             statisticsUpdater.countFlushLeafKeysWritten();
 
-            // update pathToKeyValue
+            // Update path to K/V store
             try {
                 pathToKeyValue.put(leafRecord.getPath(), leafRecord);
             } catch (final IOException e) {
@@ -1210,15 +1208,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             invalidateReadCache(leafRecord.getKey());
         });
 
-        // iterate over leaf records to delete
+        // Iterate over leaf records to delete
         deletedLeaves.forEach(leafRecord -> {
             final long path = leafRecord.getPath();
-            // update objectKeyToPath
+            // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
+            // deletedLeaves stream have been moved to different paths in the tree. This is good
+            // indication that these leaves should not be deleted. This is why putIfEqual() and
+            // deleteIfEqual() are used below rather than unconditional put() and delete() as for
+            // dirtyLeaves stream above
             if (isLongKeyMode) {
                 final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
                 longKeyToPath.putIfEqual(key, path, INVALID_PATH);
             } else {
-                objectKeyToPath.deleteIfEquals(leafRecord.getKey(), path);
+                objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
             }
             statisticsUpdater.countFlushLeavesDeleted();
 

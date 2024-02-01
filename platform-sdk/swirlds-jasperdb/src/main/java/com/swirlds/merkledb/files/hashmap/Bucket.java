@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -230,7 +230,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
     public void putValue(final K key, final long value) {
-        putValue(key, 0, false, value);
+        putValue(key, INVALID_VALUE, value);
     }
 
     /**
@@ -241,16 +241,16 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @param key the entry key
      * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
      *                 {@code checkOldValue} is false, this old value is ignored
-     * @param checkOldValue a flag to check the existing value against {@code oldValue} or not
      * @param value the entry value, this can also be special
      *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
-    public void putValue(final K key, final long oldValue, final boolean checkOldValue, final long value) {
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         final FindResult result = findEntry(keyHashCode, key);
-        if (value == SPECIAL_DELETE_ME_VALUE) {
+        if (value == INVALID_VALUE) {
             if (result.found()) {
-                if (checkOldValue && (oldValue != result.entryValue)) {
+                if (needCheckOldValue && (oldValue != result.entryValue)) {
                     return;
                 }
                 final long nextEntryOffset = result.entryOffset() + result.entrySize();
@@ -270,13 +270,13 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         }
         if (result.found()) {
             // yay! we found it, so update value
-            if (checkOldValue && (oldValue != result.entryValue)) {
+            if (needCheckOldValue && (oldValue != result.entryValue)) {
                 return;
             }
             bucketData.position(result.entryValueOffset());
             bucketData.writeLong(value);
         } else {
-            if (checkOldValue) {
+            if (needCheckOldValue) {
                 return;
             }
             // add a new entry

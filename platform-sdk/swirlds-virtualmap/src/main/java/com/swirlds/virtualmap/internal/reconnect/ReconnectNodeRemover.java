@@ -77,6 +77,13 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      */
     private final long oldLastLeafPath;
 
+    /**
+     * Set of keys (actually, keys + paths) collected for removal. This set is empties every
+     * time {@link #getRecordsToDelete()} is called, and a new set is started. The set is
+     * populated in {@link #newLeafNode(long, VirtualKey)} and {@link #newInternalNode(long)}
+     * based on what is received from the teacher (method args) and what was on the learner
+     * ({@link #oldRecords}).
+     */
     private Set<VirtualLeafRecord<K, ?>> leavesToDelete = new HashSet<>();
 
     /**
@@ -118,7 +125,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * @param path
      * 		the path of the node
      */
-    public void newInternalNode(final long path) {
+    public synchronized void newInternalNode(final long path) {
         if ((path >= oldFirstLeafPath) && (path <= oldLastLeafPath) && (path > 0)) {
             final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
             assert oldRecord != null;
@@ -135,7 +142,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * @param newKey
      * 		the key of the new leaf node
      */
-    public void newLeafNode(final long path, final K newKey) {
+    public synchronized void newLeafNode(final long path, final K newKey) {
         final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
         if ((oldRecord != null) && !newKey.equals(oldRecord.getKey())) {
             leavesToDelete.add(oldRecord);
@@ -153,12 +160,14 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     }
 
     /**
-     * Return a stream of keys that require deletion.
+     * Return a stream of keys collected so far for deletion. The set of collected keys is reset,
+     * so subsequent calls to this method will return different keys collected in {@link
+     * #newInternalNode(long)} and {@link #newLeafNode(long, VirtualKey)}.
      *
      * @return a stream of keys to be deleted. Only the key and path in these records
      * 		are populated, all other data is uninitialized.
      */
-    public Stream<VirtualLeafRecord<K, V>> getRecordsToDelete() {
+    public synchronized Stream<VirtualLeafRecord<K, V>> getRecordsToDelete() {
         final Stream<VirtualLeafRecord<K, V>> stream =
                 leavesToDelete.stream().map(r -> new VirtualLeafRecord<>(r.getPath(), r.getKey(), null));
         // Don't use clear(), as it would affect the returned stream
