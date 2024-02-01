@@ -16,7 +16,7 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,9 +27,10 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkle.test.fixtures.FakeVirtualMap;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;

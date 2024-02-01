@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.txns.network;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
+import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;

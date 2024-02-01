@@ -61,7 +61,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     private final RunningAverageMetric avgReceivedFamousTime;
 
     private static final SpeedometerMetric.Config ROUNDS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "rounds/sec")
+                    PLATFORM_CATEGORY, "rounds_per_sec")
             .withDescription("average number of rounds per second");
     private final SpeedometerMetric roundsPerSecond;
 

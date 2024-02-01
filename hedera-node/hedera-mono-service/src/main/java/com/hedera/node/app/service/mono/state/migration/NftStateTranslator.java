@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public final class NftStateTranslator {
 
@@ -47,8 +48,14 @@ public final class NftStateTranslator {
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
         builder.nftId(nftNumPairToNftID(nftIdPair));
 
-        builder.ownerId(PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId()))
-                .spenderId(PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId()))
+        final var maybeOwner = merkleUniqueToken.getOwner().num() != 0
+                ? PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId())
+                : null;
+        final var maybeSpender = merkleUniqueToken.getSpender().num() != 0
+                ? PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId())
+                : null;
+        builder.ownerId(maybeOwner)
+                .spenderId(maybeSpender)
                 .mintTime(Timestamp.newBuilder()
                         .seconds(merkleUniqueToken.getCreationTime().getSeconds())
                         .nanos(merkleUniqueToken.getCreationTime().getNanos())
@@ -64,9 +71,12 @@ public final class NftStateTranslator {
         return builder.build();
     }
 
-    private static @NonNull NftID nftNumPairToNftID(@NonNull NftNumPair nftNumPair) {
+    private static @Nullable NftID nftNumPairToNftID(@NonNull NftNumPair nftNumPair) {
         final var tokenTypeNumber = nftNumPair.tokenNum();
         final var serialNumber = nftNumPair.serialNum();
+        if (tokenTypeNumber == 0 && serialNumber == 0) {
+            return null;
+        }
         return NftID.newBuilder()
                 .tokenId(TokenID.newBuilder().tokenNum(tokenTypeNumber).build())
                 .serialNumber(serialNumber)

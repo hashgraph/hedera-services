@@ -83,7 +83,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * The name of the thread that handles consensus events
      */
-    public static final String THREAD_CONS_NAME = "thread-cons";
+    public static final String THREAD_CONS_NAME = "thread_cons";
 
     /**
      * The class responsible for all interactions with the swirld state
