@@ -316,7 +316,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         writingThread = Thread.currentThread();
     }
 
-    private BucketMutation<K> findBucketForUpdate(final K key, final long value) {
+    private BucketMutation<K> findBucketForUpdate(final K key, final long oldValue, final long value) {
         if (key == null) {
             throw new IllegalArgumentException("Can not write a null key");
         }
@@ -329,7 +329,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         }
         // store key and value in transaction cache
         final int bucketIndex = computeBucketIndex(key.hashCode());
-        return oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, value));
+        return oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, oldValue, value));
     }
 
     /**
@@ -344,7 +344,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @param value the value to store for given key
      */
     public void put(final K key, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, value);
+        final BucketMutation<K> bucketMap = findBucketForUpdate(key, INVALID_VALUE, value);
         bucketMap.put(key, value);
     }
 
@@ -367,7 +367,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @param value the value to store for the given key
      */
     public void putIfEqual(final K key, final long oldValue, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, value);
+        final BucketMutation<K> bucketMap = findBucketForUpdate(key, oldValue, value);
         bucketMap.putIfEqual(key, oldValue, value);
     }
 
@@ -460,7 +460,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
             dataFileReader = fileCollection.endWriting(0, numOfBuckets);
             // we have updated all indexes so the data file can now be included in merges
             dataFileReader.setFileCompleted();
-            return dataFileReader;
         } else {
             dataFileReader = null;
         }

@@ -206,7 +206,7 @@ public class MerkleDbTest {
     }
 
     @Test
-    void testVirtualKeySet() throws IOException {
+    void testCreateDataSource() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablea";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();

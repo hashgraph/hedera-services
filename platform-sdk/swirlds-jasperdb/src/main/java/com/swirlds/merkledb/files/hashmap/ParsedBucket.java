@@ -132,7 +132,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
     public void putValue(final K key, final long value) {
         final int keyHashCode = key.hashCode();

@@ -227,7 +227,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
     public void putValue(final K key, final long value) {
         putValue(key, INVALID_VALUE, value);
@@ -242,7 +242,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
      *                 {@code checkOldValue} is false, this old value is ignored
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
     public void putValue(final K key, final long oldValue, final long value) {
         final boolean needCheckOldValue = oldValue != INVALID_VALUE;
