@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.util.Arrays;
@@ -253,6 +253,28 @@ class BucketTest {
         bucket.setBucketIndex(0);
         final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=31}";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
+    }
+
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    void emptyParsedBucketToBucketIndexZero(final KeyType keyType) throws IOException {
+        final Bucket<VirtualLongKey> inBucket = new ParsedBucket<>(keyType.keySerializer);
+        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
+        final VirtualLongKey key2 = keyType.keyConstructor.apply(2L);
+        inBucket.setBucketIndex(0);
+        inBucket.putValue(key1, 2);
+        inBucket.putValue(key2, 1);
+        final BufferedData buf = BufferedData.allocate(inBucket.sizeInBytes());
+        inBucket.writeTo(buf);
+        buf.reset();
+        final Bucket<VirtualLongKey> outBucket = new Bucket<>(keyType.keySerializer);
+        outBucket.readFrom(buf);
+        outBucket.putValue(key1, SPECIAL_DELETE_ME_VALUE);
+        outBucket.putValue(key2, SPECIAL_DELETE_ME_VALUE);
+        assertDoesNotThrow(outBucket::getBucketIndex);
+        assertDoesNotThrow(outBucket::getBucketEntryCount);
+        assertEquals(0, outBucket.getBucketEntryCount());
+        assertEquals(0, outBucket.getBucketIndex());
     }
 
     private void checkKey(Bucket<VirtualLongKey> bucket, VirtualLongKey key) {

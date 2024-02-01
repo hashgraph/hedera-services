@@ -69,7 +69,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     private final AutoClosableLock lock = Locks.createAutoLock();
 
     private static final IntegerGauge.Config RECYLED_FILE_COUNT_CONFIG = new IntegerGauge.Config(
-                    "platform", "recycled-file-count")
+                    "platform", "recycled_file_count")
             .withDescription("The number of top level files/directories in the recycle bin, non recursive.");
     private final IntegerGauge recycledFileCountMetric;
 

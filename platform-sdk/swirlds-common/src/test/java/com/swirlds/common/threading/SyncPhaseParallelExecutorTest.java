@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.Test;
 class SyncPhaseParallelExecutorTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test phases in order")
     @Disabled("ticket opened #5316")
@@ -82,7 +80,6 @@ class SyncPhaseParallelExecutorTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test single thread option")
     void testSingleThreadOption() {

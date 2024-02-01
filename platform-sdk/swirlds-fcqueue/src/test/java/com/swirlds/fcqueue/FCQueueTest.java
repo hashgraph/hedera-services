@@ -35,8 +35,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -83,7 +81,6 @@ class FCQueueTest {
      * A simple test of adding and removing elements, while printing them all to the console.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Console Test")
     void consoleTest() {
@@ -135,7 +132,6 @@ class FCQueueTest {
      * getHash()
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Hash Test 1")
     public void hashTest1() {
@@ -163,7 +159,6 @@ class FCQueueTest {
      * getHash()
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Hash Test 2")
     public void hashTest2() {
@@ -202,7 +197,6 @@ class FCQueueTest {
      * getHash()
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Hash Test 3")
     public void hashTest3() {
@@ -287,7 +281,6 @@ class FCQueueTest {
      * 		if something goes wrong
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Hash Test 4")
     public void hashTest4() throws Exception {
@@ -310,7 +303,6 @@ class FCQueueTest {
      * that.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Hash Test 5")
     public void hashTest5() {
@@ -332,7 +324,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1_000, 10_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Add Test")
     public void addTest(final int targetSize) {
@@ -349,7 +340,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @CsvSource({"1000, 0.2", "10000, 0.5", "10000, 0.8", "10000, 1.0"})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Remove Test")
     public void removeTest(final int size, final double removeRatio) {
@@ -377,7 +367,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1_000, 10_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Copy Test")
     public void copyTest(final int targetSize) {
@@ -403,7 +392,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1_000, 10_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Release Test")
     void releaseTest(final int targetSize) {
@@ -431,7 +419,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1_000, 10_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("toArray Test")
     public void toArrayTest(final int targetSize) {
@@ -513,9 +500,7 @@ class FCQueueTest {
      * iterator: for (E e : queue)
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
-    @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Add Remove Copy Test")
     public void addRemoveCopyTest() {
         // number of original queues (not copies) to maintain
@@ -651,7 +636,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1, 5, 10, 100, 1000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Serialize And Recover Test")
     public void serializeAndRecoverTest(final int numElements) throws IOException {
@@ -708,7 +692,6 @@ class FCQueueTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1, 5, 10, 100, 1000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Serialization compatibility Test")
     public void serializationCompatibilityTest(final int numElements) throws IOException, ClassNotFoundException {
@@ -795,7 +778,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Second Mute Copy Should Fail Test")
     public void secondMutateCopyShouldFailTest() {
@@ -817,7 +799,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Serialization and deserialization of FCQueue with zero elements")
     public void validateSerializeDeserializeWithZeroElements() {
@@ -841,7 +822,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Adding empty list doesn't change the internals of FCQueue")
     public void noChangesWhenAddingEmpty() {
@@ -858,7 +838,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Adding empty list doesn't change the internals of FCQueue")
     public void noChangesWhenFailingToAdd() {
@@ -890,7 +869,6 @@ class FCQueueTest {
      * 		the number of threads read on the original FCQueue
      */
     @ParameterizedTest
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Multiple threads operate on FCQueues: multiple threads reads on the original, "
             + "one thread writes on the copy")
@@ -947,7 +925,6 @@ class FCQueueTest {
      * 		the number of threads write on the original FCQueue
      */
     @ParameterizedTest
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Multiple threads write on a FCQueue")
     @ValueSource(ints = {5, 10, 200})
@@ -991,7 +968,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Adding an element when a FCQueue has reached MAX_ELEMENTS")
     void addWhenReachMaxLimit() {
@@ -1011,7 +987,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.FCQUEUE)
     @DisplayName("Clear is invalid on a immutable copy")
     void clearOnCopy() {
@@ -1045,7 +1020,6 @@ class FCQueueTest {
      * 5) Remove the old file.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Migration Test")
     void migrationTest() throws Exception {
@@ -1076,7 +1050,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MMAP)
     void invalidateHash() {
         final FCQueue<FCInt> queue = new FCQueue<>();
@@ -1095,7 +1068,6 @@ class FCQueueTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Reverse Iterator Test Test")
     void reverseIteratorTest() {
         final FCQueue<FCInt> queue = new FCQueue<>();

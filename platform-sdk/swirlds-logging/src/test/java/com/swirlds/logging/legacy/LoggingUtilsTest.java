@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LoggingUtils.plural;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import org.junit.jupiter.api.Test;
 class LoggingUtilsTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.LOGGING)
     @DisplayName("Test Plural")
     void testPlural() {

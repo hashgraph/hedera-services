@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -42,8 +40,6 @@ public class TypedIteratorTest {
     private static final String NEXT_SHOULD_THROW =
             "next() should throw an exception when no more elements are " + "available.";
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("TypedListIterator - null list")
@@ -51,8 +47,6 @@ public class TypedIteratorTest {
         assertThrows(NullPointerException.class, () -> new TypedIterator<>(null));
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("TypedListIterator - empty list")
@@ -62,8 +56,6 @@ public class TypedIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("TypedListIterator - all values returned")
@@ -82,8 +74,6 @@ public class TypedIteratorTest {
         assertHasNextThrows(iter);
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("TypedListIterator - remove")
