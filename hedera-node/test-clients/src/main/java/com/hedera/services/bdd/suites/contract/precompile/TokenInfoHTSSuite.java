@@ -962,9 +962,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .build();
 
         final var customFees = new ArrayList<CustomFee>();
-                customFees.add(customFixedFee);
-                customFees.add(firstCustomFractionalFee);
-                customFees.add(customFractionalFee);
+        customFees.add(customFixedFee);
+        customFees.add(firstCustomFractionalFee);
+        customFees.add(customFractionalFee);
         return customFees;
     }
 
