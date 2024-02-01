@@ -37,7 +37,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 /**
  * Simple implementation of {@link QueryContext}.
@@ -52,7 +51,6 @@ public class QueryContextImpl implements QueryContext {
     private final ExchangeRateManager exchangeRateManager;
     private final AccountID payer;
     private final FeeCalculator feeCalculator;
-    private final Instant userQueryConsensusTime;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private BlockRecordInfo blockRecordInfo; // lazily created
     private ExchangeRateInfo exchangeRateInfo; // lazily created
@@ -67,7 +65,6 @@ public class QueryContextImpl implements QueryContext {
      * @param recordCache   the {@link RecordCache} used to cache records
      * @param exchangeRateManager the {@link ExchangeRateManager} used to get the current exchange rate
      * @param feeCalculator the {@link FeeCalculator} used to calculate fees
-     * @param userQueryConsensusTime the query time
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of network throttling
      * @param payer         the {@link AccountID} of the payer, if present
      * @throws NullPointerException if {@code query} is {@code null}
@@ -80,7 +77,6 @@ public class QueryContextImpl implements QueryContext {
             @NonNull final RecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeCalculator feeCalculator,
-            @NonNull final Instant userQueryConsensusTime,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @Nullable final AccountID payer) {
         this.state = requireNonNull(state, "state must not be null");
@@ -90,7 +86,6 @@ public class QueryContextImpl implements QueryContext {
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeCalculator = requireNonNull(feeCalculator, "feeCalculator must not be null");
-        this.userQueryConsensusTime = requireNonNull(userQueryConsensusTime, "userQueryConsensusTime must not be null");
         ;
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
@@ -161,7 +156,7 @@ public class QueryContextImpl implements QueryContext {
 
     @Override
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
-        return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function, userQueryConsensusTime);
+        return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function);
     }
 
     @Override

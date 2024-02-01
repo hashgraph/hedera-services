@@ -71,17 +71,17 @@ public class SynchronizedThrottleAccumulator {
         return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
     }
 
-    private void setDecisionTime() {
-        final var now = Instant.now();
-        lastDecisionTime = now.isBefore(lastDecisionTime) ? lastDecisionTime : now;
-    }
-
     public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
         frontendThrottle.leakCapacityForNOfUnscaled(n, function);
     }
 
-    public boolean shouldThrottleNOfUnscaled(
-            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
-        return frontendThrottle.shouldThrottleNOfUnscaled(n, function, consensusTime);
+    public boolean shouldThrottleNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        setDecisionTime();
+        return frontendThrottle.shouldThrottleNOfUnscaled(n, function, lastDecisionTime);
+    }
+
+    private void setDecisionTime() {
+        final var now = Instant.now();
+        lastDecisionTime = now.isBefore(lastDecisionTime) ? lastDecisionTime : now;
     }
 }
