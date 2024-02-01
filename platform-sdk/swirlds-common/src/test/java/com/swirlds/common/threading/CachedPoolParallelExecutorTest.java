@@ -25,7 +25,6 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +36,6 @@ import org.junit.jupiter.api.Test;
 class CachedPoolParallelExecutorTest {
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Simple 2 parallel task test")
     void simpleTasks() throws Exception {
@@ -66,7 +64,6 @@ class CachedPoolParallelExecutorTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Exception test")
     void testException() {

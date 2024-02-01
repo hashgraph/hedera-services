@@ -45,7 +45,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
 
     public static final Function ERC_GRANT_APPROVAL = new Function("approve(address,uint256)", ReturnTypes.BOOL);
     public static final Function ERC_GRANT_APPROVAL_NFT = new Function("approve(address,uint256)");
-    public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT_64);
+    public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", "(int32,bool)");
     public static final Function GRANT_APPROVAL_NFT =
             new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
     private final GrantApprovalDecoder decoder;
@@ -126,7 +126,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
 
     private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {
         final var call = GrantApprovalTranslator.ERC_GRANT_APPROVAL.decodeCall(attempt.inputBytes());
-        final var spender = attempt.addressIdConverter().convert(call.get(0));
+        final var spenderId = attempt.addressIdConverter().convert(call.get(0));
         final var amount = call.get(1);
         return new ERCGrantApprovalCall(
                 attempt.enhancement(),
@@ -134,7 +134,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
                 Objects.requireNonNull(attempt.redirectTokenId()),
-                spender,
+                spenderId,
                 (BigInteger) amount,
                 Objects.requireNonNull(attempt.redirectTokenType()));
     }

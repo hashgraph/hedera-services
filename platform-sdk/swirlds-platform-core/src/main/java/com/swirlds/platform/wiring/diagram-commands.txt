@@ -20,6 +20,7 @@ pcli diagram \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g' \
+    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Orphan Buffer'
 
@@ -46,6 +47,7 @@ pcli diagram \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'PCES Writer:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g' \
+    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \

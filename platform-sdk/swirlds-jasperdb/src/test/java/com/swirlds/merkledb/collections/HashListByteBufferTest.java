@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

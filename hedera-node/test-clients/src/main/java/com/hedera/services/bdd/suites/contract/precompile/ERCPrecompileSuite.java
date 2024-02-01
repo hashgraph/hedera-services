@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -149,20 +150,15 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String A_CIVILIAN = "aCivilian";
     private static final String B_CIVILIAN = "bCivilian";
     private static final String DO_TRANSFER_FROM = "doTransferFrom";
-    private static final String GET_APPROVED = "outerGetApproved";
-    private static final String GET_BALANCE_OF = "getBalanceOf";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
     private static final String SOME_ERC_20_SCENARIOS = "SomeERC20Scenarios";
     private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
-    private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
     private static final String SET_APPROVAL_FOR_ALL = "outerSetApprovalForAll";
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM = "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
     private static final String MSG_SENDER_IS_THE_SAME_AS_FROM = "MSG_SENDER_IS_THE_SAME_AS_FROM";
-    private static final String MISSING_TOKEN = "MISSING_TOKEN";
-    private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
     public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
@@ -1574,9 +1570,10 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc721ApproveAndRemoveScenariosPass",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
