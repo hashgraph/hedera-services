@@ -16,6 +16,7 @@
 
 package com.swirlds.base.test.internal.fixtures;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -23,7 +24,6 @@ import com.swirlds.base.test.fixtures.concurrent.internal.ConcurrentTestSupport;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -32,12 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @Timeout(5)
-public class ConcurrentTestSupportTest {
+class ConcurrentTestSupportTest {
 
     @Test
     void testATaskThatRunsShort() {
         // given
-        try (final ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final Runnable runnable = () -> sleep(10);
 
             // then
@@ -48,7 +48,7 @@ public class ConcurrentTestSupportTest {
     @Test
     void testMultipleTasksThatRunsShort() {
         // given
-        try (final ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final List<Runnable> runnables = IntStream.range(10, 20)
                     .mapToObj(i -> (Runnable) () -> sleep(i))
                     .toList();
@@ -61,7 +61,7 @@ public class ConcurrentTestSupportTest {
     @Test
     void testATaskThatRunsTooLong() {
         // given
-        try (final ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
             final Runnable runnable = () -> sleep(1_010);
 
             // then
@@ -73,7 +73,7 @@ public class ConcurrentTestSupportTest {
     @Test
     void testMultipleTasksThatRunsTooLong() {
         // given
-        try (final ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
+        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
             final List<Runnable> runnables = IntStream.range(500, 2_000)
                     .mapToObj(i -> (Runnable) () -> sleep(i))
                     .toList();
@@ -87,19 +87,19 @@ public class ConcurrentTestSupportTest {
     @Test
     void testMultipleCallsInOneConcurrentTestSupport() {
         // given
-        try (final ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
+        try ( ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
             final Runnable shortRunningTask = () -> sleep(10);
             final Runnable longRunningTask = () -> sleep(2_000);
             final ExecutorService executor = Executors.newFixedThreadPool(2);
 
             // when
-            checkAllAsync(
-                    doAsync(
+            runAllAndWait(
+                    runAsync(
                             () -> assertThatThrownBy(() -> concurrentTestSupport.executeAndWait(longRunningTask))
                                     .isInstanceOf(RuntimeException.class)
                                     .hasCauseInstanceOf(TimeoutException.class),
                             executor),
-                    doAsync(
+                    runAsync(
                             () -> assertThatNoException()
                                     .isThrownBy(() -> concurrentTestSupport.executeAndWait(shortRunningTask)),
                             executor));
@@ -116,21 +116,21 @@ public class ConcurrentTestSupportTest {
             final ExecutorService executor = Executors.newFixedThreadPool(4);
 
             // then
-            checkAllAsync(
-                    doAsync(
+            runAllAndWait(
+                    runAsync(
                             () -> assertThatNoException()
                                     .isThrownBy(() -> concurrentTestSupport.executeAndWait(shortRunningTask)),
                             executor),
-                    doAsync(
+                    runAsync(
                             () -> assertThatNoException()
                                     .isThrownBy(() -> concurrentTestSupport2.executeAndWait(shortRunningTask)),
                             executor),
-                    doAsync(
+                    runAsync(
                             () -> assertThatThrownBy(() -> concurrentTestSupport.executeAndWait(longRunningTask))
                                     .isInstanceOf(RuntimeException.class)
                                     .hasCauseInstanceOf(TimeoutException.class),
                             executor),
-                    doAsync(
+                    runAsync(
                             () -> assertThatThrownBy(() -> concurrentTestSupport2.executeAndWait(longRunningTask))
                                     .isInstanceOf(RuntimeException.class)
                                     .hasCauseInstanceOf(TimeoutException.class),
@@ -138,12 +138,8 @@ public class ConcurrentTestSupportTest {
         }
     }
 
-    private static CompletableFuture<Void> doAsync(final Runnable future, final Executor executor) {
-        return CompletableFuture.runAsync(future, executor);
-    }
-
-    private static void checkAllAsync(CompletableFuture<?>... cf) {
-        CompletableFuture.allOf(cf).join();
+    private static void runAllAndWait(CompletableFuture<?>... futures) {
+        CompletableFuture.allOf(futures).join();
     }
 
     private static void sleep(long ms) {

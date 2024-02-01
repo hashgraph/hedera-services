@@ -59,8 +59,8 @@ public class TestExecutorExtension implements InvocationInterceptor, ParameterRe
         Objects.requireNonNull(invocation, "invocation must not be null");
         Objects.requireNonNull(extensionContext, "extensionContext must not be null");
 
-        try (ConcurrentTestSupport cs = new ConcurrentTestSupport()) {
-            TestInjector.injectInTest(TestExecutor.class, () -> cs, extensionContext);
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport()) {
+            TestInjector.injectInTest(TestExecutor.class, () -> concurrentTestSupport, extensionContext);
             invocation.proceed();
         }
     }

@@ -65,7 +65,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
         this.executorService = Executors.newCachedThreadPool(r -> {
             final Thread thread = new Thread(r);
-            thread.setName(NAME_PREFIX + "-pool-" + ConcurrentTestSupport.this.hashCode() + ID.getAndDecrement());
+            thread.setName(NAME_PREFIX + "-pool-" + this.hashCode() + ID.getAndDecrement());
             thread.setDaemon(true);
             return thread;
         });
@@ -118,7 +118,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     @NonNull
     public <V> List<V> submitAndWait(@NonNull final Collection<Callable<V>> callables) {
         Objects.requireNonNull(callables, "callables must not be null");
-        Deque<V> result = new ConcurrentLinkedDeque<>();
+        final Deque<V> result = new ConcurrentLinkedDeque<>();
         executeAndWait(callablesToRunners(callables, result));
         return List.copyOf(result);
     }
@@ -156,10 +156,10 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
 
     // Return a runners from a callable.
     // The result is accumulated  in result
-    private static <V> Runnable toRunnableInto(final Callable<V> c, final Deque<V> result) {
+    private static <V> Runnable toRunnableInto(final Callable<V> callable, final Deque<V> result) {
         return () -> {
             try {
-                result.addLast(c.call());
+                result.addLast(callable.call());
             } catch (Exception e) {
                 throw new RuntimeException("Error in submitAndWait", e);
             }
