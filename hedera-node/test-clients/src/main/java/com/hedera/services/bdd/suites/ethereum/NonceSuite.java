@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.ethereum;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -36,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -214,9 +216,13 @@ public class NonceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
-        final var illegalMaxGasPerSec = HapiSpecSetup.getDefaultNodeProps().getInteger("contracts.maxGasPerSec") + 1;
-        return defaultHapiSpec("nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed", HIGHLY_NON_DETERMINISTIC_FEES)
+        final Long MAX_GAS_PER_SEC = 1_000_000L;
+        final var illegalMaxGasPerSec = MAX_GAS_PER_SEC + 1L;
+        return propertyPreservingHapiSpec(
+                        "nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed", HIGHLY_NON_DETERMINISTIC_FEES)
+                .preserving("contracts.maxGasPerSec")
                 .given(
+                        overriding("contracts.maxGasPerSec", MAX_GAS_PER_SEC.toString()),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
