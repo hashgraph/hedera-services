@@ -22,6 +22,7 @@ import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTok
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
@@ -59,7 +60,8 @@ public class StateDumper {
         final MerkleNetworkContext networkContext = state.getChild(NETWORK_CTX);
         final var dumpLoc = getExtantDumpLoc("mono", networkContext.consensusTimeOfLastHandledTxn());
         dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS), checkpoint);
-        dumpMonoTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(UNIQUE_TOKENS), checkpoint);
+        dumpMonoTokenRelations(
+                Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
     }
 
     public static void dumpModChildrenFrom(

@@ -62,7 +62,7 @@ record TokenAssociation(
                 value.kycGranted(),
                 value.automaticAssociation(),
                 tokenIdFromMod(value.previousToken()),
-                tokenIdFromMod(value.previousToken()));
+                tokenIdFromMod(value.nextToken()));
     }
 
     @NonNull

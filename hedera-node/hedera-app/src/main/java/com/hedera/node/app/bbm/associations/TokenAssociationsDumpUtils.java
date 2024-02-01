@@ -51,7 +51,7 @@ public class TokenAssociationsDumpUtils {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations = gatherTokenRelations(
                     associations, key -> TokenAssociationId.fromMod(key.getKey()), TokenAssociation::fromMod);
-            reportOnUniques(writer, dumpableTokenRelations);
+            reportOnTokenAssociations(writer, dumpableTokenRelations);
             System.out.printf(
                     "=== mod token associations report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
@@ -65,7 +65,7 @@ public class TokenAssociationsDumpUtils {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations =
                     gatherTokenRelations(associations, TokenAssociationId::fromMono, TokenAssociation::fromMono);
-            reportOnUniques(writer, dumpableTokenRelations);
+            reportOnTokenAssociations(writer, dumpableTokenRelations);
             System.out.printf(
                     "=== mono token associations report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
@@ -92,38 +92,36 @@ public class TokenAssociationsDumpUtils {
             System.err.println("*** Traversal of token associations virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
-        while (!tokenAssociations.isEmpty()) {
-            final var mapping = tokenAssociations.poll();
-            r.put(mapping.key(), mapping.value());
-        }
+        tokenAssociations.forEach(
+                tokenAssociationPair -> r.put(tokenAssociationPair.key(), tokenAssociationPair.value()));
         return r;
     }
 
-    private static void reportOnUniques(
+    private static void reportOnTokenAssociations(
             @NonNull final Writer writer, @NonNull final Map<TokenAssociationId, TokenAssociation> associations) {
         writer.writeln(formatHeader());
         associations.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatUnique(writer, e.getValue()));
+                .forEach(e -> formatTokenAssociation(writer, e.getValue()));
         writer.writeln("");
     }
 
     @NonNull
     private static String formatHeader() {
-        return "nftId,nftSerial,"
+        return "accountId,tokenId,"
                 + fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
     }
 
     // spotless:off
     @NonNull
     private static final List<Pair<String, BiConsumer<FieldBuilder, TokenAssociation>>> fieldFormatters = List.of(
-            Pair.of("owner", getFieldFormatter(TokenAssociation::accountId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("spender", getFieldFormatter(TokenAssociation::tokenId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("creationTime", getFieldFormatter(TokenAssociation::balance, Object::toString)),
-            Pair.of("metadata", getFieldFormatter(TokenAssociation::isFrozen, Object::toString)),
-            Pair.of("prev", getFieldFormatter(TokenAssociation::isKycGranted, Object::toString)),
-            Pair.of("next", getFieldFormatter(TokenAssociation::isAutomaticAssociation, Object::toString)),
-            Pair.of("next", getFieldFormatter(TokenAssociation::prev, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("accountId", getFieldFormatter(TokenAssociation::accountId, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("tokenId", getFieldFormatter(TokenAssociation::tokenId, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("balance", getFieldFormatter(TokenAssociation::balance, Object::toString)),
+            Pair.of("isFrozen", getFieldFormatter(TokenAssociation::isFrozen, Object::toString)),
+            Pair.of("isKycGranted", getFieldFormatter(TokenAssociation::isKycGranted, Object::toString)),
+            Pair.of("isAutomaticAssociation", getFieldFormatter(TokenAssociation::isAutomaticAssociation, Object::toString)),
+            Pair.of("prev", getFieldFormatter(TokenAssociation::prev, ThingsToStrings::toStringOfEntityId)),
             Pair.of("next", getFieldFormatter(TokenAssociation::next, ThingsToStrings::toStringOfEntityId))
     );
     // spotless:on
@@ -136,15 +134,16 @@ public class TokenAssociationsDumpUtils {
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final TokenAssociation unique,
+            @NonNull final TokenAssociation tokenAssociation,
             @NonNull final Function<TokenAssociation, T> fun,
             @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(unique)));
+        fb.append(formatter.apply(fun.apply(tokenAssociation)));
     }
 
-    private static void formatUnique(@NonNull final Writer writer, @NonNull final TokenAssociation unique) {
+    private static void formatTokenAssociation(
+            @NonNull final Writer writer, @NonNull final TokenAssociation tokenAssociation) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, unique));
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, tokenAssociation));
         writer.writeln(fb);
     }
 }
