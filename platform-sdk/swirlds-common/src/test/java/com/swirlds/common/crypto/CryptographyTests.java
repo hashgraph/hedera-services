@@ -16,8 +16,8 @@
 
 package com.swirlds.common.crypto;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,10 +31,10 @@ import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SerializableHashableDummy;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.common.test.fixtures.crypto.SliceConsumer;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;

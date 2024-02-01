@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.common.test.fixtures.crypto.SliceConsumer;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
