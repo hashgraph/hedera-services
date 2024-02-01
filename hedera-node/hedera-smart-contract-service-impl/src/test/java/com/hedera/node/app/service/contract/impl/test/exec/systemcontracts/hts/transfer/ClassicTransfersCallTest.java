@@ -94,7 +94,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
 
         givenRetryingSubject();
@@ -127,7 +127,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
 
         givenRetryingSubject();
@@ -153,7 +153,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
         given(callStatusStandardizer.codeForFailure(
                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, frame, CryptoTransferTransactionBody.DEFAULT))
