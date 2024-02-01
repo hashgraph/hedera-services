@@ -255,6 +255,28 @@ class BucketTest {
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
     }
 
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    void emptyParsedBucketToBucketIndexZero(final KeyType keyType) throws IOException {
+        final Bucket<VirtualLongKey> inBucket = new ParsedBucket<>(keyType.keySerializer);
+        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
+        final VirtualLongKey key2 = keyType.keyConstructor.apply(2L);
+        inBucket.setBucketIndex(0);
+        inBucket.putValue(key1, 2);
+        inBucket.putValue(key2, 1);
+        final BufferedData buf = BufferedData.allocate(inBucket.sizeInBytes());
+        inBucket.writeTo(buf);
+        buf.reset();
+        final Bucket<VirtualLongKey> outBucket = new Bucket<>(keyType.keySerializer);
+        outBucket.readFrom(buf);
+        outBucket.putValue(key1, SPECIAL_DELETE_ME_VALUE);
+        outBucket.putValue(key2, SPECIAL_DELETE_ME_VALUE);
+        assertDoesNotThrow(outBucket::getBucketIndex);
+        assertDoesNotThrow(outBucket::getBucketEntryCount);
+        assertEquals(0, outBucket.getBucketEntryCount());
+        assertEquals(0, outBucket.getBucketIndex());
+    }
+
     private void checkKey(Bucket<VirtualLongKey> bucket, VirtualLongKey key) {
         var findResult =
                 assertDoesNotThrow(() -> bucket.findValue(key.hashCode(), key, -1), "No exception should be thrown");

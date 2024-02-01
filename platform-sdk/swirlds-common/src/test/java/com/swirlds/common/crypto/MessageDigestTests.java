@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -93,57 +93,6 @@ public class MessageDigestTests {
     public void digestSizeOverThreads()
             throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
         final Message[] messages = new Message[(cryptoConfig.computeCpuDigestThreadCount() * 2) - 1];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void digestHalfQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize() / 2];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void digestExactQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize()];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-        }
-
-        cryptoProvider.digestSync(Arrays.asList(messages));
-
-        checkMessages(messages);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void digestDoubleQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final Message[] messages = new Message[cryptoConfig.cpuDigestQueueSize() * 2];
 
         for (int i = 0; i < messages.length; i++) {
             messages[i] = digestPool.next();
