@@ -16,6 +16,7 @@
 
 package com.swirlds.base.test.fixtures.concurrent;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -59,13 +60,13 @@ public interface TestExecutor {
     <V> List<V> submitAndWait(Collection<Callable<V>> callables);
 
     /**
-     * Executes the given callables in parallel. This method will block until all the callables have completed. If the
-     * callables do not return within the maximum wait time, then the callables will be cancelled and a
+     * Executes the given callable in parallel. This method will block until all the callable have completed. If the
+     * callable do not return within the maximum wait time, then the callable will be cancelled and a
      * {@link TimeoutException} will be thrown.
      *
-     * @param callables the callables to execute
-     * @param <V>       the type of the callable result
-     * @return the results of the callables
+     * @param callable the callable array to execute
+     * @param <V>      the type of the callable result
+     * @return the results of the callable
      */
-    <V> List<V> submitAndWait(Callable<V>... callables);
+    <V> @NonNull List<V> submitAndWait(@NonNull Callable<V> callable);
 }

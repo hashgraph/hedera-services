@@ -20,40 +20,33 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A utility class for executing and waiting for concurrent tasks using a thread pool.
  */
-public class ConcurrentTestSupport implements TestExecutor {
+public class ConcurrentTestSupport implements TestExecutor, Closeable {
 
     public static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
-    private static final Lock SINGLE_EXECUTOR_LOCK = new ReentrantLock();
-    private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-        final Thread thread = new Thread(r);
-        thread.setName(NAME_PREFIX + "-SingleExecutor");
-        thread.setDaemon(true);
-        return thread;
-    });
+
+    private static final Object LOCK = new Object();
+    private static final AtomicInteger ID = new AtomicInteger(0);
 
     private final Duration maxWaitTime;
-
-    private final String name;
+    private final ExecutorService executorService;
 
     /**
      * Constructs a ConcurrentTestSupport instance with the specified maximum wait time.
@@ -62,7 +55,12 @@ public class ConcurrentTestSupport implements TestExecutor {
      */
     public ConcurrentTestSupport(@NonNull final Duration maxWaitTime) {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
-        this.name = UUID.randomUUID().toString();
+        executorService = Executors.newCachedThreadPool(r -> {
+            final Thread thread = new Thread(r);
+            thread.setName(NAME_PREFIX + "-" + ConcurrentTestSupport.this.hashCode() + ID.getAndDecrement());
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     /**
@@ -78,13 +76,17 @@ public class ConcurrentTestSupport implements TestExecutor {
      * @param runnables The collection of Runnables to execute.
      */
     public void executeAndWait(@NonNull final Collection<Runnable> runnables) {
-        final List<Callable<Void>> callables = runnables.stream()
-                .map(r -> (Callable<Void>) () -> {
-                    r.run();
-                    return null;
-                })
-                .toList();
-        submitAndWait(callables);
+        Objects.requireNonNull(runnables, "runnables must not be null");
+        synchronized (LOCK) {
+            try {
+                CompletableFuture.allOf(runnables.stream()
+                                .map(r -> CompletableFuture.runAsync(r, executorService))
+                                .toArray(CompletableFuture[]::new))
+                        .get(maxWaitTime.toMillis(), MILLISECONDS);
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                throw new RuntimeException(e.getClass().getSimpleName() + " in submitAndWait", e);
+            }
+        }
     }
 
     /**
@@ -93,7 +95,7 @@ public class ConcurrentTestSupport implements TestExecutor {
      * @param runnable An array of Runnables to execute.
      */
     public void executeAndWait(@NonNull final Runnable... runnable) {
-        executeAndWait(List.of(runnable));
+        executeAndWait(List.of(Objects.requireNonNull(runnable, "runnables must not be null")));
     }
 
     /**
@@ -103,83 +105,55 @@ public class ConcurrentTestSupport implements TestExecutor {
      * @param <V>       The type of the results returned by the Callables.
      * @return A list of results from the executed Callables.
      */
-    @SuppressWarnings("unchecked")
     @NonNull
     public <V> List<V> submitAndWait(@NonNull final Collection<Callable<V>> callables) {
         Objects.requireNonNull(callables, "callables must not be null");
-        return submitAndWait(callables.toArray(new Callable[0]));
+
+        List<V> result = new ArrayList<>();
+        executeAndWait(callablesToRunners(callables, result));
+        return result;
     }
 
     /**
      * Submits an array of Callables for execution concurrently and waits for their results.
      *
-     * @param callables An array of Callables to submit.
-     * @param <V>       The type of the results returned by the Callables.
+     * @param callable A callable to submit.
+     * @param <V>      The type of the results returned by the Callables.
      * @return A list of results from the executed Callables.
      */
-    @SafeVarargs
     @NonNull
-    public final <V> List<V> submitAndWait(@NonNull final Callable<V>... callables) {
-        SINGLE_EXECUTOR_LOCK.lock();
-        try {
-            final Future<List<V>> futureForAll = SINGLE_EXECUTOR.submit(() -> {
-                final List<Future<V>> futures = new ArrayList<>();
-                final AtomicLong poolThreadCounter = new AtomicLong(0);
-                final ExecutorService poolExecutor = Executors.newCachedThreadPool(r -> {
-                    final Thread thread = new Thread(r);
-                    thread.setName(NAME_PREFIX + "-Pool-" + name + "-" + poolThreadCounter.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                });
+    public final <V> List<V> submitAndWait(@NonNull final Callable<V> callable) {
+        Objects.requireNonNull(callable, "callables must not be null");
+        return submitAndWait(List.of(callable));
+    }
 
-                Stream.of(callables).map(poolExecutor::submit).forEach(futures::add);
+    private static <V> Collection<Runnable> callablesToRunners(
+            final Collection<Callable<V>> callables, final List<V> result) {
+        return callables.stream().map(c -> toRunnableInto(c, result)).collect(Collectors.toList());
+    }
 
-                return waitForAllDone(futures);
-            });
-            return waitForDone(futureForAll);
-        } catch (Exception e) {
-            throw new RuntimeException("Error in submitAndWait", e);
-        } finally {
-            SINGLE_EXECUTOR_LOCK.unlock();
-        }
+    private static <V> Runnable toRunnableInto(final Callable<V> c, final List<V> result) {
+        return () -> {
+            try {
+                result.add(c.call());
+            } catch (Exception e) {
+                throw new RuntimeException("Error in submitAndWait", e);
+            }
+        };
     }
 
     /**
-     * Waits for the completion of a Future and retrieves its result.
+     * Closes this stream and releases any system resources associated with it. If the stream is already closed then
+     * invoking this method has no effect.
      *
-     * @param future The Future to wait for.
-     * @param <T>    The type of the result.
-     * @return The result of the Future.
-     * @throws InterruptedException If the waiting thread is interrupted.
-     * @throws ExecutionException   If an exception occurs while executing the Future.
-     * @throws TimeoutException     If the waiting time exceeds the maximum wait time.
+     * <p> As noted in {@link AutoCloseable#close()}, cases where the
+     * close may fail require careful attention. It is strongly advised to relinquish the underlying resources and to
+     * internally
+     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
+     * the {@code IOException}.
      */
-    @NonNull
-    private <T> T waitForDone(@NonNull final Future<T> future)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        return waitForAllDone(List.of(future)).get(0);
-    }
-
-    /**
-     * Waits for the completion of a list of Futures and retrieves their results.
-     *
-     * @param futures The list of Futures to wait for.
-     * @param <T>     The type of the results.
-     * @return A list of results from the Futures.
-     * @throws InterruptedException If the waiting thread is interrupted.
-     * @throws ExecutionException   If an exception occurs while executing any of the Futures.
-     * @throws TimeoutException     If the waiting time exceeds the maximum wait time.
-     */
-    @NonNull
-    private <T> List<T> waitForAllDone(@NonNull final List<Future<T>> futures)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        final List<T> results = new ArrayList<>();
-        final long startTime = System.currentTimeMillis();
-        for (final Future<T> future : futures) {
-            final long maxWaitTimeMs = maxWaitTime.toMillis() - (System.currentTimeMillis() - startTime);
-            final T val = future.get(maxWaitTimeMs, MILLISECONDS);
-            results.add(val);
-        }
-        return results;
+    @Override
+    public void close() {
+        executorService.close();
     }
 }
