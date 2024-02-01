@@ -234,7 +234,9 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      */
     public void updateRunningHash(@NonNull final RunningEventHashUpdate runningEventHashUpdate) {
         try {
-            hashQueueThread.pause();
+            if (hashQueueThread != null) {
+                hashQueueThread.pause();
+            }
             if (writeQueueThread != null) {
                 writeQueueThread.pause();
             }
@@ -251,7 +253,9 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
         logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", initialHash);
         multiStream.setRunningHash(initialHash);
 
-        hashQueueThread.resume();
+        if (hashQueueThread != null) {
+            hashQueueThread.resume();
+        }
         if (writeQueueThread != null) {
             writeQueueThread.resume();
         }
