@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.atomic.AtomicDouble;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
