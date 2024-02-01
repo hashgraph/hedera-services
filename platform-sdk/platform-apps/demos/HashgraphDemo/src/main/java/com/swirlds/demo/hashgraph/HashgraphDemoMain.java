@@ -237,8 +237,8 @@ public class HashgraphDemoMain implements SwirldMain {
             final double createCons = (double) metrics.getValue(PLATFORM_CATEGORY, "secC2C");
             final double recCons = (double) metrics.getValue(PLATFORM_CATEGORY, "secR2C");
 
-            print(g, "%5.0f trans/sec", (double) metrics.getValue(PLATFORM_CATEGORY, "trans_per_sec"));
-            print(g, "%5.0f events/sec", (double) metrics.getValue(PLATFORM_CATEGORY, "events_per_sec"));
+            print(g, "%5.0f trans_per_sec", (double) metrics.getValue(PLATFORM_CATEGORY, "trans_per_sec"));
+            print(g, "%5.0f events_per_sec", (double) metrics.getValue(PLATFORM_CATEGORY, "events_per_sec"));
             print(g, "%4.0f%% duplicate events", (double) metrics.getValue(PLATFORM_CATEGORY, "dupEv%"));
 
             print(g, "%5.3f sec, propagation time", createCons - recCons);
