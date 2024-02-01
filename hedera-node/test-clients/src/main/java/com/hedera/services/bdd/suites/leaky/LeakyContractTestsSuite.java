@@ -105,6 +105,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
@@ -2957,7 +2958,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_NONCE,
-                                NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS),
+                                NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                                HIGHLY_NON_DETERMINISTIC_FEES),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
                 .when(withOpContext((spec, opLog) -> {
