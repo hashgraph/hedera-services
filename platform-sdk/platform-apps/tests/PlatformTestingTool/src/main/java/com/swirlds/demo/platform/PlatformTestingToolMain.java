@@ -169,7 +169,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private TransactionSubmitter submitter;
 
     private static final Counter.Config TRANSACTION_SUBMITTED_CONFIG =
-            new Counter.Config("Debug.info", "tranSub").withDescription("number of transactions submitted to platform");
+            new Counter.Config("Debug:info", "tranSub").withDescription("number of transactions submitted to platform");
     private Counter transactionSubmitted;
 
     private boolean checkedThisIdleInterval = false; // each long idle interval only check once
@@ -238,7 +238,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private SpeedometerMetric vmContractExecutionSpeed;
 
     private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+            new SpeedometerMetric.Config("Debug:info", "tranSubTPS").withDescription("Transaction submitted TPS");
     private SpeedometerMetric transactionSubmitSpeedometer;
 
     private FCMQueryController queryController;
