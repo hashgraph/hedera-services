@@ -34,6 +34,10 @@ public enum ConsensusRoundHandlerPhase {
      */
     SETTING_EVENT_CONSENSUS_DATA,
     /**
+     * The round handler is waiting for transaction prehandling to complete.
+     */
+    WAITING_FOR_PREHANDLE,
+    /**
      * The transactions in the round are being applied to the state.
      */
     HANDLING_CONSENSUS_ROUND,

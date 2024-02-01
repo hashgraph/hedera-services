@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 pcli diagram \
-    -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
+    -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
+    -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -s 'eventWindowManager:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
+    -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:@' \
     -s 'inOrderLinker:events to gossip:g' \
     -s 'runningHashUpdate:running hash update:§' \

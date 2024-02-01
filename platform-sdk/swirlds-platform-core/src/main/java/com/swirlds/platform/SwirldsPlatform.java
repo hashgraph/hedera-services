@@ -640,8 +640,6 @@ public class SwirldsPlatform implements Platform {
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                platformContext,
-                time,
                 consensusRef::get,
                 eventObserverDispatcher,
                 shadowGraph,

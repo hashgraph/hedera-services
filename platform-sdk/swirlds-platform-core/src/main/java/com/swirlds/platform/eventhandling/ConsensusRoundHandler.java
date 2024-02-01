@@ -26,6 +26,7 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETT
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
+import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
@@ -217,6 +218,9 @@ public class ConsensusRoundHandler {
             // it is important to update the platform state before handling the consensus round, since the platform
             // state is passed into the application handle method, and should contain the data for the current round
             updatePlatformState(consensusRound);
+
+            handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
+            consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
