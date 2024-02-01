@@ -20,8 +20,9 @@ import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
-import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,18 +50,21 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -402,7 +406,6 @@ class VirtualMapTests extends VirtualTestBase {
     // FUTURE WORK Test that a deleted node's value cannot be subsequently read.
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Remove all leaves by always removing the first leaf")
     //    void removeFirstLeaf() {
@@ -439,7 +442,6 @@ class VirtualMapTests extends VirtualTestBase {
     //    }
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Remove a middle leaf")
     //    void removeMiddleLeaf() {
@@ -577,7 +579,6 @@ class VirtualMapTests extends VirtualTestBase {
      **/
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Newly created maps have null hashes for everything")
     //    void nullHashesOnNewMap() throws ExecutionException, InterruptedException {
@@ -822,6 +823,7 @@ class VirtualMapTests extends VirtualTestBase {
      * result in the detached state having a data source.
      */
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canFlushDetachedStateForStateSaving() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.put(A_KEY, APPLE);
@@ -868,6 +870,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Tests nodeCacheSizeB metric")
     void testNodeCacheSizeMetric() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -927,6 +930,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Tests vMapFlushes metric")
     void testFlushCount() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -990,6 +994,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("A copied map is serializable and then deserializable")
     void testExternalSerializationAndDeserialization() throws IOException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();

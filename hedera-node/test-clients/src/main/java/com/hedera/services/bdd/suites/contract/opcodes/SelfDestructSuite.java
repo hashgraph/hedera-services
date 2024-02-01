@@ -32,14 +32,19 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +58,7 @@ public class SelfDestructSuite extends HapiSuite {
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
+    private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
 
     public static void main(String... args) {
@@ -69,7 +75,8 @@ public class SelfDestructSuite extends HapiSuite {
         return List.of(
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn());
+                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(),
+                testSelfDestructForSystemAccounts());
     }
 
     @Override
@@ -139,5 +146,42 @@ public class SelfDestructSuite extends HapiSuite {
                         getAccountInfo(BENEFICIARY).has(accountWith().balance(ONE_HUNDRED_HBARS)),
                         getContractInfo(SELF_DESTRUCT_CALLABLE_CONTRACT)
                                 .has(contractWith().balance(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final HapiSpec testSelfDestructForSystemAccounts() {
+        final AtomicLong deployer = new AtomicLong();
+        final var nonExistingAccountsOps = createOpsArray(
+                nonExistingSystemAccounts,
+                SELF_DESTRUCT_CALLABLE_CONTRACT,
+                DESTROY_EXPLICIT_BENEFICIARY,
+                INVALID_SOLIDITY_ADDRESS);
+        final var existingAccountsOps = createOpsArray(
+                existingSystemAccounts, SELF_DESTRUCT_CALLABLE_CONTRACT, DESTROY_EXPLICIT_BENEFICIARY, SUCCESS);
+        final var opsArray = new HapiSpecOperation[nonExistingAccountsOps.length + existingAccountsOps.length];
+
+        System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
+        System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
+
+        return defaultHapiSpec("testSelfDestructForSystemAccounts")
+                .given(
+                        cryptoCreate(BENEFICIARY)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(false)
+                                .exposingCreatedIdTo(id -> deployer.set(id.getAccountNum())),
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
+                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
+                .when()
+                .then(nonExistingAccountsOps);
+    }
+
+    private HapiSpecOperation[] createOpsArray(
+            List<Long> accounts, String contract, String methodName, ResponseCodeEnum status) {
+        HapiSpecOperation[] opsArray = new HapiSpecOperation[accounts.size()];
+        for (int i = 0; i < accounts.size(); i++) {
+            opsArray[i] = contractCall(contract, methodName, mirrorAddrWith(accounts.get(i)))
+                    .hasKnownStatus(status);
+        }
+        return opsArray;
     }
 }
