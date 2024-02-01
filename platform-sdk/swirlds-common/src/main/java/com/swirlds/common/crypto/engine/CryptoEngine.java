@@ -38,10 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class CryptoEngine implements Cryptography {
@@ -96,7 +94,7 @@ public class CryptoEngine implements Cryptography {
     /**
      * the {@link ConcurrentLinkedQueue} instance of {@link TransactionSignature} waiting for verification
      */
-    private volatile BlockingQueue<List<TransactionSignature>> verificationQueue;
+    private volatile Queue<List<TransactionSignature>> verificationQueue;
 
     /**
      * the current configuration settings
@@ -315,10 +313,10 @@ public class CryptoEngine implements Cryptography {
      */
     @Override
     public void verifyAsync(final List<TransactionSignature> signatures) {
-        try {
-            verificationQueue.put(signatures);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
+        final boolean added = verificationQueue.add(signatures);
+        if (!added) {
+            // This should never happen, since the queue is unbounded
+            throw new RuntimeException("Unable to add to the verification queue");
         }
     }
 
@@ -400,7 +398,7 @@ public class CryptoEngine implements Cryptography {
 
         // Resize the dispatcher queues
         final Queue<List<TransactionSignature>> oldVerifierQueue = this.verificationQueue;
-        this.verificationQueue = new LinkedBlockingQueue<>(config.cpuVerifierQueueSize());
+        this.verificationQueue = new ConcurrentLinkedQueue<>();
 
         if (oldVerifierQueue != null && oldVerifierQueue.size() > 0) {
             this.verificationQueue.addAll(oldVerifierQueue);
