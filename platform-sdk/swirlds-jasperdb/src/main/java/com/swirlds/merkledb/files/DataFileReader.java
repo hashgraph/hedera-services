@@ -16,7 +16,9 @@
 
 package com.swirlds.merkledb.files;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.collections.IndexedObject;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -32,6 +34,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -43,10 +46,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
+    private static final MerkleDbConfig CONFIG = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     /** FileChannel's for each thread */
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     /** Max number of file channels to use for reading */
-    private static final int MAX_FILE_CHANNELS = 8;
+    private static final int MAX_FILE_CHANNELS = CONFIG.maxFileChannelsPerFileReader();
     /**
      * When a data file reader is created, a single file channel is open to read data from the
      * file. This channel is used by all threads. Number of threads currently reading data is
@@ -54,7 +59,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
      * channels are already opened.
      */
-    private static final int THREADS_PER_FILECHANNEL = 8;
+    private static final int THREADS_PER_FILECHANNEL = CONFIG.maxThreadsPerFileChannel();
     /**
      * A single data file reader may use multiple file channels. Previously, a single file channel
      * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
@@ -67,6 +72,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     private final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     private final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
+    private final AtomicIntegerArray fileChannelsLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
     /** Indicates whether this file reader is open */
     private final AtomicBoolean open = new AtomicBoolean(true);
     /** The path to the file on disk */
@@ -335,7 +341,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * @throws IOException
      *      If an I/O exception occurs
      */
-    private int leaseFileChannel() throws IOException {
+    protected int leaseFileChannel() throws IOException {
         int count = fileChannelsCount.get();
         final int inUse = fileChannelsInUse.incrementAndGet();
         // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
@@ -344,14 +350,28 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();
+            return count - 1;
         }
-        return inUse % count;
+        // find a channel with the least number of leases
+        // it's an estimation, as the number of leases may change while we're iterating, but it's good enough
+        int minCount = Integer.MAX_VALUE;
+        int lease = 0;
+        for (int i = 0; i < count; i++) {
+            int currentLeaseCount = fileChannelsLeases.get(i);
+            if(minCount > currentLeaseCount) {
+                minCount = currentLeaseCount;
+                lease = i;
+            }
+        }
+        fileChannelsLeases.incrementAndGet(lease);
+        return lease;
     }
 
     /**
      * Decreases the number of opened file channels in use by one.
      */
-    private void releaseFileChannel() {
+    private void releaseFileChannel(int fcIndex) {
+        fileChannelsLeases.decrementAndGet(fcIndex);
         fileChannelsInUse.decrementAndGet();
     }
 
@@ -400,7 +420,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                 // and retry
                 reopenFileChannel(fcIndex, fileChannel);
             } finally {
-                releaseFileChannel();
+                releaseFileChannel(fcIndex);
             }
         }
         throw new IOException("Failed to read from file, file channels keep getting closed");
