@@ -184,8 +184,8 @@ public class MerkleBenchmarkUtils {
                 firstReconnectException.compareAndSet(null, t);
                 return false;
             };
-            final StandardWorkGroup workGroup =
-                    new StandardWorkGroup(getStaticThreadManager(), "synchronization-test", null, exceptionListener);
+            final StandardWorkGroup workGroup = new StandardWorkGroup(
+                    getStaticThreadManager(), "synchronization-test", null, exceptionListener, false);
             workGroup.execute("teaching-synchronizer-main", () -> teachingSynchronizerThread(teacher));
             workGroup.execute("learning-synchronizer-main", () -> learningSynchronizerThread(learner));
 

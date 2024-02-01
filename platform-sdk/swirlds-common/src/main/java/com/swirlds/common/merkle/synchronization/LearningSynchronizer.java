@@ -267,8 +267,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             firstReconnectException.compareAndSet(null, t);
             return false;
         };
-        final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+        final StandardWorkGroup workGroup = new StandardWorkGroup(
+                threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener, false);
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {

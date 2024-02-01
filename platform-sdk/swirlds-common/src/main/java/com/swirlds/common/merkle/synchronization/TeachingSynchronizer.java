@@ -151,8 +151,11 @@ public class TeachingSynchronizer {
 
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         // A future improvement might be to reuse threads between subtrees.
-        final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
+        final StandardWorkGroup workGroup = new StandardWorkGroup(
+                threadManager,
+                WORK_GROUP_NAME,
+                breakConnection,
+                ex -> {
                     Throwable cause = ex;
                     while (cause != null) {
                         if (cause instanceof SocketException socketEx) {
@@ -172,7 +175,8 @@ public class TeachingSynchronizer {
                     firstReconnectException.compareAndSet(null, ex);
                     // Let StandardWorkGroup log it as an error using the EXCEPTION marker
                     return false;
-                });
+                },
+                false);
 
         view.startTeacherTasks(this, time, workGroup, inputStream, outputStream, subtrees);
 
