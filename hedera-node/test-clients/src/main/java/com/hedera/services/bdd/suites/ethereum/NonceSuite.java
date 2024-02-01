@@ -38,6 +38,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -66,6 +68,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -216,25 +220,23 @@ public class NonceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
-        final Long MAX_GAS_PER_SEC = 1_000_000L;
-        final var illegalMaxGasPerSec = MAX_GAS_PER_SEC + 1L;
-        return propertyPreservingHapiSpec(
-                        "nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed", HIGHLY_NON_DETERMINISTIC_FEES)
-                .preserving("contracts.maxGasPerSec")
+        AtomicLong maxGasPerSec = new AtomicLong();
+        return defaultHapiSpec("nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed")
                 .given(
-                        overriding("contracts.maxGasPerSec", MAX_GAS_PER_SEC.toString()),
+                        recordSystemProperty("contracts.maxGasPerSec", Long::parseLong, maxGasPerSec::set),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
                         uploadInitCode(INTERNAL_CALLEE_CONTRACT),
                         contractCreate(INTERNAL_CALLEE_CONTRACT))
-                .when(ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+                .when(sourcing(() ->
+                        ethereumCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
                         .nonce(0)
-                        .gasLimit(illegalMaxGasPerSec)
-                        .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY))
+                        .gasLimit(maxGasPerSec.get() + 1L)
+                        .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY)))
                 .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                         .has(accountWith().nonce(0L)));
     }
