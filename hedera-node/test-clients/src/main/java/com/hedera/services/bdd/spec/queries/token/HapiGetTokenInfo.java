@@ -360,7 +360,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         }
 
         expectedMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
-        expectedMetadata.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMetadata(), "Wrong metadata!"));
+        expectedMetadata.ifPresent(
+                s -> Assertions.assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
 
         var registry = spec.registry();
         assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);

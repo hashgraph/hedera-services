@@ -417,7 +417,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             return;
         }
         final var registry = spec.registry();
-        metadata.ifPresent(s -> registry.saveMetadata(token, s));
         symbol.ifPresent(s -> registry.saveSymbol(token, s));
         name.ifPresent(s -> registry.saveName(token, s));
         registry.saveMemo(token, memo.orElse(""));

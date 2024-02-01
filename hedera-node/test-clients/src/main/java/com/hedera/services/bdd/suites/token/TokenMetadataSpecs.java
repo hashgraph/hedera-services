@@ -33,7 +33,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -168,7 +167,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                         .feeScheduleKey("feeScheduleKey")
                         .pauseKey(pauseKey)
                         .metadataKey(METADATA_KEY)
-                        .metaData(String.valueOf(ByteString.copyFromUtf8(metadata)))
+                        .metaData(metadata)
                         .via(CREATE_TXN))
                 .then(
                         withOpContext((spec, opLog) -> {
@@ -199,7 +198,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .hasFeeScheduleKey(PRIMARY)
                                 .hasPauseKey(PRIMARY)
                                 .hasMetadataKey(METADATA_KEY)
-                                .hasMetadata(String.valueOf(ByteString.copyFromUtf8("metadata")))
+                                .hasMetadata(metadata)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .hasMaxSupply(1000)
                                 .hasTotalSupply(500)
