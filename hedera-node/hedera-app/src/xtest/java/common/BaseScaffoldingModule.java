@@ -221,7 +221,6 @@ public interface BaseScaffoldingModule {
             @NonNull final Configuration configuration,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
-        final var consensusTime = Instant.now();
         return (query, payerId) -> new QueryContextImpl(
                 state,
                 new ReadableStoreFactory(state),
@@ -230,7 +229,6 @@ public interface BaseScaffoldingModule {
                 recordCache,
                 exchangeRateManager,
                 NoOpFeeCalculator.INSTANCE,
-                consensusTime,
                 synchronizedThrottleAccumulator,
                 payerId);
     }
