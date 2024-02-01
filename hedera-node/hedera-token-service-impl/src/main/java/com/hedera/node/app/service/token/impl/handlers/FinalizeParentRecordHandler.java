@@ -112,6 +112,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
             throw e;
         }
+        // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
+        // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
         final var tokenChanges = tokenRelChangesFrom(
                 writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);

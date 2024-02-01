@@ -79,6 +79,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
+        // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
+        // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = function == HederaFunctionality.CRYPTO_TRANSFER;
         final var fungibleChanges = tokenRelChangesFrom(
                 writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
