@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -26,7 +25,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -41,17 +39,13 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.TOKEN_UPDATE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -71,13 +65,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,7 +95,6 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
 
-
     public static void main(String... args) {
         new AssociatePrecompileV1SecurityModelSuite().runSuiteSync();
     }
@@ -122,15 +110,13 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(
-                v2Security006TokenAssociateNegativeTests()
-        );
+        return List.of(v2Security006TokenAssociateNegativeTests());
     }
 
     List<HapiSpec> positiveSpecs() {
-        return List.of( v2Security031AssociateSingleTokenWithDelegateContractKey(),
-                v2Security010NestedAssociateNftAndNonFungibleTokens()
-        );
+        return List.of(
+                v2Security031AssociateSingleTokenWithDelegateContractKey(),
+                v2Security010NestedAssociateNftAndNonFungibleTokens());
     }
 
     @HapiTest
@@ -181,82 +167,81 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         contractCreate(MINT_TOKEN_CONTRACT),
                         contractCreate(ASSOCIATE_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                newKeyNamed(CONTRACT_KEY)
-                                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
-                                cryptoUpdate(SIGNER).key(CONTRACT_KEY),
-                                tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                                // Test Case 1: Account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
-                                // when signer has a threshold key
-                                // associating ACCOUNT to the token
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                contractCall(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
+                        cryptoUpdate(SIGNER).key(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        // Test Case 1: Account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when signer has a threshold key
+                        // associating ACCOUNT to the token
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-                                )
-                                        .signedBy(SIGNER)
-                                        .payingWith(SIGNER)
-                                        .via("fungibleTokenAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS),
-                                // Test Case 2: Account paying and signing a non fungible TOKEN ASSOCIATE TRANSACTION,
-                                // when signer has a threshold key
-                                // associating ACCOUNT to the token
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                                contractCall(
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .via("fungibleTokenAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        // Test Case 2: Account paying and signing a non fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when signer has a threshold key
+                        // associating ACCOUNT to the token
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))
-                                )
-                                        .signedBy(SIGNER)
-                                        .payingWith(SIGNER)
-                                        .via("nonFungibleTokenAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS),
-                                // Test Case 3: Account paying and signing a multiple TOKENS ASSOCIATE TRANSACTION,
-                                // when signer has a threshold key
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY),
-                                tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY),
-                                tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY),
-                                contractCall(
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .via("nonFungibleTokenAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        // Test Case 3: Account paying and signing a multiple TOKENS ASSOCIATE TRANSACTION,
+                        // when signer has a threshold key
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY),
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokensAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
                                         new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(KYC_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(KYC_TOKEN))),
                                         })
-                                        .signedBy(SIGNER)
-                                        .payingWith(SIGNER)
-                                        .via("multipleTokensAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS)
-                        ))
-                )
-                .then(
-                        getAccountInfo(ACCOUNT)
-                                .hasToken(relationshipWith(FUNGIBLE_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(FreezeNotApplicable))
-                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(FreezeNotApplicable))
-                                .hasToken(relationshipWith(FROZEN_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Frozen))
-                                .hasToken(relationshipWith(UNFROZEN_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Unfrozen))
-                                .hasToken(relationshipWith(KYC_TOKEN)
-                                        .kyc(Revoked)
-                                        .freeze(FreezeNotApplicable))
-                );
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .via("multipleTokensAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(getAccountInfo(ACCOUNT)
+                        .hasToken(relationshipWith(FUNGIBLE_TOKEN)
+                                .kyc(KycNotApplicable)
+                                .freeze(FreezeNotApplicable))
+                        .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
+                                .kyc(KycNotApplicable)
+                                .freeze(FreezeNotApplicable))
+                        .hasToken(relationshipWith(FROZEN_TOKEN)
+                                .kyc(KycNotApplicable)
+                                .freeze(Frozen))
+                        .hasToken(relationshipWith(UNFROZEN_TOKEN)
+                                .kyc(KycNotApplicable)
+                                .freeze(Unfrozen))
+                        .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable)));
     }
 
     @HapiTest
@@ -307,95 +292,109 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         contractCreate(ASSOCIATE_CONTRACT),
                         contractCreate(MINT_TOKEN_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCreate(
-                                        NESTED_ASSOCIATE_CONTRACT,
-                                        asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
-                                // Test Case 1: SIGNER account  paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
-                                // associating token to ACCOUNT
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                contractCall(
+                        spec,
+                        contractCreate(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
+                        // Test Case 1: SIGNER account  paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
+                        // associating token to ACCOUNT
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-                                )
-                                        .payingWith(ACCOUNT)
-                                        .signedBy(ACCOUNT)
-                                        .via("fungibleTokenAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                getTxnRecord("fungibleTokenAssociate").andAllChildRecords().logged(),
-                                // Test Case 2: SIGNER account  paying and signing a non fungible TOKEN ASSOCIATE TRANSACTION,
-                                // associating to ACCOUNT
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                contractCall(
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .via("fungibleTokenAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("fungibleTokenAssociate")
+                                .andAllChildRecords()
+                                .logged(),
+                        // Test Case 2: SIGNER account  paying and signing a non fungible TOKEN ASSOCIATE TRANSACTION,
+                        // associating to ACCOUNT
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))
-                                )
-                                        .payingWith(ACCOUNT)
-                                        .signedBy(ACCOUNT)
-                                        .via("nonFungibleTokenAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                getTxnRecord("nonFungibleTokenAssociate").andAllChildRecords().logged(),
-                                // Test Case 3: SIGNER account  paying and signing multiple TOKENS ASSOCIATE TRANSACTION,
-                                // associating to ЕОА ACCOUNT
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                contractCall(
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .via("nonFungibleTokenAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("nonFungibleTokenAssociate")
+                                .andAllChildRecords()
+                                .logged(),
+                        // Test Case 3: SIGNER account  paying and signing multiple TOKENS ASSOCIATE TRANSACTION,
+                        // associating to ЕОА ACCOUNT
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokensAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
                                         new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
-                                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(KYC_TOKEN)))
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(KYC_TOKEN)))
                                         })
-                                        .signedBy(ACCOUNT)
-                                        .payingWith(ACCOUNT)
-                                        .via("multipleTokensAssociate")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                getTxnRecord("multipleTokensAssociate").andAllChildRecords().logged(),
-                                // Test Case 4: SIGNER account  paying and signing nested TOKEN ASSOCIATE TRANSACTION,
-                                // associating to ЕОА ACCOUNT
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                contractCall(
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .via("multipleTokensAssociate")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("multipleTokensAssociate")
+                                .andAllChildRecords()
+                                .logged(),
+                        // Test Case 4: SIGNER account  paying and signing nested TOKEN ASSOCIATE TRANSACTION,
+                        // associating to ЕОА ACCOUNT
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
                                         NESTED_ASSOCIATE_CONTRACT,
                                         "associateInternalContractCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-                                )
-                                        .signedBy(ACCOUNT)
-                                        .payingWith(ACCOUNT)
-                                        .via("nestedAssociateFungibleTxn")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                getTxnRecord("nestedAssociateFungibleTxn").andAllChildRecords().logged(),
-                                // Test Case 5: SIGNER account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
-                                // associating to CONTRACT
-                                // when signer has a threshold key
-                                // SIGNER → call → CONTRACT A → call → HTS
-                                newKeyNamed(CONTRACT_KEY)
-                                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_TOKEN_CONTRACT))),
-                                cryptoUpdate(SIGNER).key(CONTRACT_KEY),
-                                tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                                contractCall(
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .via("nestedAssociateFungibleTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("nestedAssociateFungibleTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        // Test Case 5: SIGNER account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
+                        // associating to CONTRACT
+                        // when signer has a threshold key
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_TOKEN_CONTRACT))),
+                        cryptoUpdate(SIGNER).key(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
                                         asHeadlongAddress(getNestedContractAddress(MINT_TOKEN_CONTRACT, spec)),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-                                )
-                                        .signedBy(SIGNER)
-                                        .payingWith(SIGNER)
-                                        .via("associateTokenToContractFails")
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                getTxnRecord("associateTokenToContractFails").andAllChildRecords().logged()
-                        ))
-                )
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .via("associateTokenToContractFails")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("associateTokenToContractFails")
+                                .andAllChildRecords()
+                                .logged())))
                 .then(
                         childRecordsCheck(
                                 "fungibleTokenAssociate",
@@ -403,46 +402,40 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "nonFungibleTokenAssociate",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "multipleTokensAssociate",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-
-
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "nestedAssociateFungibleTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "associateTokenToContractFails",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))))
-
-
-                );
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
     @HapiTest
@@ -466,8 +459,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .adminKey(TOKEN_TREASURY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(ASSOCIATE_CONTRACT, NESTED_ASSOCIATE_CONTRACT),
-                        contractCreate(ASSOCIATE_CONTRACT)
-                )
+                        contractCreate(ASSOCIATE_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
@@ -476,36 +468,38 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         // Test Case 1: Account paying and signing a nested fungible TOKEN ASSOCIATE TRANSACTION,
                         // when we associate the token to the signer
                         // SIGNER → call → CONTRACT A → call → CONTRACT B → call → PRECOMPILE(HTS)
-                        newKeyNamed(CONTRACT_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                NESTED_ASSOCIATE_CONTRACT,
-                                "associateInternalContractCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-                        )
+                                        NESTED_ASSOCIATE_CONTRACT,
+                                        "associateInternalContractCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
                                 .via("nestedAssociateFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
-                        getTxnRecord("nestedAssociateFungibleTxn").andAllChildRecords().logged(),
+                        getTxnRecord("nestedAssociateFungibleTxn")
+                                .andAllChildRecords()
+                                .logged(),
                         // Test Case 2: Account paying and signing a nested non fungible TOKEN ASSOCIATE TRANSACTION,
                         // when we associate the token to the signer
                         // SIGNER → call → CONTRACT A → call → CONTRACT B → call → PRECOMPILE(HTS)
                         contractCall(
-                                NESTED_ASSOCIATE_CONTRACT,
-                                "associateInternalContractCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))
-                        )
+                                        NESTED_ASSOCIATE_CONTRACT,
+                                        "associateInternalContractCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
                                 .via("nestedAssociateNonFungibleTxn")
                                 .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS)
-                )))
+                                .hasKnownStatus(SUCCESS))))
                 .then(
                         getAccountInfo(ACCOUNT)
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN)
@@ -529,9 +523,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS))))
-
-                );
+                                                        htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     @Override
