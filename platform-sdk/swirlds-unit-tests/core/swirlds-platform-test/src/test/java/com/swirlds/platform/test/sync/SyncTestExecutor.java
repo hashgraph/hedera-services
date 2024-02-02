@@ -64,7 +64,7 @@ public class SyncTestExecutor {
     private BiConsumer<SyncNode, SyncNode> customInitialization;
     private BiConsumer<SyncNode, SyncNode> graphCustomization;
     private BiConsumer<SyncNode, SyncNode> customPreSyncConfiguration;
-    private BiConsumer<SyncNode, SyncNode> generationDefinitions;
+    private BiConsumer<SyncNode, SyncNode> eventWindowDefinitions;
     private Predicate<IndexedEvent> callerAddToGraphTest;
     private Predicate<IndexedEvent> listenerAddToGraphTest;
     private final AncientMode ancientMode;
@@ -81,8 +81,7 @@ public class SyncTestExecutor {
                 .setSize(params.getNumNetworkNodes())
                 .build();
 
-        factoryConfig = (f) -> {
-        };
+        factoryConfig = (f) -> {};
         callerExecutorSupplier = () -> {
             final CachedPoolParallelExecutor executor =
                     new CachedPoolParallelExecutor(getStaticThreadManager(), "sync-node");
@@ -96,12 +95,17 @@ public class SyncTestExecutor {
             return executor;
         };
         callerSupplier = (factory) -> new SyncNode(
-                params.getNumNetworkNodes(), 0, factory.newShuffledFromSourceFactory(), callerExecutorSupplier.get());
+                params.getNumNetworkNodes(),
+                0,
+                factory.newShuffledFromSourceFactory(),
+                callerExecutorSupplier.get(),
+                ancientMode);
         listenerSupplier = (factory) -> new SyncNode(
                 params.getNumNetworkNodes(),
                 params.getNumNetworkNodes() - 1,
                 factory.newShuffledFromSourceFactory(),
-                listenerExecutorSupplier.get());
+                listenerExecutorSupplier.get(),
+                ancientMode);
 
         initialGraphCreation = (caller, listener) -> {
             for (final SyncNode node : List.of(caller, listener)) {
@@ -110,13 +114,10 @@ public class SyncTestExecutor {
                 node.setSaveGeneratedEvents(true);
             }
         };
-        customInitialization = (caller, listener) -> {
-        };
-        graphCustomization = (caller, listener) -> {
-        };
-        generationDefinitions = updateDefaultEventWindow();
-        customPreSyncConfiguration = (caller, listener) -> {
-        };
+        customInitialization = (caller, listener) -> {};
+        graphCustomization = (caller, listener) -> {};
+        eventWindowDefinitions = updateDefaultEventWindow();
+        customPreSyncConfiguration = (caller, listener) -> {};
         callerAddToGraphTest = (indexedEvent -> true);
         listenerAddToGraphTest = (indexedEvent -> true);
         connectionFactory = ConnectionFactory::createLocalConnections;
@@ -197,7 +198,7 @@ public class SyncTestExecutor {
         caller.generateAndAdd(params.getNumCallerEvents(), callerAddToGraphTest);
         listener.getEmitter().setCheckpoint(params.getNumListenerEvents());
         listener.generateAndAdd(params.getNumListenerEvents(), listenerAddToGraphTest);
-        generationDefinitions.accept(caller, listener);
+        eventWindowDefinitions.accept(caller, listener);
     }
 
     private BiConsumer<SyncNode, SyncNode> updateDefaultEventWindow() {
@@ -205,9 +206,8 @@ public class SyncTestExecutor {
             final List<ShadowEvent> callerTips = caller.getShadowGraph().getTips();
             final List<ShadowEvent> listenerTips = listener.getShadowGraph().getTips();
 
-            final long listenerExpiredThreshold =
-                    SyncTestUtils.getMinIndicator(listener.getShadowGraph().findAncestors(listenerTips, (e) -> true),
-                            ancientMode);
+            final long listenerExpiredThreshold = SyncTestUtils.getMinIndicator(
+                    listener.getShadowGraph().findAncestors(listenerTips, (e) -> true), ancientMode);
             final long listenerMaxIndicator = SyncTestUtils.getMaxIndicator(listenerTips, ancientMode);
             final long callerExpiredThreshold = SyncTestUtils.getMinIndicator(
                     caller.getShadowGraph().findAncestors(callerTips, (e) -> true), ancientMode);
@@ -233,7 +233,9 @@ public class SyncTestExecutor {
                     ancientMode.getGenesisIndicator(), callerAncientThreshold, callerExpiredThreshold, ancientMode));
 
             listener.updateEventWindow(new NonAncientEventWindow(
-                    ancientMode.getGenesisIndicator(), listenerAncientThreshold, listenerExpiredThreshold,
+                    ancientMode.getGenesisIndicator(),
+                    listenerAncientThreshold,
+                    listenerExpiredThreshold,
                     ancientMode));
         };
     }
@@ -296,13 +298,13 @@ public class SyncTestExecutor {
     }
 
     /**
-     * Sets a custom event window definition function that defines what generations the caller and listener will use in
+     * Sets a custom event window definition function that defines what event window the caller and listener will use in
      * the sync.
      *
-     * @param eventWindowDefinitions
+     * @param eventWindowDefinitions a function that defines the event window for the caller and listener
      */
     public void setEventWindowDefinitions(final BiConsumer<SyncNode, SyncNode> eventWindowDefinitions) {
-        this.generationDefinitions = eventWindowDefinitions;
+        this.eventWindowDefinitions = eventWindowDefinitions;
     }
 
     /**

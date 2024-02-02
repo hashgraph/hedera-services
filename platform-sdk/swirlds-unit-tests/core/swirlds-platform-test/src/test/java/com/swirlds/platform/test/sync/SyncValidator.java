@@ -131,8 +131,8 @@ public class SyncValidator {
         expectedListenerSendList.removeAll(caller.getGeneratedEvents());
 
         // Remove expired events
-        expectedCallerSendList.removeIf(e -> e.getGeneration() < caller.getOldestGeneration());
-        expectedListenerSendList.removeIf(e -> e.getGeneration() < listener.getOldestGeneration());
+        expectedCallerSendList.removeIf(e -> e.getGeneration() < caller.getOldestAncientIndicator());
+        expectedListenerSendList.removeIf(e -> e.getGeneration() < listener.getOldestAncientIndicator());
 
         // Remove events that are ancient for the peer
         expectedCallerSendList.removeIf( // TODO generations vs rounds

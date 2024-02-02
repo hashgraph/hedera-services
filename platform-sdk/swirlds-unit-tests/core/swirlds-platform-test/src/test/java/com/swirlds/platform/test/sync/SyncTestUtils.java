@@ -43,7 +43,7 @@ public class SyncTestUtils {
         node.getShadowGraph().getTips().forEach(tip -> System.out.println(EventStrings.toMediumString(tip.getEvent())));
     }
 
-    public static long getMaxIndicator(final List<ShadowEvent> tips,@NonNull final AncientMode ancientMode) {
+    public static long getMaxIndicator(final List<ShadowEvent> tips, @NonNull final AncientMode ancientMode) {
         long maxIndicator = 0;
         for (final ShadowEvent tip : tips) {
             maxIndicator = Math.max(tip.getEvent().getBaseEvent().getAncientIndicator(ancientMode), maxIndicator);

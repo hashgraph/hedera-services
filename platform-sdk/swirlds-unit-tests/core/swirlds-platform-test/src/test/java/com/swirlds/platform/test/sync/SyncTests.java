@@ -355,10 +355,13 @@ public class SyncTests {
     void forkingGraph(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
 
-        executor.setCallerSupplier(
-                (factory) -> new SyncNode(params.getNumNetworkNodes(), 0, factory.newForkingShuffledGenerator()));
+        executor.setCallerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(), 0, factory.newForkingShuffledGenerator(), params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
-                params.getNumNetworkNodes(), params.getNumNetworkNodes() - 1, factory.newForkingShuffledGenerator()));
+                params.getNumNetworkNodes(),
+                params.getNumNetworkNodes() - 1,
+                factory.newForkingShuffledGenerator(),
+                params.getAncientMode()));
 
         executor.execute();
 
@@ -380,10 +383,13 @@ public class SyncTests {
         final int callerOtherParent = 1;
         final int listenerOtherParent = 2;
 
-        executor.setCallerSupplier(
-                (factory) -> new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter()));
+        executor.setCallerSupplier((factory) ->
+                new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter(), params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
-                params.getNumNetworkNodes(), params.getNumNetworkNodes() - 1, factory.newStandardEmitter()));
+                params.getNumNetworkNodes(),
+                params.getNumNetworkNodes() - 1,
+                factory.newStandardEmitter(),
+                params.getAncientMode()));
 
         executor.setInitialGraphCreation((caller, listener) -> {
             caller.generateAndAdd(params.getNumCommonEvents());
@@ -425,10 +431,13 @@ public class SyncTests {
                 .boxed()
                 .collect(Collectors.toList());
 
-        executor.setCallerSupplier(
-                (factory) -> new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter()));
+        executor.setCallerSupplier((factory) ->
+                new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter(), params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
-                params.getNumNetworkNodes(), params.getNumNetworkNodes() - 1, factory.newStandardEmitter()));
+                params.getNumNetworkNodes(),
+                params.getNumNetworkNodes() - 1,
+                factory.newStandardEmitter(),
+                params.getAncientMode()));
 
         executor.setInitialGraphCreation((caller, listener) -> {
             caller.generateAndAdd(params.getNumCommonEvents());
@@ -463,13 +472,14 @@ public class SyncTests {
         listenerExecutor.start();
 
         // Setup parallel executors
-        executor.setCallerSupplier((factory) ->
-                new SyncNode(params.getNumNetworkNodes(), 0, factory.newShuffledEmitter(), callerExecutor));
+        executor.setCallerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(), 0, factory.newShuffledEmitter(), callerExecutor, params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
                 params.getNumNetworkNodes(),
                 params.getNumNetworkNodes() - 1,
                 factory.newShuffledEmitter(),
-                listenerExecutor));
+                listenerExecutor,
+                params.getAncientMode()));
 
         assertThrows(ParallelExecutionException.class, executor::execute, "Unexpected exception during sync.");
 
@@ -494,8 +504,8 @@ public class SyncTests {
                     throw new SocketException();
                 });
 
-        executor.setCallerSupplier((factory) ->
-                new SyncNode(params.getNumNetworkNodes(), 0, factory.newShuffledEmitter(), callerExecutor));
+        executor.setCallerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(), 0, factory.newShuffledEmitter(), callerExecutor, params.getAncientMode()));
 
         runExceptionDuringSyncPhase(phaseToThrowIn, taskNum, executor);
     }
@@ -517,8 +527,12 @@ public class SyncTests {
                     throw new SocketException();
                 });
 
-        executor.setListenerSupplier((factory) ->
-                new SyncNode(params.getNumNetworkNodes(), 0, factory.newShuffledEmitter(), listenerExecutor));
+        executor.setListenerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(),
+                0,
+                factory.newShuffledEmitter(),
+                listenerExecutor,
+                params.getAncientMode()));
 
         runExceptionDuringSyncPhase(phaseToThrowIn, taskNum, executor);
     }
@@ -638,10 +652,13 @@ public class SyncTests {
 
         final SyncTestExecutor executor = new SyncTestExecutor(params);
 
-        executor.setCallerSupplier(
-                (factory) -> new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter()));
+        executor.setCallerSupplier((factory) ->
+                new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter(), params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
-                params.getNumNetworkNodes(), params.getNumNetworkNodes() - 1, factory.newStandardEmitter()));
+                params.getNumNetworkNodes(),
+                params.getNumNetworkNodes() - 1,
+                factory.newStandardEmitter(),
+                params.getAncientMode()));
 
         executor.setInitialGraphCreation((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
@@ -682,34 +699,36 @@ public class SyncTests {
                     SyncTestUtils.getMaxIndicator(listener.getShadowGraph().getTips(), ancientMode);
             // make the min non-ancient indicator slightly below the max indicator
             long listenerNonAncientThreshold = listenerMaxIndicator - (listenerMaxIndicator / 10);
-            long listenerMinIndicator = SyncTestUtils.getMinIndicator(listener.getShadowGraph()
-                    .findAncestors(listener.getShadowGraph().getTips(), (e) -> true), ancientMode);
+            long listenerMinIndicator = SyncTestUtils.getMinIndicator(
+                    listener.getShadowGraph()
+                            .findAncestors(listener.getShadowGraph().getTips(), (e) -> true),
+                    ancientMode);
 
             // Expire everything below the listener's min non-ancient indicator on the caller
             // so that the listener's maxIndicator == caller's min non-ancient indicator
             caller.expireBelow(listenerNonAncientThreshold);
 
-            long callerMaxIndicator = SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
+            long callerMaxIndicator =
+                    SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
             // make the min non-ancient indicator slightly below the max indicator
             long callerNonAncientThreshold = callerMaxIndicator - (callerMaxIndicator / 10);
-            long callerMinIndicator = SyncTestUtils.getMinIndicator(caller.getShadowGraph()
-                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true), ancientMode);
+            long callerMinIndicator = SyncTestUtils.getMinIndicator(
+                    caller.getShadowGraph()
+                            .findAncestors(caller.getShadowGraph().getTips(), (e) -> true),
+                    ancientMode);
 
-            assertEquals(listenerNonAncientThreshold, callerMinIndicator, "listener max indicator and caller min indicator should be equal.");
+            assertEquals(
+                    listenerNonAncientThreshold,
+                    callerMinIndicator,
+                    "listener max indicator and caller min indicator should be equal.");
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */,
-                            listenerNonAncientThreshold,
-                            listenerMinIndicator,
-                            ancientMode));
+                            ROUND_FIRST /* ignored */, listenerNonAncientThreshold, listenerMinIndicator, ancientMode));
 
             caller.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */,
-                            callerNonAncientThreshold,
-                            callerMinIndicator,
-                            ancientMode));
+                            ROUND_FIRST /* ignored */, callerNonAncientThreshold, callerMinIndicator, ancientMode));
         });
 
         executor.execute();
@@ -751,8 +770,8 @@ public class SyncTests {
                 false));
 
         // we save the max generation of node 0, so we know what we need to expire to remove a tip
-        executor.setCustomPreSyncConfiguration((caller, listener) ->
-                genToExpire.set(SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode)));
+        executor.setCustomPreSyncConfiguration((caller, listener) -> genToExpire.set(
+                SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode)));
 
         executor.execute();
 
@@ -981,10 +1000,13 @@ public class SyncTests {
 
         executor.setFactoryConfig(factoryConfig);
 
-        executor.setCallerSupplier(
-                (factory) -> new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardFromSourceFactory()));
+        executor.setCallerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(), 0, factory.newStandardFromSourceFactory(), params.getAncientMode()));
         executor.setListenerSupplier((factory) -> new SyncNode(
-                params.getNumNetworkNodes(), params.getNumNetworkNodes() - 1, factory.newStandardFromSourceFactory()));
+                params.getNumNetworkNodes(),
+                params.getNumNetworkNodes() - 1,
+                factory.newStandardFromSourceFactory(),
+                params.getAncientMode()));
 
         executor.setInitialGraphCreation((caller, listener) -> {
             for (final SyncNode node : List.of(caller, listener)) {
@@ -1010,8 +1032,12 @@ public class SyncTests {
                 () -> executor.getCaller().getConnection().disconnect(),
                 false);
 
-        executor.setCallerSupplier((factory) ->
-                new SyncNode(params.getNumNetworkNodes(), 0, factory.newShuffledFromSourceFactory(), parallelExecutor));
+        executor.setCallerSupplier((factory) -> new SyncNode(
+                params.getNumNetworkNodes(),
+                0,
+                factory.newShuffledFromSourceFactory(),
+                parallelExecutor,
+                params.getAncientMode()));
 
         try {
             executor.execute();
@@ -1079,9 +1105,12 @@ public class SyncTests {
             listener.setSaveGeneratedEvents(true);
         });
         executor.setEventWindowDefinitions((caller, listener) -> {
-            long callerMaxGen = SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
-            long callerMinGen = SyncTestUtils.getMinIndicator(caller.getShadowGraph()
-                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true), ancientMode);
+            long callerMaxGen =
+                    SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
+            long callerMinGen = SyncTestUtils.getMinIndicator(
+                    caller.getShadowGraph()
+                            .findAncestors(caller.getShadowGraph().getTips(), (e) -> true),
+                    ancientMode);
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
