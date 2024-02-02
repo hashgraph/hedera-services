@@ -735,11 +735,17 @@ public class SyncTests {
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */, listenerNonAncientThreshold, listenerMinIndicator, ancientMode));
+                            ROUND_FIRST /* ignored */,
+                            Math.max(ancientMode.getGenesisIndicator(), listenerNonAncientThreshold),
+                            Math.max(ancientMode.getGenesisIndicator(), listenerMinIndicator),
+                            ancientMode));
 
             caller.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */, callerNonAncientThreshold, callerMinIndicator, ancientMode));
+                            ROUND_FIRST /* ignored */,
+                            Math.max(ancientMode.getGenesisIndicator(), callerNonAncientThreshold),
+                            Math.max(ancientMode.getGenesisIndicator(), callerMinIndicator),
+                            ancientMode));
         });
 
         executor.execute();
@@ -773,7 +779,7 @@ public class SyncTests {
                     // Expire the events from the shadow graph
                     final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
-                            0 /* ignored by shadowgraph */,
+                            ancientMode.getGenesisIndicator(),
                             indicatorToExpire.get() + 1,
                             ancientMode);
                     executor.getCaller().getShadowGraph().updateEventWindow(eventWindow);
@@ -952,14 +958,15 @@ public class SyncTests {
         final NodeId creatorId = executor.getAddressBook().getNodeId(0);
 
         // Set the indicator to expire such that half the listener's graph, and therefore some events that need
-        // to be sent to the caller, will be expired
+        // to be sent to the caller, will be expired. Since we are hacking birth rounds to be the same as generations,
+        // we can use the same indicator for both.
         executor.setCustomPreSyncConfiguration((c, l) ->
                 indicatorToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
-                0 /* ignored by shadowgraph */,
-                indicatorToExpire.get(),
+                params.getAncientMode().getGenesisIndicator(),
+                Math.max(params.getAncientMode().getGenesisIndicator(), indicatorToExpire.get()),
                 params.getAncientMode());
 
         // Expire events from the listener's graph after the supplied phase

@@ -278,7 +278,7 @@ public class SyncNode {
         this.oldestAncientIndicator = expireBelow;
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelow, ancientMode);
+                0 /* ignored by shadowgraph */, ancientMode.getGenesisIndicator(), expireBelow, ancientMode);
 
         updateEventWindow(eventWindow);
     }
