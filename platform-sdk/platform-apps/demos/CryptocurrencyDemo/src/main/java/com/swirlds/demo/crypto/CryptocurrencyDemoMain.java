@@ -163,7 +163,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
                         + (isFast ? "fast" : "slow") + ")\n"
                         + String.format(
                                 " %s",
-                                platform.getContext().getMetrics().getValue(Metrics.PLATFORM_CATEGORY, "trans/sec"))
+                                platform.getContext().getMetrics().getValue(Metrics.PLATFORM_CATEGORY, "trans_per_sec"))
                         + " transactions per second for member " + selfId + "\n\n"
                         + " count  ticker  price change  change%  seller->buyer");
                 long lastSeq = state.getNumTrades();
