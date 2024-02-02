@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -171,8 +172,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
-            final var childHbarChangesFromRecord = childRecord.transferList();
-            for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
+            final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
+                    ? emptyList()
+                    : childRecord.transferList().accountAmountsOrElse(emptyList());
+            for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {
                     final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);

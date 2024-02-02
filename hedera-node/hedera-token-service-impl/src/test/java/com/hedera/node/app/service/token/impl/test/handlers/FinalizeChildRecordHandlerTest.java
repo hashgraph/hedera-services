@@ -22,11 +22,14 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -159,7 +162,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verifyNoInteractions(recordBuilder);
+        verify(recordBuilder).status();
     }
 
     @Test
@@ -198,6 +201,42 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(amountToTransfer)
                                         .build())
                         .build());
+    }
+
+    @Test
+    void setsDefaultTransferListIfSucceededChildRecord() {
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts();
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts();
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels();
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels();
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts();
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts();
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
+        context = mockContext();
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(context.configuration()).willReturn(configuration);
+
+        subject.finalizeChildRecord(context);
+
+        BDDMockito.verify(recordBuilder).transferList(TransferList.DEFAULT);
+    }
+
+    @Test
+    void doesntSetDefaultTransferListIfFailedChildRecord() {
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts();
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts();
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels();
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels();
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts();
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts();
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
+        context = mockContext();
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        given(context.configuration()).willReturn(configuration);
+
+        subject.finalizeChildRecord(context);
+
+        BDDMockito.verify(recordBuilder, never()).transferList(TransferList.DEFAULT);
     }
 
     @Test
@@ -277,7 +316,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verifyNoInteractions(recordBuilder);
+        verify(recordBuilder).status();
     }
 
     @Test
