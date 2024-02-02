@@ -151,6 +151,22 @@ public enum TestType {
             }
         }
 
+        public ExampleByteArrayVirtualValue createVirtualValue(final int i) {
+            switch (testType) {
+                default:
+                case fixed_fixed:
+                case fixedComplex_fixed:
+                case variable_fixed:
+                case variableComplex_fixed:
+                    return new ExampleFixedSizeVirtualValue(i);
+                case fixed_variable:
+                case fixedComplex_variable:
+                case variable_variable:
+                case variableComplex_variable:
+                    return new ExampleVariableSizeVirtualValue(i);
+            }
+        }
+
         /**
          * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are measured values
          * from a known good test run.
