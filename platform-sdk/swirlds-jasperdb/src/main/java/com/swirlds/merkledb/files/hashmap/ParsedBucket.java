@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
@@ -130,13 +130,13 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
     public void putValue(final K key, final long value) {
         final int keyHashCode = key.hashCode();
         try {
             final int entryIndex = findEntryIndex(keyHashCode, key);
-            if (value == SPECIAL_DELETE_ME_VALUE) {
+            if (value == INVALID_VALUE) {
                 if (entryIndex >= 0) {
                     entries.remove(entryIndex);
                 } else {
