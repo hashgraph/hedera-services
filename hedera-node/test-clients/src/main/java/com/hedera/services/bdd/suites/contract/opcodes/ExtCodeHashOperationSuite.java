@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -47,7 +46,7 @@ import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class ExtCodeHashOperationSuite extends HapiSuite {
 
