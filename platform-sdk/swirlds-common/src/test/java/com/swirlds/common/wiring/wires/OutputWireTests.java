@@ -64,28 +64,28 @@ public class OutputWireTests {
                 .build()
                 .cast();
 
-        BindableInputWire<Integer, Integer> intInput = intForwarder.buildInputWire("intInput");
-        BindableInputWire<Integer, Void> firstComponentInput = firstComponent.buildInputWire("ints");
-        BindableInputWire<Integer, Void> secondComponentInput = secondComponent.buildInputWire("ints");
+        final BindableInputWire<Integer, Integer> intInput = intForwarder.buildInputWire("intInput");
+        final BindableInputWire<Integer, Void> firstComponentInput = firstComponent.buildInputWire("ints");
+        final BindableInputWire<Integer, Void> secondComponentInput = secondComponent.buildInputWire("ints");
 
         // Send integers to the first component before the second component
-        List<InputWire<Integer>> inputList = List.of(firstComponentInput, secondComponentInput);
+        final List<InputWire<Integer>> inputList = List.of(firstComponentInput, secondComponentInput);
         intForwarder.getOutputWire().orderedSolderTo(inputList);
 
         intInput.bind((i -> i));
 
-        AtomicInteger firstCompRecNum = new AtomicInteger();
-        AtomicInteger secondsCompRecNum = new AtomicInteger();
-        AtomicInteger firstCompErrorCount = new AtomicInteger();
-        AtomicInteger secondCompErrorCount = new AtomicInteger();
+        final AtomicInteger firstCompRecNum = new AtomicInteger();
+        final AtomicInteger secondCompRecNum = new AtomicInteger();
+        final AtomicInteger firstCompErrorCount = new AtomicInteger();
+        final AtomicInteger secondCompErrorCount = new AtomicInteger();
 
         firstComponentInput.bind(i -> {
-            if (firstCompRecNum.incrementAndGet() <= secondsCompRecNum.get()) {
+            if (firstCompRecNum.incrementAndGet() <= secondCompRecNum.get()) {
                 firstCompErrorCount.incrementAndGet();
             }
         });
         secondComponentInput.bind(i -> {
-            if (firstCompRecNum.get() != secondsCompRecNum.incrementAndGet()) {
+            if (firstCompRecNum.get() != secondCompRecNum.incrementAndGet()) {
                 secondCompErrorCount.incrementAndGet();
             }
         });
