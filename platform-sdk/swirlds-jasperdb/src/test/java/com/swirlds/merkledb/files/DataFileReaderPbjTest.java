@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileReaderPbj.MAX_FILE_CHANNELS;
@@ -6,26 +22,27 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
+import java.io.File;
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import java.io.File;
-import java.io.IOException;
-
 class DataFileReaderPbjTest {
 
     @Mock
     private DataFileMetadata dataFileMetadata;
+
     private File file;
     private DataFileReaderPbj dataFileReaderPbj;
 
     @BeforeEach
     void setUp() throws IOException {
         openMocks(this);
-        file = File.createTempFile( "file-reader", "test");
-        dataFileReaderPbj = new DataFileReaderPbj(file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
+        file = File.createTempFile("file-reader", "test");
+        dataFileReaderPbj =
+                new DataFileReaderPbj(file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
     }
 
     @Test
@@ -67,7 +84,7 @@ class DataFileReaderPbjTest {
     }
 
     @Test
-    void testLeaseFileChannel_leaseLeastUsed () throws IOException {
+    void testLeaseFileChannel_leaseLeastUsed() throws IOException {
         for (int i = 0; i < THREADS_PER_FILECHANNEL * MAX_FILE_CHANNELS; i++) {
             dataFileReaderPbj.leaseFileChannel();
         }

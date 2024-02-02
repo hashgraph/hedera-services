@@ -105,6 +105,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     protected final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
+
     protected final AtomicIntegerArray fileChannelLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
 
     /** Indicates whether this file reader is open */
@@ -356,11 +357,11 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         int channelLease = 0;
         for (int i = 0; i < count; i++) {
             final int currentLeaseCount = fileChannelLeases.get(i);
-            if(currentLeaseCount == 0) {
+            if (currentLeaseCount == 0) {
                 channelLease = i;
                 break;
             }
-            if(minCount > currentLeaseCount) {
+            if (minCount > currentLeaseCount) {
                 minCount = currentLeaseCount;
                 channelLease = i;
             }
