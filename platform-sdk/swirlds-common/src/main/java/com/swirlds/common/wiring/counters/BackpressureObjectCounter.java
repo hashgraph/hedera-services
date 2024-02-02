@@ -109,6 +109,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
             } catch (final RejectedExecutionException ex) {
                 // We've exhausted our supply of background threads, we have no choice but to busy wait.
+                Thread.onSpinWait();
             }
         }
     }
