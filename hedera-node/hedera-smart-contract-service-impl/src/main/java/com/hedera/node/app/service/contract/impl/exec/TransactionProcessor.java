@@ -113,9 +113,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        InvolvedParties parties;
+        final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
         try {
-            parties = computeInvolvedParties(transaction, updater, config);
             return processTransactionWithParties(
                     transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
         } catch (HandleException e) {
@@ -161,6 +160,20 @@ public class TransactionProcessor {
 
         // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
+    }
+
+    private InvolvedParties safeComputeInvolvedParties(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Configuration config,
+            @NonNull final HederaEvmContext context) {
+        try {
+            return computeInvolvedParties(transaction, updater, config);
+        } catch (AbortException e) {
+            throw e;
+        } catch (HandleException e) {
+            throw new AbortException(e.getStatus(), transaction.senderId(), null, true);
+        }
     }
 
     private HederaEvmTransactionResult safeCommit(

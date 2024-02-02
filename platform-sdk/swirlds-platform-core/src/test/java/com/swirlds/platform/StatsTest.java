@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.metrics.statistics.StatsRunningAverage;
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;

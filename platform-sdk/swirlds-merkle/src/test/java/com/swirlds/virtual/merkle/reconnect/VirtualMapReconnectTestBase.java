@@ -16,7 +16,7 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,15 +32,15 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
