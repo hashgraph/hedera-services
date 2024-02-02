@@ -52,4 +52,11 @@ class HederaEvmTransactionTest {
         final var subject = TestHelpers.wellKnownRelayedHapiCallWithGasLimit(Long.MAX_VALUE);
         assertEquals(Long.MAX_VALUE, subject.offeredGasCost());
     }
+
+    @Test
+    void validateContractCallState() {
+        final var subject = TestHelpers.wellKnownHapiCall();
+        assertTrue(subject.isContractCall());
+        assertFalse(subject.isException());
+    }
 }

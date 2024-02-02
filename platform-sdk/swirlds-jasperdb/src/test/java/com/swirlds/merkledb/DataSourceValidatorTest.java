@@ -21,6 +21,8 @@ import static com.swirlds.merkledb.MerkleDbDataSourceTest.createDataSource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Path;

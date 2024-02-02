@@ -29,7 +29,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.evmAddressFromSecp256k1Key;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
@@ -57,6 +59,7 @@ public class ERC20ContractInteractions extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
     private static final String TRANSFER = "transfer";
+    private static final String VALID_ALIAS = "validAlias";
     private static final String TRANSFER_FROM = "transferFrom";
     private static final String TX_STR_PREFIX = " tx - ";
     private static final String TRANSFER_ADDRESS_ADDRESS_UINT_256 = "Transfer(address,address,uint256)";
@@ -88,9 +91,10 @@ public class ERC20ContractInteractions extends HapiSuite {
         final var TRANSFER_FROM_TX = "transferFromTxn";
         final var TRANSFER_MORE_THAN_APPROVED_FROM_TX = "transferMoreThanApproved";
         final var TRANSFER_TX = TRANSFER;
+        final var TRANSFER_NON_EXISTENT_TX = "transferNonExistent";
         final var NOT_ENOUGH_BALANCE_TRANSFER_TX = "notEnoughBalanceTransfer";
         final var amount = BigInteger.valueOf(1_000);
-        final var initialAmount = BigInteger.valueOf(5_000);
+        final var initialAmount = BigInteger.valueOf(6_000);
 
         return defaultHapiSpec("callsERC20ContractInteractions", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(), uploadInitCode(CONTRACT))
@@ -104,6 +108,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                     return tx;
                                 }),
+                        newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged())
                 .then(
                         getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
@@ -113,6 +118,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var receiverInfo = spec.registry().getAccountInfo(DEFAULT_CONTRACT_RECEIVER);
                             final var ownerContractId = ownerInfo.getContractAccountID();
                             final var receiverContractId = receiverInfo.getContractAccountID();
+                            final var nonExistentAccountKey = spec.registry().getKey(VALID_ALIAS);
 
                             final var transferParams = new Object[] {asHeadlongAddress(receiverContractId), amount};
                             final var notEnoughBalanceTransferParams = new Object[] {
@@ -123,6 +129,9 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var transferFromParams = new Object[] {
                                 asHeadlongAddress(ownerContractId), asHeadlongAddress(receiverContractId), amount
                             };
+                            final var transferNonExistentParams =
+                                    new Object[] {evmAddressFromSecp256k1Key(nonExistentAccountKey), amount};
+
                             final var transferMoreThanApprovedFromParams = new Object[] {
                                 asHeadlongAddress(ownerContractId),
                                 asHeadlongAddress(receiverContractId),
@@ -132,6 +141,14 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var transfer = contractCall(CONTRACT, TRANSFER, transferParams)
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .via(TRANSFER_TX)
+                                    .withTxnTransform(tx -> {
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
+                                        return tx;
+                                    });
+
+                            final var transferNonExistent = contractCall(CONTRACT, TRANSFER, transferNonExistentParams)
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .via(TRANSFER_NON_EXISTENT_TX)
                                     .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
@@ -227,6 +244,28 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                                                                                                             receiverInfo
                                                                                                                                                     .getContractAccountID())))))))))
                                     .logged();
+                            final var getTransferNonExistentRecord = getTxnRecord(TRANSFER_NON_EXISTENT_TX)
+                                    .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .logs(inOrder(logWith()
+                                                            .longValue(amount.longValueExact())
+                                                            .withTopicsInOrder(List.of(
+                                                                    eventSignatureOf(TRANSFER_ADDRESS_ADDRESS_UINT_256),
+                                                                    ByteString.copyFrom(
+                                                                            asAddressInTopic(
+                                                                                    unhex(
+                                                                                            ownerInfo
+                                                                                                    .getContractAccountID()))),
+                                                                    ByteString.copyFrom(
+                                                                            asAddressInTopic(
+                                                                                    unhex(
+                                                                                            evmAddressFromSecp256k1Key(
+                                                                                                            nonExistentAccountKey)
+                                                                                                    .toString()
+                                                                                                    .substring(
+                                                                                                            2))))))))))
+                                    .logged();
                             final var getApproveRecord = getTxnRecord(APPROVE_TX)
                                     .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
                                     .hasPriority(
@@ -316,10 +355,12 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     approve,
                                     transferMoreThanApprovedFrom,
                                     transferFrom,
+                                    transferNonExistent,
                                     getCreateRecord,
                                     getTransferRecord,
                                     getApproveRecord,
                                     getTransferFromRecord,
+                                    getTransferNonExistentRecord,
                                     getNotEnoughBalanceTransferRecord,
                                     transferMoreThanApprovedRecord);
                         }));

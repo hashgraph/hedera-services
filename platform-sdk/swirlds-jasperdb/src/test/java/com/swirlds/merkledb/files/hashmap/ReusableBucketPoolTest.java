@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 
 final class ReusableBucketPoolTest extends ReusableBucketPoolTestBase {
 

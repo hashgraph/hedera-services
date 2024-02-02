@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeF
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
@@ -69,6 +70,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -121,6 +124,13 @@ public class Evm46ValidationSuite extends HapiSuite {
             "contracts.evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
+    private static final String BALANCE_OF = "balanceOf";
+
+    public static final List<Long> nonExistingSystemAccounts =
+            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
+    public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
+    public static final List<Long> systemAccounts =
+            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
 
     public static void main(String... args) {
         new Evm46ValidationSuite().runSuiteAsync();
@@ -251,7 +261,8 @@ public class Evm46ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.800 (existing system account > 0.0.750)
                 internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey());
+                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey(),
+                testBalanceOfForSystemAccounts());
     }
 
     @HapiTest
@@ -621,7 +632,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .createdContractIdsCount(0)
                                         .contractCallResult(bigIntResult(1))
-                                        .gasUsed(48107))));
+                                        .gasUsedModuloIntrinsicVariation(48107))));
     }
 
     @HapiTest
@@ -1487,6 +1498,33 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
                         getAccountBalance(INTERNAL_CALLER_CONTRACT)
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    @HapiTest
+    final HapiSpec testBalanceOfForSystemAccounts() {
+        final var contract = "BalanceChecker46Version";
+        final var balance = 10L;
+        final var systemAccountBalance = 0;
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            opsArray[systemAccounts.size() + i] = contractCallLocal(
+                            contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+                    .has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, BALANCE_OF, contract),
+                                    ContractFnResultAsserts.isLiteralResult(
+                                            new Object[] {BigInteger.valueOf(systemAccountBalance)})));
+        }
+        return defaultHapiSpec("verifiesSystemAccountBalanceOf")
+                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
     }
 
     @Override
