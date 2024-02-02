@@ -82,5 +82,9 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic token names.
      */
-    NONDETERMINISTIC_TOKEN_NAMES
+    NONDETERMINISTIC_TOKEN_NAMES,
+    /**
+     * Allows for fully deterministic matching.
+     */
+    FULLY_DETERMINISTIC
 }

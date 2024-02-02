@@ -15,10 +15,17 @@
  */
 
 import com.google.protobuf.gradle.id
+import com.hedera.hashgraph.gradlebuild.tasks.GitClone
 
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.google.protobuf")
+}
+
+tasks.register<GitClone>("cloneHederaProtobufs") {
+    url = "https://github.com/hashgraph/hedera-protobufs.git"
+    offline = gradle.startParameter.isOffline
+    localCloneDirectory = layout.buildDirectory.dir("hedera-protobufs")
 }
 
 // Configure Protobuf Plugin to download protoc executable rather than using local installed version
@@ -48,4 +55,17 @@ sourceSets.all {
             }
         }
     }
+}
+
+// Give JUnit more ram and make it execute tests in parallel
+tasks.test {
+    // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
+    // class run in parallel.
+    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
+    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+    // limit amount of threads, so we do not use all CPU
+    systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.9"
+    // us parallel GC to keep up with high temporary garbage creation,
+    // and allow GC to use 40% of CPU if needed
+    jvmArgs("-XX:+UseParallelGC", "-XX:GCTimeRatio=90")
 }

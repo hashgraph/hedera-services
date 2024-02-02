@@ -66,7 +66,7 @@ import javax.inject.Singleton;
 @Singleton
 public class SubmissionManager {
     /** Metric settings for keeping track of rejected transactions */
-    private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
+    private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated_per_sec";
 
     private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";

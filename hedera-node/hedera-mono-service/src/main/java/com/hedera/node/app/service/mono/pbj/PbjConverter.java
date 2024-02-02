@@ -1307,6 +1307,9 @@ public final class PbjConverter {
                     .TOKEN_HAS_NO_METADATA_KEY;
             case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
             case INVALID_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_METADATA_KEY;
+            case TOKEN_HAS_NO_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

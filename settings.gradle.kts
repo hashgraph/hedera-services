@@ -109,10 +109,6 @@ include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
-include(":swirlds-test-framework", "platform-sdk/swirlds-unit-tests/common/swirlds-test-framework")
-
-include(":swirlds-common-testing", "platform-sdk/swirlds-unit-tests/common/swirlds-common-test")
-
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
 include(":swirlds-merkle-test", "platform-sdk/swirlds-unit-tests/structures/swirlds-merkle-test")

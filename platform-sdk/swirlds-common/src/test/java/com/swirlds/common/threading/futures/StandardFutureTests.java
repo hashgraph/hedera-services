@@ -17,6 +17,7 @@
 package com.swirlds.common.threading.futures;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -32,8 +33,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("StandardFuture Tests")
 class StandardFutureTests {
 

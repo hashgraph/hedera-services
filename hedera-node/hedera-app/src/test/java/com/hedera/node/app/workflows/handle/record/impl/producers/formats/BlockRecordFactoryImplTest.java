@@ -20,7 +20,7 @@ import static com.hedera.node.app.records.RecordTestData.SIGNER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordWriterV6;
 import java.nio.file.FileSystems;
 import org.junit.jupiter.api.Test;

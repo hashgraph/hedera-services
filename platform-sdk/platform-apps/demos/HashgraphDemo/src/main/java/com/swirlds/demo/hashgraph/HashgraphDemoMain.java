@@ -237,9 +237,9 @@ public class HashgraphDemoMain implements SwirldMain {
             final double createCons = (double) metrics.getValue(PLATFORM_CATEGORY, "secC2C");
             final double recCons = (double) metrics.getValue(PLATFORM_CATEGORY, "secR2C");
 
-            print(g, "%5.0f trans/sec", (double) metrics.getValue(PLATFORM_CATEGORY, "trans/sec"));
-            print(g, "%5.0f events/sec", (double) metrics.getValue(PLATFORM_CATEGORY, "events/sec"));
-            print(g, "%4.0f%% duplicate events", (double) metrics.getValue(PLATFORM_CATEGORY, "dupEv%"));
+            print(g, "%5.0f trans_per_sec", (double) metrics.getValue(PLATFORM_CATEGORY, "trans_per_sec"));
+            print(g, "%5.0f events_per_sec", (double) metrics.getValue(PLATFORM_CATEGORY, "events_per_sec"));
+            print(g, "%4.0f%% duplicate events", (double) metrics.getValue(PLATFORM_CATEGORY, "dupEvPercent"));
 
             print(g, "%5.3f sec, propagation time", createCons - recCons);
             print(g, "%5.3f sec, create to consensus", createCons);
@@ -392,10 +392,10 @@ public class HashgraphDemoMain implements SwirldMain {
                 .setAbout(
                         platform.getSelfId(),
                         "Hashgraph Demo v. 1.1\n" + "\n"
-                                + "trans/sec = # transactions added to the hashgraph per second\n"
-                                + "events/sec = # events added to the hashgraph per second\n"
+                                + "trans_per_sec = # transactions added to the hashgraph per second\n"
+                                + "events_per_sec = # events added to the hashgraph per second\n"
                                 + "duplicate events = percentage of events a member receives that they already know.\n"
-                                + "bad events/sec = number of events per second received by a member that are invalid.\n"
+                                + "bad events_per_sec = number of events per second received by a member that are invalid.\n"
                                 + "propagation time = average seconds from creating a new event to a given member receiving it.\n"
                                 + "create to consensus = average seconds from creating a new event to knowing its consensus order.\n"
                                 + "receive to consensus = average seconds from receiving an event to knowing its consensus order.\n"

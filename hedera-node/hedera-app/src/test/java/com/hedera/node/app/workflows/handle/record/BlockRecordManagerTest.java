@@ -34,7 +34,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;

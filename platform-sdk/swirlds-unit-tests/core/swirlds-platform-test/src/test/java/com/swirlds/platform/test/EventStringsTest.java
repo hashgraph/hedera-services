@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -29,8 +30,6 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Event Strings Test")
 class EventStringsTest {
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test event strings")
     void testCopy() {
