@@ -100,7 +100,7 @@ public abstract class OutputWire<OUT> {
      * provided.
      *
      * @param inputWires – an ordered list of the input wire to forward output data to
-     * @throws IllegalArgumentException is the size of {@code inputWires} is less than 2
+     * @throws IllegalArgumentException if the size of {@code inputWires} is less than 2
      * @see #solderTo(InputWire)
      */
     public void orderedSolderTo(@NonNull final List<InputWire<OUT>> inputWires) {
