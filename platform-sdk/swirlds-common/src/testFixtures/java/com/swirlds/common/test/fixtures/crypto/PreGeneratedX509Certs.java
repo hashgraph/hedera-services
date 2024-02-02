@@ -137,7 +137,7 @@ public class PreGeneratedX509Certs {
     }
 
     /**
-     * Retrieves a pre-generated X.509 certificate for agreeing purposes.
+     * Retrieves a pre-generated X.509 certificate for TLS agreement use.
      *
      * @param nodeId the node ID
      * @return the X.509 certificate
