@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -95,10 +95,10 @@ class EventSignatureValidatorTests {
      */
     private static Address generateMockAddress(final @NonNull NodeId nodeId) {
         final PublicKey publicKey = mock(PublicKey.class);
-        final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
-        when(serializablePublicKey.getPublicKey()).thenReturn(publicKey);
+        final SerializableX509Certificate serializableX509Certificate = mock(SerializableX509Certificate.class);
+        when(serializableX509Certificate.getPublicKey()).thenReturn(publicKey);
 
-        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, "");
+        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializableX509Certificate, null, "");
     }
 
     /**
@@ -204,10 +204,10 @@ class EventSignatureValidatorTests {
     @DisplayName("Node has a null public key")
     void missingPublicKey() {
         final NodeId nodeId = new NodeId(88);
-        final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
-        when(serializablePublicKey.getPublicKey()).thenReturn(null);
+        final SerializableX509Certificate serializableX509Certificate = mock(SerializableX509Certificate.class);
+        when(serializableX509Certificate.getPublicKey()).thenReturn(null);
         final Address nodeAddress =
-                new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, "");
+                new Address(nodeId, "", "", 10, null, 77, null, 88, serializableX509Certificate, null, "");
 
         currentAddressBook.add(nodeAddress);
 

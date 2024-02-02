@@ -381,7 +381,7 @@ public final class CryptoStatic {
      * @throws KeyStoreException    if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
     @NonNull
-    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
+    public static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
             throws ExecutionException, InterruptedException, KeyStoreException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
 
@@ -448,10 +448,10 @@ public final class CryptoStatic {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
-            PublicKey sigKey = publicStores.getPublicKey(KeyCertPurpose.SIGNING, name);
-            PublicKey agrKey = publicStores.getPublicKey(KeyCertPurpose.AGREEMENT, name);
+            final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, name);
+            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
             addressBook.add(
-                    addressBook.getAddress(nodeId).copySetSigPublicKey(sigKey).copySetAgreePublicKey(agrKey));
+                    addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
         }
     }
 
