@@ -595,12 +595,12 @@ public class SyncTests {
     void fallenBehind(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 100, 20, 20, ancientMode);
 
-        final long callerMinGen = 100;
-        final long callerMaxGen = 200;
-        final long listenerMinGen = 300;
-        final long listenerMaxGen = 400;
+        final long callerExpiredThreshold = 100;
+        final long callerMaxGen = 200; // TODO
+        final long listenerExpiredThreshold = 300;
+        final long listenerMaxGen = 400; // TODO
 
-        runFallenBehindTest(params, callerMinGen, callerMaxGen, listenerMinGen, listenerMaxGen);
+        runFallenBehindTest(params, callerExpiredThreshold, callerMaxGen, listenerExpiredThreshold, listenerMaxGen);
     }
 
     /**
@@ -677,39 +677,39 @@ public class SyncTests {
         final SyncTestParams params = new SyncTestParams(4, 200, 200, 0, ancientMode);
         final SyncTestExecutor executor = new SyncTestExecutor(params);
 
-        executor.setGenerationDefinitions((caller, listener) -> {
-            long listenerMaxGen =
-                    SyncTestUtils.getMaxGen(listener.getShadowGraph().getTips());
-            // make the min non-ancient gen slightly below the max gen
-            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen / 10);
-            long listenerMinGen = SyncTestUtils.getMinGen(listener.getShadowGraph()
-                    .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
+        executor.setEventWindowDefinitions((caller, listener) -> {
+            long listenerMaxIndicator =
+                    SyncTestUtils.getMaxIndicator(listener.getShadowGraph().getTips(), ancientMode);
+            // make the min non-ancient indicator slightly below the max indicator
+            long listenerNonAncientThreshold = listenerMaxIndicator - (listenerMaxIndicator / 10);
+            long listenerMinIndicator = SyncTestUtils.getMinIndicator(listener.getShadowGraph()
+                    .findAncestors(listener.getShadowGraph().getTips(), (e) -> true), ancientMode);
 
-            // Expire everything below the listener's min non-ancient gen on the caller
-            // so that the listener's maxGen == caller's min non-ancient gen
-            caller.expireBelow(listenerMinNonAncient);
+            // Expire everything below the listener's min non-ancient indicator on the caller
+            // so that the listener's maxIndicator == caller's min non-ancient indicator
+            caller.expireBelow(listenerNonAncientThreshold);
 
-            long callerMaxGen = SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips());
-            // make the min non-ancient gen slightly below the max gen
-            long callerMinNonAncient = callerMaxGen - (callerMaxGen / 10);
-            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph()
-                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
+            long callerMaxIndicator = SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
+            // make the min non-ancient indicator slightly below the max indicator
+            long callerNonAncientThreshold = callerMaxIndicator - (callerMaxIndicator / 10);
+            long callerMinIndicator = SyncTestUtils.getMinIndicator(caller.getShadowGraph()
+                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true), ancientMode);
 
-            assertEquals(listenerMinNonAncient, callerMinGen, "listener max gen and caller min gen should be equal.");
+            assertEquals(listenerNonAncientThreshold, callerMinIndicator, "listener max indicator and caller min indicator should be equal.");
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
                             ROUND_FIRST /* ignored */,
-                            listenerMinNonAncient,
-                            listenerMinGen,
-                            GENERATION_THRESHOLD)); // TODO
+                            listenerNonAncientThreshold,
+                            listenerMinIndicator,
+                            ancientMode));
 
             caller.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
                             ROUND_FIRST /* ignored */,
-                            callerMinNonAncient,
-                            callerMinGen,
-                            GENERATION_THRESHOLD)); // TODO
+                            callerNonAncientThreshold,
+                            callerMinIndicator,
+                            ancientMode));
         });
 
         executor.execute();
@@ -752,7 +752,7 @@ public class SyncTests {
 
         // we save the max generation of node 0, so we know what we need to expire to remove a tip
         executor.setCustomPreSyncConfiguration((caller, listener) ->
-                genToExpire.set(SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips())));
+                genToExpire.set(SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode)));
 
         executor.execute();
 
@@ -1078,10 +1078,10 @@ public class SyncTests {
             caller.setSaveGeneratedEvents(true);
             listener.setSaveGeneratedEvents(true);
         });
-        executor.setGenerationDefinitions((caller, listener) -> {
-            long callerMaxGen = SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips());
-            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph()
-                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
+        executor.setEventWindowDefinitions((caller, listener) -> {
+            long callerMaxGen = SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
+            long callerMinGen = SyncTestUtils.getMinIndicator(caller.getShadowGraph()
+                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true), ancientMode);
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(

@@ -17,8 +17,6 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -26,6 +24,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -68,16 +67,22 @@ public class SyncTestExecutor {
     private BiConsumer<SyncNode, SyncNode> generationDefinitions;
     private Predicate<IndexedEvent> callerAddToGraphTest;
     private Predicate<IndexedEvent> listenerAddToGraphTest;
-    /** A randomly generated address book from the number of nodes in the parameters of the test. */
+    private final AncientMode ancientMode;
+
+    /**
+     * A randomly generated address book from the number of nodes in the parameters of the test.
+     */
     private AddressBook addressBook;
 
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
+        this.ancientMode = params.getAncientMode();
         this.addressBook = new RandomAddressBookGenerator()
                 .setSize(params.getNumNetworkNodes())
                 .build();
 
-        factoryConfig = (f) -> {};
+        factoryConfig = (f) -> {
+        };
         callerExecutorSupplier = () -> {
             final CachedPoolParallelExecutor executor =
                     new CachedPoolParallelExecutor(getStaticThreadManager(), "sync-node");
@@ -105,10 +110,13 @@ public class SyncTestExecutor {
                 node.setSaveGeneratedEvents(true);
             }
         };
-        customInitialization = (caller, listener) -> {};
-        graphCustomization = (caller, listener) -> {};
-        generationDefinitions = getDefaultGenerationDefinitions();
-        customPreSyncConfiguration = (caller, listener) -> {};
+        customInitialization = (caller, listener) -> {
+        };
+        graphCustomization = (caller, listener) -> {
+        };
+        generationDefinitions = updateDefaultEventWindow();
+        customPreSyncConfiguration = (caller, listener) -> {
+        };
         callerAddToGraphTest = (indexedEvent -> true);
         listenerAddToGraphTest = (indexedEvent -> true);
         connectionFactory = ConnectionFactory::createLocalConnections;
@@ -179,7 +187,7 @@ public class SyncTestExecutor {
      *     <li>Caller Graph Additions</li>
      *     <li>Listener Graph Additions</li>
      * </ol>
-     *
+     * <p>
      * Does not include graph validation.
      */
     private void createGraphs() {
@@ -192,49 +200,41 @@ public class SyncTestExecutor {
         generationDefinitions.accept(caller, listener);
     }
 
-    private BiConsumer<SyncNode, SyncNode> getDefaultGenerationDefinitions() {
+    private BiConsumer<SyncNode, SyncNode> updateDefaultEventWindow() {
         return (caller, listener) -> {
-            List<ShadowEvent> callerTips = caller.getShadowGraph().getTips();
-            List<ShadowEvent> listenerTips = listener.getShadowGraph().getTips();
+            final List<ShadowEvent> callerTips = caller.getShadowGraph().getTips();
+            final List<ShadowEvent> listenerTips = listener.getShadowGraph().getTips();
 
-            long listenerMinGen =
-                    SyncTestUtils.getMinGen(listener.getShadowGraph().findAncestors(listenerTips, (e) -> true));
-            long listenerMaxGen = SyncTestUtils.getMaxGen(listenerTips);
-            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph().findAncestors(callerTips, (e) -> true));
-            long callerMaxGen = SyncTestUtils.getMaxGen(callerTips);
+            final long listenerExpiredThreshold =
+                    SyncTestUtils.getMinIndicator(listener.getShadowGraph().findAncestors(listenerTips, (e) -> true),
+                            ancientMode);
+            final long listenerMaxIndicator = SyncTestUtils.getMaxIndicator(listenerTips, ancientMode);
+            final long callerExpiredThreshold = SyncTestUtils.getMinIndicator(
+                    caller.getShadowGraph().findAncestors(callerTips, (e) -> true), ancientMode);
+            final long callerMaxIndicator = SyncTestUtils.getMaxIndicator(callerTips, ancientMode);
 
-            long listenerMinNonAncientGen = listenerMinGen;
-            double listenerDif = listenerMaxGen - listenerMinGen;
+            long listenerAncientThreshold = listenerExpiredThreshold;
+            final double listenerDif = listenerMaxIndicator - listenerExpiredThreshold;
             if (listenerDif >= 3) {
-                listenerMinNonAncientGen += Math.floor(listenerDif / 3);
+                listenerAncientThreshold += Math.floor(listenerDif / 3);
             } else if (listenerDif == 2) {
-                listenerMinNonAncientGen++;
+                listenerAncientThreshold++;
             }
 
-            long callerMinNonAncientGen = callerMinGen;
-            double callerDif = callerMaxGen - callerMinGen;
+            long callerAncientThreshold = callerExpiredThreshold;
+            final double callerDif = callerMaxIndicator - callerExpiredThreshold;
             if (callerDif >= 3) {
-                callerMinNonAncientGen += Math.floor(callerDif / 3);
+                callerAncientThreshold += Math.floor(callerDif / 3);
             } else if (callerDif == 2) {
-                callerMinNonAncientGen++;
+                callerAncientThreshold++;
             }
-
-            // TODO
-            //            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            //            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
-            //            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncientGen);
 
             caller.updateEventWindow(new NonAncientEventWindow(
-                    ROUND_FIRST, callerMinNonAncientGen, callerMinGen, GENERATION_THRESHOLD)); // TODO
-
-            // TODO
-            //            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
-            //            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
-            //
-            // when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncientGen);
+                    ancientMode.getGenesisIndicator(), callerAncientThreshold, callerExpiredThreshold, ancientMode));
 
             listener.updateEventWindow(new NonAncientEventWindow(
-                    ROUND_FIRST, listenerMinNonAncientGen, listenerMinGen, GENERATION_THRESHOLD)); // TODO
+                    ancientMode.getGenesisIndicator(), listenerAncientThreshold, listenerExpiredThreshold,
+                    ancientMode));
         };
     }
 
@@ -267,8 +267,7 @@ public class SyncTestExecutor {
     }
 
     /**
-     * @param executorSupplier
-     * 		supplies the ParallelExecutor for both of the {@link SyncNode}s
+     * @param executorSupplier supplies the ParallelExecutor for both of the {@link SyncNode}s
      */
     public void setExecutorSupplier(final Supplier<ParallelExecutor> executorSupplier) {
         this.callerExecutorSupplier = executorSupplier;
@@ -290,21 +289,20 @@ public class SyncTestExecutor {
     }
 
     /**
-     * @param factoryConfig
-     * 		a method that configures the event factory for the particular test
+     * @param factoryConfig a method that configures the event factory for the particular test
      */
     public void setFactoryConfig(final Consumer<EventEmitterFactory> factoryConfig) {
         this.factoryConfig = factoryConfig;
     }
 
     /**
-     * Sets a custom generation definition function that defines what generations the caller and listener will use in
+     * Sets a custom event window definition function that defines what generations the caller and listener will use in
      * the sync.
      *
-     * @param generationDefinitions
+     * @param eventWindowDefinitions
      */
-    public void setGenerationDefinitions(final BiConsumer<SyncNode, SyncNode> generationDefinitions) {
-        this.generationDefinitions = generationDefinitions;
+    public void setEventWindowDefinitions(final BiConsumer<SyncNode, SyncNode> eventWindowDefinitions) {
+        this.generationDefinitions = eventWindowDefinitions;
     }
 
     /**
@@ -330,9 +328,8 @@ public class SyncTestExecutor {
      * {@link ParallelExecutor} or an {@link EventEmitter} other than a {@link ShuffledEventEmitter}.</p>
      *
      * <p>Please note that is an {@link EventEmitter} other than {@link ShuffledEventEmitter} is used to create this
-     * node, the {@link SyncTestExecutor#setInitialGraphCreation(BiConsumer)} must be called with a compatible {@link
-     * BiConsumer}
-     * .</p>
+     * node, the {@link SyncTestExecutor#setInitialGraphCreation(BiConsumer)} must be called with a compatible
+     * {@link BiConsumer} .</p>
      */
     public void setListenerSupplier(final Function<EventEmitterFactory, SyncNode> listenerSupplier) {
         this.listenerSupplier = listenerSupplier;
@@ -351,10 +348,11 @@ public class SyncTestExecutor {
     }
 
     /**
-     * Defines the custom initialization function to be performed after common initialization of the caller and
-     * listener nodes but before graph creation.
-     *
-     * For example, this could be used to turn on saving events for one or both of the node prior to any event creation.
+     * Defines the custom initialization function to be performed after common initialization of the caller and listener
+     * nodes but before graph creation.
+     * <p>
+     * For example, this could be used to turn on saving events for one or both of the node prior to any event
+     * creation.
      *
      * @param customInitialization
      */
@@ -363,10 +361,10 @@ public class SyncTestExecutor {
     }
 
     /**
-     * Defines a graph customization function to be performed after initial graph creation, but before {@link
-     * SyncTestParams#getNumCallerEvents()} and {@link SyncTestParams#getNumListenerEvents()}
-     * events are added to the caller and listener shadow graphs.
-     *
+     * Defines a graph customization function to be performed after initial graph creation, but before
+     * {@link SyncTestParams#getNumCallerEvents()} and {@link SyncTestParams#getNumListenerEvents()} events are added to
+     * the caller and listener shadow graphs.
+     * <p>
      * For example, this method could be used to setup the sync nodes to partition for the remaining events.
      *
      * @param graphCustomization
@@ -395,9 +393,8 @@ public class SyncTestExecutor {
     }
 
     /**
-     * Defines a custom predicate that determines if listener events generated after the common events should be
-     * added to
-     * the caller's shadow graph.
+     * Defines a custom predicate that determines if listener events generated after the common events should be added
+     * to the caller's shadow graph.
      *
      * @param listenerAddToGraphTest
      */
