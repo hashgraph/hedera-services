@@ -321,7 +321,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -340,7 +341,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -364,7 +366,8 @@ public class SyncTests {
 
         // Some extra events could be transferred in the case of a split fork graph. This is explicitly tested in
         // splitForkGraph()
-        SyncValidator.assertRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -408,7 +411,8 @@ public class SyncTests {
         // In split fork graphs, some extra events will be sent because each node has a different tip for the same
         // creator, causing each to think the other does not have any ancestors of that creator's event when they in
         // fact do.
-        SyncValidator.assertRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -451,7 +455,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -595,7 +600,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
     }
 
     /**
@@ -750,7 +756,7 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener(), ancientMode);
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -792,7 +798,7 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener(), ancientMode);
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -827,9 +833,9 @@ public class SyncTests {
             caller.setSaveGeneratedEvents(true);
             listener.setSaveGeneratedEvents(true);
 
-            // As a hack, birth round and generation of events created by the generator are the same,
-            // so this works for both.
-            maximumIndicator.set(caller.getEmitter().getGraphGenerator().getMaxGeneration(creatorIdToExpire));
+            // As a hack, birth round is equal to generation + 1
+            maximumIndicator.set(caller.getEmitter().getGraphGenerator().getMaxGeneration(creatorIdToExpire)
+                    + (params.getAncientMode() == BIRTH_ROUND_THRESHOLD ? 1 : 0));
         });
 
         // before the sync, expire the tip on the listener
@@ -863,7 +869,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -900,7 +907,8 @@ public class SyncTests {
 
         // since we get a new set of tips before phase 3, it is possible to transfer some duplicate events that were
         // added after the initial tips were exchanged
-        SyncValidator.assertRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -937,7 +945,8 @@ public class SyncTests {
 
         // since we get a new set of tips before phase 3, it is possible to transfer some duplicate events that were
         // added after the initial tips were exchanged
-        SyncValidator.assertRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -981,7 +990,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 
@@ -1044,7 +1054,8 @@ public class SyncTests {
 
         executor.execute();
 
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(
+                executor.getCaller(), executor.getListener(), params.getAncientMode());
     }
 
     @ParameterizedTest
@@ -1118,7 +1129,7 @@ public class SyncTests {
                             ancientMode));
         });
         executor.execute();
-        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener(), ancientMode);
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 }

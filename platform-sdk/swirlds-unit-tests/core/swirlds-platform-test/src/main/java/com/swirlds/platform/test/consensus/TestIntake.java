@@ -241,7 +241,7 @@ public class TestIntake implements LoadableFromSignedState {
                 ROUND_FIRST,
                 consensus.getMinGenerationNonAncient(),
                 consensus.getMinGenerationNonAncient(),
-                GENERATION_THRESHOLD); // TODO
+                GENERATION_THRESHOLD);
 
         shadowGraph.startWithEventWindow(eventWindow);
     }

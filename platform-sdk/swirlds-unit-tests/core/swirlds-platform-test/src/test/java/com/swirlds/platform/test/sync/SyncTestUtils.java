@@ -44,7 +44,7 @@ public class SyncTestUtils {
     }
 
     public static long getMaxIndicator(final List<ShadowEvent> tips, @NonNull final AncientMode ancientMode) {
-        long maxIndicator = 0;
+        long maxIndicator = ancientMode.getGenesisIndicator();
         for (final ShadowEvent tip : tips) {
             maxIndicator = Math.max(tip.getEvent().getBaseEvent().getAncientIndicator(ancientMode), maxIndicator);
         }
@@ -56,6 +56,6 @@ public class SyncTestUtils {
         for (final ShadowEvent event : events) {
             minIndicator = Math.min(event.getEvent().getBaseEvent().getAncientIndicator(ancientMode), minIndicator);
         }
-        return minIndicator == Long.MAX_VALUE ? 0 : minIndicator;
+        return minIndicator == Long.MAX_VALUE ? ancientMode.getGenesisIndicator() : minIndicator;
     }
 }

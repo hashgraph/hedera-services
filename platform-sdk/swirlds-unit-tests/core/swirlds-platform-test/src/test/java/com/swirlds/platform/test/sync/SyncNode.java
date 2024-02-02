@@ -28,7 +28,6 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -73,7 +72,6 @@ public class SyncNode {
     private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final Shadowgraph shadowGraph;
-    private final Consensus consensus;
     private ParallelExecutor executor;
     private Connection connection;
     private boolean saveGeneratedEvents;
@@ -81,7 +79,7 @@ public class SyncNode {
     private boolean reconnected = false;
     private final AncientMode ancientMode;
 
-    private long oldestAncientIndicator;
+    private long expirationThreshold;
 
     private Exception syncException;
     private final AtomicInteger sleepAfterEventReadMillis = new AtomicInteger(0);
@@ -144,7 +142,6 @@ public class SyncNode {
                 .build();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
-        consensus = mock(Consensus.class);
         this.executor = executor;
     }
 
@@ -243,7 +240,10 @@ public class SyncNode {
 
         // The original sync tests are incompatible with event filtering.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(
+                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                        ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
@@ -267,18 +267,20 @@ public class SyncNode {
      * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
      * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
      * becomes the oldest non-expired ancient indicator in the shadow graph returned by
-     * {@link SyncNode#getOldestAncientIndicator()} . In order words, these tests assume there are no reservations prior
+     * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior
      * to the sync that occurs in the test.</p>
      *
-     * <p>The {@link SyncNode#getOldestAncientIndicator()} value is used to determine which events should not be send
+     * <p>The {@link SyncNode#getExpirationThreshold()} value is used to determine which events should not be send
      * to
      * the peer because they are expired.</p>
      */
-    public void expireBelow(final long expireBelow) {
-        this.oldestAncientIndicator = expireBelow;
+    public void expireBelow(final long expirationThreshold) {
+        this.expirationThreshold = expirationThreshold;
+
+        final long ancientThreshold = shadowGraph.getEventWindow().getAncientThreshold();
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, ancientMode.getGenesisIndicator(), expireBelow, ancientMode);
+                0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
 
         updateEventWindow(eventWindow);
     }
@@ -303,6 +305,8 @@ public class SyncNode {
      * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
      */
     public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+        // TODO
+        System.out.println(eventWindow);
         shadowGraph.updateEventWindow(eventWindow);
     }
 
@@ -350,17 +354,12 @@ public class SyncNode {
         this.executor = executor;
     }
 
-    // TODO this needs to be removed
-    public Consensus getConsensus() {
-        return consensus;
-    }
-
     public long getCurrentAncientThreshold() {
         return shadowGraph.getEventWindow().getAncientThreshold();
     }
 
-    public long getOldestAncientIndicator() {
-        return oldestAncientIndicator;
+    public long getExpirationThreshold() {
+        return expirationThreshold;
     }
 
     public int getSleepAfterEventReadMillis() {

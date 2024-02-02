@@ -77,13 +77,6 @@ public class Shadowgraph implements Clearable {
      */
     private final HashSet<ShadowEvent> tips;
 
-    //    /**
-    //     * The indicator describing the expiration boundary. All events with an older (smaller) ancient indicator
-    // should be
-    //     * expired, when possible.
-    //     */
-    //    private long expireBelow;
-
     /**
      * The oldest ancient indicator that has not yet been expired
      */

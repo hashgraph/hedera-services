@@ -171,6 +171,8 @@ public class ShadowgraphSynchronizer {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+
+        System.out.println("asdfasdf");
     }
 
     /**

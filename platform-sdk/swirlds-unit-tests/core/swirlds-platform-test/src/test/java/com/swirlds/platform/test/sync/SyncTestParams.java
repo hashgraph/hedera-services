@@ -48,8 +48,6 @@ public class SyncTestParams {
         this.ancientMode = Objects.requireNonNull(ancientMode);
     }
 
-    // TODO add parameter for ancient mode
-
     public SyncTestParams(
             final int numNetworkNodes,
             final int numCommonEvents,
