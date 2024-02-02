@@ -108,8 +108,7 @@ public class TokenAssociationsDumpUtils {
 
     @NonNull
     private static String formatHeader() {
-        return "accountId,tokenId,"
-                + fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
+        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
     }
 
     // spotless:off
