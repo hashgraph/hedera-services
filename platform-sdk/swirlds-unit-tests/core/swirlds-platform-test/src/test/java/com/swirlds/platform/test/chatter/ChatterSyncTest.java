@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
@@ -30,7 +31,6 @@ import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;

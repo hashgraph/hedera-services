@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.sync;
 
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CompareTo.max;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,6 +36,7 @@ import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
@@ -49,7 +50,6 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.platform.test.graph.PartitionedGraphCreator;
 import com.swirlds.platform.test.graph.SplitForkGraphCreator;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
 import java.util.List;

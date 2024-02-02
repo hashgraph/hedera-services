@@ -198,6 +198,22 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
+    void fromHapiCallGenerateExceptionTransaction() {
+        final var transaction = getManufacturedCallException(
+                b -> b.contractID(CALLED_CONTRACT_ID).gas(30_000L));
+        assertEquals(AccountID.DEFAULT, transaction.senderId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(Bytes.EMPTY, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(0L, transaction.value());
+        assertEquals(30_000L, transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNull(transaction.hapiCreation());
+    }
+
+    @Test
     void fromHapiCallUsesCallParamsWhenSet() {
         final var transaction = getManufacturedCall(b -> b.amount(123L)
                 .functionParameters(CALL_DATA)
@@ -619,6 +635,16 @@ class HevmTransactionFactoryTest {
                 .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
                 .contractCall(callWith(spec))
                 .build());
+    }
+
+    private HederaEvmTransaction getManufacturedCallException(
+            @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
+        return subject.fromContractTxException(
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder())
+                        .contractCall(callWith(spec))
+                        .build(),
+                new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     private ContractCreateTransactionBody createWith(final Consumer<ContractCreateTransactionBody.Builder> spec) {

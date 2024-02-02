@@ -17,11 +17,11 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.test.logging.MockAppender;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
