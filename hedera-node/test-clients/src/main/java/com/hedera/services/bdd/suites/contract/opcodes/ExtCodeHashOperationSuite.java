@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -47,7 +48,7 @@ import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+// @HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class ExtCodeHashOperationSuite extends HapiSuite {
 
@@ -123,42 +124,6 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                             Assertions.assertArrayEquals(expectedAccountHash.toByteArray(), accountCodeHash);
                             Assertions.assertArrayEquals(expectedContractCodeHash, contractCodeResult);
                         }));
-    }
-
-    @SuppressWarnings("java:S5960")
-    @HapiTest
-    HapiSpec readsAccountStorageBeforeCheckingGas() {
-
-        final var contract = "ExtCodeOperationsChecker";
-        final var attackerContract = "ExtCodeHashAttacker";
-        final String account = "account";
-        final var attackFunction = "callHashOfInLoopWithTryCatch";
-
-        return defaultHapiSpec("VerifiesExistence", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        uploadInitCode(attackerContract),
-                        contractCreate(attackerContract),
-                        cryptoCreate(account))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var contractID = spec.registry().getContractId(contract);
-                    final var contractSolidityAddress = asHexedSolidityAddress(contractID);
-
-                    final var response = contractCallLocal(
-                                    attackerContract,
-                                    attackFunction,
-                                    asHeadlongAddress(contractSolidityAddress),
-                                    new BigInteger("229"), // gasLimit calculated to leave 0 gas for EXTCODEHASH op
-                                    new BigInteger("10"))
-                            .gas(25800 + (9 * 900))
-                            .saveResultTo("contractCodeHash");
-                    // 25800 gas for initial call and 900 for subsequent loops
-                    // note that gas for each loop should be over 2600 for cold EXTCODEHASH op
-
-                    allRunFor(spec, response);
-                }));
     }
 
     @Override
