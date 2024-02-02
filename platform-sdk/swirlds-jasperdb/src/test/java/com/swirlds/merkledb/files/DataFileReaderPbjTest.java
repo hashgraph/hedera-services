@@ -9,13 +9,10 @@ import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 
 class DataFileReaderPbjTest {
 
@@ -59,7 +56,7 @@ class DataFileReaderPbjTest {
 
         // verifying even distribution
         for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
-            assertEquals(8, dataFileReaderPbj.fileChannelsLeases.get(i));
+            assertEquals(8, dataFileReaderPbj.fileChannelLeases.get(i));
         }
 
         assertEquals(0, dataFileReaderPbj.leaseFileChannel());

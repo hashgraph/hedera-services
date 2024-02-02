@@ -105,7 +105,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     protected final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
-    protected final AtomicIntegerArray fileChannelsLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
+    protected final AtomicIntegerArray fileChannelLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
 
     /** Indicates whether this file reader is open */
     private final AtomicBoolean open = new AtomicBoolean(true);
@@ -346,27 +346,27 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         if (((float) inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();
-            int lease = count - 1;
-            fileChannelsLeases.incrementAndGet(lease);
-            return lease;
+            final int newChannelLease = count - 1;
+            fileChannelLeases.incrementAndGet(newChannelLease);
+            return newChannelLease;
         }
         // find a channel with the least number of leases
         // it's an estimate, as the number of leases may change while we're iterating, but it's good enough
         int minCount = Integer.MAX_VALUE;
-        int lease = 0;
+        int channelLease = 0;
         for (int i = 0; i < count; i++) {
-            int currentLeaseCount = fileChannelsLeases.get(i);
+            final int currentLeaseCount = fileChannelLeases.get(i);
             if(currentLeaseCount == 0) {
-                lease = i;
+                channelLease = i;
                 break;
             }
             if(minCount > currentLeaseCount) {
                 minCount = currentLeaseCount;
-                lease = i;
+                channelLease = i;
             }
         }
-        fileChannelsLeases.incrementAndGet(lease);
-        return lease;
+        fileChannelLeases.incrementAndGet(channelLease);
+        return channelLease;
     }
 
     /**
@@ -374,7 +374,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      * @param fcIndex Index of the file channel to release
      */
     protected void releaseFileChannel(int fcIndex) {
-        fileChannelsLeases.decrementAndGet(fcIndex);
+        fileChannelLeases.decrementAndGet(fcIndex);
         fileChannelsInUse.decrementAndGet();
     }
 
