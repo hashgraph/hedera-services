@@ -73,6 +73,7 @@ public class OrderedComparison {
         System.out.println("Parsing stream @ " + secondStreamDir);
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, watchingPredicate);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
+        // FUTURE: Add a step to align consensus times in the two streams when any record is missing
         return diff(firstEntries, secondEntries, recordDiffSummarizer);
     }
 
@@ -153,6 +154,9 @@ public class OrderedComparison {
             @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
         final var secondEntry = entries.get(i);
+        if (secondEntry == null) {
+            throw new UnmatchableException("No matching entry found for entry at position " + i);
+        }
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
             throw new UnmatchableException("Entries at position "
                     + i
