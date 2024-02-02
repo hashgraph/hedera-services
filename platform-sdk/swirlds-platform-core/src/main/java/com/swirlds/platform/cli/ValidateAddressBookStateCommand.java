@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -26,75 +23,78 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.consensus.SyntheticSnapshot;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.system.address.AddressBookValidator;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.ParseException;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 
 @CommandLine.Command(
-        name = "genesis",
+        name = "validateAddressBook",
         mixinStandardHelpOptions = true,
-        description = "Edit an existing state by replacing the platform state with a new genesis state.")
+        description = "Validates the given address book as a successor to the address book in the given state.")
 @SubcommandOf(StateCommand.class)
-public class GenesisPlatformStateCommand extends AbstractCommand {
+public class ValidateAddressBookStateCommand extends AbstractCommand {
     private Path statePath;
-    private Path outputDir;
+    private Path addressBookPath;
 
     /**
      * The path to state to edit
      */
-    @CommandLine.Parameters(description = "The path to the state to edit", index = "0")
+    @CommandLine.Parameters(description = "The path to the state", index = "0")
     private void setStatePath(final Path statePath) {
         this.statePath = pathMustExist(statePath.toAbsolutePath());
     }
 
     /**
-     * The path to the output directory
+     * The path to the address book to validate
      */
-    @CommandLine.Parameters(description = "The path to the output directory", index = "1")
-    private void setOutputDir(final Path outputDir) {
-        this.outputDir = dirMustExist(outputDir.toAbsolutePath());
+    @CommandLine.Parameters(description = "The path to the address book to validate as a successor", index = "1")
+    private void setAddressBookPath(final Path addressBookPath) {
+        this.addressBookPath = pathMustExist(addressBookPath.toAbsolutePath());
     }
 
     @Override
-    public Integer call() throws IOException, ExecutionException, InterruptedException {
+    public Integer call() throws IOException, ExecutionException, InterruptedException, ParseException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
-        System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
+        System.out.printf("Reading state from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
+
+        System.out.printf("Reading address book from %s %n", addressBookPath.toAbsolutePath());
+        final String addressBookString = Files.readString(addressBookPath);
+        final AddressBook addressBook = AddressBookUtils.parseAddressBookText(addressBookString);
+
+        final AddressBook stateAddressBook;
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformState platformState =
                     reservedSignedState.get().getState().getPlatformState();
-            System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformData.GENESIS_ROUND);
-            platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
-            System.out.printf("Nullifying Address Books %n");
-            platformState.setAddressBook(null);
-            platformState.setPreviousAddressBook(null);
-            System.out.printf("Hashing state %n");
-            MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(reservedSignedState.get().getState())
-                    .get();
-            System.out.printf("Writing modified state to %s %n", outputDir.toAbsolutePath());
-            writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, outputDir, reservedSignedState.get());
+            System.out.printf("Extracting the state address book for comparison %n");
+            stateAddressBook = platformState.getAddressBook();
         }
 
+        System.out.printf("Validating address book %n");
+        // if the address book is not valid an exception will be thrown which will propagate up to the CLI
+        AddressBookValidator.validateNewAddressBook(stateAddressBook, addressBook);
+
+        System.out.printf("PASS: The address book is valid as a successor to the state's address book %n");
         return 0;
     }
 }

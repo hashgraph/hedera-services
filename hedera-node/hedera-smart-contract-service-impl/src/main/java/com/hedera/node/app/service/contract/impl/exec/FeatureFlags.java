@@ -79,4 +79,12 @@ public interface FeatureFlags {
         return false;
     }
     ;
+
+    /**
+     *  If true, charge intrinsic gas for calls that fail with a pre-EVM exception.
+     * @return true whether to  charge intrinsic gas for calls that fail with a pre-EVM exception.
+     */
+    default boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
+        return false;
+    }
 }
