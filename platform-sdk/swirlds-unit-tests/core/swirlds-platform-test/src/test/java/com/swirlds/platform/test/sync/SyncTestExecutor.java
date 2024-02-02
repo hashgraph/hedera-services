@@ -229,14 +229,12 @@ public class SyncTestExecutor {
                 callerAncientThreshold++;
             }
 
-            System.out.println("caller event window"); // TODO
             caller.updateEventWindow(new NonAncientEventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), callerAncientThreshold),
                     Math.max(ancientMode.getGenesisIndicator(), callerExpiredThreshold),
                     ancientMode));
 
-            System.out.println("listener event window"); // TODO
             listener.updateEventWindow(new NonAncientEventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), listenerAncientThreshold),

@@ -154,7 +154,7 @@ public class SyncValidator {
         final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();
         final List<GossipEvent> listenerReceivedEvents = listener.getReceivedEvents();
 
-        if (enableLogging || true) { // TODO
+        if (enableLogging) {
             printEvents("Caller's last added events", caller.getGeneratedEvents());
             printEvents("Listener's last added events", listener.getGeneratedEvents());
 

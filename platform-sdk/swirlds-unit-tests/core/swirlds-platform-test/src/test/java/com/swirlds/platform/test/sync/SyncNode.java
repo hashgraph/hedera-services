@@ -305,7 +305,6 @@ public class SyncNode {
      * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
      */
     public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
-        // TODO
         System.out.println(eventWindow);
         shadowGraph.updateEventWindow(eventWindow);
     }

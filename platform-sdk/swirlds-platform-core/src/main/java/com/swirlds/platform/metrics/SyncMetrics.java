@@ -40,8 +40,6 @@ import com.swirlds.platform.system.PlatformStatNames;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 
-// TODO rename all metrics that reference generations!
-
 /**
  * Interface to update relevant sync statistics
  */
@@ -139,7 +137,7 @@ public class SyncMetrics {
 
     private final RunningAverageMetric tipsPerSync;
 
-    private final AverageStat syncGenerationDiff;
+    private final AverageStat syncIndicatorDiff;
     private final AverageStat eventRecRate;
     private final AverageTimeStat avgSyncDuration1;
     private final AverageTimeStat avgSyncDuration2;
@@ -195,11 +193,11 @@ public class SyncMetrics {
                 "number of events received per successful sync",
                 FORMAT_8_1);
 
-        syncGenerationDiff = new AverageStat(
+        syncIndicatorDiff = new AverageStat(
                 metrics,
                 INTERNAL_CATEGORY,
-                "syncGenDiff",
-                "number of generation ahead (positive) or behind (negative) when syncing",
+                "syncIndicatorDiff",
+                "number of ancient indicators ahead (positive) or behind (negative) when syncing",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);
         eventRecRate = new AverageStat(
@@ -266,7 +264,7 @@ public class SyncMetrics {
      * @param other event window of their graph at the start of the sync
      */
     public void eventWindow(@NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
-        syncGenerationDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
+        syncIndicatorDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
     /**
