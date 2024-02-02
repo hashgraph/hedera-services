@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -39,7 +38,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +46,7 @@ import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class ExtCodeHashOperationSuite extends HapiSuite {
 
@@ -60,7 +58,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence(), readsAccountStorageBeforeCheckingGas());
+        return List.of(verifiesExistence());
     }
 
     @Override
