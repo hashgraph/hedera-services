@@ -40,4 +40,9 @@ public class Version046FeatureFlags extends Version034FeatureFlags {
                         .contains(possiblyGrandFatheredEntityNum);
         return config.getConfigData(ContractsConfig.class).evmAllowCallsToNonContractAccounts() && !grandfathered;
     }
+
+    @Override
+    public boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
+        return config.getConfigData(ContractsConfig.class).chargeGasOnPreEvmException();
+    }
 }
