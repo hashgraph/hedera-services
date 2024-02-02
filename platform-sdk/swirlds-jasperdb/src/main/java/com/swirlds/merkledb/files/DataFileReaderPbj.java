@@ -105,7 +105,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     protected final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
-
+    /** Number of leases per file channel */
     protected final AtomicIntegerArray fileChannelLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
 
     /** Indicates whether this file reader is open */
@@ -344,26 +344,25 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
         // Since the channels are never closed (other than when the data file reader is closed),
         // it's safe to check count against MAX_FILE_CHANNELS
+        int channelLease = 0;
         if (((float) inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();
-            final int newChannelLease = count - 1;
-            fileChannelLeases.incrementAndGet(newChannelLease);
-            return newChannelLease;
-        }
-        // find a channel with the least number of leases
-        // it's an estimate, as the number of leases may change while we're iterating, but it's good enough
-        int minCount = Integer.MAX_VALUE;
-        int channelLease = 0;
-        for (int i = 0; i < count; i++) {
-            final int currentLeaseCount = fileChannelLeases.get(i);
-            if (currentLeaseCount == 0) {
-                channelLease = i;
-                break;
-            }
-            if (minCount > currentLeaseCount) {
-                minCount = currentLeaseCount;
-                channelLease = i;
+            channelLease = count - 1;
+        } else {
+            // find a channel with the least number of leases
+            // it's an estimate, as the number of leases may change while we're iterating, but it's good enough
+            int minCount = Integer.MAX_VALUE;
+            for (int i = 0; i < count; i++) {
+                final int currentLeaseCount = fileChannelLeases.get(i);
+                if (currentLeaseCount == 0) {
+                    channelLease = i;
+                    break;
+                }
+                if (minCount > currentLeaseCount) {
+                    minCount = currentLeaseCount;
+                    channelLease = i;
+                }
             }
         }
         fileChannelLeases.incrementAndGet(channelLease);
