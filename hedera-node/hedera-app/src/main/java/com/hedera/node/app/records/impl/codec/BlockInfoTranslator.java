@@ -46,7 +46,7 @@ public final class BlockInfoTranslator {
                 .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
                 .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
         if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
-            blockInfoBuilder.firstConsTimeOfLastBlock(Timestamp.newBuilder()
+            blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
                     .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
                     .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
                     .build());

@@ -27,7 +27,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.eventhandling.TransactionPool;
@@ -36,8 +38,6 @@ import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
@@ -59,7 +59,6 @@ class SyncManagerTest {
         public TransactionPool transactionPool;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
-        public DummyEventQueue eventQueue;
         public Configuration configuration;
 
         public SyncManagerTestData() {
@@ -82,10 +81,10 @@ class SyncManagerTest {
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
-            eventQueue = new DummyEventQueue(hashgraph);
+
             syncManager = new SyncManagerImpl(
                     platformContext,
-                    eventQueue,
+                    hashgraph::getEventIntakeQueueSize,
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,

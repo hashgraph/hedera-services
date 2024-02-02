@@ -18,13 +18,13 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.InputStream;
 import java.io.OutputStream;
 

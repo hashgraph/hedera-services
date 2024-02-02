@@ -89,6 +89,8 @@ include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
+include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
+
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
@@ -106,10 +108,6 @@ include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
-
-include(":swirlds-test-framework", "platform-sdk/swirlds-unit-tests/common/swirlds-test-framework")
-
-include(":swirlds-common-testing", "platform-sdk/swirlds-unit-tests/common/swirlds-common-test")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
@@ -145,6 +143,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.12")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.14")
     }
 }

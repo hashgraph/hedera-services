@@ -22,11 +22,12 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
 import java.io.IOException;
@@ -79,7 +80,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     protected static final FieldDefinition FIELD_BUCKET_INDEX =
             new FieldDefinition("index", FieldType.FIXED32, false, false, false, 1);
     protected static final FieldDefinition FIELD_BUCKET_ENTRIES =
-            new FieldDefinition("entries", FieldType.MESSAGE, true, false, false, 11);
+            new FieldDefinition("entries", FieldType.MESSAGE, true, true, false, 11);
 
     protected static final FieldDefinition FIELD_BUCKETENTRY_HASHCODE =
             new FieldDefinition("hashCode", FieldType.FIXED32, false, false, false, 1);
@@ -90,7 +91,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     /** Size of FIELD_BUCKET_INDEX, in bytes. */
     private static final int METADATA_SIZE =
-            ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_VARINT) + Integer.BYTES;
+            ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
 
     /** Key serializer */
     protected final KeySerializer<K> keySerializer;
@@ -124,16 +125,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     protected Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
         this.keySerializer = keySerializer;
         this.bucketPool = bucketPool;
+        this.bucketData = BufferedData.allocate(METADATA_SIZE);
         clear();
     }
 
     private void setSize(final int size) {
-        if ((bucketData == null) || bucketData.capacity() < size) {
+        if (bucketData.capacity() < size) {
             final BufferedData newData = BufferedData.allocate(size);
-            if (bucketData != null) {
-                bucketData.resetPosition();
-                newData.writeBytes(bucketData);
-            }
+            bucketData.resetPosition();
+            newData.writeBytes(bucketData);
             bucketData = newData;
         }
         bucketData.resetPosition();
@@ -166,15 +166,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     /** Get the index for this bucket */
     public int getBucketIndex() {
-        final long bucketIndexValueOffset =
-                bucketIndexFieldOffset + ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_FIXED_32_BIT);
+        final long bucketIndexValueOffset = bucketIndexFieldOffset
+                + ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT);
         return bucketData.getInt(bucketIndexValueOffset);
     }
 
     /** Set the index for this bucket */
     public void setBucketIndex(int index) {
         bucketData.position(bucketIndexFieldOffset);
-        ProtoUtils.writeTag(bucketData, FIELD_BUCKET_INDEX);
+        ProtoWriterTools.writeTag(bucketData, FIELD_BUCKET_INDEX);
         bucketData.writeInt(index);
     }
 
@@ -240,8 +240,14 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
                     bucketData.position(result.entryOffset());
                     bucketData.writeBytes(remainder);
                 }
+                if (bucketIndexFieldOffset > result.entryOffset()) {
+                    // It should not happen with default implementation, but if buckets are serialized
+                    // using 3rd-party tools, field order may be arbitrary, and "bucket index" field
+                    // may be after the deleted entry
+                    bucketIndexFieldOffset -= result.entrySize();
+                }
                 bucketData.position(0); // limit() doesn't work if the new limit is less than the current pos
-                bucketData.limit(result.entryOffset + remainderSize);
+                bucketData.limit(result.entryOffset() + remainderSize);
                 entryCount--;
             } else {
                 // entry not found, nothing to delete
@@ -261,23 +267,24 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     }
 
     private void writeNewEntry(final int hashCode, final long value, final K key) {
-        findEntry(hashCode, key);
         final long entryOffset = bucketData.limit();
         final int keySize = keySerializer.getSerializedSize(key);
-        final int entrySize = ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_FIXED_32_BIT)
-                + Integer.BYTES
-                + ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT)
-                + Long.BYTES
-                + ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
-        final int totalSize = ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
+        final int entrySize =
+                ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
+                        + Integer.BYTES
+                        + ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                        + Long.BYTES
+                        + ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
+        final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
         setSize(Math.toIntExact(entryOffset + totalSize));
         bucketData.position(entryOffset);
-        ProtoUtils.writeDelimited(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
-            ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
+        ProtoWriterTools.writeDelimited(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
+            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeInt(hashCode);
-            ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
+            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
             out.writeLong(value);
-            ProtoUtils.writeDelimited(out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
+            ProtoWriterTools.writeDelimited(
+                    out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
         });
     }
 

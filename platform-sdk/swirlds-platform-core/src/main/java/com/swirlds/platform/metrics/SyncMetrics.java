@@ -16,20 +16,18 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
 import com.swirlds.platform.network.Connection;
@@ -51,17 +49,17 @@ public class SyncMetrics {
     private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "bytes/sec_sync")
+                    PLATFORM_CATEGORY, "bytes_per_sec_sync")
             .withDescription("average number of bytes per second transferred during a sync");
     private final RunningAverageMetric avgBytesPerSecSync;
 
     private static final CountPerSecond.Config CALL_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "sync/secC")
+                    PLATFORM_CATEGORY, "sync_per_secC")
             .withDescription("(call syncs) syncs completed per second initiated by this member");
     private final CountPerSecond callSyncsPerSecond;
 
     private static final CountPerSecond.Config REC_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "sync/secR")
+                    PLATFORM_CATEGORY, "sync_per_secR")
             .withDescription("(receive syncs) syncs completed per second initiated by other member");
     private final CountPerSecond recSyncsPerSecond;
 
@@ -71,27 +69,27 @@ public class SyncMetrics {
             .withFormat(FORMAT_15_3);
 
     private static final CountPerSecond.Config INCOMING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "incomingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "incomingSyncRequests_per_sec")
             .withDescription("Incoming sync requests received per second");
     private final CountPerSecond incomingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config ACCEPTED_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
+                    PLATFORM_CATEGORY, "acceptedSyncRequests_per_sec")
             .withDescription("Incoming sync requests accepted per second");
     private final CountPerSecond acceptedSyncRequestsPerSec;
 
     private static final CountPerSecond.Config OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
+                    PLATFORM_CATEGORY, "opportunitiesToInitiateSync_per_sec")
             .withDescription("Opportunities to initiate an outgoing sync per second");
     private final CountPerSecond opportunitiesToInitiateSyncPerSec;
 
     private static final CountPerSecond.Config OUTGOING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "outgoingSyncRequests_per_sec")
             .withDescription("Outgoing sync requests sent per second");
     private final CountPerSecond outgoingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "syncs/sec")
+                    PLATFORM_CATEGORY, "syncs_per_sec")
             .withDescription("Total number of syncs completed per second");
     private final CountPerSecond syncsPerSec;
 
@@ -150,7 +148,6 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncSent;
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
-    private final AverageStat gensWaitingForExpiry;
     private final RunningAverageMetric syncFilterTime;
 
     /**
@@ -183,13 +180,17 @@ public class SyncMetrics {
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync",
+                "sec_per_sync",
                 "duration of average successful sync (in seconds)");
 
         avgEventsPerSyncSent = new AverageAndMax(
-                metrics, PLATFORM_CATEGORY, "ev/syncS", "number of events sent per successful sync", FORMAT_8_1);
+                metrics, PLATFORM_CATEGORY, "ev_per_syncS", "number of events sent per successful sync", FORMAT_8_1);
         avgEventsPerSyncRec = new AverageAndMax(
-                metrics, PLATFORM_CATEGORY, "ev/syncR", "number of events received per successful sync", FORMAT_8_1);
+                metrics,
+                PLATFORM_CATEGORY,
+                "ev_per_syncR",
+                "number of events received per successful sync",
+                FORMAT_8_1);
 
         syncGenerationDiff = new AverageStat(
                 metrics,
@@ -210,31 +211,31 @@ public class SyncMetrics {
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync1",
+                "sec_per_sync1",
                 "duration of step 1 of average successful sync (in seconds)");
         avgSyncDuration2 = new AverageTimeStat(
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync2",
+                "sec_per_sync2",
                 "duration of step 2 of average successful sync (in seconds)");
         avgSyncDuration3 = new AverageTimeStat(
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync3",
+                "sec_per_sync3",
                 "duration of step 3 of average successful sync (in seconds)");
         avgSyncDuration4 = new AverageTimeStat(
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync4",
+                "sec_per_sync4",
                 "duration of step 4 of average successful sync (in seconds)");
         avgSyncDuration5 = new AverageTimeStat(
                 metrics,
                 ChronoUnit.SECONDS,
                 INTERNAL_CATEGORY,
-                "sec/sync5",
+                "sec_per_sync5",
                 "duration of step 5 of average successful sync (in seconds)");
 
         knownSetSize = new AverageStat(
@@ -251,13 +252,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-        gensWaitingForExpiry = new AverageStat(
-                metrics,
-                PLATFORM_CATEGORY,
-                PlatformStatNames.GENS_WAITING_FOR_EXPIRY,
-                "the average number of generations waiting to be expired",
-                FORMAT_5_3,
-                AverageStat.WEIGHT_VOLATILE);
 
         permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
@@ -339,7 +333,7 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
      * that have more than one {@code sendTip} in the current synchronization.
      *
      * @param multiTipCount the number of creators in the current synchronization that have more than one sending tip.
@@ -349,23 +343,13 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of
+     * Called by {@link ShadowgraphSynchronizer} to update the {@code tips/sync} statistic with the number of
      * {@code sendTips} in the current synchronization.
      *
      * @param tipCount the number of sending tips in the current synchronization.
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Called by {@link ShadowGraph} to update the number of generations that should be expired but can't be yet due to
-     * reservations.
-     *
-     * @param numGenerations the new number of generations
-     */
-    public void updateGensWaitingForExpiry(final long numGenerations) {
-        gensWaitingForExpiry.update(numGenerations);
     }
 
     /**

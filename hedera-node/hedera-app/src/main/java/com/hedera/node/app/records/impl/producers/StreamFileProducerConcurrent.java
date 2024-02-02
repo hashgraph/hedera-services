@@ -198,10 +198,20 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     @Override
     public void writeRecordStreamItems(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {
         lock.lock(); // Block until the lock is acquired
+        if (currentRecordFileWriter == null) {
+            // For a node starting from genesis or restarting at an upgrade boundary, switchBlocks() is
+            // always called before the first call to writeRecordStreamItems(), because
+            // BlockRecordManagerImpl#startTransaction() will detect either the genesis special case
+            // or notice more than two seconds have passed since the last block was created before the
+            // upgrade. However, a node that is restarted in the middle of a block will follow this
+            // pattern; nor will a node going through event stream recovery.
+            return;
+        }
 
         try {
             assert lastRecordHashingResult != null : "initRunningHash() must be called before writeRecordStreamItems";
-            assert currentRecordFileWriter != null : "switchBlocks() must be called before writeRecordStreamItems";
+            // FUTURE: consider implications on a reconnect scenario! When the currentRecordFileWriter isn't created in
+            // the same way, there can be NPE's
             requireNonNull(recordStreamItems);
 
             // serialize all the record stream items in background thread into SerializedSingleTransaction objects

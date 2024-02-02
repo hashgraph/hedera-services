@@ -43,6 +43,8 @@ import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.service.file.FileSignatureWaivers;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
@@ -85,9 +87,9 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
@@ -134,6 +136,10 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     CryptoSignatureWaivers bindCryptoSignatureWaivers(CryptoSignatureWaiversImpl cryptoSignatureWaivers);
+
+    @Binds
+    @Singleton
+    FileSignatureWaivers bindFileSignatureWaivers(FileSignatureWaiversImpl fileSignatureWaivers);
 
     @Binds
     @Singleton

@@ -18,6 +18,7 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.ADDED;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.REMOVED;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,21 +33,22 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -596,6 +598,7 @@ class DefaultMetricsTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void testUpdaterAddedAfterStart(@Mock final Runnable updater) {
         // given
         final ScheduledExecutorService executor1 = Executors.newSingleThreadScheduledExecutor();

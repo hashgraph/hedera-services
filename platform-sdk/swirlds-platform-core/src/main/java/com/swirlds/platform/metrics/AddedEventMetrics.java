@@ -17,20 +17,20 @@
 package com.swirlds.platform.metrics;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_13_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_0;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_17_1;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_13_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_0;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_17_1;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_5_3;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
@@ -46,7 +46,7 @@ public class AddedEventMetrics implements EventAddedObserver {
     private final NodeId selfId;
 
     private static final SpeedometerMetric.Config EVENTS_CREATED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "cEvents/sec")
+                    PLATFORM_CATEGORY, "cEvents_per_sec")
             .withDescription("number of events per second created by this node")
             .withFormat(FORMAT_16_2);
     private final SpeedometerMetric eventsCreatedPerSecond;
@@ -59,56 +59,56 @@ public class AddedEventMetrics implements EventAddedObserver {
     private final RunningAverageMetric avgCreatedReceivedTime;
 
     private static final SpeedometerMetric.Config EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "events/sec")
+                    PLATFORM_CATEGORY, "events_per_sec")
             .withDescription("number of unique events received per second (created by self and others)")
             .withFormat(FORMAT_16_2);
     private final SpeedometerMetric eventsPerSecond;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_TRANSACTION_SYS_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "bytes/trans_sys")
+            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "bytes_per_trans_sys")
                     .withDescription("number of bytes in each system transaction")
                     .withFormat(FORMAT_16_0);
     private final RunningAverageMetric avgBytesPerTransactionSys;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_TRANSACTION_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "bytes/trans")
+                    PLATFORM_CATEGORY, "bytes_per_trans")
             .withDescription("number of bytes in each transactions")
             .withFormat(FORMAT_16_0);
     private final RunningAverageMetric avgBytesPerTransaction;
 
     private static final RunningAverageMetric.Config AVG_TRANSACTIONS_PER_EVENT_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "trans/event")
+            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "trans_per_event")
                     .withDescription("number of app transactions in each event")
                     .withFormat(FORMAT_17_1);
     private final RunningAverageMetric avgTransactionsPerEvent;
 
     private static final RunningAverageMetric.Config AVG_TRANSACTIONS_PER_EVENT_SYS_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "trans/event_sys")
+            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "trans_per_event_sys")
                     .withDescription("number of system transactions in each event")
                     .withFormat(FORMAT_17_1);
     private final RunningAverageMetric avgTransactionsPerEventSys;
 
     private static final String DETAILS = "(from unique events created by self and others)";
     private static final SpeedometerMetric.Config BYTES_PER_SECOND_TRANS_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "bytes/sec_trans")
+                    PLATFORM_CATEGORY, "bytes_per_sec_trans")
             .withDescription("number of bytes in the transactions received per second " + DETAILS)
             .withFormat(FORMAT_16_2);
     private final SpeedometerMetric bytesPerSecondTrans;
 
     private static final SpeedometerMetric.Config BYTES_PER_SECOND_SYS_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "bytes/sec_sys")
+                    INTERNAL_CATEGORY, "bytes_per_sec_sys")
             .withDescription("number of bytes in the system transactions received per second " + DETAILS)
             .withFormat(FORMAT_16_2);
     private final SpeedometerMetric bytesPerSecondSys;
 
     private static final SpeedometerMetric.Config TRANSACTIONS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "trans/sec")
+                    PLATFORM_CATEGORY, "trans_per_sec")
             .withDescription("number of app transactions received per second " + DETAILS)
             .withFormat(FORMAT_13_2);
     private final SpeedometerMetric transactionsPerSecond;
 
     private static final SpeedometerMetric.Config TRANSACTIONS_PER_SECOND_SYS_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "trans/sec_sys")
+                    INTERNAL_CATEGORY, "trans_per_sec_sys")
             .withDescription("number of system transactions received per second " + DETAILS)
             .withFormat(FORMAT_13_2);
     private final SpeedometerMetric transactionsPerSecondSys;

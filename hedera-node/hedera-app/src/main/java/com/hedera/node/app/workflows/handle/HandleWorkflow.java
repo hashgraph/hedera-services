@@ -116,12 +116,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
+@Singleton
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
@@ -149,6 +151,7 @@ public class HandleWorkflow {
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final CacheWarmer cacheWarmer;
 
     @Inject
     public HandleWorkflow(
@@ -172,7 +175,8 @@ public class HandleWorkflow {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final CacheWarmer cacheWarmer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -199,6 +203,7 @@ public class HandleWorkflow {
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
         ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
+        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
     }
 
     /**
@@ -215,6 +220,9 @@ public class HandleWorkflow {
 
         // log start of round to transaction state log
         logStartRound(round);
+
+        // warm the cache
+        cacheWarmer.warm(state, round);
 
         // handle each event in the round
         for (final ConsensusEvent event : round) {
@@ -412,7 +420,6 @@ public class HandleWorkflow {
 
             networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
-
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
@@ -434,7 +441,11 @@ public class HandleWorkflow {
                             // the network fee in case of a very low payer balance)
                             feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
                         } else {
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                            final var feesToCharge =
+                                    validationResult.responseCodeEnum().equals(DUPLICATE_TRANSACTION)
+                                            ? fees.withoutServiceComponent()
+                                            : fees;
+                            feeAccumulator.chargeFees(payer, creator.accountId(), feesToCharge);
                         }
                     }
                 } catch (final HandleException ex) {
@@ -535,7 +546,10 @@ public class HandleWorkflow {
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
-                    recordBuilder.status(fileUpdateResult);
+
+                    recordBuilder
+                            .exchangeRate(exchangeRateManager.exchangeRates())
+                            .status(fileUpdateResult);
 
                     // Notify if platform state was updated
                     platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
@@ -550,6 +564,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);

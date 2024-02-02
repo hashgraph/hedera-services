@@ -38,4 +38,13 @@ public enum KeyCertPurpose {
     public String storeName(final String memberName) {
         return prefix + "-" + memberName;
     }
+
+    /**
+     * Returns the prefix associated with a key or certificate purpose.
+     *
+     * @return the prefix.
+     */
+    public String prefix() {
+        return prefix;
+    }
 }

@@ -19,7 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
@@ -216,7 +216,7 @@ public final class PcesUtilities {
     public static Path getDatabaseDirectory(
             @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
 

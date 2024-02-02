@@ -160,7 +160,8 @@ public class HevmTransactionFactory {
                 body.gas(),
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
-                body);
+                body,
+                null);
     }
 
     private HederaEvmTransaction fromHapiCall(
@@ -177,6 +178,7 @@ public class HevmTransactionFactory {
                 body.gas(),
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
+                null,
                 null);
     }
 
@@ -211,6 +213,7 @@ public class HevmTransactionFactory {
                 ethTxData.gasLimit(),
                 ethTxData.effectiveOfferedGasPriceInTinybars(),
                 maxGasAllowance,
+                null,
                 null);
     }
 
@@ -230,7 +233,43 @@ public class HevmTransactionFactory {
                 ethTxData.gasLimit(),
                 ethTxData.effectiveOfferedGasPriceInTinybars(),
                 maxGasAllowance,
-                synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData));
+                synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData),
+                null);
+    }
+
+    /**
+     * Given an {@link Exception} and a {@link ContractCallTransactionBody},
+     * create and return a {@link HederaEvmTransaction} containing the exception and gas limit
+     *
+     * @param exception the {@link Exception} to wrap
+     * @return the  {@link HederaEvmTransaction} containing the exception
+     */
+    public HederaEvmTransaction fromContractTxException(
+            @NonNull final TransactionBody body, @NonNull final HandleException exception) {
+        final var gasPrice =
+                switch (body.data().kind()) {
+                    case CONTRACT_CREATE_INSTANCE -> body.contractCreateInstanceOrThrow()
+                            .gas();
+                    case CONTRACT_CALL -> body.contractCallOrThrow().gas();
+                    case ETHEREUM_TRANSACTION -> {
+                        final var ethTxData = assertValidEthTx(body.ethereumTransactionOrThrow());
+                        yield ethTxData.gasLimit();
+                    }
+                    default -> throw new IllegalArgumentException("Not a contract operation");
+                };
+        return new HederaEvmTransaction(
+                AccountID.DEFAULT,
+                null,
+                null,
+                NOT_APPLICABLE,
+                Bytes.EMPTY,
+                null,
+                0,
+                gasPrice,
+                NOT_APPLICABLE,
+                NOT_APPLICABLE,
+                null,
+                exception);
     }
 
     private @NonNull EthTxData assertValidEthTx(@NonNull final EthereumTransactionBody body) {

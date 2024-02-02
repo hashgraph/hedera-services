@@ -26,8 +26,6 @@ package com.swirlds.demo.platform;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
@@ -36,6 +34,8 @@ import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -44,8 +44,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
@@ -73,6 +71,8 @@ import com.swirlds.logging.legacy.payload.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -169,7 +169,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private TransactionSubmitter submitter;
 
     private static final Counter.Config TRANSACTION_SUBMITTED_CONFIG =
-            new Counter.Config("Debug.info", "tranSub").withDescription("number of transactions submitted to platform");
+            new Counter.Config("Debug:info", "tranSub").withDescription("number of transactions submitted to platform");
     private Counter transactionSubmitted;
 
     private boolean checkedThisIdleInterval = false; // each long idle interval only check once
@@ -238,7 +238,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private SpeedometerMetric vmContractExecutionSpeed;
 
     private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+            new SpeedometerMetric.Config("Debug:info", "tranSubTPS").withDescription("Transaction submitted TPS");
     private SpeedometerMetric transactionSubmitSpeedometer;
 
     private FCMQueryController queryController;

@@ -21,8 +21,10 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -34,11 +36,10 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,32 +48,32 @@ import org.junit.jupiter.api.Test;
  */
 class PlatformWiringTests {
     @Test
-    @DisplayName("Assert that all input wires are bound to something, when using new intake")
+    @DisplayName("Assert that all input wires are bound to something")
     void testBindings() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
 
-        wiring.bindIntake(
+        wiring.bind(
+                mock(EventHasher.class),
                 mock(InternalEventValidator.class),
                 mock(EventDeduplicator.class),
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
-                mock(EventCreationManager.class),
-                mock(PcesSequencer.class),
-                mock(SwirldStateManager.class),
-                mock(StateSignatureCollector.class));
-        wiring.bind(
-                mock(EventHasher.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
-                mock(ShadowGraph.class));
+                mock(Shadowgraph.class),
+                mock(PcesSequencer.class),
+                mock(EventCreationManager.class),
+                mock(SwirldStateManager.class),
+                mock(StateSignatureCollector.class),
+                mock(FutureEventBuffer.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

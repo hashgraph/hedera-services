@@ -20,11 +20,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -64,5 +66,17 @@ public record MigrationContextImpl(
     public long newEntityNum() {
         return requireNonNull(writableEntityIdStore, "Entity ID store needs to exist first")
                 .incrementAndGet();
+    }
+
+    @Override
+    public void copyAndReleaseOnDiskState(@NonNull final String stateKey) {
+        requireNonNull(stateKey);
+        if (newStates instanceof FilteredWritableStates filteredWritableStates
+                && filteredWritableStates.getDelegate()
+                        instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
+            merkleWritableStates.copyAndReleaseVirtualMap(stateKey);
+        } else {
+            throw new UnsupportedOperationException("On-disk state is inaccessible");
+        }
     }
 }

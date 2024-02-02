@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;

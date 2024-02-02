@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,14 +29,14 @@ import java.io.IOException;
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
-    public EntityNum parse(final @NonNull ReadableSequentialData input) throws IOException {
+    public EntityNum parse(final @NonNull ReadableSequentialData input) throws ParseException {
         requireNonNull(input);
         return new EntityNum(input.readInt());
     }
 
     @NonNull
     @Override
-    public EntityNum parseStrict(final @NonNull ReadableSequentialData dataInput) throws IOException {
+    public EntityNum parseStrict(final @NonNull ReadableSequentialData dataInput) throws ParseException {
         return parse(requireNonNull(dataInput));
     }
 

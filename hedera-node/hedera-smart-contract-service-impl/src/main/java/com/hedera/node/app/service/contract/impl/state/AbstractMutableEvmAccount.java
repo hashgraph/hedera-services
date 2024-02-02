@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -68,7 +69,7 @@ public abstract class AbstractMutableEvmAccount implements MutableAccount, Heder
     /**
      * Besu uses this method to do zero-sum balance changes, but since the {@link ContractService} neither
      * owns account state nor is aware of receiver signature requirements, it's more sensible to require
-     * message call processors to use {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+     * message call processors to use {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, AccountID, AccountID, VerificationStrategy)}.
      *
      * @param value the amount to set
      * @throws UnsupportedOperationException always

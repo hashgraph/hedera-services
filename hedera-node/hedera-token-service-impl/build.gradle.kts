@@ -27,8 +27,7 @@ testModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.hedera.node.app.service.token.test.fixtures")
-    requires("com.swirlds.merkle")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
@@ -37,5 +36,4 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
     requires("com.google.protobuf")
-    requires("com.swirlds.common")
 }

@@ -16,14 +16,14 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.merkledb.MerkleDbDataSourceTest.assertLeaf;
-import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getMetric;
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
 import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndContents;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getMetric;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -33,8 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
+import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.lang.reflect.Field;

@@ -236,6 +236,7 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
 
     exports com.hedera.node.app.service.mono.fees.calculation.meta;
+    exports com.hedera.node.app.service.mono.files.store;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -252,6 +253,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.fcqueue;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.merkledb;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;

@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.stats.AverageAndMax;
@@ -80,16 +80,18 @@ public class ConsensusHandlingMetrics {
                         "consRound",
                         List.of(
                                 Pair.of(
-                                        "keystoneFlushMillis/round",
+                                        "keystoneFlushMillis_per_round",
                                         "average time to flush a round's keystone event to disk"),
                                 Pair.of(
-                                        "dataPropMillis/round",
+                                        "dataPropMillis_per_round",
                                         "average time to propagate consensus data to transactions"),
-                                Pair.of("handleMillis/round", "average time to handle a consensus round"),
+                                Pair.of("handleMillis_per_round", "average time to handle a consensus round"),
                                 Pair.of(
-                                        "storeMillis/round",
+                                        "storeMillis_per_round",
                                         "average time to add consensus round events to signed state storage"),
-                                Pair.of("hashMillis/round", "average time spent hashing the consensus round events"),
+                                Pair.of(
+                                        "hashMillis_per_round",
+                                        "average time spent hashing the consensus round events"),
                                 Pair.of("buildStateMillis", "average time spent building a signed state"),
                                 Pair.of(
                                         "forSigCleanMillis",
@@ -111,7 +113,7 @@ public class ConsensusHandlingMetrics {
         avgEventsPerRound = new AverageAndMax(
                 metrics,
                 INTERNAL_CATEGORY,
-                "events/round",
+                "events_per_round",
                 "average number of events in a consensus round",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);

@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hedera.node.app.workflows.ParseExceptionWorkaround.getParseExceptionCause;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -53,15 +54,14 @@ import com.hedera.node.app.workflows.prehandle.DueDiligenceException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -465,19 +465,18 @@ public class TransactionChecker {
             throws PreCheckException {
         try {
             return codec.parseStrict(data);
-        } catch (MalformedProtobufException e) {
-            // We could not parseStrict the protobuf because it was not valid protobuf
-            throw new PreCheckException(parseErrorCode);
-        } catch (UnknownFieldException e) {
-            // We do not allow newer clients to send transactions to older networks.
-            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        } catch (IOException e) {
-            // This should technically not be possible. The data buffer supplied
-            // is either based on a byte[] or a byte buffer, in both cases all data
-            // is available and a generic IO exception shouldn't happen. If it does,
-            // it indicates the data could not be parsed, but for a reason other than
-            // those causing an MalformedProtobufException or UnknownFieldException.
-            logger.warn("Unexpected IO exception while parsing protobuf", e);
+        } catch (ParseException e) {
+
+            // Temporary workaround for unexpected behavior in PBJ. Can be removed if we agree that
+            // ParseException should not be wrapped.
+            final var cause = getParseExceptionCause(e);
+            if (cause instanceof UnknownFieldException) {
+                // We do not allow newer clients to send transactions to older networks.
+                throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
+            }
+
+            // Either the protobuf was malformed, or something else failed during parsing
+            logger.warn("ParseException while parsing protobuf", e);
             throw new PreCheckException(parseErrorCode);
         }
     }

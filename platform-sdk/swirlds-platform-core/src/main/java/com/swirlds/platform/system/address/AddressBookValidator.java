@@ -110,7 +110,8 @@ public final class AddressBookValidator {
      * @param newAddressBook the new address book
      * @throws IllegalStateException if the nextNodeId in the new address book is less than or equal to the nextNodeId
      *                               in the old address book, or if there are any new nodes in the new address book that
-     *                               are less than the old nextNodeId or greater than or equal to the new nextNodeId.
+     *                               are less than the old nextNodeId or greater than or equal to the new nextNodeId, or
+     *                               if the new address book is empty.
      */
     public static void validateNewAddressBook(
             @NonNull final AddressBook oldAddressBook, @NonNull final AddressBook newAddressBook) {
@@ -126,6 +127,10 @@ public final class AddressBookValidator {
 
         final int oldSize = oldAddressBook.getSize();
         final int newSize = newAddressBook.getSize();
+
+        if (newSize == 0) {
+            throw new IllegalStateException("The new address book's size must be greater than 0");
+        }
 
         // Verify that the old next node id is greater than the highest node id in the old address book.
         final NodeId oldLastNodeId = (oldSize == 0 ? null : oldAddressBook.getNodeId(oldSize - 1));

@@ -26,14 +26,14 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metric.ValueType;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -85,7 +85,7 @@ public class LegacyCsvWriter {
     // path and filename of the .csv file to write to
     private final Path csvFilePath;
     private final MetricsConfig metricsConfig;
-    private final BasicConfig basicConfig;
+    private final BasicCommonConfig basicConfig;
 
     private final Map<Pair<String, String>, Integer> indexLookup = new HashMap<>();
     private final List<Integer> cellCount = new ArrayList<>();
@@ -112,7 +112,7 @@ public class LegacyCsvWriter {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId is null");
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        basicConfig = configuration.getConfigData(BasicConfig.class);
+        basicConfig = configuration.getConfigData(BasicCommonConfig.class);
 
         final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);
