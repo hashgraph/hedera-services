@@ -50,7 +50,7 @@ public class SynthCreationCustomizer {
             final TransactionBody synthCreate, final AccountID callerId, final boolean inheritKey) {
         ContractCustomizer customizer;
         if (inheritKey) {
-            customizer = ContractCustomizer.fromSponsorContract(callerId, accountsLedger);
+            customizer = ContractCustomizer.fromSponsorContract(callerId, accountsLedger, null);
         } else {
             customizer = ContractCustomizer.fromSponsorContractWithoutKey(callerId, accountsLedger);
         }

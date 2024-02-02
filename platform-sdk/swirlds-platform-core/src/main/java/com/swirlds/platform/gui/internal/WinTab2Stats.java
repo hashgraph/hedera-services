@@ -228,7 +228,7 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
                     }
                 });
             }
-            if ("trans/sec".equals(metric.getName())) {
+            if ("trans_per_sec".equals(metric.getName())) {
                 showChart(j);
             }
         }

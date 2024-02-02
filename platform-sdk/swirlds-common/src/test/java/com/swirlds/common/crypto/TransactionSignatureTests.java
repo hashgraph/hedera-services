@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.common.test.fixtures.crypto.SliceConsumer;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.ValueSource;
 
 public class TransactionSignatureTests {
 
@@ -123,107 +122,6 @@ public class TransactionSignatureTests {
     }
 
     /**
-     *
-     */
-    @Test
-    public void signatureHalfQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures = new TransactionSignature[cryptoConfig.cpuVerifierQueueSize() / 2];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifySync(Arrays.asList(signatures));
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void signatureExactQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-
-        final TransactionSignature[] signatures = new TransactionSignature[cryptoConfig.cpuVerifierQueueSize()];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifySync(Arrays.asList(signatures));
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void signatureDoubleQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures = new TransactionSignature[(cryptoConfig.cpuVerifierQueueSize() * 2)];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifySync(Arrays.asList(signatures));
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void signatureThreadedHalfQueueSize() throws ExecutionException, InterruptedException {
-        final int totalSignatures = cryptoConfig.cpuVerifierQueueSize() / 2;
-        final TransactionSignature[] signatures = new TransactionSignature[totalSignatures];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        verifyParallel(signatures, PARALLELISM);
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void signatureThreadedFourTimesQueueSize() throws ExecutionException, InterruptedException {
-        final int totalSignatures = cryptoConfig.cpuVerifierQueueSize() * 4;
-        final TransactionSignature[] signatures = new TransactionSignature[totalSignatures];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        verifyParallel(signatures, PARALLELISM);
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    @ValueSource(ints = {0, 1})
-    public void signatureThreadedEightTimesQueueSize() throws ExecutionException, InterruptedException {
-        final int totalSignatures = cryptoConfig.cpuVerifierQueueSize() * 8;
-        final TransactionSignature[] signatures = new TransactionSignature[totalSignatures];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        verifyParallel(signatures, PARALLELISM);
-        checkSignatures(signatures);
-    }
-
-    /**
      * Checks correctness of DigitalSignature batch sizes less than the thread count
      */
     @Test
@@ -251,61 +149,6 @@ public class TransactionSignatureTests {
 
         final TransactionSignature[] signatures =
                 new TransactionSignature[(cryptoConfig.computeCpuVerifierThreadCount() * 2) - 1];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifyAsync(Arrays.asList(signatures));
-        // Thread.sleep(250);
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void asyncSignatureHalfQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures = new TransactionSignature[cryptoConfig.cpuVerifierQueueSize() / 2];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifyAsync(Arrays.asList(signatures));
-        // Thread.sleep(250);
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void asyncSignatureExactQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures = new TransactionSignature[cryptoConfig.cpuVerifierQueueSize()];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifyAsync(Arrays.asList(signatures));
-        // Thread.sleep(250);
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void asyncSignatureDoubleQueueSize()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-
-        final TransactionSignature[] signatures = new TransactionSignature[(cryptoConfig.cpuVerifierQueueSize() * 2)];
 
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = signaturePool.next();

@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class VirtualMapStatistics {
 
-    public static final String STAT_CATEGORY = "virtual-map";
+    public static final String STAT_CATEGORY = "virtual_map";
 
     /** Metric name prefix for all virtual map metric names */
     private static final String VMAP_PREFIX = "vmap_";
