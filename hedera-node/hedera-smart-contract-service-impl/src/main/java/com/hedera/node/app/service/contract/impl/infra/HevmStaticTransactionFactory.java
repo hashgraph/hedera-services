@@ -72,7 +72,18 @@ public class HevmStaticTransactionFactory {
         // For mono-service fidelity, allow calls using 0.0.X id even to contracts with a priority EVM address
         final var targetId = asPriorityId(op.contractIDOrThrow(), context.createStore(ReadableAccountStore.class));
         return new HederaEvmTransaction(
-                senderId, null, targetId, NOT_APPLICABLE, op.functionParameters(), null, 0L, op.gas(), 1L, 0L, null);
+                senderId,
+                null,
+                targetId,
+                NOT_APPLICABLE,
+                op.functionParameters(),
+                null,
+                0L,
+                op.gas(),
+                1L,
+                0L,
+                null,
+                null);
     }
 
     private void assertValidCall(@NonNull final ContractCallLocalQuery body) {

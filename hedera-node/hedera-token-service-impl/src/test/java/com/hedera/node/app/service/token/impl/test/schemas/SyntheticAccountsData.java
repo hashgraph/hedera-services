@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.schemas;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 
 final class SyntheticAccountsData {
 

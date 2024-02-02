@@ -16,16 +16,16 @@
 
 package com.swirlds.logging;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingUtils;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;

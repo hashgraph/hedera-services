@@ -16,8 +16,8 @@
 
 package com.swirlds.common.crypto;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,10 +31,10 @@ import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SerializableHashableDummy;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.common.test.fixtures.crypto.SliceConsumer;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -84,20 +84,6 @@ class CryptographyTests {
     }
 
     @ParameterizedTest
-    @Tag(TIME_CONSUMING)
-    @ValueSource(ints = {1, 10, 49, 98, 101, 25_000, 50_005})
-    void digestAsyncRawTest(final int count) throws ExecutionException, InterruptedException {
-        final Message[] messages = new Message[count];
-
-        for (int i = 0; i < messages.length; i++) {
-            messages[i] = digestPool.next();
-            final Future<Hash> future = cryptography.digestAsync(messages[i].getPayloadDirect(), DigestType.SHA_384);
-            assertNotNull(future);
-            assertTrue(digestPool.isValid(messages[i], future.get().getValue()));
-        }
-    }
-
-    @ParameterizedTest
     @ValueSource(ints = {1, 10, 49, 98, 101, 25_000, 50_005})
     void digestSyncRawTest(final int count) {
         final Message[] messages = new Message[count];
@@ -119,44 +105,6 @@ class CryptographyTests {
         final Hash hash = hashable.getHash();
         assertEquals(KNOWN_DUMMY_SERIALIZABLE_HASH, hash);
         assertArrayEquals(KNOWN_DUMMY_SERIALIZABLE_HASH.getValue(), hash.getValue());
-    }
-
-    @ParameterizedTest
-    @Tag(TestQualifierTags.TIME_CONSUMING)
-    @ValueSource(ints = {1, 10, 49, 98, 101, 25_000, 50_005})
-    void verifyAsyncEd25519Only(final int count) throws ExecutionException, InterruptedException {
-        ed25519SignaturePool = new SignaturePool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 100, true);
-        final TransactionSignature[] signatures = new TransactionSignature[count];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = ed25519SignaturePool.next();
-            final SignatureComponents components = extractComponents(signatures[i]);
-            final Future<Boolean> future = cryptography.verifyAsync(
-                    components.data(), components.publicKey(), components.signatureBytes(), SignatureType.ED25519);
-            assertNotNull(future, "Future should not be null");
-            assertTrue(future.get(), "Future should return computed result");
-        }
-    }
-
-    @ParameterizedTest
-    @Tag(TestQualifierTags.TIME_CONSUMING)
-    @ValueSource(ints = {1, 10, 49, 98, 101, 25_000, 50_005})
-    void verifyAsyncEcdsaSecp256k1Only(final int count) throws ExecutionException, InterruptedException {
-        /* Note that here the "transactionSize" is limited to the largest support digest type, which is 64 bytes */
-        ecdsaSignaturePool = new EcdsaSignedTxnPool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 64);
-        final TransactionSignature[] signatures = new TransactionSignature[count];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = ecdsaSignaturePool.next();
-            final SignatureComponents components = extractComponents(signatures[i]);
-            final Future<Boolean> future = cryptography.verifyAsync(
-                    components.data(),
-                    components.publicKey(),
-                    components.signatureBytes(),
-                    SignatureType.ECDSA_SECP256K1);
-            assertNotNull(future);
-            assertTrue(future.get());
-        }
     }
 
     @ParameterizedTest
@@ -224,27 +172,6 @@ class CryptographyTests {
                         components.signatureBytes(),
                         SignatureType.ED25519),
                 "Fails for invalid signature");
-    }
-
-    @ParameterizedTest
-    @Tag(TestQualifierTags.TIME_CONSUMING)
-    @ValueSource(ints = {1, 10, 49, 98, 101, 25_000, 50_005})
-    void verifyAsyncMix(final int count) throws ExecutionException, InterruptedException {
-        ecdsaSignaturePool = new EcdsaSignedTxnPool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 64);
-        ed25519SignaturePool = new SignaturePool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 100, true);
-        final TransactionSignature[] signatures = new TransactionSignature[count];
-
-        boolean useEcdsa = true;
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = useEcdsa ? ecdsaSignaturePool.next() : ed25519SignaturePool.next();
-            final SignatureType type = useEcdsa ? SignatureType.ECDSA_SECP256K1 : SignatureType.ED25519;
-            final SignatureComponents components = extractComponents(signatures[i]);
-            final Future<Boolean> future = cryptography.verifyAsync(
-                    components.data(), components.publicKey(), components.signatureBytes(), type);
-            assertNotNull(future, "Future should not be null");
-            assertTrue(future.get(), "Future should return computed result");
-            useEcdsa = !useEcdsa;
-        }
     }
 
     @Test
