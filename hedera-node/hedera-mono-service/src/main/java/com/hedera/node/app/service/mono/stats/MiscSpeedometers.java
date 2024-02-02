@@ -57,8 +57,8 @@ public class MiscSpeedometers {
     }
 
     public static final class Names {
-        static final String SYNC_VERIFICATIONS = "sigVerifySync/sec";
-        static final String PLATFORM_TXN_REJECTIONS = "platformTxnNotCreated/sec";
+        static final String SYNC_VERIFICATIONS = "sigVerifySync_per_sec";
+        static final String PLATFORM_TXN_REJECTIONS = "platformTxnNotCreated_per_sec";
 
         private Names() {
             throw new UnsupportedOperationException("Utility Class");

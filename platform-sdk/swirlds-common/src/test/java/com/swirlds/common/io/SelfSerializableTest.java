@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
-import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

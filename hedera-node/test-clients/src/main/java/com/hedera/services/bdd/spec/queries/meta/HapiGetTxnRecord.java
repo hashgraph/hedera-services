@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.ABIJSON;
@@ -94,6 +95,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private String txn;
     private boolean scheduled = false;
+    private boolean hasScheduledTransactionId = false;
     private boolean assertNothing = false;
     private boolean useDefaultTxnId = false;
     private boolean requestDuplicates = false;
@@ -233,6 +235,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord scheduled() {
         scheduled = true;
+        return this;
+    }
+
+    public HapiGetTxnRecord hasScheduledTransactionId() {
+        hasScheduledTransactionId = true;
         return this;
     }
 
@@ -705,6 +712,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             final var actualRandomNum = actualRecord.getPrngNumber();
             assertTrue(actualByteString.isEmpty());
             assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
+        }
+        if (hasScheduledTransactionId) {
+            final var scheduledTransactionId = actualRecord.getReceipt().getScheduledTransactionID();
+            assertNotNull(scheduledTransactionId);
         }
     }
 

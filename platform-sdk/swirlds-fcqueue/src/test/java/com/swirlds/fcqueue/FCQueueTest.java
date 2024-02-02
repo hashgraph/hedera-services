@@ -34,7 +34,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
-import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
