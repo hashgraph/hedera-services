@@ -718,6 +718,32 @@ public class TokenInfoHTSSuite extends HapiSuite {
                         getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                 .andAllChildRecords()
                                 .logged(),
+                        //                                                ,childRecordsCheck(
+                        //                                NON_FUNGIBLE_TOKEN_INFO_TXN + 1,
+                        //                                                        CONTRACT_REVERT_EXECUTED,
+                        //                                                        recordWith()
+                        //                                                                .status(INVALID_TOKEN_ID)
+                        //
+                        // .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        //                         .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                        //
+                        // .withStatus(INVALID_TOKEN_ID)
+                        //
+                        //                         .withTokenInfo(getTokenInfoStructForEmptyFungibleToken(
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //
+                        //                         AccountID.getDefaultInstance(),
+                        //                                                                                        0,
+                        //
+                        // ByteString.EMPTY
+                        //                                                                                        ))
+                        //
+                        // .withNftTokenInfo(getEmptyNft())))),
                         getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
                                 .andAllChildRecords()
                                 .logged());
@@ -899,6 +925,17 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .setCreationTime(creationTime)
                 .setMetadata(meta)
                 .setSpenderId(spenderId)
+                .build();
+    }
+
+    private TokenNftInfo getEmptyNft() {
+        return TokenNftInfo.newBuilder()
+                .setLedgerId(ByteString.empty())
+                .setNftID(NftID.getDefaultInstance())
+                .setAccountID(AccountID.getDefaultInstance())
+                .setCreationTime(Timestamp.newBuilder().build())
+                .setMetadata(ByteString.empty())
+                .setSpenderId(AccountID.getDefaultInstance())
                 .build();
     }
 
