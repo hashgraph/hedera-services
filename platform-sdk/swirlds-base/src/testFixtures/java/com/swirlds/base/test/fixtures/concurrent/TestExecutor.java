@@ -65,9 +65,9 @@ public interface TestExecutor {
      * callable do not return within the maximum wait time, then the callable will be cancelled and a
      * {@link TimeoutException} will be thrown.
      *
-     * @param callable the callable array to execute
+     * @param callable a callable array to execute
      * @param <V>      the type of the callable result
      * @return the result of the callable
      */
-    <V> @Nullable V submitAndWait(@NonNull Callable<V> callable);
+    <V> @Nullable List<V> submitAndWait(@NonNull Callable<V>... callable);
 }

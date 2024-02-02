@@ -20,7 +20,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -46,10 +45,10 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     private static final AtomicInteger ID = new AtomicInteger(0);
 
     /**
-     * It is intended for all tests utilizing {@code ConcurrentTestSupport} to execute sequentially.
-     * A potential drawback is that tests may spend a significant portion of execution time waiting to acquire this lock.
-     * In tests with external configurations tracking elapsed time and timeout values, this waiting time is accounted
-     * for as test time.
+     * It is intended for all tests utilizing {@code ConcurrentTestSupport} to execute sequentially. A potential
+     * drawback is that tests may spend a significant portion of execution time waiting to acquire this lock. In tests
+     * with external configurations tracking elapsed time and timeout values, this waiting time is accounted for as test
+     * time.
      */
     private static final Object LOCK = new Object();
 
@@ -118,7 +117,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     @NonNull
     public <V> List<V> submitAndWait(@NonNull final Collection<Callable<V>> callables) {
         Objects.requireNonNull(callables, "callables must not be null");
-        final Deque<V> result = new ConcurrentLinkedDeque<>();
+        final Deque<V> result = callables.size() > 1 ? new ConcurrentLinkedDeque<>() : new ArrayDeque<>();
         executeAndWait(callablesToRunners(callables, result));
         return List.copyOf(result);
     }
@@ -131,12 +130,11 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
      * @return result from the executed Callables. It can be null.
      * @see ConcurrentTestSupport#executeAndWait(Runnable...)
      */
-    @Nullable
-    public final <V> V submitAndWait(@NonNull final Callable<V> callable) {
+    @NonNull
+    @SafeVarargs
+    public final <V> List<V> submitAndWait(@NonNull final Callable<V>... callable) {
         Objects.requireNonNull(callable, "callable must not be null");
-        final Deque<V> result = new ArrayDeque<>();
-        executeAndWait(toRunnableInto(callable, result));
-        return result.peek();
+        return submitAndWait(List.of(callable));
     }
 
     /**
@@ -150,16 +148,16 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     // Return a collections of runners from a collection of callables.
     // Results are accumulated  in result
     private static <V> Collection<Runnable> callablesToRunners(
-            final Collection<Callable<V>> callables, final Deque<V> result) {
-        return callables.stream().map(c -> toRunnableInto(c, result)).collect(Collectors.toList());
+            final Collection<Callable<V>> callables, final Collection<V> result) {
+        return callables.stream().map(c -> toRunnable(c, result)).collect(Collectors.toList());
     }
 
     // Return a runners from a callable.
     // The result is accumulated  in result
-    private static <V> Runnable toRunnableInto(final Callable<V> callable, final Deque<V> result) {
+    private static <V> Runnable toRunnable(final Callable<V> callable, final Collection<V> result) {
         return () -> {
             try {
-                result.addLast(callable.call());
+                result.add(callable.call());
             } catch (Exception e) {
                 throw new RuntimeException("Error in submitAndWait", e);
             }

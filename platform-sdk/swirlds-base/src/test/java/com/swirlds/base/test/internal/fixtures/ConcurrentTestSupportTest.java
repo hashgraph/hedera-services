@@ -17,12 +17,14 @@
 package com.swirlds.base.test.internal.fixtures;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swirlds.base.test.fixtures.concurrent.internal.ConcurrentTestSupport;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -138,6 +140,35 @@ class ConcurrentTestSupportTest {
         }
     }
 
+    @Test
+    void testMultipleCallable() {
+        // given
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+            final Callable<Object> shortCallableTask = () -> getAfter(100, new Object());
+            final Callable<Object> longCallableTask = () -> getAfter(2_000, new Object());
+
+            assertThatNoException().isThrownBy(() -> concurrentTestSupport.submitAndWait(shortCallableTask));
+
+            assertThatThrownBy(() -> concurrentTestSupport.submitAndWait(longCallableTask))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasCauseInstanceOf(TimeoutException.class);
+        }
+    }
+
+    @Test
+    void testShortCallable() {
+        // given
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+            Object value = new Object();
+            final Callable<Object> shortCallableTask = () -> getAfter(100, value);
+
+            // then
+            assertThat(concurrentTestSupport.submitAndWait(shortCallableTask))
+                    .contains(value)
+                    .hasSize(1);
+        }
+    }
+
     private static void runAllAndWait(CompletableFuture<?>... futures) {
         CompletableFuture.allOf(futures).join();
     }
@@ -148,5 +179,10 @@ class ConcurrentTestSupportTest {
         } catch (InterruptedException e) {
             System.err.println("interrupted");
         }
+    }
+
+    private static <V> V getAfter(long ms, V value) {
+        sleep(ms);
+        return value;
     }
 }
