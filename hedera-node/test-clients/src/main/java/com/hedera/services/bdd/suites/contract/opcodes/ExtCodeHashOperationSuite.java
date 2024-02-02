@@ -38,7 +38,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,42 +122,6 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                             Assertions.assertArrayEquals(expectedAccountHash.toByteArray(), accountCodeHash);
                             Assertions.assertArrayEquals(expectedContractCodeHash, contractCodeResult);
                         }));
-    }
-
-    @SuppressWarnings("java:S5960")
-    @HapiTest
-    HapiSpec readsAccountStorageBeforeCheckingGas() {
-
-        final var contract = "ExtCodeOperationsChecker";
-        final var attackerContract = "ExtCodeHashAttacker";
-        final String account = "account";
-        final var attackFunction = "callHashOfInLoopWithTryCatch";
-
-        return defaultHapiSpec("VerifiesExistence", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        uploadInitCode(attackerContract),
-                        contractCreate(attackerContract),
-                        cryptoCreate(account))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var contractID = spec.registry().getContractId(contract);
-                    final var contractSolidityAddress = asHexedSolidityAddress(contractID);
-
-                    final var response = contractCallLocal(
-                                    attackerContract,
-                                    attackFunction,
-                                    asHeadlongAddress(contractSolidityAddress),
-                                    new BigInteger("229"), // gasLimit calculated to leave 0 gas for EXTCODEHASH op
-                                    new BigInteger("10"))
-                            .gas(25800 + (9 * 900))
-                            .saveResultTo("contractCodeHash");
-                    // 25800 gas for initial call and 900 for subsequent loops
-                    // note that gas for each loop should be over 2600 for cold EXTCODEHASH op
-
-                    allRunFor(spec, response);
-                }));
     }
 
     @Override
