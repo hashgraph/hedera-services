@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
@@ -297,20 +298,19 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 "InvalidTokenId",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID))
-                        //                        ,childRecordsCheck(
-                        //                                NO_ADMIN_KEY,
-                        //                                CONTRACT_REVERT_EXECUTED,
-                        //                                recordWith()
-                        //                                        .status(KEY_NOT_PROVIDED)
-                        //
-                        // .contractCallResult(ContractFnResultAsserts.resultWith()
-                        //                                                .contractCallResult(htsPrecompileResult()
-                        //
-                        // .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
-                        //                                                        .withStatus(KEY_NOT_PROVIDED)
-                        //
-                        // .withTokenKeyValue(Key.newBuilder().build()))))
-                        )));
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                NO_ADMIN_KEY,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(KEY_NOT_PROVIDED)
+                                // .contractCallResult(ContractFnResultAsserts.resultWith()
+                                //
+                                // .contractCallResult(htsPrecompileResult()
+                                //
+                                // .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                                //                                                        .withStatus(KEY_NOT_PROVIDED)
+                                //
+                                // .withTokenKeyValue(Key.newBuilder().build()))))
+                                ))));
     }
 }
