@@ -36,7 +36,10 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
@@ -65,7 +68,9 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -217,9 +222,13 @@ public class NonceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
+        final Map<String, String> startingProps = new HashMap<>();
+        final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
         AtomicLong maxGasPerSec = new AtomicLong();
         return defaultHapiSpec("nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed")
                 .given(
+                        remembering(startingProps, USE_GAS_THROTTLE_PROP),
+                        overriding(USE_GAS_THROTTLE_PROP, "true"),
                         recordSystemProperty("contracts.maxGasPerSec", Long::parseLong, maxGasPerSec::set),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -233,8 +242,10 @@ public class NonceSuite extends HapiSuite {
                         .nonce(0)
                         .gasLimit(maxGasPerSec.get() + 1L)
                         .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY)))
-                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                        .has(accountWith().nonce(0L)));
+                .then(
+                        overridingAllOfDeferred(() -> startingProps),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(0L)));
     }
 
     @HapiTest
