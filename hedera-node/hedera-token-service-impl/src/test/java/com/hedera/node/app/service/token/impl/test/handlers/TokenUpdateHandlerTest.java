@@ -47,7 +47,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -174,14 +173,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.supplyKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.kycKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.freezeKey()).isEqualTo(B_COMPLEX_KEY);
-        assertThat(modifiedToken.metadataKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(modifiedToken.wipeKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
         assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.metadata().toString()).isEqualTo("01020304");
         assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
     }
@@ -208,6 +205,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.autoRenewAccountId()).isEqualTo(nonFungibleToken.autoRenewAccountId());
         assertThat(token.expirationSecond()).isEqualTo(nonFungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
+        assertThat(token.metadata()).isEqualTo(fungibleToken.metadata());
         assertThat(token.autoRenewSeconds()).isEqualTo(nonFungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 
@@ -228,7 +226,6 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
         assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.metadata().toString()).isEqualTo("01020304");
         assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
     }
