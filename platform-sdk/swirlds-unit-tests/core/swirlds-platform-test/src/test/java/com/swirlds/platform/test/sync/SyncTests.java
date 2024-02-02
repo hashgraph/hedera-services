@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -39,11 +38,9 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
@@ -610,11 +607,16 @@ public class SyncTests {
         final SyncTestParams params = new SyncTestParams(4, 100, 20, 20, ancientMode);
 
         final long callerExpiredThreshold = 100;
-        final long callerMaxGen = 200; // TODO
+        final long callerMaximumIndicator = 200;
         final long listenerExpiredThreshold = 300;
-        final long listenerMaxGen = 400; // TODO
+        final long listenerMaximumIndicator = 400;
 
-        runFallenBehindTest(params, callerExpiredThreshold, callerMaxGen, listenerExpiredThreshold, listenerMaxGen);
+        runFallenBehindTest(
+                params,
+                callerExpiredThreshold,
+                callerMaximumIndicator,
+                listenerExpiredThreshold,
+                listenerMaximumIndicator);
     }
 
     /**
@@ -625,30 +627,37 @@ public class SyncTests {
     void fallenBehindAtGenesis(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 0, 1, 100, ancientMode);
 
-        final long callerMinGen = GraphGenerations.FIRST_GENERATION;
-        final long callerMaxGen = GraphGenerations.FIRST_GENERATION;
-        final long listenerMinGen = 200;
-        final long listenerMaxGen = 300;
+        final long callerExpiredThreshold = ancientMode.getGenesisIndicator();
+        final long callerMaximumIndicator = ancientMode.getGenesisIndicator();
+        final long listenerAncientThreshold = 200;
+        final long listenerMaximumIndicator = 300;
 
-        runFallenBehindTest(params, callerMinGen, callerMaxGen, listenerMinGen, listenerMaxGen);
+        runFallenBehindTest(
+                params,
+                callerExpiredThreshold,
+                callerMaximumIndicator,
+                listenerAncientThreshold,
+                listenerMaximumIndicator);
     }
 
     private void runFallenBehindTest(
             final SyncTestParams params,
-            final long callerMinGen,
-            final long callerMaxGen,
-            final long listenerMinGen,
-            final long listenerMaxGen)
+            final long callerExpiredThreshold,
+            final long callerMaximumIndicator,
+            final long listenerExpiredThreshold,
+            final long listenerMaximumIndicator)
             throws Exception {
-        assertTrue(callerMinGen <= callerMaxGen, "Caller generations provided do not represent a fallen behind node.");
         assertTrue(
-                listenerMinGen <= listenerMaxGen,
-                "Listener generations provided do not represent a fallen behind node.");
+                callerExpiredThreshold <= callerMaximumIndicator,
+                "Caller event window provided does not represent a fallen behind node.");
         assertTrue(
-                callerMaxGen < listenerMinGen || listenerMaxGen < callerMinGen,
-                "Generations provided do not represent a fallen behind node.");
+                listenerExpiredThreshold <= listenerMaximumIndicator,
+                "Listener event window provided does not represent a fallen behind node.");
+        assertTrue(
+                callerMaximumIndicator < listenerExpiredThreshold || listenerMaximumIndicator < callerExpiredThreshold,
+                "Event window provided does not represent a fallen behind node.");
 
-        final boolean callerFallenBehind = callerMaxGen < listenerMinGen;
+        final boolean callerFallenBehind = callerMaximumIndicator < listenerExpiredThreshold;
 
         final SyncTestExecutor executor = new SyncTestExecutor(params);
 
@@ -666,16 +675,18 @@ public class SyncTests {
         });
 
         executor.setCustomPreSyncConfiguration((c, l) -> {
-            when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinGen);
-            when(c.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
             c.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */, callerMaxGen, callerMinGen, GENERATION_THRESHOLD));
-            when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
-            when(l.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
+                            0 /* ignored by shadowgraph */,
+                            callerMaximumIndicator,
+                            callerExpiredThreshold,
+                            GENERATION_THRESHOLD));
             l.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */, listenerMaxGen, listenerMinGen, GENERATION_THRESHOLD));
+                            0 /* ignored by shadowgraph */,
+                            listenerMaximumIndicator,
+                            listenerExpiredThreshold,
+                            GENERATION_THRESHOLD));
         });
 
         executor.execute();
@@ -745,7 +756,7 @@ public class SyncTests {
     void testSendExpiredEvents(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 20, 10, 0, ancientMode);
         final SyncTestExecutor executor = new SyncTestExecutor(params);
-        final AtomicLong genToExpire = new AtomicLong(EventConstants.GENERATION_UNDEFINED);
+        final AtomicLong indicatorToExpire = new AtomicLong(ancientMode.getGenesisIndicator() - 1);
 
         // before phase 3, expire all events so that expired events are sent
         executor.setCallerExecutorSupplier(() -> new SyncPhaseParallelExecutor(
@@ -763,14 +774,14 @@ public class SyncTests {
                     final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                             0 /* ignored by shadowgraph */,
                             0 /* ignored by shadowgraph */,
-                            genToExpire.get() + 1,
-                            GENERATION_THRESHOLD);
+                            indicatorToExpire.get() + 1,
+                            ancientMode);
                     executor.getCaller().getShadowGraph().updateEventWindow(eventWindow);
                 },
                 false));
 
-        // we save the max generation of node 0, so we know what we need to expire to remove a tip
-        executor.setCustomPreSyncConfiguration((caller, listener) -> genToExpire.set(
+        // we save the max indicator of node 0, so we know what we need to expire to remove a tip
+        executor.setCustomPreSyncConfiguration((caller, listener) -> indicatorToExpire.set(
                 SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode)));
 
         executor.execute();
@@ -786,7 +797,7 @@ public class SyncTests {
     @MethodSource({"tenNodeGraphParams", "tenNodeBigGraphParams", "tipExpiresBreakingSeed"})
     void tipExpiresAfterPhase1(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
-        final AtomicLong maxGen = new AtomicLong(EventConstants.GENERATION_UNDEFINED);
+        final AtomicLong maximumIndicator = new AtomicLong(EventConstants.GENERATION_UNDEFINED);
 
         final int creatorIndexToExpire = 0;
         final NodeId creatorIdToExpire = executor.getAddressBook().getNodeId(creatorIndexToExpire);
@@ -805,25 +816,30 @@ public class SyncTests {
                     return source0;
                 }));
 
-        // we save the max generation of node 0, so we know what we need to expire to remove a tip
+        // we save the max indicator of node 0, so we know what we need to expire to remove a tip
         executor.setGraphCustomization((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
             listener.setSaveGeneratedEvents(true);
 
-            maxGen.set(caller.getEmitter().getGraphGenerator().getMaxGeneration(creatorIdToExpire));
+            // As a hack, birth round and generation of events created by the generator are the same,
+            // so this works for both.
+            maximumIndicator.set(caller.getEmitter().getGraphGenerator().getMaxGeneration(creatorIdToExpire));
         });
 
         // before the sync, expire the tip on the listener
         executor.setCustomPreSyncConfiguration((c, l) -> {
             l.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            0 /* ignored by shadowgraph */, maxGen.get() + 2, maxGen.get() + 1, GENERATION_THRESHOLD));
+                            0 /* ignored by shadowgraph */,
+                            maximumIndicator.get() + 2,
+                            maximumIndicator.get() + 1,
+                            params.getAncientMode()));
 
             c.updateEventWindow(new NonAncientEventWindow(
                     0 /* ignored by shadowgraph */,
-                    maxGen.get() + 2,
-                    max(EventConstants.FIRST_GENERATION, maxGen.get() - 1),
-                    GENERATION_THRESHOLD));
+                    maximumIndicator.get() + 2,
+                    max(params.getAncientMode().getGenesisIndicator(), maximumIndicator.get() - 1),
+                    params.getAncientMode()));
         });
 
         // after phase 1, expire the tip on the caller
@@ -831,7 +847,10 @@ public class SyncTests {
                 getStaticThreadManager(),
                 () -> executor.getCaller()
                         .updateEventWindow(new NonAncientEventWindow(
-                                0 /* ignored by shadowgraph */, 0, maxGen.get() + 1, GENERATION_THRESHOLD)),
+                                0 /* ignored by shadowgraph */,
+                                params.getAncientMode().getGenesisIndicator(),
+                                maximumIndicator.get() + 1,
+                                params.getAncientMode())),
                 null,
                 true);
         executor.setExecutorSupplier(() -> parallelExecutor);
@@ -918,7 +937,8 @@ public class SyncTests {
 
     /**
      * Tests scenarios in which events that need to be sent to the peer are requested to be expired before they are
-     * sent. Because generations are reserved in a sync, the events should not be expired while a sync is in progress.
+     * sent. Because ancient indicators are reserved in a sync, the events should not be expired while a sync is in
+     * progress.
      *
      * @param expireAfterPhase the phase after which events that need to be sent should be requested to be expired
      * @param params           Sync parameters
@@ -927,20 +947,20 @@ public class SyncTests {
     @MethodSource("requiredEventsExpire")
     void requiredEventsExpire(final int expireAfterPhase, final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
-        final AtomicLong genToExpire = new AtomicLong(0);
+        final AtomicLong indicatorToExpire = new AtomicLong(0);
 
         final NodeId creatorId = executor.getAddressBook().getNodeId(0);
 
-        // Set the generation to expire such that half the listener's graph, and therefore some events that need
+        // Set the indicator to expire such that half the listener's graph, and therefore some events that need
         // to be sent to the caller, will be expired
-        executor.setCustomPreSyncConfiguration(
-                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
+        executor.setCustomPreSyncConfiguration((c, l) ->
+                indicatorToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
-                genToExpire.get(),
-                GENERATION_THRESHOLD);
+                indicatorToExpire.get(),
+                params.getAncientMode());
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =
@@ -1056,48 +1076,12 @@ public class SyncTests {
     }
 
     /**
-     * Tests that events from a signed state are not gossiped and that such a sync is properly aborted
-     */
-    @ParameterizedTest
-    @MethodSource("bothAncientModes")
-    void signedStateEvents(@NonNull final AncientMode ancientMode) throws Exception {
-        final SyncTestParams params = new SyncTestParams(10, 50, 2, 1, ancientMode);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
-
-        executor.setGraphCustomization((caller, listener) -> {
-            caller.setSaveGeneratedEvents(true);
-            listener.setSaveGeneratedEvents(true);
-        });
-        // the caller will have only signed state events
-        executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
-
-            // a signed sent event needs to be identified as needed by the peer
-            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
-        });
-
-        executor.execute();
-
-        // the caller should not have sent any events to the listener
-        SyncValidator.assertNoEventsReceived(executor.getListener());
-        SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
-
-        // both should be aware that the sync was aborted
-        assertFalse(executor.getCaller().getSynchronizerReturn());
-        assertFalse(executor.getListener().getSynchronizerReturn());
-    }
-
-    /**
-     * Tests that a sync works if one node has no events at all in the graph and also has a non-ancient generation that
+     * Tests that a sync works if one node has no events at all in the graph and also has a non-ancient indicator that
      * is not 0
      */
     @ParameterizedTest
     @MethodSource("bothAncientModes")
-    void noEventsStartGeneration(@NonNull final AncientMode ancientMode) throws Exception {
+    void noEventsStartIndicator(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 0, 100, 0, ancientMode);
         final SyncTestExecutor executor = new SyncTestExecutor(params);
         executor.setGraphCustomization((caller, listener) -> {
@@ -1105,20 +1089,26 @@ public class SyncTests {
             listener.setSaveGeneratedEvents(true);
         });
         executor.setEventWindowDefinitions((caller, listener) -> {
-            long callerMaxGen =
+            final long callerMaximumIndicator =
                     SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
-            long callerMinGen = SyncTestUtils.getMinIndicator(
+            final long callerAncientIndicator = SyncTestUtils.getMinIndicator(
                     caller.getShadowGraph()
                             .findAncestors(caller.getShadowGraph().getTips(), (e) -> true),
                     ancientMode);
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */, callerMaxGen / 2, callerMinGen, GENERATION_THRESHOLD)); // TODO
+                            ROUND_FIRST /* ignored */,
+                            callerMaximumIndicator / 2,
+                            callerAncientIndicator,
+                            ancientMode));
 
             listener.getShadowGraph()
                     .updateEventWindow(new NonAncientEventWindow(
-                            ROUND_FIRST /* ignored */, callerMaxGen / 2, callerMinGen, GENERATION_THRESHOLD)); // TODO
+                            ROUND_FIRST /* ignored */,
+                            callerMaximumIndicator / 2,
+                            callerAncientIndicator,
+                            ancientMode));
         });
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());

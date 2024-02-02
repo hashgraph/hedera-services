@@ -32,10 +32,12 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -131,7 +133,10 @@ public class SyncNode {
 
         // The original sync tests are incompatible with event filtering.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(
+                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                        ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
         platformContext = TestPlatformContextBuilder.create()

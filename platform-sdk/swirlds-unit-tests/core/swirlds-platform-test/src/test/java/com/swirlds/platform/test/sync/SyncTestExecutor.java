@@ -230,12 +230,15 @@ public class SyncTestExecutor {
             }
 
             caller.updateEventWindow(new NonAncientEventWindow(
-                    ancientMode.getGenesisIndicator(), callerAncientThreshold, callerExpiredThreshold, ancientMode));
+                    ancientMode.getGenesisIndicator(),
+                    Math.max(ancientMode.getGenesisIndicator(), callerAncientThreshold),
+                    Math.max(ancientMode.getGenesisIndicator(), callerExpiredThreshold),
+                    ancientMode));
 
             listener.updateEventWindow(new NonAncientEventWindow(
                     ancientMode.getGenesisIndicator(),
-                    listenerAncientThreshold,
-                    listenerExpiredThreshold,
+                    Math.max(ancientMode.getGenesisIndicator(), listenerAncientThreshold),
+                    Math.max(ancientMode.getGenesisIndicator(), listenerExpiredThreshold),
                     ancientMode));
         };
     }
