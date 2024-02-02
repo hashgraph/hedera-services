@@ -78,8 +78,8 @@ public class SelfDestructSuite extends HapiSuite {
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
                 selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(),
                 testSelfDestructForSystemAccounts());
-                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed());
     }
 
     @Override
@@ -152,6 +152,18 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
+        return defaultHapiSpec("selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed")
+                .given(
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
+                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
+                .when(contractCallLocal(
+                                SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
+                        .hasAnswerOnlyPrecheck(LOCAL_CALL_MODIFICATION_EXCEPTION))
+                .then();
+    }
+
+    @HapiTest
     final HapiSpec testSelfDestructForSystemAccounts() {
         final AtomicLong deployer = new AtomicLong();
         final var nonExistingAccountsOps = createOpsArray(
@@ -186,17 +198,5 @@ public class SelfDestructSuite extends HapiSuite {
                     .hasKnownStatus(status);
         }
         return opsArray;
-    }
-
-    @HapiTest
-    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
-        return defaultHapiSpec("selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed")
-                .given(
-                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
-                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
-                .when(contractCallLocal(
-                                SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
-                        .hasAnswerOnlyPrecheck(LOCAL_CALL_MODIFICATION_EXCEPTION))
-                .then();
     }
 }
