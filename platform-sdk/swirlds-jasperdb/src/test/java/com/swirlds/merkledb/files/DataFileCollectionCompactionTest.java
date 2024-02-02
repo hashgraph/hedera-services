@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

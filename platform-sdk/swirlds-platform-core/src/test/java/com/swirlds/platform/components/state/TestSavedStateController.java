@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.components.state;
 
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Deque;
 import java.util.LinkedList;

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;

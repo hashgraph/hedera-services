@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.notification.internal.Dispatcher;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.threading.futures.StandardFuture;
-import com.swirlds.test.framework.TestComponentTags;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;

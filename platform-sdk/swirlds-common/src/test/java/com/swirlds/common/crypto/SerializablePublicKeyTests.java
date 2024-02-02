@@ -21,7 +21,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
