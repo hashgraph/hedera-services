@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
@@ -59,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -136,7 +138,9 @@ public class NonceSuite extends HapiSuite {
                 // successful ethereum transactions via internal calls
                 nonceUpdatedAfterSuccessfulInternalCall(),
                 nonceUpdatedAfterSuccessfulInternalTransfer(),
-                nonceUpdatedAfterSuccessfulInternalContractDeployment());
+                nonceUpdatedAfterSuccessfulInternalContractDeployment(),
+                // successful ethereum contract deploy
+                nonceUpdatedAfterSuccessfulEthereumContractCreation());
     }
 
     @HapiTest
@@ -740,6 +744,28 @@ public class NonceSuite extends HapiSuite {
                         getTxnRecord(TX)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().signerNonce(1L))));
+    }
+
+    private HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
+        return defaultHapiSpec("nonceUpdatedAfterSuccessfulInternalContractDeployment", NONDETERMINISTIC_ETHEREUM_DATA)
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT))
+                .when(ethereumContractCreate(INTERNAL_CALLER_CONTRACT)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
     @Override

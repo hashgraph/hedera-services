@@ -220,6 +220,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         accountStore.loadAccount(relayerId),
                         userOfferedGasPrice,
                         maxGasAllowance);
+                result.setSignerNonce(worldState.get(senderId.asEvmAddress()).getNonce());
             }
         } finally {
             worldState.resetHapiSenderCustomizer();
