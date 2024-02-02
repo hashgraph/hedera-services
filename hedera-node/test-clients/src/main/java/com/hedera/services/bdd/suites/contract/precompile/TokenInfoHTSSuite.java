@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -560,14 +561,14 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(new byte[20]))
                                 .via(TOKEN_INFO_TXN + 1)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(new byte[20]))
                                 .via(TOKEN_INFO_TXN + 2)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords().logged(),
@@ -593,6 +594,30 @@ public class TokenInfoHTSSuite extends HapiSuite {
                         //                                                                0,
                         //                                                                ByteString.EMPTY
                         //                                                                )))))
+                        //                                                ,childRecordsCheck(
+                        //                                                        TOKEN_INFO_TXN + 1,
+                        //                                                        CONTRACT_REVERT_EXECUTED,
+                        //                                                        recordWith()
+                        //                                                                .status(INVALID_TOKEN_ID)
+                        //
+                        // .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        //                         .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
+                        //
+                        // .withStatus(INVALID_TOKEN_ID)
+                        //
+                        //                         .withTokenInfo(getTokenInfoStructForEmptyFungibleToken(
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //
+                        //                         AccountID.getDefaultInstance(),
+                        //                                                                                        0,
+                        //
+                        // ByteString.EMPTY
+                        //                                                                                        )))))
 
                         )));
     }
@@ -679,7 +704,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         1L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
@@ -688,7 +713,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         2L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                 .andAllChildRecords()
@@ -738,6 +763,13 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME))))
                                 .via(TOKEN_INFO_TXN)
                                 .gas(1_000_000L),
+                        //                        , contractCall(
+                        //                                TOKEN_INFO_CONTRACT,
+                        //                                GET_CUSTOM_FEES_FOR_TOKEN,
+                        //                                HapiParserUtil.asHeadlongAddress(new byte[20]))
+                        //                                .via("fakeAddressTokenInfo")
+                        //                                .gas(1_000_000L)
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCallLocal(
                                 TOKEN_INFO_CONTRACT,
                                 GET_CUSTOM_FEES_FOR_TOKEN,
@@ -755,7 +787,19 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
                                                         .withStatus(SUCCESS)
-                                                        .withCustomFees(getExpectedCustomFees(spec))))))));
+                                                        .withCustomFees(getExpectedCustomFees(spec)))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressTokenInfo",
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(INVALID_TOKEN_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                        //                                                        .withStatus(INVALID_TOKEN_ID)
+                        //                                                        .withCustomFees(new ArrayList<>()))))
+                        )));
     }
 
     @HapiTest
