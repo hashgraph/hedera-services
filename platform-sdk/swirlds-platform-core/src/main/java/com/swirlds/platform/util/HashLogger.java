@@ -18,11 +18,9 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -43,39 +41,24 @@ import org.apache.logging.log4j.message.ParameterizedMessageFactory;
 public class HashLogger {
     private static final Logger logger = LogManager.getLogger(HashLogger.class);
     private static final MessageFactory MESSAGE_FACTORY = ParameterizedMessageFactory.INSTANCE;
-    private static final int LOGGING_QUEUE_CAPACITY = 100;
-
     private final AtomicLong lastRoundLogged = new AtomicLong(-1);
     private final StateConfig stateConfig;
-    private final QueueThread<Runnable> logQueue;
     private final Logger logOutput; // NOSONAR: selected logger to output to.
     private final boolean isEnabled;
 
     /**
      * Construct a HashLogger.
      *
-     * @param threadManager responsible for creating and managing threads
      * @param stateConfig   configuration for the current state.
      */
-    public HashLogger(@NonNull final ThreadManager threadManager, @NonNull final StateConfig stateConfig) {
-        this(threadManager, stateConfig, logger);
+    public HashLogger(@NonNull final StateConfig stateConfig) {
+        this(stateConfig, logger);
     }
 
     // Visible for testing
-    HashLogger(
-            @NonNull final ThreadManager threadManager,
-            @NonNull final StateConfig stateConfig,
-            @NonNull final Logger logOutput) {
+    HashLogger(@NonNull final StateConfig stateConfig, @NonNull final Logger logOutput) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
         isEnabled = stateConfig.enableHashStreamLogging();
-        logQueue = !isEnabled
-                ? null
-                : new QueueThreadConfiguration<Runnable>(Objects.requireNonNull(threadManager))
-                        .setComponent("logging")
-                        .setThreadName("log-hashstream")
-                        .setCapacity(LOGGING_QUEUE_CAPACITY)
-                        .setHandler(Runnable::run)
-                        .build(isEnabled /*start*/);
         this.logOutput = Objects.requireNonNull(logOutput);
     }
 
@@ -99,22 +82,15 @@ public class HashLogger {
     }
 
     /**
-     * @return logging queue for unit testing.
-     */
-    QueueThread<Runnable> queue() {
-        return logQueue;
-    }
-
-    /**
      * Queues the provided signed state for extracting hashes and logging.
      *
      * @param signedState the signed state to retrieve hash information from and log.
      */
-    public void logHashes(final SignedState signedState) {
+    public void logHashes(final ReservedSignedState signedState) {
         if (!isEnabled) {
             return;
         }
-        logQueue.offer(() -> log(signedState)); // NOSONAR: silently drop message if unable to queue.
+        log(signedState.get());
     }
 
     private Message generateLogMessage(@NonNull final SignedState signedState) {

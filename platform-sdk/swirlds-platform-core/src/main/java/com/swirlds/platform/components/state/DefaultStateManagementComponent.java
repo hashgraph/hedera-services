@@ -20,7 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -28,7 +27,6 @@ import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
-import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -49,9 +47,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateHasher signedStateHasher;
 
     /**
-     * A logger for hash stream data
+     * A logger handler for hash stream data
      */
-    private final HashLogger hashLogger;
+    private final Consumer<ReservedSignedState> hashLogger;
 
     /**
      * Used to track signed state leaks, if enabled
@@ -69,6 +67,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param stateSigner        signs a state
      * @param sigCollector       collects signatures for a state
      * @param signedStateMetrics metrics about signed states
+     * @param hashLogger         a logger for hash stream data
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -76,11 +75,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Consumer<ReservedSignedState> stateSigner,
             @NonNull final Consumer<ReservedSignedState> sigCollector,
-            @NonNull final SignedStateMetrics signedStateMetrics) {
+            @NonNull final SignedStateMetrics signedStateMetrics,
+            @NonNull final Consumer<ReservedSignedState> hashLogger) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(fatalErrorConsumer);
+        Objects.requireNonNull(hashLogger);
 
         // Various metrics about signed states
 
@@ -88,16 +89,14 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
         this.stateSigner = Objects.requireNonNull(stateSigner);
         this.sigCollector = Objects.requireNonNull(sigCollector);
-
-        hashLogger =
-                new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
+        this.hashLogger = Objects.requireNonNull(hashLogger);
 
         signedStateHasher = new SignedStateHasher(signedStateMetrics, fatalErrorConsumer);
     }
 
     private void logHashes(final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
-            hashLogger.logHashes(signedState);
+            hashLogger.accept(signedState.reserve("logging hash state"));
         }
     }
 
