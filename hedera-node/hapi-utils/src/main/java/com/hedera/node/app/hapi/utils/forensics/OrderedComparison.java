@@ -68,8 +68,28 @@ public class OrderedComparison {
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
         System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
+        List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        return diff(firstEntries, secondEntries, recordDiffSummarizer);
+        return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
+    }
+
+    @NonNull
+    private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
+            List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
+        List<RecordStreamEntry> ret = new ArrayList<>();
+        RecordStreamEntry firstEntry, secondEntry;
+        int secondIndex = 0;
+        for (RecordStreamEntry entry : firstEntries) {
+            firstEntry = entry;
+            secondEntry = secondEntries.get(secondIndex);
+            if (secondEntry.consensusTime().equals(firstEntry.consensusTime())) {
+                ret.add(secondEntry);
+                secondIndex++;
+            } else {
+                ret.add(new RecordStreamEntry(null, null, firstEntry.consensusTime()));
+            }
+        }
+        return ret;
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
@@ -92,6 +112,14 @@ public class OrderedComparison {
         for (int i = 0; i < minSize; i++) {
             final var firstEntry = firstEntries.get(i);
             try {
+                if (secondEntries.get(i).txnRecord() == null) {
+                    diffs.add(new DifferingEntries(
+                            firstEntry,
+                            null,
+                            "No record found at " + firstEntry.consensusTime() + " for transactionID : "
+                                    + firstEntry.txnRecord().getTransactionID()));
+                    continue;
+                }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
                 if (!firstEntry.txnRecord().equals(secondEntry.txnRecord())) {
                     final var summary = recordDiffSummarizer == null
