@@ -88,6 +88,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -328,10 +329,11 @@ public class HandleWorkflow {
         TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
+        TransactionInfo transactionInfo = null;
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
-            final var transactionInfo = preHandleResult.txInfo();
+            transactionInfo = preHandleResult.txInfo();
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
@@ -581,7 +583,7 @@ public class HandleWorkflow {
         }
 
         networkUtilizationManager.saveTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
+        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
 
         // Commit all state changes
         stack.commitFullStack();

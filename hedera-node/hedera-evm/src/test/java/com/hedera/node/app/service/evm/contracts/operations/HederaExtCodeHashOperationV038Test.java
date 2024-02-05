@@ -86,6 +86,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @Test
     void executeResolvesToInvalidSolidityAddress() {
+        givenMessageFrameWithRemainingGasNoUpdater(ACTUAL_COST);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
         given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
@@ -98,7 +99,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @Test
     void executeResolvesToInvalidSolidityAddressAndcallsToNonExistingEntitiesEnabledFalse() {
-        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        givenMessageFrameWithRemainingGasNoUpdater(ACTUAL_COST);
         given(addressValidator.test(any(), any())).willReturn(false);
         given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
@@ -110,9 +111,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @Test
     void executeResolvesToInsufficientGas() {
-        givenMessageFrameWithRemainingGas(ACTUAL_COST - 1L);
-        given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
+        givenMessageFrameWithRemainingGasNoUpdater(ACTUAL_COST - 1L);
 
         var opResult = subject.execute(mf, evm);
 
@@ -137,6 +136,9 @@ class HederaExtCodeHashOperationV038Test {
         // given
         subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        given(mf.warmUpAddress(ETH_ADDRESS_INSTANCE)).willReturn(true);
+        given(mf.getRemainingGas()).willReturn(ACTUAL_COST);
+
         // when
         var opResult = subject.execute(mf, evm);
         // then
@@ -183,6 +185,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeThrowsTooManyStackItems() {
         // given
         subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
+        givenMessageFrameWithRemainingGasNoUpdater(ACTUAL_COST);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         doThrow(OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
         // when
@@ -198,5 +201,11 @@ class HederaExtCodeHashOperationV038Test {
         given(mf.warmUpAddress(ETH_ADDRESS_INSTANCE)).willReturn(true);
         given(mf.getRemainingGas()).willReturn(gas);
         given(worldUpdater.get(ETH_ADDRESS_INSTANCE)).willReturn(account);
+    }
+
+    private void givenMessageFrameWithRemainingGasNoUpdater(long gas) {
+        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        given(mf.warmUpAddress(ETH_ADDRESS_INSTANCE)).willReturn(true);
+        given(mf.getRemainingGas()).willReturn(gas);
     }
 }

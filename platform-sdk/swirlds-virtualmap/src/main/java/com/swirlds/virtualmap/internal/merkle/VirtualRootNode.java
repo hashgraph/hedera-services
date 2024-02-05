@@ -1409,8 +1409,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         reconnectRecords = new RecordAccessorImpl<>(reconnectState, snapshotCache, dataSource);
 
         // During reconnect we want to look up state from the original records
-        learnerTreeView = new VirtualLearnerTreeView<>(
-                this, originalMap.records, dataSource.buildKeySet(), originalMap.getState(), reconnectState);
+        learnerTreeView =
+                new VirtualLearnerTreeView<>(this, originalMap.records, originalMap.getState(), reconnectState);
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
