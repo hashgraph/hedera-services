@@ -285,12 +285,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasChildRecordCount(final int count) {
-        requestChildRecords = true;
-        childRecordsCount = OptionalInt.of(count);
-        return this;
-    }
-
     public HapiGetTxnRecord hasNonStakingChildRecordCount(final int count) {
         requestChildRecords = true;
         includeStakingRecordsInCount = false;

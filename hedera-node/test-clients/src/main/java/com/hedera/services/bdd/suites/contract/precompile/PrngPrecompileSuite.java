@@ -266,7 +266,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         .logged()))
                 .then(getTxnRecord(randomBits)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith()
                                 .pseudoRandomBytes()
                                 .contractCallResult(resultWith()
