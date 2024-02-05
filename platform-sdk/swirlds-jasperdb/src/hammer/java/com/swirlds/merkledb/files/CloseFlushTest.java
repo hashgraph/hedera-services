@@ -31,7 +31,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
@@ -203,11 +202,6 @@ public class CloseFlushTest {
                 @Override
                 public void registerMetrics(final Metrics metrics) {
                     delegate.registerMetrics(metrics);
-                }
-
-                @Override
-                public VirtualKeySet<K> buildKeySet() {
-                    return delegate.buildKeySet();
                 }
 
                 @Override
