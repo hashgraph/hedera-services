@@ -482,4 +482,22 @@ extraJavaModuleInfo {
     knownModule("org.junit.jupiter:junit-jupiter-api", "org.junit.jupiter.api")
     knownModule("org.ow2.asm:asm", "org.objectweb.asm")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
+
+    // New stuff is below this line, will alphabetize later
+    module("io.libp2p:jvm-libp2p", "io.libp2p") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.guava:guava", "com.google.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.guava:failureaccess", "com.google.common.util.concurrent.internal") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.github.multiformats:java-multibase", "com.github.multiformats.multibase") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
 }

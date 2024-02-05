@@ -32,4 +32,9 @@ repositories {
     }
     maven { url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531") }
+
+    // New stuff is below this line, will alphabetize later
+    maven { url = uri("https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/") }
+    maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
 }

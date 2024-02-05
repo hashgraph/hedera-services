@@ -110,4 +110,11 @@ moduleInfo {
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+
+    // New stuff is below this line, will alphabetize later
+
+    version("io.libp2p", "1.1.0-RELEASE")
+    version("com.google.common", "33.0.0-jre")
+    version("com.google.common.util.concurrent.internal", "1.0.2")
+    version("com.github.multiformats.multibase", "1.0.1")
 }
