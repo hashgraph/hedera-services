@@ -75,7 +75,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
 
         this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform")
-                .setThreadName("status-state-machine")
+                .setThreadName("status_state_machine")
                 .setHandler(this::processStatusAction)
                 .setIdleCallback(this::triggerTimeElapsed)
                 .setBatchHandledCallback(this::triggerTimeElapsed)

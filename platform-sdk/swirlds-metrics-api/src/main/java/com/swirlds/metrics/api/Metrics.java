@@ -36,7 +36,7 @@ public interface Metrics extends Startable {
 
     String INTERNAL_CATEGORY = "internal";
     String PLATFORM_CATEGORY = "platform";
-    String INFO_CATEGORY = "platform.info";
+    String INFO_CATEGORY = "platform:info";
 
     /**
      * Get a single {@link Metric} identified by its category and name

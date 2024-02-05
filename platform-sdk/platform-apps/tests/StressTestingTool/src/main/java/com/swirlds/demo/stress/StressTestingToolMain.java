@@ -73,7 +73,7 @@ public class StressTestingToolMain implements SwirldMain {
     private final StoppableThread transactionGenerator;
 
     private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+            new SpeedometerMetric.Config("Debug:info", "tranSubTPS").withDescription("Transaction submitted TPS");
 
     private SpeedometerMetric transactionSubmitSpeedometer;
 
