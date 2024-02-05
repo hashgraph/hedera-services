@@ -72,7 +72,7 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
      * This implementation doesn't need to remove any leaves.
      */
     @Override
-    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(long maxPath) {
+    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove() {
         return Stream.empty();
     }
 }

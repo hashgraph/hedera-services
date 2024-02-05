@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -436,13 +437,13 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NFTexpired)
+                        sourcing(() -> tokenCreate(NFTexpired)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .initialSupply(0)
                                 .expiry(Instant.now().getEpochSecond() + 5L)
-                                .treasury(TOKEN_TREASURY),
+                                .treasury(TOKEN_TREASURY)),
                         mintToken(NFTexpired, List.of(metadata(FIRST_MEMO))))
                 .when(sleepFor(6000))
                 .then(getTokenNftInfo(NFTexpired, 1).hasCostAnswerPrecheckFrom(OK));
