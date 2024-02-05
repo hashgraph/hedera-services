@@ -73,6 +73,7 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
             // to be compatible with mono-service
             recordBuilder.transferList(TransferList.DEFAULT);
         } else if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
+            // set null to transfer list if the child record failed to be compatible with mono-service
             recordBuilder.transferList(null);
         }
 

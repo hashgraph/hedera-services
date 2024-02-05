@@ -164,12 +164,11 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
         given(recordBuilder.status()).willReturn(SUCCESS);
-        subject.finalizeChildRecord(context);
+        subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
 
-        verify(recordBuilder).status();
         BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
         BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
@@ -327,6 +326,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         verify(recordBuilder).status();
         BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
         BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
