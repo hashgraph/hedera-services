@@ -75,6 +75,8 @@ public class NonceSuite extends HapiSuite {
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String MANY_CHILDREN_CONTRACT = "ManyChildren";
     private static final String FACTORY_CONTRACT = "FactoryContract";
+    private static final String REVERTER_CONSTRUCTOR_CONTRACT = "ReverterConstructor";
+    private static final String REVERTER_TRANSFER_CONTRACT = "ReverterTransfer";
     private static final String EXTERNAL_FUNCTION = "externalFunction";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
@@ -128,6 +130,10 @@ public class NonceSuite extends HapiSuite {
                 nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailedEthContractCreate(),
                 nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate(),
                 nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate(),
+                // evm smart contract reversions for contract creation
+                nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate(),
+                nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate(),
+                nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate(),
                 // successful ethereum contract deploy
                 nonceUpdatedAfterSuccessfulEthereumContractCreation());
     }
@@ -830,6 +836,78 @@ public class NonceSuite extends HapiSuite {
                                 .hasPriority(recordWith()
                                         .status(INSUFFICIENT_PAYER_BALANCE)
                                         .contractCallResult(resultWith().signerNonce(0L))));
+    }
+
+    private HapiSpec nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate() {
+        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(REVERTER_CONSTRUCTOR_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_CONTRACT)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
+    }
+
+    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate() {
+        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(REVERTER_TRANSFER_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_TRANSFER_CONTRACT)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(60_000L)
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(INSUFFICIENT_GAS)
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
+    }
+
+    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate() {
+        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(REVERTER_TRANSFER_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_TRANSFER_CONTRACT)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
     private HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
