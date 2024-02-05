@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.BasicConfig_;
+import com.swirlds.common.config.BasicCommonConfig_;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.IntegerAccumulator;
@@ -40,7 +41,6 @@ import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,8 +65,8 @@ class LegacyCsvWriterTest {
         configuration = new TestConfigBuilder()
                 .withValue(MetricsConfig_.CSV_OUTPUT_FOLDER, tempDir.toString())
                 .withValue(MetricsConfig_.CSV_APPEND, "false")
-                .withValue(BasicConfig_.SHOW_INTERNAL_STATS, "false")
-                .withValue(BasicConfig_.VERBOSE_STATISTICS, "false")
+                .withValue(BasicCommonConfig_.SHOW_INTERNAL_STATS, "false")
+                .withValue(BasicCommonConfig_.VERBOSE_STATISTICS, "false")
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
@@ -382,7 +382,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithInternalNotIgnored() throws IOException {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(BasicConfig_.SHOW_INTERNAL_STATS, "true")
+                .withValue(BasicCommonConfig_.SHOW_INTERNAL_STATS, "true")
                 .getOrCreateConfig();
         // given
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
@@ -469,7 +469,7 @@ class LegacyCsvWriterTest {
                                 RunningAverageMetric Info:,RunningAverageMetric Info,
                                 SpeedometerMetric Info:,SpeedometerMetric Info,
 
-                                ,,platform,platform,platform\\.info,platform\\.info,
+                                ,,platform,platform,platform:info,platform:info,
                                 ,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
                                 ,,0\\.0,0\\.0,0\\.0,0\\.0,
                                 ,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
@@ -480,7 +480,7 @@ class LegacyCsvWriterTest {
     void testWriteWithSecondaryValuesIncluded() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(BasicConfig_.VERBOSE_STATISTICS, "true")
+                .withValue(BasicCommonConfig_.VERBOSE_STATISTICS, "true")
                 .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
@@ -519,7 +519,7 @@ class LegacyCsvWriterTest {
                                 RunningAverageMetric Info:,RunningAverageMetric Info,
                                 SpeedometerMetric Info:,SpeedometerMetric Info,
 
-                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform:info,platform:info,
                                 ,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
                                 ,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
                                 ,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
@@ -648,7 +648,7 @@ class LegacyCsvWriterTest {
     void testChangedEntriesWithComplexMetricsAndSecondaryValues() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(BasicConfig_.VERBOSE_STATISTICS, "true")
+                .withValue(BasicCommonConfig_.VERBOSE_STATISTICS, "true")
                 .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();

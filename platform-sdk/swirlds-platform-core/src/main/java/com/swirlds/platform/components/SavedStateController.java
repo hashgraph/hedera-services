@@ -22,7 +22,7 @@ import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
 import static com.swirlds.platform.state.signed.StateToDiskReason.RECONNECT;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateToDiskReason;

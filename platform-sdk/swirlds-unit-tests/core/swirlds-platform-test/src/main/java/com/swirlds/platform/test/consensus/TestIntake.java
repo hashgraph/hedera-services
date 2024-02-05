@@ -21,9 +21,11 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.LinkedEventIntake;
@@ -52,14 +54,14 @@ import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
@@ -93,7 +95,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-        final WiringModel model = WiringModel.create(platformContext, time);
+        final WiringModel model = WiringModel.create(platformContext, time, ForkJoinPool.commonPool());
 
         hashingObjectCounter = new BackpressureObjectCounter(
                 "hashingObjectCounter",
@@ -136,15 +138,19 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
+        final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
+
         hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        linkedEventIntakeWiring
+        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        linkedEventIntakeWiring
+        eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 

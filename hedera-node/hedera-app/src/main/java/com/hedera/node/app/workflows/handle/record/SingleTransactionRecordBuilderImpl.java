@@ -320,9 +320,7 @@ public class SingleTransactionRecordBuilderImpl
         serialNumbers.clear();
         tokenTransferLists.clear();
         automaticTokenAssociations.clear();
-        if (transferList != null && transferList.hasAccountAmounts()) {
-            transferList.accountAmounts().clear();
-        }
+        transferList = TransferList.DEFAULT;
         paidStakingRewards.clear();
         assessedCustomFees.clear();
 
@@ -420,6 +418,7 @@ public class SingleTransactionRecordBuilderImpl
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
         this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
 
@@ -526,7 +525,8 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @Override
-    public SingleTransactionRecordBuilderImpl transferList(final TransferList transferList) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }

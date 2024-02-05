@@ -115,12 +115,12 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                 metrics,
                 new CountPerSecond.Config(METRICS_CATEGORY, "msgsPerSecRead")
                         .withDescription("number of chatter messages read per second")
-                        .withUnit("messages/second"));
+                        .withUnit("messages_per_second"));
         this.msgsPerSecWrit = new CountPerSecond(
                 metrics,
                 new CountPerSecond.Config(METRICS_CATEGORY, "msgsPerSecWrit")
                         .withDescription("number of chatter messages written per second")
-                        .withUnit("messages/second"));
+                        .withUnit("messages_per_second"));
         selfProcessingTime =
                 metrics.getOrCreate(new DurationGauge.Config(METRICS_CATEGORY, "eventProcTime", ChronoUnit.MILLIS)
                         .withDescription("the time it takes to process and validate an event"));

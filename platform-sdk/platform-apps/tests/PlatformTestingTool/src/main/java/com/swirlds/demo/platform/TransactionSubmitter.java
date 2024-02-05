@@ -371,7 +371,7 @@ public class TransactionSubmitter {
             // it may try to catch up the lost transactions count by submitting
             // many transactions in short window and lead to a burst of transactions. This is not good for
             // platform, so we need to check the current TPS and make sure it is not too high.
-            final double tranSubTPS = (double) metrics.getValue("Debug.info", "tranSubTPS");
+            final double tranSubTPS = (double) metrics.getValue("Debug:info", "tranSubTPS");
             if (tranSubTPS > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
                 return false;
             }
@@ -390,13 +390,13 @@ public class TransactionSubmitter {
             }
 
         } else if (this.goal == SUBMIT_GOAL.EVENTS_PER_SECOND_WHOLE_NETWORK) {
-            double realEvensPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "events/sec");
+            double realEvensPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "events_per_sec");
             return realEvensPerSecond > eventsPerSecondGoal;
         } else if (this.goal == SUBMIT_GOAL.ROUNDS_PER_SECOND_WHOLE_NETWORK) {
-            final double realRoundsPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "rounds/sec");
+            final double realRoundsPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "rounds_per_sec");
             return realRoundsPerSecond <= roundsPerSecondGoal;
         } else if (this.goal == SUBMIT_GOAL.TRANS_PER_EVENT_WHOLE_NETWORK) {
-            final double realTranPerEvent = (double) metrics.getValue(PLATFORM_CATEGORY, "trans/event");
+            final double realTranPerEvent = (double) metrics.getValue(PLATFORM_CATEGORY, "trans_per_event");
             return realTranPerEvent <= tranPerEventGoal;
 
         } else if (this.goal == SUBMIT_GOAL.C2C_LATENCY) {

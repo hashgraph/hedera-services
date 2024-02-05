@@ -19,10 +19,10 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.gui.GuiConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.Chart;
@@ -228,7 +228,7 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
                     }
                 });
             }
-            if ("trans/sec".equals(metric.getName())) {
+            if ("trans_per_sec".equals(metric.getName())) {
                 showChart(j);
             }
         }

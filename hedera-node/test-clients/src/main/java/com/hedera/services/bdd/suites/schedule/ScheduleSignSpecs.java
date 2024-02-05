@@ -256,7 +256,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
                         getAccountBalance(receiver).hasTinyBars(0L),
                         cryptoUpdate(sender).key(NEW_SENDER_KEY),
-                        scheduleSign(schedule),
+                        scheduleSign(schedule).via("signTxn"),
+                        getTxnRecord("signTxn").hasScheduledTransactionId().logged(),
                         getAccountBalance(receiver).hasTinyBars(1L))
                 .then(
                         scheduleSign(schedule)
