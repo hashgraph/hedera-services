@@ -48,7 +48,7 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;

@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,14 +25,14 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.demo.platform.nft.Nft;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;
 import com.swirlds.demo.platform.nft.ReferenceNftLedger;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.test.framework.TestComponentTags;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;

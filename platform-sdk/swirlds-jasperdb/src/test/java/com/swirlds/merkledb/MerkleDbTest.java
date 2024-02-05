@@ -16,10 +16,9 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
@@ -31,7 +30,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -208,26 +206,7 @@ public class MerkleDbTest {
     }
 
     @Test
-    @DisplayName("Test creation of a virtual key set")
-    void testBuildKeySet() throws IOException {
-        final MerkleDb instance = MerkleDb.getDefaultInstance();
-        final String tableName = UUID.randomUUID().toString();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
-        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
-                instance.createDataSource(tableName, tableConfig, false);
-        VirtualKeySet<ExampleLongKeyFixedSize> keySet = dataSource.buildKeySet();
-        Assertions.assertNotNull(keySet);
-        for (int i = 0; i < 100; i++) {
-            keySet.add(new ExampleLongKeyFixedSize(i));
-        }
-        for (int i = 0; i < 100; i++) {
-            assertTrue(keySet.contains(new ExampleLongKeyFixedSize(i)));
-        }
-        dataSource.close();
-    }
-
-    @Test
-    void testVirtualKeySet() throws IOException {
+    void testCreateDataSource() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablea";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();

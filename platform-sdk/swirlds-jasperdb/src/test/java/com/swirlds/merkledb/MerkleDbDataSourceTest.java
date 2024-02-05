@@ -18,26 +18,29 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.shuffle;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.datasource.VirtualDataSource.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -48,6 +51,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -579,6 +583,97 @@ class MerkleDbDataSourceTest {
             // close data source
             dataSource.close();
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void dirtyDeletedLeavesBetweenFlushes(final TestType testType) throws IOException {
+        final String tableName = "vm";
+        final Path originalDbPath = testDirectory.resolve("merkledb-dirtyDeletedLeavesBetweenFlushes-" + testType);
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+                createDataSource(originalDbPath, tableName, testType, 100, 0);
+
+        final List<VirtualLongKey> keys = new ArrayList<>(31);
+        for (int i = 0; i < 31; i++) {
+            keys.add(testType.dataType().createVirtualLongKey(i));
+        }
+        final List<ExampleByteArrayVirtualValue> values = new ArrayList<>(31);
+        for (int i = 0; i < 31; i++) {
+            values.add(testType.dataType().createVirtualValue(i + 1));
+        }
+
+        // Initial DB state: 11 leaves, paths 10 to 20
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
+                IntStream.range(10, 21).mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i), values.get(i))),
+                Stream.empty());
+
+        // Load all leaves back from DB
+        final List<VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue>> oldLeaves = new ArrayList<>(11);
+        for (int i = 10; i < 21; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf = dataSource.loadLeafRecord(i);
+            assertNotNull(leaf);
+            assertEquals(i, leaf.getPath());
+            oldLeaves.add(leaf);
+        }
+
+        // First flush: move leaves 10 to 15 to paths 15 to 20, delete leaves 16 to 20
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 2)),
+                IntStream.range(10, 21).mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i - 5), values.get(i - 5))),
+                oldLeaves.subList(6, 11).stream());
+
+        // Check data after the first flush
+        for (int i = 0; i < 21; i++) {
+            final Hash hash = dataSource.loadHash(i);
+            assertNotNull(hash);
+            assertEquals(hash(i + 2), hash, "Wrong hash at path " + i);
+        }
+        for (int i = 5; i < 16; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNotNull(leaf, "Leaf with key " + i + " not found");
+            // // key 10 is moved to path 15, key 11 is moved to path 16, etc.
+            assertEquals(i + 5, leaf.getPath(), "Leaf path mismatch at path " + i);
+            assertEquals(keys.get(i), leaf.getKey(), "Wrong key at path " + i);
+            assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
+        }
+        for (int i = 16; i < 21; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNull(leaf); // no more leafs for keys 16 to 20
+        }
+
+        // Second flush: don't update leaves, delete leaves 10 to 15 (they must not be deleted
+        // as they were updated during the first flush)
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 3)),
+                Stream.empty(),
+                oldLeaves.subList(0, 6).stream());
+
+        // Check data after the second flush
+        for (int i = 0; i < 21; i++) {
+            final Hash hash = dataSource.loadHash(i);
+            assertNotNull(hash);
+            assertEquals(hash(i + 3), hash, "Wrong hash at path " + i);
+        }
+        for (int i = 5; i < 16; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNotNull(leaf, "Leaf with key " + i + " not found");
+            // // key 10 was moved to path 15, key 11 is moved to path 16, etc.
+            assertEquals(i + 5, leaf.getPath(), "Leaf path mismatch at path " + i);
+            assertEquals(keys.get(i), leaf.getKey(), "Wrong key at path " + i);
+            assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
+        }
+
+        dataSource.close();
     }
 
     // =================================================================================================================

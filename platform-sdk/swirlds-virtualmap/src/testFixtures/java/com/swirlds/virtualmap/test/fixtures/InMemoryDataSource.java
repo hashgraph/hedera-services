@@ -23,7 +23,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -268,14 +267,6 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         // this database has no statistics
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualKeySet<K> buildKeySet() {
-        return new InMemoryKeySet<>();
-    }
-
     // =================================================================================================================
     // private methods
 
@@ -335,8 +326,13 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         final var itr = leafRecordsToDelete.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
-            this.keyToPathMap.remove(rec.getKey());
-            this.leafRecords.remove(rec.getPath());
+            final long path = rec.getPath();
+            final K key = rec.getKey();
+            final long oldPath = keyToPathMap.get(key);
+            if (path == oldPath) {
+                this.keyToPathMap.remove(key);
+                this.leafRecords.remove(path);
+            }
         }
     }
 

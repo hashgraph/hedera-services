@@ -17,8 +17,8 @@
 package com.swirlds.common.threading.futures;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -84,6 +85,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -1517,6 +1519,36 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .contractCallResult(
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
+    }
+
+    @HapiTest
+    HapiSpec callFailsWhenAmountIsNegativeButStillChargedFee() {
+        final var payer = "payer";
+        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .adminKey(THRESHOLD)
+                                .gas(1_000_000),
+                        cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
+                .when(ifHapiTest(withOpContext((spec, ignore) -> {
+                    final var subop1 = balanceSnapshot("balanceBefore0", payer);
+                    final var subop2 = contractCall(PAY_RECEIVABLE_CONTRACT)
+                            .via(PAY_TXN)
+                            .payingWith(payer)
+                            .sending(-DEPOSIT_AMOUNT)
+                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE);
+                    final var subop3 = getTxnRecord(PAY_TXN).logged();
+                    allRunFor(spec, subop1, subop2, subop3);
+                    final var delta = subop3.getResponseRecord()
+                            .getTransferList()
+                            .getAccountAmounts(0)
+                            .getAmount();
+                    final var subop4 =
+                            getAccountBalance(payer).hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
+                    allRunFor(spec, subop4);
+                })))
+                .then();
     }
 
     @HapiTest
