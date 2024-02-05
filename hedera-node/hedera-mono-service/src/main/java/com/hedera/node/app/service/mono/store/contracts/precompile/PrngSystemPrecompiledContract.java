@@ -136,7 +136,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
             final long gasNeeded, final Bytes input, final MessageFrame frame) {
         try {
-            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
             return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);

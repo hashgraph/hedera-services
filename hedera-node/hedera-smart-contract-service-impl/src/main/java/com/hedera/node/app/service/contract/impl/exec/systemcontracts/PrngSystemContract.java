@@ -82,7 +82,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         final ContractID contractID = asEvmContractId(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
 
         try {
-            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             // compute the pseudorandom number
             final var randomNum = generatePseudoRandomData(input, frame);
             requireNonNull(randomNum);

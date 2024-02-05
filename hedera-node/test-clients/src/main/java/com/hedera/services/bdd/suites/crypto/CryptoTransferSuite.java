@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -95,12 +94,9 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
@@ -138,9 +134,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
-import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -150,7 +144,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2177,18 +2170,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .payingWith(SENDER)
                         .sending(ONE_HBAR * 10)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallLocal(
-                                        balanceContract,
-                                        "balanceOf",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(SENDER))))
-                                .has(ContractFnResultAsserts.resultWith()
-                                        .resultThruAbi(
-                                                getABIFor(FUNCTION, "balanceOf", balanceContract),
-                                                ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {BigInteger.valueOf(9994320000L)}))))));
+                .then(getAccountBalance(SENDER, false).hasTinyBars(9994320000L));
     }
 
     @Override

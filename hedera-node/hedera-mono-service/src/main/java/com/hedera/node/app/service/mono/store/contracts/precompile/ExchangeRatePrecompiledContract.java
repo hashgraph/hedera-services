@@ -85,7 +85,7 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
     @Override
     public Bytes compute(final Bytes input, final MessageFrame frame) {
         try {
-            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);
             final var activeRate = exchange.activeRate(consensusNow.get());

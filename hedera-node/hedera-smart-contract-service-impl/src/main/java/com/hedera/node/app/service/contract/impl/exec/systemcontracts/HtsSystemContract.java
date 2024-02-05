@@ -73,7 +73,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall call;
         final HtsCallAttempt attempt;
         try {
-            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {

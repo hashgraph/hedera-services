@@ -314,7 +314,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = null;
         this.transactionBody = null;
-        validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+        validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 

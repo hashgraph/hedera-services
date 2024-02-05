@@ -59,7 +59,7 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
         requireNonNull(input);
         requireNonNull(messageFrame);
         try {
-            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             gasRequirement = contractsConfigOf(messageFrame).precompileExchangeRateGasCost();
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);
