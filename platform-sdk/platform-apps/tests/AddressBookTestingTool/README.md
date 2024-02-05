@@ -9,7 +9,7 @@ Be sure to clean and assemble the whole project if the java files have been modi
 ### config.txt
 comment out the current app
 ```
-# app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
+# app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
 ```
 uncomment the AddressBookTestingTool.jar
 ```

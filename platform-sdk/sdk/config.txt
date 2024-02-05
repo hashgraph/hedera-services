@@ -3,10 +3,9 @@
 ###############################################################################################
 swirld, 123
 
- app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
 # app,		HelloSwirldDemo.jar
 # app,		CryptocurrencyDemo.jar
-# app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
+ app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
 
 
 # ** BEGIN REMOVE FROM SDK RELEASES **
@@ -94,12 +93,6 @@ nextNodeId, 4
 #	CryptocurrencyDemo.jar parameters: none
 #
 #	FilesystemDemo.jar parameters: none
-#
-#	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
-#		in the same order they appear are on the screen, with 1 to check it
-#		and 0 to not check it, followed by the number of events to display
-#		(or “all”). The first parameter  controls whether it runs
-#		slowly (1) or runs at full speed (0).
 #
 #	GameDemo.jar parameters:
 #		height:           height of the board (in cells). Player moves 1 cell at a time.
