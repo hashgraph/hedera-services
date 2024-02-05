@@ -30,13 +30,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
-import com.swirlds.virtualmap.test.fixtures.InMemoryKeySet;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.IOException;
@@ -370,14 +368,6 @@ public class RecordAccessorImplTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return new InMemoryKeySet<>();
         }
 
         /**

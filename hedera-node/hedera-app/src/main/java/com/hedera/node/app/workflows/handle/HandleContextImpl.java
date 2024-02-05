@@ -727,7 +727,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 new ReadableStoreFactory(childStack),
                 new WritableStoreFactory(childStack, TokenService.NAME),
                 childRecordBuilder);
-        childRecordFinalizer.finalizeChildRecord(finalizeContext);
+        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         childStack.commitFullStack();
     }
 
