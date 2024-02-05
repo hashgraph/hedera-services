@@ -77,7 +77,9 @@ public class SynchronizedThrottleAccumulator {
 
     public boolean shouldThrottleNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
         setDecisionTime();
-        return frontendThrottle.shouldThrottleNOfUnscaled(n, function, lastDecisionTime);
+        final var decision = frontendThrottle.shouldThrottleNOfUnscaled(n, function, lastDecisionTime);
+        setDecisionTime();
+        return decision;
     }
 
     private void setDecisionTime() {
