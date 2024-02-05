@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -116,7 +117,9 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     List<HapiSpec> positiveSpecs() {
         return List.of(
                 v2Security031AssociateSingleTokenWithDelegateContractKey(),
-                v2Security010NestedAssociateNftAndNonFungibleTokens());
+                v2Security010NestedAssociateNftAndNonFungibleTokens(),
+                V2Security036TokenAssociateFromDelegateCallWithDelegateContractId()
+        );
     }
 
     @HapiTest
@@ -524,6 +527,148 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS)))));
+    }
+
+    @HapiTest
+    final HapiSpec V2Security036TokenAssociateFromDelegateCallWithDelegateContractId() {
+
+        return propertyPreservingHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY),
+                        uploadInitCode(ASSOCIATE_CONTRACT, NESTED_ASSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
+                        //SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE(HTS)
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                "associateDelegateCall",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .via("nestedAssociateFungibleTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord("nestedAssociateFungibleTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        //non fungible token
+                        contractCall(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                "associateDelegateCall",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .via("nestedAssociateNonFungibleTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord("nestedAssociateNonFungibleTxn")
+                                .andAllChildRecords()
+                                .logged()
+                        )))
+                .then(
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable)),
+                        childRecordsCheck(
+                                "nestedAssociateFungibleTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "nestedAssociateNonFungibleTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))))
+                        );
+    }
+
+    @HapiTest
+    final HapiSpec V2Security041TokenAssociateFromStaticcallAndCallcode() {
+
+        return propertyPreservingHapiSpec("V2Security041TokenAssociateFromStaticcallAndCallcode")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY),
+                        uploadInitCode(ASSOCIATE_CONTRACT, NESTED_ASSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
+                        //SIGNER → call → CONTRACT A → staticcall → CONTRACT B → call → PRECOMPILE(HTS)
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                NESTED_ASSOCIATE_CONTRACT,
+                                "associateStaticCall",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .via("associateStaticcallFungibleTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("associateStaticcallFungibleTxn")
+                                .andAllChildRecords()
+                                .logged()
+                )))
+                .then(
+                        emptyChildRecordsCheck("associateStaticcallFungibleTxn", CONTRACT_REVERT_EXECUTED),
+                        getAccountInfo(ACCOUNT)
+                                .hasNoTokenRelationship(FUNGIBLE_TOKEN)
+                );
     }
 
     @Override
