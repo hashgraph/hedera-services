@@ -276,7 +276,7 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
         // but for compatibility with the current implementation, we adjust it as follows.
-        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000);
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
