@@ -78,6 +78,9 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          collector
  * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
  * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
+ * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
+ * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
+ *                                                          handler
  * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
  * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
  *                                                          buffer
@@ -119,6 +122,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
         @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
+        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
         @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,

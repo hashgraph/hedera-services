@@ -1,0 +1,111 @@
+/*
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.platform.metrics;
+
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE;
+
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Objects;
+
+/**
+ * Provides access to statistics relevant to {@link ConsensusRoundHandler}
+ */
+public class RoundHandlingMetrics {
+    private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
+            .withDescription("The consensus timestamp of the round currently being handled.")
+            .withUnit("milliseconds");
+    private final LongGauge consensusTime;
+
+    private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "consensusTimeDeviation")
+            .withDescription("The difference between the consensus time of the round currently being handled and this"
+                    + " node's wall clock time. Positive values mean that this node's clock is behind the consensus"
+                    + "time, negative values mean that it's ahead.")
+            .withUnit("milliseconds");
+    private final LongGauge consensusTimeDeviation;
+
+    private static final LongGauge.Config eventsPerRoundConfig = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "eventsPerRound")
+            .withDescription("The number of events per round")
+            .withUnit("count");
+    private final LongGauge eventsPerRound;
+
+    private final PhaseTimer<ConsensusRoundHandlerPhase> roundHandlerPhase;
+
+    private final Time time;
+
+    /**
+     * Constructor
+     *
+     * @param platformContext the platform context
+     */
+    public RoundHandlingMetrics(@NonNull final PlatformContext platformContext) {
+        this.time = platformContext.getTime();
+
+        final Metrics metrics = platformContext.getMetrics();
+
+        consensusTime = metrics.getOrCreate(consensusTimeConfig);
+        consensusTimeDeviation = metrics.getOrCreate(consensusTimeDeviationConfig);
+        eventsPerRound = metrics.getOrCreate(eventsPerRoundConfig);
+
+        this.roundHandlerPhase = new PhaseTimerBuilder<>(
+                        platformContext, time, "platform", ConsensusRoundHandlerPhase.class)
+                .enableFractionalMetrics()
+                .setInitialPhase(IDLE)
+                .setMetricsNamePrefix("consensus")
+                .build();
+    }
+
+    /**
+     * Records the number of events in a round.
+     *
+     * @param eventCount the number of events in the round
+     */
+    public void recordEventsPerRound(final int eventCount) {
+        eventsPerRound.set(eventCount);
+    }
+
+    /**
+     * Records the consensus time.
+     *
+     * @param consensusTime the consensus time of the last transaction in the round that is currently being handled
+     */
+    public void recordConsensusTime(@NonNull final Instant consensusTime) {
+        this.consensusTime.set(consensusTime.toEpochMilli());
+        consensusTimeDeviation.set(consensusTime.toEpochMilli() - time.now().toEpochMilli());
+    }
+
+    /**
+     * Activate a new phase of the consensus round handler.
+     *
+     * @param phase the new phase
+     */
+    public void setPhase(@NonNull final ConsensusRoundHandlerPhase phase) {
+        Objects.requireNonNull(phase);
+        roundHandlerPhase.activatePhase(phase);
+    }
+}

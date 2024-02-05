@@ -16,211 +16,187 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.stream.EventStreamManager;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.utility.ThrowingRunnable;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.common.threading.futures.StandardFuture;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
+/**
+ * Unit tests for {@link ConsensusRoundHandler}.
+ */
+class ConsensusRoundHandlerTests {
+    private ConsensusRound mockConsensusRound(
+            @NonNull final EventImpl keystoneEvent, @NonNull final List<EventImpl> events, final long roundNumber) {
+        final ConsensusRound consensusRound = mock(ConsensusRound.class);
+        when(consensusRound.getConsensusEvents()).thenReturn(events);
+        when(consensusRound.getConsensusTimestamp())
+                .thenReturn(Time.getCurrent().now());
+        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent);
+        when(consensusRound.getRoundNum()).thenReturn(roundNumber);
+        when(consensusRound.isEmpty()).thenReturn(events.isEmpty());
 
-    private EventStreamManager<EventImpl> eventStreamManager;
-    private QueueThread<ReservedSignedState> stateHashSignQueue;
-
-    private ConsensusRoundHandler consensusRoundHandler;
-
-    @Override
-    @BeforeEach
-    public void setup() {
-        super.setup();
-        eventStreamManager = mock(EventStreamManager.class);
-        stateHashSignQueue = mock(QueueThread.class);
+        return consensusRound;
     }
 
-    /**
-     * Verify that the consensus handler thread does not make reconnect wait for it to drain the queue of
-     * consensus rounds.
-     */
-    @RepeatedTest(10)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
-    @DisplayName("Reconnect should not wait for queue to be drained")
-    void queueNotDrainedOnReconnect() {
+    private static EventImpl mockEvent() throws InterruptedException {
+        final RunningHash runningHash = mock(RunningHash.class);
+        final Hash hash = mock(Hash.class);
+        final StandardFuture<Hash> futureHash = mock(StandardFuture.class);
+        when(futureHash.getAndRethrow()).thenReturn(hash);
+        when(runningHash.getFutureHash()).thenReturn(futureHash);
+        final GossipEvent gossipEvent = mock(GossipEvent.class);
+        final EventImpl outputEvent = mock(EventImpl.class);
+        when(outputEvent.getRunningHash()).thenReturn(runningHash);
+        when(outputEvent.getBaseEvent()).thenReturn(gossipEvent);
+
+        return outputEvent;
+    }
+
+    private static SwirldStateManager mockSwirldStateManager(@NonNull final PlatformState platformState) {
+        final State consensusState = mock(State.class);
+        final State stateForSigning = mock(State.class);
+        when(consensusState.getPlatformState()).thenReturn(platformState);
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
+        when(swirldStateManager.getConsensusState()).thenReturn(consensusState);
+        when(swirldStateManager.getStateForSigning()).thenReturn(stateForSigning);
 
-        // The maximum number of events drained to the QueueThread buffer at a time
-        final long maxRoundsInBuffer = 100;
-        final long sleepMillisPerRound = 10;
+        return swirldStateManager;
+    }
 
-        // Tracks the number of events handled from the queue
-        final AtomicInteger numEventsHandled = new AtomicInteger(0);
-
-        // sleep for a little while to pretend to handle an event
-        doAnswer((e) -> {
-                    Thread.sleep(sleepMillisPerRound);
-                    numEventsHandled.incrementAndGet();
-                    return null;
-                })
-                .when(swirldStateManager)
-                .handleConsensusRound(any(ConsensusRound.class));
-
-        final ExecutorService executor = Executors.newFixedThreadPool(1);
-
-        // Set up a separate thread to invoke clear
-        final Callable<Void> clear = (ThrowingRunnable) () -> consensusRoundHandler.clear();
-
+    @Test
+    @DisplayName("Normal operation")
+    void normalOperation() throws InterruptedException {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-
-        consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusHandlingMetrics,
-                eventStreamManager,
-                stateHashSignQueue,
-                e -> {},
-                mock(StatusActionSubmitter.class),
-                (round) -> {},
-                new BasicSoftwareVersion(1));
-
-        final int numRounds = 500;
-        final ConsensusRound round = mock(ConsensusRound.class);
-
-        // Start the consensus handler and add events to the queue for it to handle
-        consensusRoundHandler.start();
-        for (int i = 0; i < numRounds; i++) {
-            consensusRoundHandler.consensusRound(round);
-        }
-
-        // Make the separate thread invoke clear()
-        final Future<Void> future = executor.submit(clear);
-
-        // Wait up to the amount of time it would take for two full buffer of events to be handled. This entire time
-        // shouldn't be needed, but it's a max time to allow for different systems and other programs running at the
-        // same time. As long as this is less than the amount of time it takes to handle all the events in the queue,
-        // the value is valid.
-        final long maxMillisToWait = Math.round(maxRoundsInBuffer * (sleepMillisPerRound) * 2);
-
-        // Wait for clear() to complete
-        await().atMost(Duration.of(maxMillisToWait, ChronoUnit.MILLIS)).until(future::isDone);
-
-        // Verify that no more than 2 buffers worth of events were handled
-        assertTrue(
-                numEventsHandled.get() < maxRoundsInBuffer * 2,
-                "Consensus handler should not enter another doWork() cycle after prepareForReconnect() is called");
-
-        assertEquals(0, consensusRoundHandler.getRoundsInQueue(), "Consensus queue should be empty");
-    }
-
-    /**
-     * Tests that consensus events are passed to {@link EventStreamManager#addEvents(List)} exactly once.
-     */
-    @Test
-    void testConsensusEventStream() {
-        final SwirldState swirldState = new DummySwirldState();
-        initConsensusHandler(swirldState);
-        testEventStream(eventStreamManager, consensusRoundHandler::consensusRound);
-    }
-
-    /**
-     * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
-     *
-     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer      the round consumer to test
-     */
-    private void testEventStream(
-            final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {
-        final List<EventImpl> events = createEvents(10, 10, true);
-        final ConsensusRound round = mock(ConsensusRound.class);
-        when(round.getConsensusEvents()).thenReturn(events);
-        roundConsumer.accept(round);
-        verify(eventStreamManager, times(1)).addEvents(events);
-    }
-
-    private void initConsensusHandler(final SwirldState swirldState) {
-        final State state = new State();
-        state.setSwirldState(swirldState);
-
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
-
         final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
-        when(platformState.copy()).thenReturn(platformState);
-        when(platformState.getAddressBook()).thenReturn(addressBook);
+        final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
 
-        state.setPlatformState(platformState);
+        final BlockingQueue<ReservedSignedState> stateHashSignQueue = mock(BlockingQueue.class);
+        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
+        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventConfig_.MAX_EVENT_QUEUE_FOR_CONS, 500)
-                .getOrCreateConfig();
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withConfiguration(configuration)
-                .build();
+        final AtomicLong roundAppliedToState = new AtomicLong(0);
+        final Consumer<Long> roundAppliedToStateConsumer = roundAppliedToState::set;
 
-        final SwirldStateManager swirldStateManager = new SwirldStateManager(
+        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
-                addressBook,
-                selfId,
-                consensusSystemTransactionManager,
-                mock(SwirldStateMetrics.class),
-                mock(StatusActionSubmitter.class),
-                state,
-                new BasicSoftwareVersion(1));
-
-        consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                getStaticThreadManager(),
-                selfId,
                 swirldStateManager,
-                consensusHandlingMetrics,
-                eventStreamManager,
                 stateHashSignQueue,
-                e -> {},
-                mock(StatusActionSubmitter.class),
-                (round) -> {},
-                new BasicSoftwareVersion(1));
-        consensusRoundHandler.start();
+                waitForEventDurability,
+                statusActionSubmitter,
+                roundAppliedToStateConsumer,
+                mock(SoftwareVersion.class));
+
+        final EventImpl keystoneEvent = mockEvent();
+        final List<EventImpl> events = List.of(mockEvent(), mockEvent(), mockEvent());
+
+        final long consensusRoundNumber = 5L;
+        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
+
+        consensusRoundHandler.handleConsensusRound(consensusRound);
+
+        for (final EventImpl event : events) {
+            verify(event).consensusReached();
+        }
+        verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
+        verify(swirldStateManager).handleConsensusRound(consensusRound);
+        assertEquals(consensusRoundNumber, roundAppliedToState.get());
+        verify(swirldStateManager, never()).savedStateInFreezePeriod();
+        verify(stateHashSignQueue).put(any(ReservedSignedState.class));
+        verify(platformState)
+                .setRunningEventHash(
+                        events.getLast().getRunningHash().getFutureHash().getAndRethrow());
+    }
+
+    @Test
+    @DisplayName("Round in freeze period")
+    void freezeHandling() throws InterruptedException {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final PlatformState platformState = mock(PlatformState.class);
+        final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
+        when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
+
+        final BlockingQueue<ReservedSignedState> stateHashSignQueue = mock(BlockingQueue.class);
+        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
+        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
+
+        final AtomicLong roundAppliedToState = new AtomicLong(0);
+        final Consumer<Long> roundAppliedToStateConsumer = roundAppliedToState::set;
+
+        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+                platformContext,
+                swirldStateManager,
+                stateHashSignQueue,
+                waitForEventDurability,
+                statusActionSubmitter,
+                roundAppliedToStateConsumer,
+                mock(SoftwareVersion.class));
+
+        final EventImpl keystoneEvent = mockEvent();
+        final List<EventImpl> events = List.of(mockEvent(), mockEvent(), mockEvent());
+
+        final long consensusRoundNumber = 5L;
+        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
+
+        consensusRoundHandler.handleConsensusRound(consensusRound);
+
+        for (final EventImpl event : events) {
+            verify(event, times(1)).consensusReached();
+        }
+        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
+        verify(swirldStateManager).handleConsensusRound(consensusRound);
+        assertEquals(consensusRoundNumber, roundAppliedToState.get());
+        verify(swirldStateManager).savedStateInFreezePeriod();
+        verify(stateHashSignQueue).put(any(ReservedSignedState.class));
+        verify(platformState)
+                .setRunningEventHash(
+                        events.getLast().getRunningHash().getFutureHash().getAndRethrow());
+
+        final ConsensusRound postFreezeConsensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
+        consensusRoundHandler.handleConsensusRound(postFreezeConsensusRound);
+
+        // these methods were called once from the first round, and shouldn't have been called again from the second
+        for (final EventImpl event : events) {
+            verify(event).consensusReached();
+        }
+        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
+        verify(swirldStateManager).handleConsensusRound(consensusRound);
+        verify(swirldStateManager).savedStateInFreezePeriod();
+        verify(stateHashSignQueue).put(any(ReservedSignedState.class));
+        verify(platformState)
+                .setRunningEventHash(
+                        events.getLast().getRunningHash().getFutureHash().getAndRethrow());
     }
 }

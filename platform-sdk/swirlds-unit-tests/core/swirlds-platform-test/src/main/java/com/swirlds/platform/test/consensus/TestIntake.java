@@ -127,13 +127,7 @@ public class TestIntake implements LoadableFromSignedState {
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
 
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                platformContext,
-                time,
-                () -> consensus,
-                dispatcher,
-                shadowGraph,
-                intakeEventCounter,
-                mock(StandardOutputWire.class));
+                () -> consensus, dispatcher, shadowGraph, intakeEventCounter, mock(StandardOutputWire.class));
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);

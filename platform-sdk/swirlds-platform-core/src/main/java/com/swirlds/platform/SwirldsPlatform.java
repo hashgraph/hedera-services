@@ -46,6 +46,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -115,7 +116,6 @@ import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.AddedEventMetrics;
-import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -236,9 +236,6 @@ public class SwirldsPlatform implements Platform {
      * new state is created, before it is hashed.
      */
     private final SignedStateNexus latestImmutableState = new LockFreeStateNexus();
-
-    /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
-    private final ConsensusRoundHandler consensusRoundHandler;
 
     private final TransactionPool transactionPool;
     /** Handles all interaction with {@link SwirldState} */
@@ -516,7 +513,7 @@ public class SwirldsPlatform implements Platform {
                 time,
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
-                this::waitUntilTransactionHandlingThreadIsNotBusy,
+                platformWiring::flushConsensusRoundHandler,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
@@ -586,24 +583,19 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build());
 
-        consensusRoundHandler = components.add(new ConsensusRoundHandler(
+        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
-                threadManager,
-                selfId,
                 swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
-                eventStreamManager,
                 stateHashSignQueue,
                 eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,
                 platformWiring.getIssDetectorWiring().roundCompletedInput()::put,
-                appVersion));
+                appVersion);
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PcesSequencer sequencer = new PcesSequencer();
 
-        final List<EventObserver> eventObservers =
-                new ArrayList<>(List.of(consensusRoundHandler, addedEventMetrics, eventIntakeMetrics));
+        final List<EventObserver> eventObservers = new ArrayList<>(List.of(addedEventMetrics, eventIntakeMetrics));
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
@@ -630,8 +622,6 @@ public class SwirldsPlatform implements Platform {
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                platformContext,
-                time,
                 consensusRef::get,
                 eventObserverDispatcher,
                 shadowGraph,
@@ -686,6 +676,8 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 swirldStateManager,
                 stateSignatureCollector,
+                consensusRoundHandler,
+                eventStreamManager,
                 futureEventBuffer,
                 issDetector);
 
@@ -759,7 +751,8 @@ public class SwirldsPlatform implements Platform {
             latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
             savedStateController.registerSignedStateFromDisk(initialState);
-            consensusRoundHandler.loadDataFromSignedState(initialState, false);
+
+            platformWiring.updateRunningHash(new RunningEventHashUpdate(initialState.getHashEventsCons(), false));
 
             loadStateIntoConsensus(initialState);
 
@@ -782,12 +775,20 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
+        final Clearable clearStateHashSignQueue = () -> {
+            ReservedSignedState signedState = stateHashSignQueue.poll();
+            while (signedState != null) {
+                signedState.close();
+                signedState = stateHashSignQueue.poll();
+            }
+        };
+
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                        Pair.of(clearStateHashSignQueue, "stateHashSignQueue"),
                         Pair.of(transactionPool, "transactionPool")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
@@ -799,18 +800,6 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
-    }
-
-    /**
-     * Wait until the consensus round handler is not busy.
-     */
-    private void waitUntilTransactionHandlingThreadIsNotBusy() {
-        try {
-            consensusRoundHandler.waitUntilNotBusy();
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted waiting for transaction handling thread to not be busy", e);
-        }
     }
 
     /**
@@ -959,8 +948,7 @@ public class SwirldsPlatform implements Platform {
                     signedState.getMinRoundGeneration(),
                     AncientMode.getAncientMode(platformContext)));
 
-            consensusRoundHandler.loadDataFromSignedState(signedState, true);
-
+            platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 
             // Notify any listeners that the reconnect has been completed
