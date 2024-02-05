@@ -228,7 +228,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @param value the entry value, this can also be special
      *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
-    public void putValue(final K key, final long value) {
+    public final void putValue(final K key, final long value) {
         putValue(key, INVALID_VALUE, value);
     }
 
