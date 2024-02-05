@@ -259,7 +259,24 @@ public class ContractCallSuite extends HapiSuite {
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
-                callStaticCallToLargeAddress());
+                callStaticCallToLargeAddress(),
+                invalidFunctionSelectorFails());
+    }
+
+    private HapiSpec invalidFunctionSelectorFails() {
+        final var contract = "InvalidFunctionSelector";
+        final var firstCreation = "firstCreation";
+        return defaultHapiSpec("invalidFunctionSelectorFails")
+                .given(
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(contractCall(contract, "callWith", new Object[] {new byte[2]})
+                        .payingWith(ACCOUNT)
+                        .gas(4_000_000L)
+                        .via(firstCreation)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then();
     }
 
     @HapiTest

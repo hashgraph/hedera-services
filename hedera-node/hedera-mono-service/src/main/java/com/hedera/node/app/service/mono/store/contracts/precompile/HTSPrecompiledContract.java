@@ -313,7 +313,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = null;
         this.transactionBody = null;
-
+        // If the input size is less than 4, it's not a valid selector
+        if (input.size() < 4) {
+            return;
+        }
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
