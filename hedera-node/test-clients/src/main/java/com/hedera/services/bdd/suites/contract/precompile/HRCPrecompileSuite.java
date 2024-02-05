@@ -221,6 +221,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec(
                         "hrcNFTAndFungibleTokenAssociateFromContract",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
                 .given(
