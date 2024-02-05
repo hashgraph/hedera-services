@@ -26,6 +26,7 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.MerkleDbStatistics;
@@ -33,7 +34,6 @@ import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -148,6 +148,22 @@ public enum TestType {
                 case variableComplex_fixed:
                 case variableComplex_variable:
                     return new ExampleLongLongKeyVariableSize(i);
+            }
+        }
+
+        public ExampleByteArrayVirtualValue createVirtualValue(final int i) {
+            switch (testType) {
+                default:
+                case fixed_fixed:
+                case fixedComplex_fixed:
+                case variable_fixed:
+                case variableComplex_fixed:
+                    return new ExampleFixedSizeVirtualValue(i);
+                case fixed_variable:
+                case fixedComplex_variable:
+                case variable_variable:
+                case variableComplex_variable:
+                    return new ExampleVariableSizeVirtualValue(i);
             }
         }
 

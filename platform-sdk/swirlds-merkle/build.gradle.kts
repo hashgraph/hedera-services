@@ -17,18 +17,22 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
 }
 
 testModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base")
-    requires("com.swirlds.common.testing")
+    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("com.swirlds.merkledb")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap")
     requires("com.swirlds.config.api.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    requires("com.swirlds.merkle.test")
+    requires("org.mockito")
+    requiresStatic("com.github.spotbugs.annotations")
 }
