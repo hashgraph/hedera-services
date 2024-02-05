@@ -160,6 +160,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                         }
                         final ScheduleRecordBuilder scheduleRecords =
                                 context.recordBuilder(ScheduleRecordBuilder.class);
+                        scheduleRecords.scheduledTransactionID(
+                                HandlerUtility.transactionIdForScheduled(scheduleToSign));
                         // Based on fuzzy-record matching this field may not be set in mono-service records
                         // scheduleRecords.scheduleID(idToSign);
                     } else {
