@@ -523,7 +523,8 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var op = body.cryptoApproveAllowanceOrThrow();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
 
-        final var currentSecond = feeContext.currentTime().getEpochSecond();
+        final var currentSecond =
+                body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var account = accountStore.getAccountById(feeContext.payer());
 
         final var currentExpiry = account == null ? currentSecond : account.expirationSecond();

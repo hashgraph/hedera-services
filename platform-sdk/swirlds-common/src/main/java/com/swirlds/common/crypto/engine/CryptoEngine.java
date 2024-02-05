@@ -34,7 +34,6 @@ import com.swirlds.logging.legacy.LogMarker;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,29 +86,15 @@ public class CryptoEngine implements Cryptography {
     private final DelegatingVerificationProvider delegatingVerificationProvider;
 
     /**
-     * the total number of available physical processors and physical processor cores
-     */
-    private final int availableCpuCount;
-
-    /**
      * The intake dispatcher instance that handles asynchronous signature verification
      */
     private volatile IntakeDispatcher<TransactionSignature, DelegatingVerificationProvider, AsyncVerificationHandler>
             verificationDispatcher;
-    /**
-     * the intake dispatcher instance that handles asynchronous message digests
-     */
-    private volatile IntakeDispatcher<Message, DigestProvider, AsyncDigestHandler> digestDispatcher;
 
     /**
      * the {@link ConcurrentLinkedQueue} instance of {@link TransactionSignature} waiting for verification
      */
     private volatile Queue<List<TransactionSignature>> verificationQueue;
-
-    /**
-     * the {@link ConcurrentLinkedQueue} instance of {@link Message} pending message digest computation
-     */
-    private volatile Queue<List<Message>> digestQueue;
 
     /**
      * the current configuration settings
@@ -135,7 +120,6 @@ public class CryptoEngine implements Cryptography {
     public CryptoEngine(final ThreadManager threadManager, final CryptoConfig config) {
         this.threadManager = threadManager;
         this.config = config;
-        this.availableCpuCount = Runtime.getRuntime().availableProcessors();
         this.digestProvider = new DigestProvider();
 
         this.ed25519VerificationProvider = new Ed25519VerificationProvider();
@@ -250,24 +234,6 @@ public class CryptoEngine implements Cryptography {
     }
 
     /**
-     * Indicates whether a supported OpenCL framework is installed and available on this system.
-     *
-     * @return true if OpenCL is available; false otherwise
-     */
-    public boolean isOpenCLAvailable() {
-        return false;
-    }
-
-    /**
-     * Indicates whether a support GPU is available on this system.
-     *
-     * @return true if a support GPU is available; false otherwise
-     */
-    public boolean isGpuAvailable() {
-        return false;
-    }
-
-    /**
      * Getter for the current configuration settings used by the {@link CryptoEngine}.
      *
      * @return the current configuration settings
@@ -284,88 +250,6 @@ public class CryptoEngine implements Cryptography {
     public synchronized void setSettings(final CryptoConfig config) {
         this.config = config;
         applySettings();
-    }
-
-    /**
-     * Returns the total number of physical processors and physical processor cores available.
-     *
-     * @return the total number of physical processors and physical cores
-     */
-    public int getAvailableCpuCount() {
-        return availableCpuCount;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestAsync(final Message message) {
-        final boolean added = digestQueue.add(Collections.singletonList(message));
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the digest queue");
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestAsync(final List<Message> messages) {
-        final boolean added = digestQueue.add(messages);
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the digest queue");
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Future<Hash> digestAsync(final byte[] message, final DigestType digestType) {
-        final Message wrappedMessage = new Message(message, digestType);
-        final boolean added = digestQueue.add(Collections.singletonList(wrappedMessage));
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the digest queue");
-        }
-
-        return new WrappingLambdaFuture<>(
-                () -> {
-                    try {
-                        return wrappedMessage.waitForFuture();
-                    } catch (final InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                        return null;
-                    }
-                },
-                wrappedMessage::getHash);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Hash digestSync(final Message message) {
-        final DigestProvider provider = new DigestProvider();
-        final StandardFuture<Void> future = new StandardFuture<>();
-        future.complete(null);
-
-        return digestSyncInternal(message, provider, future);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestSync(final List<Message> messages) {
-        final StandardFuture<Void> future = new StandardFuture<>();
-        future.complete(null);
-
-        for (final Message message : messages) {
-            digestSyncInternal(message, digestProvider, future);
-        }
     }
 
     /**
@@ -428,49 +312,12 @@ public class CryptoEngine implements Cryptography {
      * {@inheritDoc}
      */
     @Override
-    public void verifyAsync(final TransactionSignature signature) {
-        final boolean added = verificationQueue.add(Collections.singletonList(signature));
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the verification queue");
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void verifyAsync(final List<TransactionSignature> signatures) {
         final boolean added = verificationQueue.add(signatures);
         if (!added) {
             // This should never happen, since the queue is unbounded
             throw new RuntimeException("Unable to add to the verification queue");
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Future<Boolean> verifyAsync(
-            final byte[] data, final byte[] signature, final byte[] publicKey, final SignatureType signatureType) {
-        final TransactionSignature wrappedSignature = wrap(data, signature, publicKey, signatureType);
-        final boolean added = verificationQueue.add(Collections.singletonList(wrappedSignature));
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the verification queue");
-        }
-
-        return new WrappingLambdaFuture<>(
-                () -> {
-                    try {
-                        return wrappedSignature.waitForFuture();
-                    } catch (final InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                        return null;
-                    }
-                },
-                () -> wrappedSignature.getSignatureStatus() == VerificationStatus.VALID);
     }
 
     /**
@@ -549,24 +396,12 @@ public class CryptoEngine implements Cryptography {
             this.verificationDispatcher = null;
         }
 
-        if (this.digestDispatcher != null) {
-            this.digestDispatcher.shutdown();
-            this.digestDispatcher = null;
-        }
-
         // Resize the dispatcher queues
         final Queue<List<TransactionSignature>> oldVerifierQueue = this.verificationQueue;
         this.verificationQueue = new ConcurrentLinkedQueue<>();
 
-        final Queue<List<Message>> oldDigestQueue = this.digestQueue;
-        this.digestQueue = new ConcurrentLinkedQueue<>();
-
         if (oldVerifierQueue != null && oldVerifierQueue.size() > 0) {
             this.verificationQueue.addAll(oldVerifierQueue);
-        }
-
-        if (oldDigestQueue != null && oldDigestQueue.size() > 0) {
-            this.digestQueue.addAll(oldDigestQueue);
         }
 
         // Launch new background threads with the new settings
@@ -577,28 +412,6 @@ public class CryptoEngine implements Cryptography {
                 this.delegatingVerificationProvider,
                 config.computeCpuVerifierThreadCount(),
                 CryptoEngine::verificationHandler);
-
-        this.digestDispatcher = new IntakeDispatcher<>(
-                threadManager,
-                Message.class,
-                this.digestQueue,
-                this.digestProvider,
-                config.computeCpuDigestThreadCount(),
-                this::digestHandler);
-    }
-
-    /**
-     * Supplier implementation for {@link AsyncDigestHandler} used by the
-     * {@link #CryptoEngine(ThreadManager, CryptoConfig)} constructor.
-     *
-     * @param provider  the required {@link OperationProvider} to be used while performing the cryptographic
-     *                  transformations
-     * @param workItems the {@link List} of items to be processed by the created {@link AsyncOperationHandler}
-     *                  implementation
-     * @return an {@link AsyncOperationHandler} implementation
-     */
-    private AsyncDigestHandler digestHandler(final DigestProvider provider, final List<Message> workItems) {
-        return new AsyncDigestHandler(workItems, provider);
     }
 
     /**
