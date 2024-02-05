@@ -25,6 +25,7 @@ import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -88,6 +89,25 @@ public abstract class OutputWire<OUT> {
      */
     public void solderTo(@NonNull final InputWire<OUT> inputWire) {
         solderTo(inputWire, SolderType.PUT);
+    }
+
+    /**
+     * A convenience method that should be used iff the order in which the {@code inputWires} are soldered is important.
+     * Using this method reduces the chance of inadvertent reordering when code is modified or reorganized. All
+     * invocations of this method should carefully document why the provided ordering is important.
+     * <p>
+     * Since this method is specifically for input wires that require a certain order, at least two input wires must be
+     * provided.
+     *
+     * @param inputWires – an ordered list of the input wire to forward output data to
+     * @throws IllegalArgumentException if the size of {@code inputWires} is less than 2
+     * @see #solderTo(InputWire)
+     */
+    public void orderedSolderTo(@NonNull final List<InputWire<OUT>> inputWires) {
+        if (inputWires.size() < 2) {
+            throw new IllegalArgumentException("List must contain at least 2 input wires.");
+        }
+        inputWires.forEach(this::solderTo);
     }
 
     /**
