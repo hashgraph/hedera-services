@@ -120,7 +120,7 @@ public final class TransactionStateLogger {
             @NonNull final ConsensusTransaction transaction,
             @Nullable final TransactionBody txBody,
             @NonNull final AccountID payer) {
-        logger.info(
+        logger.debug(
                 "    Starting user transaction {} at platform time {} from payer 0.0.{}",
                 txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
                 transaction.getConsensusTimestamp(),

@@ -23,7 +23,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -41,6 +40,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
@@ -83,7 +83,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * The name of the thread that handles consensus events
      */
-    public static final String THREAD_CONS_NAME = "thread-cons";
+    public static final String THREAD_CONS_NAME = "thread_cons";
 
     /**
      * The class responsible for all interactions with the swirld state

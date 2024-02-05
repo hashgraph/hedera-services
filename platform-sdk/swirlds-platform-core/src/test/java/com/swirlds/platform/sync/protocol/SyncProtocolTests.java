@@ -29,17 +29,17 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.SyncPermitProvider;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -54,7 +54,7 @@ import org.mockito.Mockito;
 @DisplayName("Sync Protocol Tests")
 class SyncProtocolTests {
     private NodeId peerId;
-    private ShadowGraphSynchronizer shadowGraphSynchronizer;
+    private ShadowgraphSynchronizer shadowGraphSynchronizer;
     private FallenBehindManager fallenBehindManager;
     private SyncPermitProvider permitProvider;
     private Duration sleepAfterSync;
@@ -65,7 +65,7 @@ class SyncProtocolTests {
     @BeforeEach
     void setup() {
         peerId = new NodeId(1);
-        shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
+        shadowGraphSynchronizer = mock(ShadowgraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
         permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
         sleepAfterSync = Duration.ofMillis(0);

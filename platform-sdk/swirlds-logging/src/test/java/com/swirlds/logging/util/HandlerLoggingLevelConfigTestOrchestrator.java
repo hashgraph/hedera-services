@@ -17,9 +17,9 @@
 package com.swirlds.logging.util;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hedera.node.app.workflows.ParseExceptionWorkaround.getParseExceptionCause;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -56,6 +57,7 @@ import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,10 +71,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
+@Singleton
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);
@@ -297,15 +301,20 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private Query parseQuery(Bytes requestBuffer) {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
-        } catch (MalformedProtobufException | UnknownFieldException e) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        } catch (IOException e) {
-            // This should technically not be possible. The data buffer supplied
-            // is either based on a byte[] or a byte buffer, in both cases all data
-            // is available and a generic IO exception shouldn't happen. If it does,
-            // it indicates the data could not be parsed, but for a reason other than
-            // those causing an MalformedProtobufException or UnknownFieldException.
-            logger.warn("Unexpected IO exception while parsing protobuf", e);
+        } catch (ParseException e) {
+
+            // Temporary workaround for unexpected behavior in PBJ. Can be removed if we agree that
+            // ParseException should not be wrapped.
+            final var cause = getParseExceptionCause(e);
+
+            switch (cause) {
+                case MalformedProtobufException ex:
+                    break;
+                case UnknownFieldException ex:
+                    break;
+                default:
+                    logger.warn("Unexpected ParseException while parsing protobuf", e);
+            }
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
     }

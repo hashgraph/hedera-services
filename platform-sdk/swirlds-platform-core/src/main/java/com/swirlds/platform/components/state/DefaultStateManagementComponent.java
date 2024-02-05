@@ -17,10 +17,10 @@
 package com.swirlds.platform.components.state;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.signed.ReservedSignedState;

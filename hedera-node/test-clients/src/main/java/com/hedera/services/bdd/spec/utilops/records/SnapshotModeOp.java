@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_DETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
@@ -146,6 +147,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
     private static final String PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC = "hedera-node/test-clients/record-snapshots";
+    public static final long UNADJUSTED_NUM_CUTOFF = 666_666_666L;
 
     private final SnapshotMode mode;
     private final Set<SnapshotMatchMode> matchModes;
@@ -367,20 +369,43 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     fromStream.itemBody(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
-                            + fromStream.itemBody() + ")");
+                            + fromStream.itemBody() + ")",
+                    matchModes);
             fuzzyMatch(
                     fromSnapshot.itemRecord(),
                     snapshotPlaceholderNum,
                     fromStream.itemRecord(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
+                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")",
+                    matchModes);
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
             Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
                     + (postPlaceholderItems.size())
                     + " were generated");
         }
+    }
+
+    /**
+     * Given an expected and actual message, recursively asserts that they are exactly equal.
+     *
+     * @param expectedMessage the expected message
+     * @param actualMessage the actual message
+     * @param mismatchContext a supplier of a string that describes the context of the mismatch
+     */
+    public static void exactMatch(
+            @NonNull GeneratedMessageV3 expectedMessage,
+            @NonNull GeneratedMessageV3 actualMessage,
+            @NonNull final Supplier<String> mismatchContext) {
+        // Long.MAX_VALUE placeholder nums to make normalization a no-op
+        fuzzyMatch(
+                expectedMessage,
+                Long.MAX_VALUE,
+                actualMessage,
+                Long.MAX_VALUE,
+                mismatchContext,
+                EnumSet.of(FULLY_DETERMINISTIC));
     }
 
     /**
@@ -398,12 +423,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param actualPlaceholderNum the placeholder number for the actual message
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private void fuzzyMatch(
+    private static void fuzzyMatch(
             @NonNull GeneratedMessageV3 expectedMessage,
             final long expectedPlaceholderNum,
             @NonNull GeneratedMessageV3 actualMessage,
             final long actualPlaceholderNum,
-            @NonNull final Supplier<String> mismatchContext) {
+            @NonNull final Supplier<String> mismatchContext,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expectedMessage);
         requireNonNull(actualMessage);
         requireNonNull(mismatchContext);
@@ -435,7 +461,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
 
-            if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
+            if (shouldSkip(expectedName, expectedField.getValue().getClass(), matchModes)) {
                 continue;
             }
             matchValues(
@@ -444,13 +470,14 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     expectedPlaceholderNum,
                     actualField.getValue(),
                     actualPlaceholderNum,
-                    mismatchContext);
+                    mismatchContext,
+                    matchModes);
         }
     }
 
     // inline initializers
     @SuppressWarnings({"java:S3599", "java:S1171"})
-    private String describeFieldCountMismatch(
+    private static String describeFieldCountMismatch(
             @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> expectedFields,
             @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> actualFields) {
         final Set<String> expectedNames = fieldNamesOf(expectedFields);
@@ -479,7 +506,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return description.toString();
     }
 
-    private Set<String> fieldNamesOf(@NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> fields) {
+    private static Set<String> fieldNamesOf(
+            @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> fields) {
         return fields.stream()
                 .map(Map.Entry::getKey)
                 .map(Descriptors.FieldDescriptor::getName)
@@ -498,13 +526,14 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param actualPlaceholderNum the placeholder number for the actual value
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private void matchValues(
+    private static void matchValues(
             @NonNull final String fieldName,
             @NonNull final Object expectedValue,
             final long expectedPlaceholderNum,
             @NonNull final Object actualValue,
             final long actualPlaceholderNum,
-            @NonNull final Supplier<String> mismatchContext) {
+            @NonNull final Supplier<String> mismatchContext,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(fieldName);
         requireNonNull(expectedValue);
         requireNonNull(actualValue);
@@ -525,7 +554,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                             actualElement,
                             actualPlaceholderNum,
                             mismatchContext,
-                            fieldName);
+                            fieldName,
+                            matchModes);
                 }
             } else {
                 Assertions.fail("Mismatched types between expected list '" + expectedList + "' and "
@@ -539,7 +569,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     actualValue,
                     actualPlaceholderNum,
                     () -> "Matching field '" + fieldName + "' " + mismatchContext.get(),
-                    fieldName);
+                    fieldName,
+                    matchModes);
         }
     }
 
@@ -554,20 +585,26 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      * @param fieldName the name of the field being fuzzy-matched
      */
-    private void matchSingleValues(
+    private static void matchSingleValues(
             @NonNull final Object expected,
             final long expectedPlaceholderNum,
             @NonNull final Object actual,
             final long actualPlaceholderNum,
             @NonNull final Supplier<String> mismatchContext,
-            @NonNull final String fieldName) {
+            @NonNull final String fieldName,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expected);
         requireNonNull(actual);
         requireNonNull(mismatchContext);
         if (expected instanceof GeneratedMessageV3 expectedMessage) {
             if (actual instanceof GeneratedMessageV3 actualMessage) {
                 fuzzyMatch(
-                        expectedMessage, expectedPlaceholderNum, actualMessage, actualPlaceholderNum, mismatchContext);
+                        expectedMessage,
+                        expectedPlaceholderNum,
+                        actualMessage,
+                        actualPlaceholderNum,
+                        mismatchContext,
+                        matchModes);
             } else {
                 Assertions.fail("Mismatched types between expected message '" + expectedMessage + "' and "
                         + actual.getClass().getSimpleName() + " '" + actual + "' - " + mismatchContext.get());
@@ -604,7 +641,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         }
     }
 
-    private long feeVariation(Set<SnapshotMatchMode> matchModes) {
+    private static long feeVariation(@NonNull final Set<SnapshotMatchMode> matchModes) {
         if (matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)) {
             return CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR;
         } else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
@@ -624,37 +661,48 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
-            final var normalizedNum = placeholderNum < accountID.getAccountNum()
-                    ? accountID.getAccountNum() - placeholderNum
-                    : accountID.getAccountNum();
-            return accountID.toBuilder().setAccountNum(normalizedNum).build();
+            return accountID.toBuilder()
+                    .setAccountNum(numOrOffsetBetween(accountID.getAccountNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ContractID contractID) {
-            final var normalizedNum = placeholderNum < contractID.getContractNum()
-                    ? contractID.getContractNum() - placeholderNum
-                    : contractID.getContractNum();
-            return contractID.toBuilder().setContractNum(normalizedNum).build();
+            return contractID.toBuilder()
+                    .setContractNum(numOrOffsetBetween(contractID.getContractNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TopicID topicID) {
-            final var normalizedNum = placeholderNum < topicID.getTopicNum()
-                    ? topicID.getTopicNum() - placeholderNum
-                    : topicID.getTopicNum();
-            return topicID.toBuilder().setTopicNum(normalizedNum).build();
+            return topicID.toBuilder()
+                    .setTopicNum(numOrOffsetBetween(topicID.getTopicNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TokenID tokenID) {
-            final var normalizedNum = placeholderNum < tokenID.getTokenNum()
-                    ? tokenID.getTokenNum() - placeholderNum
-                    : tokenID.getTokenNum();
-            return tokenID.toBuilder().setTokenNum(normalizedNum).build();
+            return tokenID.toBuilder()
+                    .setTokenNum(numOrOffsetBetween(tokenID.getTokenNum(), placeholderNum))
+                    .build();
         } else if (message instanceof FileID fileID) {
-            final var normalizedNum =
-                    placeholderNum < fileID.getFileNum() ? fileID.getFileNum() - placeholderNum : fileID.getFileNum();
-            return fileID.toBuilder().setFileNum(normalizedNum).build();
+            return fileID.toBuilder()
+                    .setFileNum(numOrOffsetBetween(fileID.getFileNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ScheduleID scheduleID) {
-            final var normalizedNum = placeholderNum < scheduleID.getScheduleNum()
-                    ? scheduleID.getScheduleNum() - placeholderNum
-                    : scheduleID.getScheduleNum();
-            return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
+            return scheduleID.toBuilder()
+                    .setScheduleNum(numOrOffsetBetween(scheduleID.getScheduleNum(), placeholderNum))
+                    .build();
         } else {
             return message;
         }
+    }
+
+    /**
+     * For numbers smaller than a cutoff used to create intentionally missing entity
+     * ids; but greater than the placeholder num, returns the number minus the placeholder
+     * num.
+     *
+     * @param num the number to maybe offset
+     * @param placeholderNum the placeholder number to use in normalization
+     * @return the number or the number minus the placeholder number
+     */
+    private static long numOrOffsetBetween(final long num, final long placeholderNum) {
+        if (num >= UNADJUSTED_NUM_CUTOFF) {
+            return num;
+        }
+        return placeholderNum < num ? num - placeholderNum : num;
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {
@@ -740,9 +788,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return locs;
     }
 
-    private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
+    private static boolean shouldSkip(
+            @NonNull final String expectedName,
+            @NonNull final Class<?> expectedType,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
+        requireNonNull(matchModes);
+        if (matchModes.contains(FULLY_DETERMINISTIC)) {
+            return false;
+        }
         if ("contractCallResult".equals(expectedName) /* && ByteString.class.isAssignableFrom(expectedType)*/) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {

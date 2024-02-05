@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetSize;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapIterate;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -27,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -36,10 +40,15 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
+
+    private static final Consumer<Runnable> DEFAULT_RUNNER = Thread::startVirtualThread;
+
     /** The backing merkle data structure to use */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
     private final StateMetadata<K, V> md;
+
+    private final Consumer<Runnable> runner;
 
     /**
      * Create a new instance
@@ -49,9 +58,18 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
      */
     public OnDiskReadableKVState(
             @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
+        this(md, virtualMap, DEFAULT_RUNNER);
+    }
+
+    @VisibleForTesting
+    OnDiskReadableKVState(
+            @NonNull final StateMetadata<K, V> md,
+            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap,
+            @NonNull final Consumer<Runnable> runner) {
         super(md.stateDefinition().stateKey());
         this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.runner = runner;
     }
 
     /** {@inheritDoc} */
@@ -117,6 +135,6 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     public void warm(@NonNull final K key) {
         final var k = new OnDiskKey<>(md, key);
-        virtualMap.warm(k);
+        runner.accept(() -> virtualMap.warm(k));
     }
 }

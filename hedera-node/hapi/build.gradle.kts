@@ -23,47 +23,25 @@ plugins {
 
 description = "Hedera API"
 
-val hapiProtoBranchOrTag = "add-pbj-types-for-state"
-val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
-
-if (!gradle.startParameter.isOffline) {
-    @Suppress("UnstableApiUsage")
-    providers
-        .exec {
-            if (!hederaProtoDir.dir(".git").asFile.exists()) {
-                workingDir = layout.projectDirectory.asFile
-                commandLine(
-                    "git",
-                    "clone",
-                    "https://github.com/hashgraph/hedera-protobufs.git",
-                    "-q"
-                )
-            } else {
-                workingDir = hederaProtoDir.asFile
-                commandLine("git", "fetch", "-q")
-            }
-        }
-        .result
-        .get()
+// Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
+tasks.cloneHederaProtobufs {
+    branchOrTag = "use-ContractID-in-SlotKey"
+    // As long as the 'branchOrTag' above is not stable, run always:
+    outputs.upToDateWhen { false }
 }
 
-@Suppress("UnstableApiUsage")
-providers
-    .exec {
-        workingDir = hederaProtoDir.asFile
-        commandLine("git", "checkout", hapiProtoBranchOrTag, "-q")
+sourceSets {
+    main {
+        pbj {
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+        }
+        proto {
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+        }
     }
-    .result
-    .get()
-
-@Suppress("UnstableApiUsage")
-providers
-    .exec {
-        workingDir = hederaProtoDir.asFile
-        commandLine("git", "reset", "--hard", "origin/$hapiProtoBranchOrTag", "-q")
-    }
-    .result
-    .get()
+}
 
 testModuleInfo {
     requires("com.hedera.node.hapi")
@@ -72,34 +50,4 @@ testModuleInfo {
     requires("com.google.protobuf.util")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-}
-
-// Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
-sourceSets {
-    main {
-        pbj {
-            srcDir("hedera-protobufs/services")
-            srcDir("hedera-protobufs/streams")
-        }
-        proto {
-            srcDir("hedera-protobufs/services")
-            srcDir("hedera-protobufs/streams")
-        }
-    }
-}
-
-// Give JUnit more ram and make it execute tests in parallel
-tasks.test {
-    // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
-    // class run in parallel.
-    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
-    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
-    // limit amount of threads, so we do not use all CPU
-    systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.9"
-    // us parallel GC to keep up with high temporary garbage creation,
-    // and allow GC to use 40% of CPU if needed
-    jvmArgs("-XX:+UseParallelGC", "-XX:GCTimeRatio=90")
-    // Some also need more memory
-    minHeapSize = "512m"
-    maxHeapSize = "4096m"
 }

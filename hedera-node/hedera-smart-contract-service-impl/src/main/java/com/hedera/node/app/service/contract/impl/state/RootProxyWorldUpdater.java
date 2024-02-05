@@ -149,7 +149,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private void chargeRentFor(@NonNull final SizeEffects sizeEffects) {
         for (final var sizeChange : sizeEffects.sizeChanges()) {
             if (sizeChange.numAdded() > 0) {
-                final var rentFactors = evmFrameState.getRentFactorsFor(sizeChange.contractNumber());
+                final var rentFactors = evmFrameState.getRentFactorsFor(sizeChange.contractID());
                 // Calculate rent and try to charge the allocating contract
                 final var rentInTinycents = rentCalculator.computeFor(
                         sizeEffects.finalSlotsUsed(),
@@ -157,7 +157,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
                         rentFactors.numSlotsUsed(),
                         rentFactors.expiry());
                 final var rentInTinybars = enhancement.operations().valueInTinybars(rentInTinycents);
-                enhancement.operations().chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
+                enhancement.operations().chargeStorageRent(sizeChange.contractID(), rentInTinybars, true);
             }
         }
     }

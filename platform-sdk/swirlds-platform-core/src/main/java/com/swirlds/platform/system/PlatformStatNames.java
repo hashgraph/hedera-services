@@ -21,17 +21,15 @@ package com.swirlds.platform.system;
  */
 public abstract class PlatformStatNames {
     /** number of consensus transactions per second handled by SwirldState.handleConsensusRound() */
-    public static final String TRANSACTIONS_HANDLED_PER_SECOND = "transH/sec";
+    public static final String TRANSACTIONS_HANDLED_PER_SECOND = "transH_per_sec";
     /** number of consensus events in queue waiting to be handled */
     public static final String CONSENSUS_QUEUE_SIZE = "consEvents";
     /** number of preconsensus events in queue waiting to be handled */
     public static final String PRE_CONSENSUS_QUEUE_SIZE = "preConsEvents";
     /** the number of creators that have more than one tip at the start of each sync */
-    public static final String MULTI_TIPS_PER_SYNC = "multiTips/sync";
+    public static final String MULTI_TIPS_PER_SYNC = "multiTips_per_sync";
     /** the number of tips per sync at the start of each sync */
-    public static final String TIPS_PER_SYNC = "tips/sync";
-    /** the average number of generations that should be expired but cannot yet due to reservations. */
-    public static final String GENS_WAITING_FOR_EXPIRY = "gensWaitingForExpiry";
+    public static final String TIPS_PER_SYNC = "tips_per_sync";
     /** the ratio of rejected sync to accepted syncs over time. */
     public static final String REJECTED_SYNC_RATIO = "rejectedSyncRatio";
 

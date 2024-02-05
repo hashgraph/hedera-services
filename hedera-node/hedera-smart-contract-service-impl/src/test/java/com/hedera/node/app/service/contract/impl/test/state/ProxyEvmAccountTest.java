@@ -42,6 +42,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProxyEvmAccountTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
+    private static final AccountID ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
+    private static final ContractID CONTRACT_ID =
+            ContractID.newBuilder().contractNum(ACCOUNT_NUM).build();
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytes SOME_PRETEND_CODE_HASH = Bytes.wrap("<NOT-REALLY-BYTECODE-HASH-12345>");
@@ -57,7 +61,7 @@ class ProxyEvmAccountTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyEvmAccount(ACCOUNT_NUM, hederaState);
+        subject = new ProxyEvmAccount(ACCOUNT_ID, hederaState);
     }
 
     @Test
@@ -87,53 +91,53 @@ class ProxyEvmAccountTest {
 
     @Test
     void returnsLongZeroAddressWithoutAnAlias() {
-        given(hederaState.getAddress(ACCOUNT_NUM)).willReturn(EVM_ADDRESS);
+        given(hederaState.getAddress(ACCOUNT_ID)).willReturn(EVM_ADDRESS);
         assertEquals(EVM_ADDRESS, subject.getAddress());
     }
 
     @Test
     void returnsNonce() {
-        given(hederaState.getNonce(ACCOUNT_NUM)).willReturn(123L);
+        given(hederaState.getNonce(ACCOUNT_ID)).willReturn(123L);
         assertEquals(123L, subject.getNonce());
     }
 
     @Test
     void returnsBalance() {
         final var value = Wei.of(123L);
-        given(hederaState.getBalance(ACCOUNT_NUM)).willReturn(value);
+        given(hederaState.getBalance(ACCOUNT_ID)).willReturn(value);
         assertEquals(value, subject.getBalance());
     }
 
     @Test
     void returnsCode() {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
-        given(hederaState.getCode(ACCOUNT_NUM)).willReturn(code);
+        given(hederaState.getCode(CONTRACT_ID)).willReturn(code);
         assertEquals(code, subject.getCode());
     }
 
     @Test
     void returnsEvmCode() {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
-        given(hederaState.getCode(ACCOUNT_NUM)).willReturn(code);
+        given(hederaState.getCode(CONTRACT_ID)).willReturn(code);
         assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode());
     }
 
     @Test
     void returnsCodeHash() {
         final var hash = pbjToBesuHash(SOME_PRETEND_CODE_HASH);
-        given(hederaState.getCodeHash(ACCOUNT_NUM)).willReturn(hash);
+        given(hederaState.getCodeHash(CONTRACT_ID)).willReturn(hash);
         assertEquals(hash, subject.getCodeHash());
     }
 
     @Test
     void getsStorageValue() {
-        given(hederaState.getStorageValue(ACCOUNT_NUM, SOME_KEY)).willReturn(SOME_VALUE);
+        given(hederaState.getStorageValue(CONTRACT_ID, SOME_KEY)).willReturn(SOME_VALUE);
         assertEquals(SOME_VALUE, subject.getStorageValue(SOME_KEY));
     }
 
     @Test
     void getsOriginalStorageValue() {
-        given(hederaState.getOriginalStorageValue(ACCOUNT_NUM, SOME_KEY)).willReturn(SOME_VALUE);
+        given(hederaState.getOriginalStorageValue(CONTRACT_ID, SOME_KEY)).willReturn(SOME_VALUE);
         assertEquals(SOME_VALUE, subject.getOriginalStorageValue(SOME_KEY));
     }
 
@@ -150,14 +154,14 @@ class ProxyEvmAccountTest {
 
         subject.setCode(code);
 
-        verify(hederaState).setCode(ACCOUNT_NUM, code);
+        verify(hederaState).setCode(CONTRACT_ID, code);
     }
 
     @Test
     void delegatesSettingStorage() {
         subject.setStorageValue(SOME_KEY, SOME_VALUE);
 
-        verify(hederaState).setStorageValue(ACCOUNT_NUM, SOME_KEY, SOME_VALUE);
+        verify(hederaState).setStorageValue(CONTRACT_ID, SOME_KEY, SOME_VALUE);
     }
 
     @Test
@@ -168,7 +172,7 @@ class ProxyEvmAccountTest {
 
     @Test
     void delegatesCheckingContract() {
-        given(hederaState.isContract(ACCOUNT_NUM)).willReturn(true);
+        given(hederaState.isContract(ACCOUNT_ID)).willReturn(true);
         assertTrue(subject.isContract());
     }
 }

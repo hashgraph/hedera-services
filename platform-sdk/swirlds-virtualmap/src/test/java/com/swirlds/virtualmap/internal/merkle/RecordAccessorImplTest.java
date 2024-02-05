@@ -28,16 +28,15 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.datasource.InMemoryBuilder;
-import com.swirlds.virtualmap.datasource.InMemoryDataSource;
-import com.swirlds.virtualmap.datasource.InMemoryKeySet;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
+import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
+import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -369,14 +368,6 @@ public class RecordAccessorImplTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return new InMemoryKeySet<>();
         }
 
         /**

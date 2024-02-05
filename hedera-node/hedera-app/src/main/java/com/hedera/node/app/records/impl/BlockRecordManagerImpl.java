@@ -247,9 +247,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         runningHashesState.put(new RunningHashes(
                 currentRunningHash,
-                existingRunningHashes.runningHash(),
                 existingRunningHashes.nMinus1RunningHash(),
-                existingRunningHashes.nMinus2RunningHash()));
+                existingRunningHashes.nMinus2RunningHash(),
+                existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
     }
