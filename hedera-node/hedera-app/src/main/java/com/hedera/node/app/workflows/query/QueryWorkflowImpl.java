@@ -211,6 +211,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                             recordCache,
                             exchangeRateManager,
                             feeCalculator,
+                            consensusTime,
                             synchronizedThrottleAccumulator,
                             payerID);
 
@@ -255,6 +256,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                             recordCache,
                             exchangeRateManager,
                             feeCalculator,
+                            consensusTime,
                             synchronizedThrottleAccumulator,
                             null);
                 }
