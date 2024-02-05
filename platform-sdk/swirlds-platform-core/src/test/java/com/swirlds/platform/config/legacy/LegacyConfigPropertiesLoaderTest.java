@@ -73,9 +73,9 @@ class LegacyConfigPropertiesLoaderTest {
 
         Assertions.assertTrue(properties.appConfig().isPresent(), "Value must be set");
         Assertions.assertEquals(
-                "HashgraphDemo.jar", properties.appConfig().get().jarName());
+                "StatsDemo.jar", properties.appConfig().get().jarName());
         Assertions.assertArrayEquals(
-                new String[] {"1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "all"},
+                new String[] {"1", "3000", "0", "100", "-1", "200"},
                 properties.appConfig().get().params());
 
         final AddressBook addressBook = properties.getAddressBook();
