@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -94,15 +95,20 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -132,7 +138,9 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -142,6 +150,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -241,7 +250,9 @@ public class CryptoTransferSuite extends HapiSuite {
                 hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
                 okToRepeatSerialNumbersInWipeList(),
                 okToRepeatSerialNumbersInBurnList(),
-                canUseAliasAndAccountCombinations());
+                canUseAliasAndAccountCombinations(),
+                testTransferToSystemAccounts(),
+                testTransferToSystemAccountsAndCheckSenderBalance());
     }
 
     @Override
@@ -2112,6 +2123,72 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE)
                                 .fee(ONE_HUNDRED_HBARS))
                 .then();
+    }
+
+    @HapiTest
+    final HapiSpec testTransferToSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final var systemAccounts = List.of(359L, 360L, 361L);
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 3];
+
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(systemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+            opsArray[systemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(systemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+            opsArray[systemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(systemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+        }
+
+        return defaultHapiSpec("testTransferToSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(opsArray)
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec testTransferToSystemAccountsAndCheckSenderBalance() {
+        final var transferContract = "CryptoTransfer";
+        final var balanceContract = "BalanceChecker46Version";
+        return defaultHapiSpec("testTransferToSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(transferContract),
+                        contractCreate(transferContract),
+                        uploadInitCode(balanceContract),
+                        contractCreate(balanceContract))
+                .when(contractCall(transferContract, "sendViaTransfer", mirrorAddrWith(359L))
+                        .payingWith(SENDER)
+                        .sending(ONE_HBAR * 10)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallLocal(
+                                        balanceContract,
+                                        "balanceOf",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(SENDER))))
+                                .has(ContractFnResultAsserts.resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "balanceOf", balanceContract),
+                                                ContractFnResultAsserts.isLiteralResult(
+                                                        new Object[] {BigInteger.valueOf(9994320000L)}))))));
     }
 
     @Override

@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -82,6 +85,7 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
     @Override
     public Bytes compute(final Bytes input, final MessageFrame frame) {
         try {
+            validateTrue(input.bitLength() >= 4, INVALID_TRANSACTION_BODY);
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);
             final var activeRate = exchange.activeRate(consensusNow.get());
