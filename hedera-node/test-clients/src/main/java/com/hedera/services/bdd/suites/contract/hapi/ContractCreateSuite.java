@@ -83,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.primitives.Longs;
@@ -151,7 +152,8 @@ public class ContractCreateSuite extends HapiSuite {
                 contractWithAutoRenewNeedSignatures(),
                 newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields(),
-                disallowCreationsOfEmptyInitCode());
+                disallowCreationsOfEmptyInitCode(),
+                createCallInConstructor());
     }
 
     @Override
@@ -337,6 +339,28 @@ public class ContractCreateSuite extends HapiSuite {
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final HapiSpec createCallInConstructor() {
+        final var txn = "txn";
+        return defaultHapiSpec("callInConstructor")
+                .given(uploadInitCode("CallInConstructor"))
+                .when()
+                .then(
+                        contractCreate("CallInConstructor").via(txn).hasKnownStatus(SUCCESS),
+                        getTxnRecord(txn).logged(),
+                        withOpContext((spec, opLog) -> {
+                            final var op = getTxnRecord(txn);
+                            allRunFor(spec, op);
+                            final var record = op.getResponseRecord();
+                            final var creationResult = record.getContractCreateResult();
+                            final var createdIds = creationResult.getCreatedContractIDsList();
+                            assertEquals(1, createdIds.size(), "Expected one creations but got " + createdIds);
+                            assertTrue(
+                                    createdIds.get(0).getContractNum() < 10000,
+                                    "Expected contract num < 10000 but got " + createdIds);
+                        }));
     }
 
     @HapiTest

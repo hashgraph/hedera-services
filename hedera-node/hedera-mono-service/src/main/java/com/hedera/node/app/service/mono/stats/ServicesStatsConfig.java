@@ -32,11 +32,11 @@ public final class ServicesStatsConfig {
     static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
     static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";
-    static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
-    static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
-    static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
-    static final String SPEEDOMETER_SUBMITTED_NAME_TPL = "%sSub/sec";
-    static final String SPEEDOMETER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv/sec";
+    static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl_per_sec";
+    static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv_per_sec";
+    static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub_per_sec";
+    static final String SPEEDOMETER_SUBMITTED_NAME_TPL = "%sSub_per_sec";
+    static final String SPEEDOMETER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv_per_sec";
 
     static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
     static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
