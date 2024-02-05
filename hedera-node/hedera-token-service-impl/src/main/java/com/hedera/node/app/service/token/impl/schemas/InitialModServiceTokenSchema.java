@@ -77,9 +77,11 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -272,13 +274,27 @@ public class InitialModServiceTokenSchema extends Schema {
             if (tokenRelsToState.get().isModified()) ((WritableKVStateBase) tokenRelsToState.get()).commit();
             log.info("BBM: finished token rels");
 
+            // ---------- Staking Info
+            log.info("BBM: starting staking info");
+            var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
+                stakingToState.put(
+                        EntityNumber.newBuilder()
+                                .number(merkleStakingInfo.getKey().longValue())
+                                .build(),
+                        toStakingInfo);
+            });
+            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
+            log.info("BBM: finished staking info");
+
             // ---------- Accounts
             log.info("BBM: doing accounts");
-
             final var numAccountInsertions = new AtomicLong();
             final var numAliasesInsertions = new AtomicLong();
             final var acctsToState = new AtomicReference<>(ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY));
             final var aliasesState = new AtomicReference<>(ctx.newStates().<ProtoBytes, AccountID>get(ALIASES_KEY));
+            final Map<Long, Long> pendingRewards = new ConcurrentHashMap<>();
             try {
                 VirtualMapLike.from(acctsFs)
                         .extractVirtualMapData(
@@ -331,20 +347,6 @@ public class InitialModServiceTokenSchema extends Schema {
             });
             if (tokensToState.isModified()) ((WritableKVStateBase) tokensToState).commit();
             log.info("BBM: finished tokens (fung and non-fung)");
-
-            // ---------- Staking Info
-            log.info("BBM: starting staking info");
-            var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
-                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
-                stakingToState.put(
-                        EntityNumber.newBuilder()
-                                .number(merkleStakingInfo.getKey().longValue())
-                                .build(),
-                        toStakingInfo);
-            });
-            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
-            log.info("BBM: finished staking info");
 
             // ---------- Staking Rewards
             log.info("BBM: starting staking rewards");
