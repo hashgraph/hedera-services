@@ -189,7 +189,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY)
                                 .via(v2SecuritySendNftAfterNestedMint)
-                                .gas(GAS_TO_OFFER)
+                                .gas(2 * GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         getTxnRecord(v2SecuritySendNftAfterNestedMint)
                                 .andAllChildRecords()
