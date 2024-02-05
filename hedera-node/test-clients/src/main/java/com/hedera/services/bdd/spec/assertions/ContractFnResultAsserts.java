@@ -257,6 +257,29 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return this;
     }
 
+    /**
+     * Adds an assertion that the gas used is the expected value, up to some small
+     * variation due to differences in intrinsic gas cost for EVM payloads that
+     * reference addresses that may contain different numbers of zero bytes.
+     *
+     * @param gasUsed the expected gas used
+     * @return this
+     */
+    public ContractFnResultAsserts gasUsedModuloIntrinsicVariation(long gasUsed) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            final var delta = Math.abs(gasUsed - result.getGasUsed());
+            // Allow for up to 8 zero bytes of variation in the EVM payload; as
+            // each zero/non-zero difference changes the intrinsic gas cost by
+            // 8 gas units
+            if (delta > 64) {
+                Assertions.fail("Expected gas used to be " + gasUsed + " up to 8 differing "
+                        + " zero bytes in the payload; but was " + result.getGasUsed());
+            }
+        });
+        return this;
+    }
+
     public ContractFnResultAsserts contractCallResult(ContractCallResult contractCallResult) {
         registerProvider((spec, o) -> {
             ContractFunctionResult result = (ContractFunctionResult) o;

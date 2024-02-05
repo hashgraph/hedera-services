@@ -37,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -119,6 +120,9 @@ class EthereumTransactionHandlerTest {
     @Mock
     private ReadableAccountStore readableAccountStore;
 
+    @Mock
+    CustomGasCharging customGasCharging;
+
     private EthereumTransactionHandler subject;
 
     @BeforeEach
@@ -140,7 +144,8 @@ class EthereumTransactionHandlerTest {
                 baseProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         given(component.contextTransactionProcessor()).willReturn(contextTransactionProcessor);
         given(hevmTransactionFactory.fromHapiTransaction(handleContext.body())).willReturn(HEVM_CREATION);

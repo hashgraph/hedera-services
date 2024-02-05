@@ -184,23 +184,6 @@ class HalfDiskHashMapTest {
     }
 
     @Test
-    void testPrints() throws IOException {
-        final FilesTestType testType = FilesTestType.fixed;
-        // create map
-        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000);
-        // create some data
-        map.startWriting();
-        for (int i = 100; i < 300; i++) {
-            map.put(testType.createVirtualLongKey(i), i);
-        }
-        // print debug
-        map.debugDumpTransactionCache();
-        map.debugDumpTransactionCacheCondensed();
-        // end
-        map.endWriting();
-    }
-
-    @Test
     void testOverwritesWithCollision() throws IOException {
         final FilesTestType testType = FilesTestType.fixed;
         try (final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000)) {

@@ -18,17 +18,14 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -153,17 +150,13 @@ public class MiscCryptoSuite extends HapiSuite {
                         newKeyNamed("originalKey"),
                         newKeyNamed("updateKey"),
                         cryptoCreate("targetAccount").key("originalKey"))
-                .when(
-                        cryptoUpdate("targetAccount").key("updateKey").deferStatusResolution(),
-                        cryptoUpdate("targetAccount")
-                                .receiverSigRequired(true)
-                                .signedBy(GENESIS, "originalKey")
-                                .via("invalidKeyUpdateTxn")
-                                .deferStatusResolution()
-                                .hasAnyKnownStatus(),
-                        sleepFor(1_000L))
-                .then(getTxnRecord("invalidKeyUpdateTxn")
-                        .hasPriority(recordWith().status(INVALID_SIGNATURE)));
+                .when(cryptoUpdate("targetAccount").key("updateKey").deferStatusResolution())
+                .then(cryptoUpdate("targetAccount")
+                        .receiverSigRequired(true)
+                        .signedBy(GENESIS, "originalKey")
+                        .via("invalidKeyUpdateTxn")
+                        .deferStatusResolution()
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @Override

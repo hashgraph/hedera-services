@@ -30,8 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -41,12 +40,15 @@ import java.util.concurrent.Executors;
  * @param <V> The type of value for the state
  */
 public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
+
+    private static final Consumer<Runnable> DEFAULT_RUNNER = Thread::startVirtualThread;
+
     /** The backing merkle data structure to use */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
     private final StateMetadata<K, V> md;
 
-    private final Executor executor;
+    private final Consumer<Runnable> runner;
 
     /**
      * Create a new instance
@@ -56,21 +58,18 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
      */
     public OnDiskReadableKVState(
             @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
-        super(md.stateDefinition().stateKey());
-        this.md = md;
-        this.virtualMap = Objects.requireNonNull(virtualMap);
-        this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this(md, virtualMap, DEFAULT_RUNNER);
     }
 
     @VisibleForTesting
     OnDiskReadableKVState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap,
-            @NonNull final Executor executor) {
+            @NonNull final Consumer<Runnable> runner) {
         super(md.stateDefinition().stateKey());
         this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
-        this.executor = executor;
+        this.runner = runner;
     }
 
     /** {@inheritDoc} */
@@ -136,6 +135,6 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     public void warm(@NonNull final K key) {
         final var k = new OnDiskKey<>(md, key);
-        executor.execute(() -> virtualMap.warm(k));
+        runner.accept(() -> virtualMap.warm(k));
     }
 }

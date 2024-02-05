@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;

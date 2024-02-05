@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -47,6 +48,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class CustomGasCharging {
+    public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
     private final GasCalculator gasCalculator;
 
     @Inject
@@ -136,6 +138,58 @@ public class CustomGasCharging {
         }
     }
 
+    /**
+     * Tries to charge intrinsic gas for the given transaction based on the pre-fetched sender accountID,
+     * within the given context and world updater.  This is used when transaction are aborted due to an exception check
+     * failure before the transaction has started execution in the EVM.
+     *
+     * @param sender  the sender accountID
+     * @param context the context of the transaction, including the network gas price
+     * @param worldUpdater the world updater for the transaction
+     * @param transaction the transaction to charge gas for
+     * @throws HandleException if the gas charging fails for any reason
+     */
+    public void chargeGasForAbortedTransaction(
+            @NonNull final AccountID sender,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaEvmTransaction transaction) {
+        requireNonNull(sender);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+        requireNonNull(transaction);
+
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), false);
+
+        if (transaction.isEthereumTransaction()) {
+            final var fee = feeForAborted(transaction.relayerId(), context, worldUpdater, intrinsicGas);
+            worldUpdater.collectFee(transaction.relayerId(), fee);
+        } else {
+            final var fee = feeForAborted(sender, context, worldUpdater, intrinsicGas);
+            worldUpdater.collectFee(sender, fee);
+        }
+    }
+
+    private long feeForAborted(
+            @NonNull final AccountID accountID,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            final long intrinsicGas) {
+        requireNonNull(accountID);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+
+        final var hederaAccount = worldUpdater.getHederaAccount(accountID);
+        requireNonNull(hederaAccount);
+        final var fee = Math.min(
+                gasCostGiven(intrinsicGas, context.gasPrice()),
+                hederaAccount.getBalance().toLong());
+        // protective check to ensure that the fee is not excessive
+        final var protectedFee = Math.min(fee, ONE_HBAR_IN_TINYBARS);
+        validateTrue(hederaAccount.getBalance().toLong() >= protectedFee, INSUFFICIENT_PAYER_BALANCE);
+        return protectedFee;
+    }
+
     private void chargeWithOnlySender(
             @NonNull final HederaEvmAccount sender,
             @NonNull final HederaEvmContext context,
@@ -173,5 +227,13 @@ public class CustomGasCharging {
         worldUpdater.collectFee(relayer.hederaId(), relayerGasCost);
         worldUpdater.collectFee(sender.hederaId(), senderGasCost);
         return relayerGasCost;
+    }
+
+    public long gasCostGiven(final long gasCharge, final long gasPrice) {
+        try {
+            return Math.multiplyExact(gasCharge, gasPrice);
+        } catch (ArithmeticException ignore) {
+            return Long.MAX_VALUE;
+        }
     }
 }
