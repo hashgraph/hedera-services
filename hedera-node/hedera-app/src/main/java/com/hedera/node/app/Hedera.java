@@ -1036,7 +1036,7 @@ public final class Hedera implements SwirldMain {
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
+                .bootstrapProps(new BootstrapProperties(true)) // TBD REMOVE
                 .instantSource(InstantSource.system())
                 .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
                 .build();
