@@ -27,6 +27,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -55,6 +56,7 @@ import java.util.List;
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
+ * @param issDetectorScheduler                      the scheduler for the iss detector
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -78,7 +80,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler) {
+        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
+        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -242,6 +245,12 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("issDetector")
+                        .withType(config.issDetectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
     }

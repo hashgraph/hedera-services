@@ -34,15 +34,12 @@ import com.swirlds.logging.legacy.LogMarker;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class CryptoEngine implements Cryptography {
@@ -83,35 +80,21 @@ public class CryptoEngine implements Cryptography {
     private final EcdsaSecp256k1VerificationProvider ecdsaSecp256k1VerificationProvider;
 
     /**
-     * The verification provider used to delegate signature verification of {@link TransactionSignature} instances
-     * to either the {@code ed25519VerificationProvider} or {@code ecdsaSecp256k1VerificationProvider} as apropos.
+     * The verification provider used to delegate signature verification of {@link TransactionSignature} instances to
+     * either the {@code ed25519VerificationProvider} or {@code ecdsaSecp256k1VerificationProvider} as apropos.
      */
     private final DelegatingVerificationProvider delegatingVerificationProvider;
-
-    /**
-     * the total number of available physical processors and physical processor cores
-     */
-    private final int availableCpuCount;
 
     /**
      * The intake dispatcher instance that handles asynchronous signature verification
      */
     private volatile IntakeDispatcher<TransactionSignature, DelegatingVerificationProvider, AsyncVerificationHandler>
             verificationDispatcher;
-    /**
-     * the intake dispatcher instance that handles asynchronous message digests
-     */
-    private volatile IntakeDispatcher<Message, DigestProvider, AsyncDigestHandler> digestDispatcher;
 
     /**
      * the {@link ConcurrentLinkedQueue} instance of {@link TransactionSignature} waiting for verification
      */
-    private volatile BlockingQueue<List<TransactionSignature>> verificationQueue;
-
-    /**
-     * the {@link ConcurrentLinkedQueue} instance of {@link Message} pending message digest computation
-     */
-    private volatile BlockingQueue<List<Message>> digestQueue;
+    private volatile Queue<List<TransactionSignature>> verificationQueue;
 
     /**
      * the current configuration settings
@@ -131,15 +114,12 @@ public class CryptoEngine implements Cryptography {
     /**
      * Constructs a new {@link CryptoEngine} using the provided settings.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param config
-     * 		the initial config to be used
+     * @param threadManager responsible for managing thread lifecycles
+     * @param config        the initial config to be used
      */
     public CryptoEngine(final ThreadManager threadManager, final CryptoConfig config) {
         this.threadManager = threadManager;
         this.config = config;
-        this.availableCpuCount = Runtime.getRuntime().availableProcessors();
         this.digestProvider = new DigestProvider();
 
         this.ed25519VerificationProvider = new Ed25519VerificationProvider();
@@ -157,10 +137,10 @@ public class CryptoEngine implements Cryptography {
     /**
      * Supplier implementation for {@link AsyncVerificationHandler}.
      *
-     * @param provider
-     * 		the required {@link OperationProvider} to be used while performing the cryptographic transformations
-     * @param workItems
-     * 		the {@link List} of items to be processed by the created {@link AsyncOperationHandler} implementation
+     * @param provider  the required {@link OperationProvider} to be used while performing the cryptographic
+     *                  transformations
+     * @param workItems the {@link List} of items to be processed by the created {@link AsyncOperationHandler}
+     *                  implementation
      * @return an {@link AsyncOperationHandler} implementation
      */
     private static AsyncVerificationHandler verificationHandler(
@@ -172,14 +152,10 @@ public class CryptoEngine implements Cryptography {
     /**
      * Efficiently builds a {@link TransactionSignature} instance from the supplied components.
      *
-     * @param data
-     * 		the original contents that the signature should be verified against
-     * @param signature
-     * 		the signature to be verified
-     * @param publicKey
-     * 		the public key required to validate the signature
-     * @param signatureType
-     * 		the type of signature to be verified
+     * @param data          the original contents that the signature should be verified against
+     * @param signature     the signature to be verified
+     * @param publicKey     the public key required to validate the signature
+     * @param signatureType the type of signature to be verified
      * @return a {@link TransactionSignature} containing the provided components
      */
     private static TransactionSignature wrap(
@@ -209,12 +185,9 @@ public class CryptoEngine implements Cryptography {
     /**
      * Common private utility method for performing synchronous digest computations.
      *
-     * @param message
-     * 		the message contents to be hashed
-     * @param provider
-     * 		the underlying provider to be used
-     * @param future
-     * 		the {@link Future} to be associated with the {@link Message}
+     * @param message  the message contents to be hashed
+     * @param provider the underlying provider to be used
+     * @param future   the {@link Future} to be associated with the {@link Message}
      * @return the cryptographic hash for the given message contents
      */
     private static Hash digestSyncInternal(
@@ -237,12 +210,9 @@ public class CryptoEngine implements Cryptography {
     /**
      * Common private utility method for performing synchronous signature verification.
      *
-     * @param signature
-     * 		the signature to be verified
-     * @param provider
-     * 		the underlying provider to be used
-     * @param future
-     * 		the {@link Future} to be associated with the {@link TransactionSignature}
+     * @param signature the signature to be verified
+     * @param provider  the underlying provider to be used
+     * @param future    the {@link Future} to be associated with the {@link TransactionSignature}
      * @return true if the signature is valid; otherwise false
      */
     private static boolean verifySyncInternal(
@@ -264,24 +234,6 @@ public class CryptoEngine implements Cryptography {
     }
 
     /**
-     * Indicates whether a supported OpenCL framework is installed and available on this system.
-     *
-     * @return true if OpenCL is available; false otherwise
-     */
-    public boolean isOpenCLAvailable() {
-        return false;
-    }
-
-    /**
-     * Indicates whether a support GPU is available on this system.
-     *
-     * @return true if a support GPU is available; false otherwise
-     */
-    public boolean isGpuAvailable() {
-        return false;
-    }
-
-    /**
      * Getter for the current configuration settings used by the {@link CryptoEngine}.
      *
      * @return the current configuration settings
@@ -293,95 +245,11 @@ public class CryptoEngine implements Cryptography {
     /**
      * Setter to allow the configuration settings to be updated at runtime.
      *
-     * @param config
-     * 		the configuration settings
+     * @param config the configuration settings
      */
     public synchronized void setSettings(final CryptoConfig config) {
         this.config = config;
         applySettings();
-    }
-
-    /**
-     * Returns the total number of physical processors and physical processor cores available.
-     *
-     * @return the total number of physical processors and physical cores
-     */
-    public int getAvailableCpuCount() {
-        return availableCpuCount;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestAsync(final Message message) {
-        try {
-            digestQueue.put(Collections.singletonList(message));
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestAsync(final List<Message> messages) {
-        try {
-            digestQueue.put(messages);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Future<Hash> digestAsync(final byte[] message, final DigestType digestType) {
-        final Message wrappedMessage = new Message(message, digestType);
-        try {
-            digestQueue.put(Collections.singletonList(wrappedMessage));
-
-            return new WrappingLambdaFuture<>(
-                    () -> {
-                        try {
-                            return wrappedMessage.waitForFuture();
-                        } catch (final InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                            return null;
-                        }
-                    },
-                    wrappedMessage::getHash);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new CryptographyException(ex, LogMarker.TESTING_EXCEPTIONS);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Hash digestSync(final Message message) {
-        final DigestProvider provider = new DigestProvider();
-        final StandardFuture<Void> future = new StandardFuture<>();
-        future.complete(null);
-
-        return digestSyncInternal(message, provider, future);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void digestSync(final List<Message> messages) {
-        final StandardFuture<Void> future = new StandardFuture<>();
-        future.complete(null);
-
-        for (final Message message : messages) {
-            digestSyncInternal(message, digestProvider, future);
-        }
     }
 
     /**
@@ -444,49 +312,11 @@ public class CryptoEngine implements Cryptography {
      * {@inheritDoc}
      */
     @Override
-    public void verifyAsync(final TransactionSignature signature) {
-        try {
-            verificationQueue.put(Collections.singletonList(signature));
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void verifyAsync(final List<TransactionSignature> signatures) {
-        try {
-            verificationQueue.put(signatures);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Future<Boolean> verifyAsync(
-            final byte[] data, final byte[] signature, final byte[] publicKey, final SignatureType signatureType) {
-        final TransactionSignature wrappedSignature = wrap(data, signature, publicKey, signatureType);
-        try {
-            verificationQueue.put(Collections.singletonList(wrappedSignature));
-
-            return new WrappingLambdaFuture<>(
-                    () -> {
-                        try {
-                            return wrappedSignature.waitForFuture();
-                        } catch (final InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                            return null;
-                        }
-                    },
-                    () -> wrappedSignature.getSignatureStatus() == VerificationStatus.VALID);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new CryptographyException(ex, LogMarker.TESTING_EXCEPTIONS);
+        final boolean added = verificationQueue.add(signatures);
+        if (!added) {
+            // This should never happen, since the queue is unbounded
+            throw new RuntimeException("Unable to add to the verification queue");
         }
     }
 
@@ -566,24 +396,12 @@ public class CryptoEngine implements Cryptography {
             this.verificationDispatcher = null;
         }
 
-        if (this.digestDispatcher != null) {
-            this.digestDispatcher.shutdown();
-            this.digestDispatcher = null;
-        }
-
         // Resize the dispatcher queues
         final Queue<List<TransactionSignature>> oldVerifierQueue = this.verificationQueue;
-        this.verificationQueue = new LinkedBlockingQueue<>(config.cpuVerifierQueueSize());
-
-        final Queue<List<Message>> oldDigestQueue = this.digestQueue;
-        this.digestQueue = new LinkedBlockingQueue<>(config.cpuDigestQueueSize());
+        this.verificationQueue = new ConcurrentLinkedQueue<>();
 
         if (oldVerifierQueue != null && oldVerifierQueue.size() > 0) {
             this.verificationQueue.addAll(oldVerifierQueue);
-        }
-
-        if (oldDigestQueue != null && oldDigestQueue.size() > 0) {
-            this.digestQueue.addAll(oldDigestQueue);
         }
 
         // Launch new background threads with the new settings
@@ -594,40 +412,14 @@ public class CryptoEngine implements Cryptography {
                 this.delegatingVerificationProvider,
                 config.computeCpuVerifierThreadCount(),
                 CryptoEngine::verificationHandler);
-
-        this.digestDispatcher = new IntakeDispatcher<>(
-                threadManager,
-                Message.class,
-                this.digestQueue,
-                this.digestProvider,
-                config.computeCpuDigestThreadCount(),
-                this::digestHandler);
-    }
-
-    /**
-     * Supplier implementation for {@link AsyncDigestHandler} used by the
-     * {@link #CryptoEngine(ThreadManager, CryptoConfig)}
-     * constructor.
-     *
-     * @param provider
-     * 		the required {@link OperationProvider} to be used while performing the cryptographic transformations
-     * @param workItems
-     * 		the {@link List} of items to be processed by the created {@link AsyncOperationHandler} implementation
-     * @return an {@link AsyncOperationHandler} implementation
-     */
-    private AsyncDigestHandler digestHandler(final DigestProvider provider, final List<Message> workItems) {
-        return new AsyncDigestHandler(workItems, provider);
     }
 
     /**
      * Common private utility method for performing synchronous digest computations.
      *
-     * @param message
-     * 		the message contents to be hashed
-     * @param digestType
-     * 		the type of digest used to compute the hash
-     * @param provider
-     * 		the underlying provider to be used
+     * @param message    the message contents to be hashed
+     * @param digestType the type of digest used to compute the hash
+     * @param provider   the underlying provider to be used
      * @return the cryptographic hash for the given message contents
      */
     private Hash digestSyncInternal(final byte[] message, final DigestType digestType, final DigestProvider provider) {

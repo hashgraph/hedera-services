@@ -40,7 +40,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -310,11 +309,6 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public void registerMetrics(final Metrics metrics) {
             delegate.registerMetrics(metrics);
-        }
-
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return delegate.buildKeySet();
         }
 
         @Override

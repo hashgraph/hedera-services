@@ -57,6 +57,7 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -72,6 +73,7 @@ import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
+import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -119,6 +121,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
+    private final IssDetectorWiring issDetectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -202,6 +205,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
+        issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
         wire();
     }
 
@@ -332,6 +336,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param consensusRoundHandler   the consensus round handler to bind
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
+     * @param issDetector             the ISS detector to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -353,7 +358,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
-            @NonNull final FutureEventBuffer futureEventBuffer) {
+            @NonNull final FutureEventBuffer futureEventBuffer,
+            @NonNull final IssDetector issDetector) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -375,6 +381,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
+        issDetectorWiring.bind(issDetector);
     }
 
     /**
@@ -522,6 +529,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
         runningHashUpdaterWiring.runningHashUpdateInput().inject(runningHashUpdate);
+    }
+
+    /**
+     * @return the wiring wrapper for the ISS detector
+     */
+    public @NonNull IssDetectorWiring getIssDetectorWiring() {
+        return issDetectorWiring;
     }
 
     /**
