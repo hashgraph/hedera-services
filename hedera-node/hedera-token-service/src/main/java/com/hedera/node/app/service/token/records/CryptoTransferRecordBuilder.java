@@ -39,7 +39,8 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @param hbarTransfers the net list of adjustments to make to account balances
      * @return this builder
      */
-    CryptoTransferRecordBuilder transferList(TransferList hbarTransfers);
+    @NonNull
+    CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers);
 
     /**
      * Tracks the <b>net</b> token transfers that need to be applied to the associated accounts,

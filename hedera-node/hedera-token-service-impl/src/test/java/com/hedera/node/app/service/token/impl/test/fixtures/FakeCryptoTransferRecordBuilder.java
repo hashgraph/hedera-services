@@ -26,6 +26,7 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
@@ -68,7 +69,8 @@ public class FakeCryptoTransferRecordBuilder {
             }
 
             @Override
-            public CryptoTransferRecordBuilder transferList(final TransferList hbarTransfers) {
+            @NonNull
+            public CryptoTransferRecordBuilder transferList(@NonNull final TransferList hbarTransfers) {
                 this.transferList = hbarTransfers;
                 return this;
             }
