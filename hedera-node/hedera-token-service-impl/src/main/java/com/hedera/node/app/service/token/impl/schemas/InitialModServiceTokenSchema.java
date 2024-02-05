@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.schemas;
 
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.clampedStakePeriodStart;
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.computeRewardFromDetails;
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.stakePeriodAt;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
@@ -286,6 +289,10 @@ public class InitialModServiceTokenSchema extends Schema {
                         toStakingInfo);
             });
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
+            final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
+            final var currentStakingPeriod =
+                    stakePeriodAt(mnc.consensusTimeOfLastHandledTxn(), stakingConfig.periodMins());
+            final var numStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
             log.info("BBM: finished staking info");
 
             // ---------- Accounts
@@ -310,6 +317,19 @@ public class InitialModServiceTokenSchema extends Schema {
                                                             .accountNum(acctNum)
                                                             .build(),
                                                     toAcct);
+                                    if (!toAcct.deleted() && !toAcct.declineReward() && toAcct.hasStakedNodeId()) {
+                                        final var stakedNodeId = toAcct.stakedNodeIdOrThrow();
+                                        final var stakingInfo = stakingToState.get(new EntityNumber(stakedNodeId));
+                                        final var reward = computeRewardFromDetails(
+                                                toAcct,
+                                                stakingInfo,
+                                                currentStakingPeriod,
+                                                clampedStakePeriodStart(
+                                                        toAcct.stakePeriodStart(),
+                                                        currentStakingPeriod,
+                                                        numStoredPeriods));
+                                        pendingRewards.merge(stakedNodeId, reward, Long::sum);
+                                    }
                                     if (numAccountInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
                                         ((WritableKVStateBase) acctsToState.get()).commit();
@@ -335,6 +355,17 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
+            // Also persist the per-node pending reward information
+            stakingFs.forEach((entityNum, ignore) -> {
+                final var toKey = new EntityNumber(entityNum.longValue());
+                final var info = requireNonNull(stakingToState.get(toKey));
+                stakingToState.put(
+                        toKey,
+                        info.copyBuilder()
+                                .pendingRewards(pendingRewards.getOrDefault(toKey.number(), 0L))
+                                .build());
+            });
+            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             log.info("BBM: finished accts");
 
             // ---------- Tokens

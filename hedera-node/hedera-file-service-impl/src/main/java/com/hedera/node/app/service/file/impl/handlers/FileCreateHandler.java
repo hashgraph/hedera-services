@@ -135,8 +135,14 @@ public class FileCreateHandler implements TransactionHandler {
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
                     .fileNum(handleContext.newEntityNum())
-                    .shardNum(fileCreateTransactionBody.hasShardID() ? fileCreateTransactionBody.shardIDOrThrow().shardNum() : hederaConfig.shard())
-                    .realmNum(fileCreateTransactionBody.hasRealmID() ? fileCreateTransactionBody.realmIDOrThrow().realmNum() : hederaConfig.realm())
+                    .shardNum(
+                            fileCreateTransactionBody.hasShardID()
+                                    ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
+                                    : hederaConfig.shard())
+                    .realmNum(
+                            fileCreateTransactionBody.hasRealmID()
+                                    ? fileCreateTransactionBody.realmIDOrThrow().realmNum()
+                                    : hederaConfig.realm())
                     .build();
             builder.fileId(fileId);
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
