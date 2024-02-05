@@ -19,10 +19,10 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -44,11 +44,6 @@ public class SignedStateHasher {
     private final SignedStateMetrics signedStateMetrics;
 
     /**
-     * The StateHashedTrigger to notify if the hashing is successful.
-     */
-    private final StateHashedTrigger stateHashedTrigger;
-
-    /**
      * The FatalErrorConsumer to notify with any fatal errors that occur during hashing.
      */
     private final FatalErrorConsumer fatalErrorConsumer;
@@ -59,20 +54,13 @@ public class SignedStateHasher {
      * dispatched to the provided StateHashedTrigger.
      *
      * @param signedStateMetrics the SignedStateMetrics instance to record time spent hashing.
-     * @param stateHashedTrigger the StateHashedTrigger dispatcher to notify with hash.
      * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
      *
-     * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code stateHashedTrigger}</li>
-     *       <li>{@code fatalErrorConsumer}</li>
-     *     </ul>
+     * @throws NullPointerException if any of the {@code fatalErrorConsumer} parameter is {@code null}.
      */
     public SignedStateHasher(
-            SignedStateMetrics signedStateMetrics,
-            StateHashedTrigger stateHashedTrigger,
-            FatalErrorConsumer fatalErrorConsumer) {
-        this.stateHashedTrigger = Objects.requireNonNull(stateHashedTrigger, "stateHashedTrigger must not be null");
+            @Nullable final SignedStateMetrics signedStateMetrics,
+            @NonNull final FatalErrorConsumer fatalErrorConsumer) {
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;
     }
@@ -85,7 +73,7 @@ public class SignedStateHasher {
     public void hashState(final SignedState signedState) {
         final Instant start = Instant.now();
         try {
-            final Hash hash = MerkleCryptoFactory.getInstance()
+            MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(signedState.getState())
                     .get();
 
@@ -94,8 +82,6 @@ public class SignedStateHasher {
                         .getSignedStateHashingTimeMetric()
                         .update(Duration.between(start, Instant.now()).toMillis());
             }
-
-            stateHashedTrigger.dispatch(signedState.getRound(), hash);
 
         } catch (final ExecutionException e) {
             fatalErrorConsumer.fatalError("Exception occurred during SignedState hashing", e, FATAL_ERROR);
