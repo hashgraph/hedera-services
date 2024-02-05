@@ -65,7 +65,7 @@ public class CycleTimingStat {
                     metrics,
                     unit,
                     definition.getCategory(),
-                    definition.getName() + "-" + definition.getIntervalName(i),
+                    definition.getName() + "_" + definition.getIntervalName(i),
                     definition.getIntervalDescription(i),
                     AverageStat.WEIGHT_VOLATILE));
         }
@@ -74,7 +74,7 @@ public class CycleTimingStat {
                 metrics,
                 unit,
                 definition.getCategory(),
-                definition.getName() + "-total",
+                definition.getName() + "_total",
                 "average total time spend in the " + definition.getName() + " cycle.",
                 AverageStat.WEIGHT_VOLATILE);
     }

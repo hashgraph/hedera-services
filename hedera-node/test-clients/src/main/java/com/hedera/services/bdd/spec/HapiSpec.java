@@ -888,7 +888,7 @@ public class HapiSpec implements Runnable {
 
     public static Def.Given onlyDefaultHapiSpec(
             final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, true, emptyList());
+        return internalDefaultHapiSpec(name, true, List.of(), snapshotMatchModes);
     }
 
     private static Def.Given internalDefaultHapiSpec(

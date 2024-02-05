@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -84,6 +85,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -98,6 +100,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Address;
@@ -255,7 +258,8 @@ public class ContractCallSuite extends HapiSuite {
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
-                repeatedCreate2FailsWithInterpretableActionSidecars());
+                repeatedCreate2FailsWithInterpretableActionSidecars(),
+                callStaticCallToLargeAddress());
     }
 
     @HapiTest
@@ -1518,6 +1522,36 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    HapiSpec callFailsWhenAmountIsNegativeButStillChargedFee() {
+        final var payer = "payer";
+        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .adminKey(THRESHOLD)
+                                .gas(1_000_000),
+                        cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
+                .when(ifHapiTest(withOpContext((spec, ignore) -> {
+                    final var subop1 = balanceSnapshot("balanceBefore0", payer);
+                    final var subop2 = contractCall(PAY_RECEIVABLE_CONTRACT)
+                            .via(PAY_TXN)
+                            .payingWith(payer)
+                            .sending(-DEPOSIT_AMOUNT)
+                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE);
+                    final var subop3 = getTxnRecord(PAY_TXN).logged();
+                    allRunFor(spec, subop1, subop2, subop3);
+                    final var delta = subop3.getResponseRecord()
+                            .getTransferList()
+                            .getAccountAmounts(0)
+                            .getAmount();
+                    final var subop4 =
+                            getAccountBalance(payer).hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
+                    allRunFor(spec, subop4);
+                })))
+                .then();
+    }
+
+    @HapiTest
     HapiSpec insufficientGas() {
         return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -2415,6 +2449,27 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
                                         .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+    }
+
+    @HapiTest
+    final HapiSpec callStaticCallToLargeAddress() {
+        final var txn = "txn";
+        final var contract = "CallInConstructor";
+        return defaultHapiSpec("callStaticAddress")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(txn).hasKnownStatus(SUCCESS))
+                .when(contractCall(contract, "callSomebody").via(txn))
+                .then(getTxnRecord(txn).logged(), withOpContext((spec, opLog) -> {
+                    final var op = getTxnRecord(txn);
+                    allRunFor(spec, op);
+                    final var record = op.getResponseRecord();
+                    final var callResult = record.getContractCallResult();
+                    final var callContractID = callResult.getContractID();
+                    assertTrue(
+                            callContractID.getContractNum() < 10000,
+                            "Expected contract num < 10000 but got " + callContractID.getContractNum());
+                }));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

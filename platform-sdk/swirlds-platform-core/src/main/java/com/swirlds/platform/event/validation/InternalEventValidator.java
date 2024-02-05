@@ -250,7 +250,7 @@ public class InternalEventValidator {
                 inconsistentOtherParentAccumulator.update(1);
                 return false;
             }
-            if (otherParent.getBirthRound() < ROUND_FIRST) {
+            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && otherParent.getBirthRound() < ROUND_FIRST) {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with birth round less than the ROUND_FIRST. other-parent: %s"
@@ -323,7 +323,7 @@ public class InternalEventValidator {
     private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
         final long eventBirthRound = event.getDescriptor().getBirthRound();
 
-        if (eventBirthRound < ROUND_FIRST) {
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && eventBirthRound < ROUND_FIRST) {
             invalidBirthRoundLogger.error(
                     EXCEPTION.getMarker(),
                     "Event %s has an invalid birth round. Event birth round: %s, the min birth round is: %s"

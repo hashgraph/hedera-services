@@ -88,6 +88,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -116,12 +117,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
+@Singleton
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
@@ -333,10 +336,11 @@ public class HandleWorkflow {
         TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
+        TransactionInfo transactionInfo = null;
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
-            final var transactionInfo = preHandleResult.txInfo();
+            transactionInfo = preHandleResult.txInfo();
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
@@ -424,7 +428,6 @@ public class HandleWorkflow {
 
             networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
-
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
@@ -446,7 +449,11 @@ public class HandleWorkflow {
                             // the network fee in case of a very low payer balance)
                             feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
                         } else {
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                            final var feesToCharge =
+                                    validationResult.responseCodeEnum().equals(DUPLICATE_TRANSACTION)
+                                            ? fees.withoutServiceComponent()
+                                            : fees;
+                            feeAccumulator.chargeFees(payer, creator.accountId(), feesToCharge);
                         }
                     }
                 } catch (final HandleException ex) {
@@ -547,7 +554,10 @@ public class HandleWorkflow {
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
-                    recordBuilder.status(fileUpdateResult);
+
+                    recordBuilder
+                            .exchangeRate(exchangeRateManager.exchangeRates())
+                            .status(fileUpdateResult);
 
                     // Notify if platform state was updated
                     platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
@@ -580,7 +590,7 @@ public class HandleWorkflow {
         }
 
         networkUtilizationManager.saveTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
+        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
 
         // Commit all state changes
         stack.commitFullStack();

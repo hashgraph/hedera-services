@@ -17,13 +17,14 @@
 package com.swirlds.virtualmap.internal;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.KNOWN;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.NOT_KNOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -72,6 +73,7 @@ class ConcurrentNodeStatusTrackerTests {
      * 		if the checking (current) thread is interrupted
      */
     @Test
+    @Tag(TIMING_SENSITIVE)
     void acknowledgeBigNumbers() throws InterruptedException, ExecutionException, TimeoutException {
         final long capacity = 4L * Integer.MAX_VALUE;
         final ConcurrentNodeStatusTracker tracker = new ConcurrentNodeStatusTracker(capacity);
@@ -133,6 +135,7 @@ class ConcurrentNodeStatusTrackerTests {
      * 		if the checking (current) thread is interrupted
      */
     @Test
+    @Tag(TIMING_SENSITIVE)
     void setsBoundValue() throws InterruptedException, ExecutionException, TimeoutException {
         final long capacity = Long.MAX_VALUE;
         final long value = Long.MAX_VALUE - 1;

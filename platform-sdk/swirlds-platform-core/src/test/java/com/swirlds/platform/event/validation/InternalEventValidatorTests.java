@@ -34,6 +34,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -41,8 +43,6 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -132,6 +132,40 @@ class InternalEventValidatorTests {
                 new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
                 new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
                 totalTransactionBytes);
+    }
+
+    @Test
+    @DisplayName("Generation Threshold With Negative BirthRound should validate")
+    void generationThresholdWithNegativeBirthRound() {
+        final EventDescriptor selfParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor otherParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
+        final EventDescriptor self = new EventDescriptor(randomHash(random), new NodeId(0), 1, -1);
+        final GossipEvent event = generateEvent(self, selfParent, otherParent, 1111);
+
+        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
+        doAnswer(invocation -> {
+                    exitedIntakePipelineCount.incrementAndGet();
+                    return null;
+                })
+                .when(intakeEventCounter)
+                .eventExitedIntakePipeline(any());
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, false)
+                        .getOrCreateConfig())
+                .build();
+
+        final Time time = new FakeTime();
+
+        final InternalEventValidator multinodeValidator =
+                new InternalEventValidator(platformContext, time, false, intakeEventCounter);
+        final InternalEventValidator singleNodeValidator =
+                new InternalEventValidator(platformContext, time, true, intakeEventCounter);
+
+        assertNotNull(multinodeValidator.validateEvent(event));
+        assertNotNull(singleNodeValidator.validateEvent(event));
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test

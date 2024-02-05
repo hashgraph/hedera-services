@@ -121,7 +121,8 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             return account;
         }
         // if the customizer is set, that means we're creating a contract
-        if (hasPendingCreationCustomizer()) {
+        if (hasPendingCreationCustomizer()
+                && customizerForPendingCreation().appliesTo(aliases().resolveForEvm(address))) {
             return createAccount(address);
         }
         // if the customizer is not set, that means we're creating a ghost account that will not be persisted

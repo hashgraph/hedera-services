@@ -43,6 +43,8 @@ import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.service.file.FileSignatureWaivers;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
@@ -134,6 +136,10 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     CryptoSignatureWaivers bindCryptoSignatureWaivers(CryptoSignatureWaiversImpl cryptoSignatureWaivers);
+
+    @Binds
+    @Singleton
+    FileSignatureWaivers bindFileSignatureWaivers(FileSignatureWaiversImpl fileSignatureWaivers);
 
     @Binds
     @Singleton

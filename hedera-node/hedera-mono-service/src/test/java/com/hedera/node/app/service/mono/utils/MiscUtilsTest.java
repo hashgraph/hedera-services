@@ -93,6 +93,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,6 +104,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -173,6 +176,7 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -231,6 +235,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void canDecodeBody() {
+        final var encodedSignedTransaction =
+                "\\n9\\n\\025\\n\\v\\b\\223\\263\\302\\255\\006\\020\\264\\351\\276.\\022\\004\\030\\231\\216\\a \\003r \\022\\036\\n\\004\\030\\325\\325,\\022\\n\\n\\004\\030\\373\\342A\\020\\375\\352J\\022\\n\\n\\004\\030\\305\\245Y\\020\\376\\352J";
+        assertDoesNotThrow(() -> bodyOf(encodedSignedTransaction));
+    }
+
     @Test
     void canGetSynthAccessor() {
         final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()
@@ -720,14 +731,14 @@ class MiscUtilsTest {
     void asTimestampRichInstantTest() {
         final var instant = RichInstant.fromJava(Instant.now());
         final var timestamp = MiscUtils.asTimestamp(instant);
-        assertEquals(instant.toJava(), MiscUtils.timestampToInstant(timestamp));
+        assertEquals(instant.toJava(), CommonUtils.timestampToInstant(timestamp));
     }
 
     @Test
     void asTimestampJavaTest() {
         final var instant = Instant.now();
         final var timestamp = MiscUtils.asTimestamp(instant);
-        assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
+        assertEquals(instant, CommonUtils.timestampToInstant(timestamp));
     }
 
     @Test
@@ -981,5 +992,12 @@ class MiscUtilsTest {
                     .findFirst()
                     .get();
         }
+    }
+
+    private TransactionBody bodyOf(final String encoded)
+            throws InvalidProtocolBufferException, TextFormat.InvalidEscapeSequenceException {
+        final var raw = TextFormat.unescapeBytes(encoded);
+        final var signedTxn = SignedTransaction.parseFrom(raw);
+        return TransactionBody.parseFrom(signedTxn.getBodyBytes());
     }
 }

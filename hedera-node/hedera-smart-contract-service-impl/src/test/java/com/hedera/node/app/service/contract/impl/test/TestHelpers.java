@@ -491,7 +491,22 @@ public class TestHelpers {
             GAS_LIMIT,
             0L,
             0L,
-            ContractCreateTransactionBody.DEFAULT);
+            ContractCreateTransactionBody.DEFAULT,
+            null);
+    public static final HederaEvmTransaction HEVM_Exception = new HederaEvmTransaction(
+            SENDER_ID,
+            null,
+            CALLED_CONTRACT_ID,
+            NONCE,
+            CALL_DATA,
+            MAINNET_CHAIN_ID,
+            VALUE,
+            GAS_LIMIT,
+            0L,
+            0L,
+            null,
+            new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
+
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
@@ -615,7 +630,7 @@ public class TestHelpers {
     }
 
     public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
-        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
+        return org.apache.tuweni.bytes.Bytes.wrap(UInt256.valueOf(status.protoOrdinal()));
     }
 
     public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
@@ -677,6 +692,7 @@ public class TestHelpers {
                 gasLimit,
                 userGasPrice,
                 maxGasAllowance,
+                null,
                 null);
     }
 
@@ -705,7 +721,8 @@ public class TestHelpers {
                 gasLimit,
                 userGasPrice,
                 maxGasAllowance,
-                ContractCreateTransactionBody.DEFAULT);
+                ContractCreateTransactionBody.DEFAULT,
+                null);
     }
 
     public static HederaEvmContext wellKnownContextWith(

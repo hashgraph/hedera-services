@@ -46,6 +46,8 @@ sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
     main { resources { srcDir("src/main/resource") } }
+
+    create("rcdiff")
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -225,6 +227,22 @@ val yahCliJar =
         manifest {
             attributes(
                 "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+                "Multi-Release" to "true"
+            )
+        }
+    }
+
+val rcdiffJar =
+    tasks.register<ShadowJar>("rcdiffJar") {
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["rcdiff"].output)
+        destinationDirectory.set(project.file("rcdiff"))
+        archiveFileName.set("rcdiff.jar")
+        configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
+
+        manifest {
+            attributes(
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
                 "Multi-Release" to "true"
             )
         }

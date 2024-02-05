@@ -42,7 +42,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -51,12 +51,12 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,7 +170,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
     @Test
     @DisplayName("When everything goes right, the transaction should be submitted")
-    void testSuccess() throws PreCheckException, IOException {
+    void testSuccess() throws PreCheckException, ParseException {
         // When the transaction is submitted
         workflow.submitTransaction(requestBuffer, responseBuffer);
 
@@ -190,7 +190,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @EnumSource(PlatformStatus.class)
         @DisplayName("When the platform is not ACTIVE, the transaction should be rejected (except for ACTIVE)")
         void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status)
-                throws IOException, PreCheckException {
+                throws ParseException, PreCheckException {
             // Since the enum source is going over all states, and the ACTIVE state is
             // actually good, I need to skip that one.
             if (status != PlatformStatus.ACTIVE) {
@@ -232,7 +232,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @ParameterizedTest(name = "WorkflowOnset fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
-        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
+        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, ParseException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
             when(transactionChecker.parse(any())).thenThrow(new PreCheckException(failureReason));
 
@@ -277,7 +277,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @ParameterizedTest(name = "IngestChecker fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("When ingest checks fail, the transaction should be rejected")
-        void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
+        void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, ParseException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
             when(ingestChecker.runAllChecks(state, transaction, configuration))
                     .thenThrow(new PreCheckException(failureReason));
@@ -316,7 +316,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         @Test
         @DisplayName("If the platform fails to onConsensusRound the transaction, the transaction should be rejected")
-        void testSubmitFails() throws PreCheckException, IOException {
+        void testSubmitFails() throws PreCheckException, ParseException {
             // Given a SubmissionManager that will fail the submit
             doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                     .when(submissionManager)
@@ -347,7 +347,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         }
     }
 
-    private static TransactionResponse parseResponse(@NonNull final BufferedData responseBuffer) throws IOException {
+    private static TransactionResponse parseResponse(@NonNull final BufferedData responseBuffer) throws ParseException {
         responseBuffer.flip();
         return TransactionResponse.PROTOBUF.parse(responseBuffer);
     }

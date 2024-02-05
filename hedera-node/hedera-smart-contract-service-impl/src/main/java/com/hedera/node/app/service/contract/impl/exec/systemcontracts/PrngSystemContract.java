@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
@@ -172,9 +171,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
     Bytes random256BitGenerator(final MessageFrame frame) {
         final var entropy = ((ProxyWorldUpdater) frame.getWorldUpdater()).entropy();
-        if (entropy.equals(Bytes.wrap(ZERO_ENTROPY.toByteArray()))) {
-            return null;
-        }
         return entropy.slice(0, 32);
     }
 

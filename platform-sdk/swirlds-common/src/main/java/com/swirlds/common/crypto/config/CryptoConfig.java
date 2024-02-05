@@ -28,12 +28,6 @@ import com.swirlds.config.api.ConfigProperty;
  * @param cpuDigestThreadRatio
  * 		the ratio of simultaneous CPU threads to utilize for hashing. A value between {@code 0.0} and {@code 1.0}
  * 		inclusive representing the percentage of cores that should be used for hash computations.
- * @param cpuVerifierQueueSize
- * 		the fixed size of the CPU verifier queue. A value greater than zero representing the upper bound of the CPU
- * 		signature verification queue.
- * @param cpuDigestQueueSize
- * 		the fixed size of the CPU hashing queue. A value greater than zero representing the upper bound of the CPU
- * 		hashing queue.
  * @param keystorePassword
  * 		the password used to protect the PKCS12 key stores containing the nodes RSA keys. The password used to protect
  * 		the PKCS12 key stores containing the node RSA public/private key pairs.
@@ -45,8 +39,6 @@ import com.swirlds.config.api.ConfigProperty;
 public record CryptoConfig(
         @ConfigProperty(defaultValue = "0.5") double cpuVerifierThreadRatio,
         @ConfigProperty(defaultValue = "0.5") double cpuDigestThreadRatio,
-        @ConfigProperty(defaultValue = "100") int cpuVerifierQueueSize,
-        @ConfigProperty(defaultValue = "100") int cpuDigestQueueSize,
         @ConfigProperty(defaultValue = "password") String keystorePassword,
         @ConfigProperty(defaultValue = "false") boolean enableNewKeyStoreModel) {
 
