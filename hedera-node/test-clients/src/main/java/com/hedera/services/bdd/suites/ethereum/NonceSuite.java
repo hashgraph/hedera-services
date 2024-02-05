@@ -747,7 +747,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     private HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
-        return defaultHapiSpec("nonceUpdatedAfterSuccessfulInternalContractDeployment", NONDETERMINISTIC_ETHEREUM_DATA)
+        return defaultHapiSpec("nonceUpdatedAfterSuccessfulEthereumContractCreation", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
