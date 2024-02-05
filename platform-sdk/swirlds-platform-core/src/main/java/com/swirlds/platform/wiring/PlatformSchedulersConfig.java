@@ -81,6 +81,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
  * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
  *                                                          buffer
+ * @param issDetectorSchedulerType                          the ISS detector scheduler type
+ * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -118,4 +120,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
         @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
-        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
+        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity) {}

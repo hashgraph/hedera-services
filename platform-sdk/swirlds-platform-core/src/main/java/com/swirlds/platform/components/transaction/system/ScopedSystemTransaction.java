@@ -17,17 +17,20 @@
 package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A system transaction with a submitter ID. The submitter ID is not included with the transaction, it is determined
- * by the event that the transaction is contained within. This is intentional, as it makes it impossible for a
- * transaction to lie and claim to be submitted by a node that did not actually submit it.
+ * A system transaction with a submitter ID and a software version. The submitter ID is not included with the
+ * transaction, it is determined by the event that the transaction is contained within. This is intentional, as it makes
+ * it impossible for a transaction to lie and claim to be submitted by a node that did not actually submit it.
  *
- * @param submitterId the ID of the node that submitted the transaction
- * @param transaction the transaction
- * @param <T>         the type of transaction
+ * @param submitterId     the ID of the node that submitted the transaction
+ * @param softwareVersion the software version of the event that contained the transaction
+ * @param transaction     the transaction
+ * @param <T>             the type of transaction
  */
 public record ScopedSystemTransaction<T extends SystemTransaction>(
-        @NonNull NodeId submitterId, @NonNull T transaction) {}
+        @NonNull NodeId submitterId, @Nullable SoftwareVersion softwareVersion, @NonNull T transaction) {}

@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.platform.metrics.IssMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -71,18 +71,13 @@ public class RoundHashValidator {
     /**
      * Create an object that validates this node's hash for a round.
      *
-     * @param stateHashValidityDispatcher
-     * 		a dispatch method should be called when there is a hash disagreement
-     * @param round
-     * 		the round number
-     * @param roundWeight
-     * 		the total weight for this round
+     * @param round       the round number
+     * @param roundWeight the total weight for this round
+     * @param issMetrics  iss related metrics
      */
-    public RoundHashValidator(
-            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long roundWeight) {
-
+    public RoundHashValidator(final long round, final long roundWeight, @NonNull final IssMetrics issMetrics) {
         this.round = round;
-        hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, round, roundWeight);
+        hashFinder = new ConsensusHashFinder(round, roundWeight, Objects.requireNonNull(issMetrics));
     }
 
     /**
@@ -95,14 +90,14 @@ public class RoundHashValidator {
     /**
      * Get the hash that this node computed for the round if it is known, or null if it is not known.
      */
-    public synchronized Hash getSelfStateHash() {
+    public Hash getSelfStateHash() {
         return selfStateHash;
     }
 
     /**
      * Get the consensus hash if it is known, or null if it is unknown.
      */
-    public synchronized Hash getConsensusHash() {
+    public Hash getConsensusHash() {
         if (hashFinder.getStatus() == ConsensusHashStatus.DECIDED) {
             return hashFinder.getConsensusHash();
         }
@@ -128,7 +123,7 @@ public class RoundHashValidator {
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean reportSelfHash(@NonNull final Hash selfStateHash) {
+    public boolean reportSelfHash(@NonNull final Hash selfStateHash) {
         if (this.selfStateHash != null) {
             throw new IllegalStateException("self hash reported more than once");
         }
@@ -152,7 +147,7 @@ public class RoundHashValidator {
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean reportHashFromNetwork(
+    public boolean reportHashFromNetwork(
             @NonNull final NodeId nodeId, final long nodeWeight, @NonNull final Hash stateHash) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         Objects.requireNonNull(stateHash, "stateHash must not be null");
@@ -197,7 +192,7 @@ public class RoundHashValidator {
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean outOfTime() {
+    public boolean outOfTime() {
         if (status != HashValidityStatus.UNDECIDED) {
             // Already decided, once decided we don't decide again
             return false;
@@ -236,7 +231,14 @@ public class RoundHashValidator {
      * @return a validity status, will be {@link HashValidityStatus#UNDECIDED} until
      * 		enough data has been gathered.
      */
-    public synchronized HashValidityStatus getStatus() {
+    public HashValidityStatus getStatus() {
         return status;
+    }
+
+    /**
+     * @return true if there is any disagreement between nodes on the hash for this round
+     */
+    public boolean hasDisagreement() {
+        return hashFinder.hasDisagreement();
     }
 }

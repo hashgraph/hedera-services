@@ -23,11 +23,9 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
-import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
@@ -35,19 +33,16 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -134,13 +129,6 @@ public class AppCommunicationComponent implements PlatformComponent, IssConsumer
                 reservedSignedState.get().getConsensusTimestamp());
 
         notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
-    }
-
-    @Override
-    public void iss(
-            final long round, @NonNull final IssNotification.IssType issType, @Nullable final NodeId otherNodeId) {
-        final IssNotification notification = new IssNotification(round, issType, otherNodeId);
-        notificationEngine.dispatch(IssListener.class, notification);
     }
 
     /**

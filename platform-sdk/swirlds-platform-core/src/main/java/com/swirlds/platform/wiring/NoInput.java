@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.dispatch.triggers.flow;
-
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.dispatch.types.TriggerTwo;
+package com.swirlds.platform.wiring;
 
 /**
- * Sends dispatches when a state is hashed.
+ * A singleton class that is used to invoke methods on schedulers that do not require any input. Since the current
+ * framework does not support such methods, this class is used as a placeholder. This will be removed once the
+ * framework is updated to support such methods.
  */
-@FunctionalInterface
-public interface StateHashedTrigger extends TriggerTwo<Long, Hash> {
+public final class NoInput {
+    private static final NoInput INSTANCE = new NoInput();
+
+    private NoInput() {}
 
     /**
-     * Signal that a state has been fully hashed.
-     *
-     * @param round
-     * 		the round of the state
-     * @param hash
-     * 		the hash of the state
+     * @return the singleton instance of this class
      */
-    @Override
-    void dispatch(Long round, Hash hash);
+    public static NoInput getInstance() {
+        return INSTANCE;
+    }
 }

@@ -23,14 +23,12 @@ import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDE
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.UNDECIDED;
 import static com.swirlds.platform.test.utils.EqualsVerifier.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -40,11 +38,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 @DisplayName("ConsensusHashFinder Tests")
 class ConsensusHashFinderTests {
@@ -131,11 +131,7 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash hash = randomHash(random);
 
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
-                        assertEquals(nodeHash, consensusHash, "no disagreements expected");
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
         assertEquals(totalWeight, hashFinder.getTotalWeight(), "unexpected total weight");
         assertEquals(0, hashFinder.getHashReportedWeight(), "no weight should be accumulated yet");
         assertEquals(0, hashFinder.getPartitionMap().size(), "there shouldn't be any partitions yet");
@@ -185,20 +181,9 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash expectedConsensusHash = randomHash(random);
 
-        final Set<NodeId> disagreeingNodes = new HashSet<>();
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) -> {
-                    assertEquals(consensusHash, expectedConsensusHash, "unexpected consensus hash");
 
-                    if (!nodeHash.equals(consensusHash)) {
-                        assertNotEquals(consensusHash, nodeHash, "hash should disagree");
-                        assertTrue(
-                                disagreeingNodes.add(nodeId), "should not be called multiple times on the same node");
-                    }
-                };
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -229,7 +214,13 @@ class ConsensusHashFinderTests {
 
         assertEquals(DECIDED, hashFinder.getStatus(), "should be decided by now");
         assertEquals(expectedConsensusHash, hashFinder.getConsensusHash(), "incorrect hash chosen");
-        assertEquals(expectedDisagreeingNodes, disagreeingNodes, "disagreeing node set incorrect");
+        assertEquals(
+                expectedDisagreeingNodes,
+                hashFinder.getPartitionMap().entrySet().stream()
+                        .filter(entry -> !entry.getKey().equals(expectedConsensusHash))
+                        .flatMap(entry -> entry.getValue().getNodes().stream())
+                        .collect(Collectors.toSet()),
+                "disagreeing node set incorrect");
     }
 
     @ParameterizedTest
@@ -240,11 +231,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
-                        fail("no disagreement expected");
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -284,11 +271,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
-                        fail("no disagreement expected");
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -322,11 +305,7 @@ class ConsensusHashFinderTests {
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
-                        fail("no consensus hash should be found");
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -375,20 +354,9 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash expectedConsensusHash = randomHash(random);
 
-        final Set<NodeId> disagreeingNodes = new HashSet<>();
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
-        final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) -> {
-                    assertEquals(consensusHash, expectedConsensusHash, "unexpected consensus hash");
 
-                    if (!nodeHash.equals(consensusHash)) {
-                        assertNotEquals(consensusHash, nodeHash, "hash should disagree");
-                        assertTrue(
-                                disagreeingNodes.add(nodeId), "should not be called multiple times on the same node");
-                    }
-                };
-
-        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
+        final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
 
         long remainingWeight = totalWeight;
 
@@ -429,6 +397,13 @@ class ConsensusHashFinderTests {
 
         assertEquals(DECIDED, hashFinder.getStatus(), "should be decided by now");
         assertEquals(expectedConsensusHash, hashFinder.getConsensusHash(), "incorrect hash chosen");
-        assertEquals(expectedDisagreeingNodes, disagreeingNodes, "disagreeing node set incorrect");
+        assertEquals(
+                expectedDisagreeingNodes,
+                hashFinder.getPartitionMap().entrySet().stream()
+                        .filter(entry -> !entry.getKey().equals(expectedConsensusHash))
+                        .flatMap(entry -> entry.getValue().getNodes().stream())
+                        .collect(Collectors.toSet()),
+                "disagreeing node set incorrect");
+        assertTrue(hashFinder.hasDisagreement(), "should have a disagreement");
     }
 }
