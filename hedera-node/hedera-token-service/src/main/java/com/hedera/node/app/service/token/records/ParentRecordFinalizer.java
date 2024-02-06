@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -40,5 +41,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
-    void finalizeParentRecord(@NonNull AccountID payer, @NonNull FinalizeContext context);
+    void finalizeParentRecord(
+            @NonNull AccountID payer, @NonNull FinalizeContext context, final HederaFunctionality functionality);
 }

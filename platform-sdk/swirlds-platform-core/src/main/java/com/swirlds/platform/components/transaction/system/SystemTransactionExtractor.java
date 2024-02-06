@@ -80,8 +80,10 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
 
         for (final Transaction transaction : event.getHashedData().getTransactions()) {
             if (systemTransactionType.isInstance(transaction)) {
-                scopedTransactions.add(
-                        new ScopedSystemTransaction<>(event.getHashedData().getCreatorId(), (T) transaction));
+                scopedTransactions.add(new ScopedSystemTransaction<>(
+                        event.getHashedData().getCreatorId(),
+                        event.getHashedData().getSoftwareVersion(),
+                        (T) transaction));
             }
         }
         return scopedTransactions.isEmpty() ? null : scopedTransactions;

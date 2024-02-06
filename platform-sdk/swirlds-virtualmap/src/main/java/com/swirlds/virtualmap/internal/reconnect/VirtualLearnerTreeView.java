@@ -32,7 +32,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
@@ -71,11 +70,6 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
      * Handles removal of old nodes.
      */
     private ReconnectNodeRemover<K, V> nodeRemover;
-
-    /**
-     * Keys that have been encountered during this reconnect.
-     */
-    private final VirtualKeySet<K> encounteredKeys;
 
     /**
      * As part of tracking {@link ExpectedLesson}s, this keeps track of the "nodeAlreadyPresent" boolean.
@@ -123,13 +117,11 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
     public VirtualLearnerTreeView(
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
-            final VirtualKeySet<K> encounteredKeys,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState) {
 
         super(root, originalState, reconnectState);
         this.originalRecords = Objects.requireNonNull(originalRecords);
-        this.encounteredKeys = encounteredKeys;
     }
 
     /**
@@ -265,12 +257,7 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public void startThreads(final ThreadManager threadManager, final StandardWorkGroup workGroup) {
         nodeRemover = new ReconnectNodeRemover<>(
-                threadManager,
-                workGroup,
-                originalRecords,
-                encounteredKeys,
-                originalState.getFirstLeafPath(),
-                originalState.getLastLeafPath());
+                originalRecords, originalState.getFirstLeafPath(), originalState.getLastLeafPath());
     }
 
     /**
@@ -279,8 +266,6 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public void close() {
         root.endLearnerReconnect();
-        nodeRemover.close();
-        encounteredKeys.close();
     }
 
     /**

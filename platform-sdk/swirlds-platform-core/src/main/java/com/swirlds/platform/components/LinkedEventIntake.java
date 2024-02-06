@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -50,9 +48,6 @@ public class LinkedEventIntake {
      */
     private final Shadowgraph shadowGraph;
 
-    private final EventIntakeMetrics metrics;
-    private final Time time;
-
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
      */
@@ -73,22 +68,18 @@ public class LinkedEventIntake {
     /**
      * Constructor
      *
-     * @param platformContext                   the platform context
-     * @param time                              provides the wall clock time
-     * @param consensusSupplier                 provides the current consensus instance
-     * @param dispatcher                        invokes event related callbacks
-     * @param shadowGraph                       tracks events in the hashgraph
+     * @param consensusSupplier provides the current consensus instance
+     * @param dispatcher        invokes event related callbacks
+     * @param shadowGraph       tracks events in the hashgraph
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final Shadowgraph shadowGraph,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
-        this.time = Objects.requireNonNull(time);
+
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
@@ -96,7 +87,6 @@ public class LinkedEventIntake {
         this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
 
         this.paused = false;
-        metrics = new EventIntakeMetrics(platformContext, () -> -1);
     }
 
     /**
@@ -136,7 +126,9 @@ public class LinkedEventIntake {
                     // PCES writer hasn't been notified yet that the event should be flushed.
                     keystoneEventSequenceNumberOutput.forward(
                             round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
-                    handleConsensus(round);
+                    // Future work: this dispatcher now only handles metrics. Remove this and put the metrics where
+                    // they belong
+                    dispatcher.consensusRound(round);
                 });
             }
 
@@ -189,22 +181,5 @@ public class LinkedEventIntake {
      */
     private static boolean isNotConsensus(@NonNull final EventImpl event) {
         return !event.isConsensus();
-    }
-
-    /**
-     * Notify observers that an event has reach consensus.
-     *
-     * @param consensusRound the new consensus round
-     */
-    private void handleConsensus(final @NonNull ConsensusRound consensusRound) {
-        // We need to wait for prehandles to finish before proceeding.
-        // It is critically important that prehandle is always called prior to handleConsensusRound().
-
-        final long start = time.nanoTime();
-        consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
-        final long end = time.nanoTime();
-        metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
-
-        dispatcher.consensusRound(consensusRound);
     }
 }
