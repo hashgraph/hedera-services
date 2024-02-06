@@ -37,9 +37,9 @@ class SequentialTask extends AbstractTask {
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
 
     /**
-     * If true, then this task will be executed even if squelching is enabled.
+     * If true, then this task will be executed even if scheduler is currently squelching.
      * <p>
-     * This flag is necessary for flushing, since we want the flush task to execute event if the task scheduler is
+     * This flag is necessary for flushing, since we want the flush task to execute even if the task scheduler is
      * squelching normal handling. It isn't known at the time of construction whether a given task will be responsible
      * for flushing, so we need a dynamic flag that can be set when the flush work is submitted.
      */
@@ -113,6 +113,8 @@ class SequentialTask extends AbstractTask {
     public boolean exec() {
         busyTimer.activate();
         try {
+            // we must respect overrideSquelch even if squelching is enabled, since this task might be responsible for
+            // flushing. Flush tasks must not be squelched under any circumstances.
             if (!overrideSquelch && squelcher.shouldSquelch()) {
                 return true;
             }

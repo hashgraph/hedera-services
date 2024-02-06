@@ -155,9 +155,9 @@ class ConcurrentTaskSchedulerTests {
     void squelching() {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final AtomicInteger handlesCompleted = new AtomicInteger();
+        final AtomicInteger handleCount = new AtomicInteger();
         final Consumer<Integer> handler = x -> {
-            handlesCompleted.incrementAndGet();
+            handleCount.incrementAndGet();
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
@@ -183,10 +183,7 @@ class ConcurrentTaskSchedulerTests {
 
         taskScheduler.flush();
         assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
-        assertEquals(
-                0,
-                handlesCompleted.get(),
-                "No additional tasks should have been processed after starting to " + "squelch");
+        assertEquals(0, handleCount.get(), "No tasks should have been processed");
 
         // stop squelching, and add some more tasks to be handled
         taskScheduler.stopSquelching();
@@ -197,7 +194,7 @@ class ConcurrentTaskSchedulerTests {
         }
 
         taskScheduler.flush();
-        assertEquals(6, handlesCompleted.get(), "New tasks should be processed after stopping squelching");
+        assertEquals(6, handleCount.get(), "New tasks should be processed after stopping squelching");
 
         model.stop();
     }

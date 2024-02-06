@@ -17,7 +17,6 @@
 package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -2337,17 +2336,13 @@ class SequentialTaskSchedulerTests {
 
         final AtomicInteger handleCount = new AtomicInteger();
 
-        // whether we're currently handling a task, so we can make assertions while nothing is being handled
-        final AtomicBoolean currentlyHandling = new AtomicBoolean(false);
         final Consumer<Integer> handler = x -> {
-            currentlyHandling.set(true);
+            handleCount.incrementAndGet();
             try {
                 NANOSECONDS.sleep(random.nextInt(1_000_000));
             } catch (final InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            handleCount.incrementAndGet();
-            currentlyHandling.set(false);
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
@@ -2372,10 +2367,6 @@ class SequentialTaskSchedulerTests {
         assertTrue(taskScheduler.getUnprocessedTaskCount() > 10, "There should be some unprocessed tasks");
 
         taskScheduler.startSquelching();
-
-        // get current count after the task being currently handled is done
-        assertEventuallyFalse(
-                currentlyHandling::get, Duration.ofMillis(1), "Task handling should take less than 1 milli");
         final int countAtSquelchStart = handleCount.get();
 
         // add more tasks, which will be squelched
@@ -2387,10 +2378,13 @@ class SequentialTaskSchedulerTests {
 
         taskScheduler.flush();
         assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
-        assertEquals(
-                countAtSquelchStart,
-                handleCount.get(),
-                "No additional tasks should have been processed after starting to squelch");
+
+        final int countAtSquelchEnd = handleCount.get();
+
+        // it's very unlikely, but possible, that a single task was being handled when squelching started, but the
+        // atomic int hadn't been incremented yet. therefore, it could be the case that one more task was handled than
+        // the count we got would otherwise expect.
+        assertTrue(countAtSquelchEnd == countAtSquelchStart || countAtSquelchEnd == countAtSquelchStart + 1);
 
         // stop squelching, and add some more tasks to be handled
         taskScheduler.stopSquelching();
@@ -2402,7 +2396,7 @@ class SequentialTaskSchedulerTests {
 
         taskScheduler.flush();
         assertEquals(
-                countAtSquelchStart + 6, handleCount.get(), "New tasks should be processed after stopping squelching");
+                countAtSquelchEnd + 6, handleCount.get(), "New tasks should be processed after stopping squelching");
 
         model.stop();
     }
