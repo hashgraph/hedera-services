@@ -20,7 +20,7 @@ import static org.apache.logging.log4j.core.util.Loader.getClassLoader;
 
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.platform.fs.stresstest.proto.AppTransactionSignatureType;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
