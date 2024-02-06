@@ -100,11 +100,13 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
         createdContractIds = contractChangeSummary.newContractIds();
 
-        context().ifPresent(context -> {
-            final var creationCapacityIsAvailable =
-                    !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
-            validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
-        });
+        if (contractsConfig.enforceCreationThrottle()) {
+            context().ifPresent(context -> {
+                final var creationCapacityIsAvailable =
+                        !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+                validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+            });
+        }
 
         context().ifPresent(context -> {
             final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
