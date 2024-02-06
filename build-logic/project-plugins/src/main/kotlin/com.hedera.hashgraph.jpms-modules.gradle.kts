@@ -275,6 +275,10 @@ extraJavaModuleInfo {
         exportAllPackages()
         requires("java.compiler")
     }
+    module("io.undertow:undertow-core", "io.undertow.server") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
     module("junit:junit", "junit")
     //    module("org.apache.commons:commons-compress", "org.apache.commons.compress")
     module("org.hamcrest:hamcrest", "org.hamcrest")

@@ -16,4 +16,8 @@
 
 plugins { id("com.hedera.hashgraph.application") }
 
+mainModuleInfo {
+    annotationProcessor("com.swirlds.config.processor")
+}
+
 application.mainClass.set("com.swirlds.baseapi.Application")
