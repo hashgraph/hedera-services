@@ -17,8 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
@@ -26,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -42,18 +44,28 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
         super(gasCalculator, enhancement, token);
     }
 
+    @Override
+    public @NonNull PricedResult execute() {
+        if (token != null && token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+            // (FUTURE) consider removing this pattern, but for now match
+            // mono-service by halting on invalid token type
+            return gasOnly(
+                    haltResult(
+                            HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                            gasCalculator.viewGasRequirement()),
+                    INVALID_TOKEN_ID,
+                    false);
+        }
+        return super.execute();
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
-        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
-        } else {
-            final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
-            return successResult(
-                    DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals),
-                    gasCalculator.viewGasRequirement());
-        }
+        final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
+        return successResult(
+                DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals), gasCalculator.viewGasRequirement());
     }
 }

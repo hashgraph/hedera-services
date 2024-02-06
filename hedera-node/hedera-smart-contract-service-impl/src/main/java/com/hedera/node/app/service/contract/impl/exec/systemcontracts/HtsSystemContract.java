@@ -108,7 +108,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
                 final var enhancement = proxyWorldUpdater.enhancement();
-                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+                final var responseCode = pricedResult.responseCode();
 
                 if (responseCode == SUCCESS) {
                     enhancement

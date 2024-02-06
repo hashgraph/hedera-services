@@ -53,6 +53,7 @@ import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -184,8 +185,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta =
-                new SnapshotFileMeta("HelloWorldEthereum", "createWithSelfDestructInConstructorHasSaneRecord");
+        final var snapshotFileMeta = new SnapshotFileMeta("ERCPrecompile", "getErc721TokenURIFromErc20TokenFails");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -256,8 +256,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     @Override
     public boolean hasWorkToDo() {
-        // We leave the spec name null in submitOp() if we are running against a target network that
-        // doesn't match the SnapshotMode of this operation; or if the HapiSpec is non-deterministic
+        // We leave the snapshot file metadata null in submitOp() if we are running against a
+        // target network that doesn't match the SnapshotMode of this operation; or if the
+        // HapiSpec is non-deterministic
         return snapshotFileMeta != null;
     }
 
@@ -290,6 +291,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     .toList();
             // We only want to snapshot or fuzzy-match the records that come after the placeholder creation
             boolean placeholderFound = false;
+            // For statuses that only mono-service rejects at ingest, we need to skip fuzzy-matching;
+            // unless there is some special case in the spec where mono-service will still use them
+            // (primarily because they appear in a contract operation's child records)
+            final Set<ResponseCodeEnum> statusesToIgnore = !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)
+                    ? spec.setup().streamlinedIngestChecks()
+                    : EnumSet.noneOf(ResponseCodeEnum.class);
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 if (parsedItem.isPropertyOverride()) {
@@ -301,14 +308,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     // We cannot ever expect to match node stake update export sequencing
                     continue;
                 }
-                if (spec.setup()
-                                .streamlinedIngestChecks()
-                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
-                        && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
-                    // There are no records written in mono-service when a transaction fails in ingest.
-                    // But in modular service we write them. While validating fuzzy records, we always skip the records
-                    // with status in spec.streamlinedIngestChecks. But for some error codes like INVALID_ACCOUNT_ID,
-                    // which are thrown in both ingest and handle, we need to validate the records.
+                if (statusesToIgnore.contains(parsedItem.status())) {
                     continue;
                 }
                 if (!placeholderFound) {

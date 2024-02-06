@@ -319,6 +319,16 @@ public class HapiSpecSetup {
     }
 
     /**
+     * Returns whether a {@link HapiSpec} doing automatic snapshot management should
+     * override an existing snapshot.
+     *
+     * @return whether an auto-snapshot managing {@link HapiSpec} should override an existing snapshot
+     */
+    public boolean overrideExistingSnapshot() {
+        return props.getBoolean("recordStream.overrideExistingSnapshot");
+    }
+
+    /**
      * Returns the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
      * with {@code recordStream.autoSnapshotManagement=true}.
      *
