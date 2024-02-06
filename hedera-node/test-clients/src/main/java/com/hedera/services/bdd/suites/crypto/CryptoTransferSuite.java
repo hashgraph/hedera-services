@@ -2161,7 +2161,7 @@ public class CryptoTransferSuite extends HapiSuite {
     final HapiSpec testTransferToSystemAccountsAndCheckSenderBalance() {
         final var transferContract = "CryptoTransfer";
         final var balanceContract = "BalanceChecker46Version";
-        return defaultHapiSpec("testTransferToSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec("testTransferToSystemAccountsAndCheckSenderBalance", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(transferContract),
