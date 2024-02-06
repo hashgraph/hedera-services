@@ -225,6 +225,9 @@ public class VirtualMapReconnectTestBase {
                     final VirtualRoot root = learnerMap.getRight();
                     assertTrue(root.isHashed(), "Learner root node must be hashed");
                 } catch (Exception e) {
+                    if (!failureExpected) {
+                        e.printStackTrace(System.err);
+                    }
                     assertTrue(failureExpected, "We did not expect an exception on this reconnect attempt! " + e);
                 }
 
