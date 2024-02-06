@@ -31,7 +31,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /** Provides helpers to compare and analyze record streams. */
@@ -50,7 +49,7 @@ public class OrderedComparison {
      * @param firstStreamDir the first record stream
      * @param secondStreamDir the second record stream
      * @param recordDiffSummarizer if present, a summarizer for record diffs
-     * @param fileNameObserver if set, a consumer receiving the name of each file as it is parsed
+     * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
      * @throws IOException if any of the record stream files cannot be read or parsed
      * @throws IllegalArgumentException if the directories contain misaligned record streams
@@ -59,22 +58,38 @@ public class OrderedComparison {
             @NonNull final String firstStreamDir,
             @NonNull final String secondStreamDir,
             @Nullable final RecordDiffSummarizer recordDiffSummarizer,
-            @Nullable final Consumer<String> fileNameObserver)
+            @Nullable final Predicate<String> maybeInclusionTest,
+            @Nullable final String maybeInclusionDescription)
             throws IOException {
-        final Predicate<String> watchingPredicate = f -> {
-            if (fileNameObserver != null) {
-                fileNameObserver.accept(f);
-            }
-            return true;
-        };
-        System.out.println("Parsing stream @ " + firstStreamDir);
-        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, watchingPredicate);
+        final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
+        final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
+        System.out.println("Parsing stream @ " + firstStreamDir + "(including " + inclusionDescription + ")");
+        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
-        System.out.println("Parsing stream @ " + secondStreamDir);
-        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, watchingPredicate);
+        System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
+        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
+        List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        // FUTURE: Add a step to align consensus times in the two streams when any record is missing
-        return diff(firstEntries, secondEntries, recordDiffSummarizer);
+        return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
+    }
+
+    @NonNull
+    private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
+            List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
+        List<RecordStreamEntry> ret = new ArrayList<>();
+        RecordStreamEntry firstEntry, secondEntry;
+        int secondIndex = 0;
+        for (RecordStreamEntry entry : firstEntries) {
+            firstEntry = entry;
+            secondEntry = secondEntries.get(secondIndex);
+            if (secondEntry.consensusTime().equals(firstEntry.consensusTime())) {
+                ret.add(secondEntry);
+                secondIndex++;
+            } else {
+                ret.add(new RecordStreamEntry(null, null, firstEntry.consensusTime()));
+            }
+        }
+        return ret;
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
@@ -97,6 +112,14 @@ public class OrderedComparison {
         for (int i = 0; i < minSize; i++) {
             final var firstEntry = firstEntries.get(i);
             try {
+                if (secondEntries.get(i).txnRecord() == null) {
+                    diffs.add(new DifferingEntries(
+                            firstEntry,
+                            null,
+                            "No record found at " + firstEntry.consensusTime() + " for transactionID : "
+                                    + firstEntry.txnRecord().getTransactionID()));
+                    continue;
+                }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
                 if (!firstEntry.txnRecord().equals(secondEntry.txnRecord())) {
                     final var summary = recordDiffSummarizer == null
@@ -154,9 +177,6 @@ public class OrderedComparison {
             @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
         final var secondEntry = entries.get(i);
-        if (secondEntry == null) {
-            throw new UnmatchableException("No matching entry found for entry at position " + i);
-        }
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
             throw new UnmatchableException("Entries at position "
                     + i
