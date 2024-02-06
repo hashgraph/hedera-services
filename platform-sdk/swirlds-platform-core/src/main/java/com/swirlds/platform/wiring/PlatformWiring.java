@@ -474,13 +474,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get a supplier for the number of unprocessed tasks in the hasher.
+     * Get a supplier for the number of unprocessed tasks at the front of the intake pipeline. This is for the purpose
+     * of applying backpressure to the event creator and gossip when the intake pipeline is overloaded.
+     * <p>
+     * Technically, the first component of the intake pipeline is the hasher, but tasks to be passed along actually
+     * accumulate in the post hash collector. This is due to how the concurrent hasher handles backpressure.
      *
-     * @return a supplier for the number of unprocessed tasks in the hasher
+     * @return a supplier for the number of unprocessed tasks in the PostHashCollector
      */
     @NonNull
-    public LongSupplier getHasherUnprocessedTaskCountSupplier() {
-        return eventHasherWiring.unprocessedTaskCountSupplier();
+    public LongSupplier getIntakeQueueSizeSupplier() {
+        return postHashCollectorWiring.unprocessedTaskCountSupplier();
     }
 
     /**
