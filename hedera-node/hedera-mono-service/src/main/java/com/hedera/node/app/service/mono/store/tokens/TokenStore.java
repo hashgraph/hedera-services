@@ -83,22 +83,22 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
     }
 
     default ResponseCodeEnum tryTokenChange(BalanceChange change) {
-        var validity = OK;
         var tokenId = resolve(change.tokenId());
         if (tokenId == MISSING_TOKEN) {
-            validity = INVALID_TOKEN_ID;
+            return INVALID_TOKEN_ID;
         }
+
         if (change.hasExpectedDecimals() && !matchesTokenDecimals(change.tokenId(), change.getExpectedDecimals())) {
-            validity = UNEXPECTED_TOKEN_DECIMALS;
+            return UNEXPECTED_TOKEN_DECIMALS;
         }
-        if (validity == OK) {
-            if (change.isForNft()) {
-                validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
-            } else {
-                validity = adjustBalance(change.accountId(), tokenId, change.getAggregatedUnits());
-                if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-                    validity = change.codeForInsufficientBalance();
-                }
+
+        var validity = OK;
+        if (change.isForNft()) {
+            validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
+        } else {
+            validity = adjustBalance(change.accountId(), tokenId, change.getAggregatedUnits());
+            if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+                validity = change.codeForInsufficientBalance();
             }
         }
         return validity;
