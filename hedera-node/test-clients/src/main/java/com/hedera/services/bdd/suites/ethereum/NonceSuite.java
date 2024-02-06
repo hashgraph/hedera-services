@@ -94,7 +94,11 @@ public class NonceSuite extends HapiSuite {
     private static final String MANY_CHILDREN_CONTRACT = "ManyChildren";
     private static final String FACTORY_CONTRACT = "FactoryContract";
     private static final String REVERTER_CONSTRUCTOR_CONTRACT = "ReverterConstructor";
-    private static final String REVERTER_TRANSFER_CONTRACT = "ReverterTransfer";
+    private static final String REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT = "ReverterConstructorTransfer";
+    private static final String REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_ETH_PRECOMPILE_CONTRACT =
+            "ReverterConstructorCallWithValueToEthPrecompile";
+    private static final String REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT =
+            "ReverterConstructorCallWithValueToHederaPrecompile";
     private static final String EXTERNAL_FUNCTION = "externalFunction";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
@@ -152,6 +156,8 @@ public class NonceSuite extends HapiSuite {
                 nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate(),
                 nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate(),
                 nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate(),
+                // evm hedera specific reversions for contract creation
+                nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate(),
                 // successful ethereum contract deploy
                 nonceUpdatedAfterSuccessfulEthereumContractCreation());
     }
@@ -956,8 +962,8 @@ public class NonceSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
-                        uploadInitCode(REVERTER_TRANSFER_CONTRACT))
-                .when(ethereumContractCreate(REVERTER_TRANSFER_CONTRACT)
+                        uploadInitCode(REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
@@ -981,8 +987,58 @@ public class NonceSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
-                        uploadInitCode(REVERTER_TRANSFER_CONTRACT))
-                .when(ethereumContractCreate(REVERTER_TRANSFER_CONTRACT)
+                        uploadInitCode(REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
+    }
+
+    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate() {
+        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_ETH_PRECOMPILE_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_ETH_PRECOMPILE_CONTRACT)
+                        .balance(1L)
+                        .type(EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasLimit(ENOUGH_GAS_LIMIT)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(TX))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .contractCreateResult(resultWith().signerNonce(1L))));
+    }
+
+    // depends on https://github.com/hashgraph/hedera-services/pull/11359
+    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate() {
+        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                        uploadInitCode(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT))
+                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT)
+                        .balance(1L)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
