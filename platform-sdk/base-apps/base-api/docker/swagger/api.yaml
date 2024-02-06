@@ -1,0 +1,80 @@
+openapi: 3.0.0
+info:
+  title: Base API
+  description: testing API for Platform Base frameworks
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:9090/swirlds/api/'
+paths:
+  /wallets:
+    post:
+      summary: Create Wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+    get:
+      summary: Get All Wallets
+      responses:
+        '200':
+          description: OK
+  /wallets/{walletId}:
+    get:
+      summary: Get a Wallet
+      parameters:
+        - name: walletId
+          in: path
+          description: ID of the wallet to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /balances/{walletId}:
+    get:
+      summary: Get Balance
+      parameters:
+        - name: walletId
+          in: path
+          description: ID of the wallet to get balance for
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /transactions:
+    post:
+      summary: Create Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                to:
+                  type: string
+                amount:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /:
+    get:
+      summary: Get Metrics
+      responses:
+        '200':
+          description: OK
+          content:
+            application/text:
+              schema:
+                type: string
