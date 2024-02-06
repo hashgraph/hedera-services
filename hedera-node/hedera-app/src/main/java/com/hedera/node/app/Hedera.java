@@ -39,6 +39,7 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -1074,7 +1075,6 @@ public final class Hedera implements SwirldMain {
         // the various migration methods may depend on configuration to do their work
         logger.info("Initializing Reconnect configuration");
         this.configProvider = new ConfigProviderImpl(false);
-        logConfiguration();
 
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
@@ -1107,7 +1107,8 @@ public final class Hedera implements SwirldMain {
         initializeExchangeRateManager(state);
         initializeFeeManager(state);
         initializeThrottles(state);
-        // TODO We may need to update the config with the latest version in file 121
+        observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+        logConfiguration();
     }
 
     /*==================================================================================================================
