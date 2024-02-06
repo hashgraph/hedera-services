@@ -24,12 +24,12 @@ import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE_FCQ;
 import static com.swirlds.demo.platform.TransactionSubmitter.USE_DEFAULT_TPS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Transfer;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;

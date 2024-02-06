@@ -1,6 +1,4 @@
 open module com.swirlds.merkle.test {
-    exports com.swirlds.merkle.map.test.pta;
-    exports com.swirlds.merkle.map.test.lifecycle;
 
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
