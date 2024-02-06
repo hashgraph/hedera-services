@@ -44,6 +44,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCreate;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -62,6 +64,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
@@ -181,6 +184,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
@@ -201,6 +205,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -251,6 +256,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -304,6 +310,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -339,6 +346,31 @@ class TransactionProcessorTest {
                 transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
+    }
+
+    @Test
+    void callWhenComputePartiesThrowsException() {
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                null,
+                VALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                0L,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null,
+                null);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(null);
+
+        final var abortException = catchThrowableOfType(
+                () -> subject.processTransaction(
+                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
+                AbortException.class);
+        assertThat(abortException.isChargeable()).isFalse();
     }
 
     @Test

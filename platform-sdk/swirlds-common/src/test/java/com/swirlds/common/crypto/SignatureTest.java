@@ -17,7 +17,7 @@
 package com.swirlds.common.crypto;
 
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;

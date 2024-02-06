@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
@@ -98,10 +98,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     /** Get the size of this bucket in bytes, including header */
     public int sizeInBytes() {
         int size = 0;
-        if (bucketIndex > 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
-                    + Integer.BYTES;
-        }
+        // Include bucket index even if it has default value (zero)
+        size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
         for (final BucketEntry entry : entries) {
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
         }
@@ -128,18 +126,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     /**
-     * Put a key/value entry into this bucket.
-     *
-     * @param key the entry key
-     * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     * {@inheritDoc}
      */
-    public void putValue(final K key, final long value) {
+    @Override
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         try {
             final int entryIndex = findEntryIndex(keyHashCode, key);
-            if (value == SPECIAL_DELETE_ME_VALUE) {
-                if (entryIndex >= 0) {
+            if (value == INVALID_VALUE) {
+                if (entryIndex >= 0) { // if found
+                    final BucketEntry entry = entries.get(entryIndex);
+                    if (needCheckOldValue && (oldValue != entry.getValue())) {
+                        return;
+                    }
                     entries.remove(entryIndex);
                 } else {
                     // entry not found, nothing to delete
@@ -149,13 +149,18 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             if (entryIndex >= 0) {
                 // yay! we found it, so update value
                 final BucketEntry entry = entries.get(entryIndex);
+                if (needCheckOldValue && (oldValue != entry.getValue())) {
+                    return;
+                }
                 entry.setValue(value);
-                return;
+            } else {
+                if (needCheckOldValue) {
+                    return;
+                }
+                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
+                entries.add(newEntry);
+                checkLargestBucket(entries.size());
             }
-            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
-            entries.add(newEntry);
-
-            checkLargestBucket(entries.size());
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);
@@ -198,10 +203,9 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     public void writeTo(final WritableSequentialData out) {
-        if (bucketIndex > 0) {
-            ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
-            out.writeInt(bucketIndex);
-        }
+        // Bucket index is not optional, write the value even if default (zero)
+        ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
+        out.writeInt(bucketIndex);
         for (final BucketEntry entry : entries) {
             ProtoWriterTools.writeTag(out, FIELD_BUCKET_ENTRIES);
             out.writeVarInt(entry.sizeInBytes(), false);

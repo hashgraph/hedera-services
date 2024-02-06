@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.Network;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;

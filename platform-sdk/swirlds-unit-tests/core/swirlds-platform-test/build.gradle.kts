@@ -20,7 +20,6 @@ plugins {
 }
 
 testModuleInfo {
-    requires("com.swirlds.common.testing")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")

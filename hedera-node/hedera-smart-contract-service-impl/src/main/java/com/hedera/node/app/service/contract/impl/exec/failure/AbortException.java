@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An exception thrown when a transaction is aborted before entering the EVM.
@@ -31,9 +32,27 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class AbortException extends HandleException {
     private final AccountID senderId;
 
+    @Nullable
+    private final AccountID relayerId;
+    // Whether gas can still be charged for the transaction
+    private final boolean isChargeable;
+
     public AbortException(@NonNull final ResponseCodeEnum status, @NonNull final AccountID senderId) {
         super(status);
         this.senderId = requireNonNull(senderId);
+        this.relayerId = null;
+        this.isChargeable = false;
+    }
+
+    public AbortException(
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final AccountID senderId,
+            @Nullable final AccountID relayerId,
+            @NonNull final boolean isChargeable) {
+        super(status);
+        this.senderId = requireNonNull(senderId);
+        this.relayerId = relayerId;
+        this.isChargeable = isChargeable;
     }
 
     /**
@@ -43,6 +62,25 @@ public class AbortException extends HandleException {
      */
     public AccountID senderId() {
         return senderId;
+    }
+
+    /**
+     * Returns whether the transaction can still be charged for gas.
+     *
+     * @return whether the transaction can still be charged for gas.
+     */
+    public boolean isChargeable() {
+        return isChargeable;
+    }
+
+    /**
+     * Returns the relayer id.
+     *
+     * @return the relayer id.
+     */
+    @Nullable
+    public AccountID relayerId() {
+        return relayerId;
     }
 
     /**

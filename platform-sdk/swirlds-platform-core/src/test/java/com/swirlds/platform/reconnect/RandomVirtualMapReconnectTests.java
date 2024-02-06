@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,16 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessSet;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.merkledb.config.MerkleDbConfig_;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -49,7 +45,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -64,15 +59,6 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     public static final int LETTER_COUNT = 26;
     public static final String LETTERS = "abcdefghijklmnopqrstuvwxyz";
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
-
-    @BeforeAll
-    static void beforeAll() {
-        new TestConfigBuilder()
-                .withValue(MerkleDbConfig_.KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES, 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
-                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_SIZE, "10000")
-                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_BUFFER, "1000")
-                .getOrCreateConfig();
-    }
 
     @Override
     protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
