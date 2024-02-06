@@ -497,7 +497,7 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
                 signedStateMetrics,
-                platformWiring.getHashLoggerInput()::put);
+                platformWiring.getHashLoggerInput()::offer);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
