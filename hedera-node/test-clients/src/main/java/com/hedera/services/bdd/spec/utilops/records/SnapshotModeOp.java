@@ -185,8 +185,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta =
-                new SnapshotFileMeta("ERCPrecompile", "getErc721TokenURIFromErc20TokenFails");
+        final var snapshotFileMeta = new SnapshotFileMeta("ERCPrecompile", "getErc721TokenURIFromErc20TokenFails");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -295,8 +294,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // For statuses that only mono-service rejects at ingest, we need to skip fuzzy-matching;
             // unless there is some special case in the spec where mono-service will still use them
             // (primarily because they appear in a contract operation's child records)
-            final Set<ResponseCodeEnum> statusesToIgnore =
-                    !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)
+            final Set<ResponseCodeEnum> statusesToIgnore = !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)
                     ? spec.setup().streamlinedIngestChecks()
                     : EnumSet.noneOf(ResponseCodeEnum.class);
             for (final var item : allItems) {
