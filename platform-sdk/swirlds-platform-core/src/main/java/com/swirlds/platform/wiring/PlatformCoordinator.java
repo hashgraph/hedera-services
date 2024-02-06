@@ -118,16 +118,22 @@ public class PlatformCoordinator {
      * Safely clears the system in preparation for reconnect
      */
     public void clear() {
-        // Phase 1: start squelching, to prevent any new events from making it through the intake pipeline.
+        // Phase 1: squelch
+        // Break cycles in the system. Flush squelched components just in case there is a task being executed when
+        // squelch is activated.
         linkedEventIntakeWiring.startSquelchingRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
         eventCreationManagerWiring.startSquelching();
+        eventCreationManagerWiring.flush();
 
-        // also squelch the consensus round handler. it isn't strictly necessary to do this to prevent dataflow through
+        // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
         // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
         // be handled.
         consensusRoundHandlerWiring.startSquelchingRunnable().run();
+        consensusRoundHandlerWiring.flushRunnable().run();
 
         // Phase 2: flush
+        // All cycles have been broken via squelching, so now it's time to flush everything out of the system
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
