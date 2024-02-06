@@ -94,9 +94,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
-            if (pricedResult.fullResult().isHalt()) {
-                return pricedResult.fullResult();
-            }
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
             if (dispatchedRecordBuilder != null) {
                 dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
@@ -108,7 +105,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
                 final var enhancement = proxyWorldUpdater.enhancement();
-                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+                final var responseCode = pricedResult.responseCode();
 
                 if (responseCode == SUCCESS) {
                     enhancement

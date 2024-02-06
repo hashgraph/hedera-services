@@ -62,10 +62,6 @@ public record FullResult(
         }
     }
 
-    public boolean isHalt() {
-        return MessageFrame.State.EXCEPTIONAL_HALT.equals(result.getState());
-    }
-
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
         requireNonNull(reason);
         return new FullResult(

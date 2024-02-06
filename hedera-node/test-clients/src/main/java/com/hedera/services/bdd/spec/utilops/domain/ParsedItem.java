@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -35,6 +36,10 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord) {
     private static final FileID PROPERTIES_FILE_ID =
             FileID.newBuilder().setFileNum(121).build();
+
+    public ResponseCodeEnum status() {
+        return itemRecord.getReceipt().getStatus();
+    }
 
     public static ParsedItem parse(final RecordStreamItem item) throws InvalidProtocolBufferException {
         final var txn = item.getTransaction();

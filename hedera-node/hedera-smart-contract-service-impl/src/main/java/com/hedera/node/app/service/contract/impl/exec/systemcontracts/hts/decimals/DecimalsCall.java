@@ -46,14 +46,15 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
 
     @Override
     public @NonNull PricedResult execute() {
-        // match mono - HTSPrecompiledContract#checkFungible
         if (token != null && token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+            // (FUTURE) consider removing this pattern, but for now match
+            // mono-service by halting on invalid token type
             return gasOnly(
                     haltResult(
                             HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
                             gasCalculator.viewGasRequirement()),
                     INVALID_TOKEN_ID,
-                    true);
+                    false);
         }
         return super.execute();
     }
