@@ -913,7 +913,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getErc721TokenName() {
         return defaultHapiSpec(
-                        "getErc721TokenName", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "getErc721TokenName", HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),

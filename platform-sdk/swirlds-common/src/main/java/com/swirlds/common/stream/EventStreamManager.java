@@ -18,6 +18,7 @@ package com.swirlds.common.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
 
 import com.swirlds.base.time.Time;
@@ -47,7 +48,6 @@ import org.apache.logging.log4j.Logger;
  * runningHash for consensus Events.
  */
 public class EventStreamManager<T extends StreamAligned & Timestamped & RunningHashable & SerializableHashable> {
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(EventStreamManager.class);
 
     /**
@@ -59,18 +59,21 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * check whether this event is the last event before restart
      */
     private final Predicate<T> isLastEventInFreezeCheck;
-    /** receives consensus events from multiStream, then passes to hashCalculator */
+    /**
+     * receives consensus events from multiStream, then passes to hashCalculator
+     */
     private QueueThreadObjectStream<T> hashQueueThread;
     /**
-     * receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
-     * runningHashCalculator
+     * receives consensus events from multiStream, then passes to streamFileWriter
      */
-    private HashCalculatorForStream<T> hashCalculator;
-    /** receives consensus events from multiStream, then passes to streamFileWriter */
     private QueueThreadObjectStream<T> writeQueueThread;
-    /** receives consensus events from writeQueueThread, serializes consensus events to event stream files */
+    /**
+     * receives consensus events from writeQueueThread, serializes consensus events to event stream files
+     */
     private TimestampStreamFileWriter<T> streamFileWriter;
-    /** initialHash loaded from signed state */
+    /**
+     * initialHash loaded from signed state
+     */
     private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
     /**
      * When we freeze the platform, the last event to be written to EventStream file is the last event in the freeze
@@ -121,9 +124,9 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                     eventStreamDir,
                     eventsLogPeriod * SECONDS_TO_MILLISECONDS,
                     signer,
-                    /** when event streaming is started after reconnect, or at state recovering,
-                     * startWriteAtCompleteWindow should be set to be true; when event streaming is started after
-                     * restart, it should be set to be false */
+                    // when event streaming is started after reconnect, or at state recovering,
+                    // startWriteAtCompleteWindow should be set to be true; when event streaming is started after
+                    // restart, it should be set to be false
                     false,
                     EventStreamType.getInstance());
 
@@ -153,7 +156,10 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
 
         // receives consensus events from hashCalculator, calculates and set runningHash for this event
         final RunningHashCalculatorForStream<T> runningHashCalculator = new RunningHashCalculatorForStream<>();
-        hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
+
+        // receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
+        // runningHashCalculator
+        final HashCalculatorForStream<T> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread = new QueueThreadObjectStreamConfiguration<T>(threadManager)
                 .setNodeId(selfId)
                 .setComponent("event-stream")
@@ -197,42 +203,61 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
         multiStream.close();
     }
 
-    public void addEvents(final List<T> events) {
-        events.forEach(this::addEvent);
-    }
-
     /**
-     * receives a consensus event from ConsensusRoundHandler each time, sends it to multiStream which then sends to two
-     * queueThread for calculating runningHash and writing to file
+     * Adds a list of events to the event stream.
      *
-     * @param event the consensus event to be added
+     * @param events the list of events to add
      */
-    public void addEvent(final T event) {
-        if (!freezePeriodStarted) {
-            multiStream.addObject(event);
-            if (isLastEventInFreezeCheck.test(event)) {
-                freezePeriodStarted = true;
-                logger.info(
-                        EVENT_STREAM.getMarker(),
-                        "ConsensusTimestamp of the last Event to be written into file before restarting: " + "{}",
-                        event::getTimestamp);
-                multiStream.close();
+    public void addEvents(@NonNull final List<T> events) {
+        events.forEach(event -> {
+            if (!freezePeriodStarted) {
+                multiStream.addObject(event);
+                if (isLastEventInFreezeCheck.test(event)) {
+                    freezePeriodStarted = true;
+                    logger.info(
+                            EVENT_STREAM.getMarker(),
+                            "ConsensusTimestamp of the last Event to be written into file before restarting: {}",
+                            event::getTimestamp);
+                    multiStream.close();
+                }
+            } else {
+                eventAfterFreezeLogger.warn(
+                        EVENT_STREAM.getMarker(), "Event {} dropped after freezePeriodStarted!", event.getTimestamp());
             }
-        } else {
-            eventAfterFreezeLogger.warn(
-                    EVENT_STREAM.getMarker(), "Event {} dropped after freezePeriodStarted!", event.getTimestamp());
-        }
+        });
     }
 
     /**
-     * sets startWriteAtCompleteWindow: it should be set to be true after reconnect, or at state recovering; it should
-     * be set to be false at restart
+     * Updates the running hash with the given event hash. Called when a state is loaded.
      *
-     * @param startWriteAtCompleteWindow whether the writer should not write until the first complete window
+     * @param runningEventHashUpdate the hash to update the running hash with
      */
-    public void setStartWriteAtCompleteWindow(final boolean startWriteAtCompleteWindow) {
+    public void updateRunningHash(@NonNull final RunningEventHashUpdate runningEventHashUpdate) {
+        try {
+            if (hashQueueThread != null) {
+                hashQueueThread.pause();
+            }
+            if (writeQueueThread != null) {
+                writeQueueThread.pause();
+            }
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Failed to pause queue threads", e);
+            Thread.currentThread().interrupt();
+        }
+
         if (streamFileWriter != null) {
-            streamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+            streamFileWriter.setStartWriteAtCompleteWindow(runningEventHashUpdate.isReconnect());
+        }
+
+        initialHash = new Hash(runningEventHashUpdate.runningEventHash());
+        logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", initialHash);
+        multiStream.setRunningHash(initialHash);
+
+        if (hashQueueThread != null) {
+            hashQueueThread.resume();
+        }
+        if (writeQueueThread != null) {
+            writeQueueThread.resume();
         }
     }
 
@@ -241,11 +266,8 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      *
      * @return current size of working queue for calculating hash and runningHash
      */
-    public int getHashQueueSize() {
-        if (hashQueueThread == null) {
-            return 0;
-        }
-        return hashQueueThread.getQueue().size();
+    private int getHashQueueSize() {
+        return hashQueueThread == null ? 0 : hashQueueThread.getQueue().size();
     }
 
     /**
@@ -253,63 +275,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      *
      * @return current size of working queue for writing to event stream files
      */
-    public int getEventStreamingQueueSize() {
+    private int getEventStreamingQueueSize() {
         return writeQueueThread == null ? 0 : writeQueueThread.getQueue().size();
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return current multiStream instance
-     */
-    public MultiStream<T> getMultiStream() {
-        return multiStream;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return current TimestampStreamFileWriter instance
-     */
-    public TimestampStreamFileWriter<T> getStreamFileWriter() {
-        return streamFileWriter;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return current HashCalculatorForStream instance
-     */
-    public HashCalculatorForStream<T> getHashCalculator() {
-        return hashCalculator;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return whether freeze period has started
-     */
-    public boolean getFreezePeriodStarted() {
-        return freezePeriodStarted;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return a copy of initialHash
-     */
-    public Hash getInitialHash() {
-        return new Hash(initialHash);
-    }
-
-    /**
-     * sets initialHash after loading from signed state
-     *
-     * @param initialHash current runningHash of all consensus events
-     */
-    public void setInitialHash(final Hash initialHash) {
-        this.initialHash = initialHash;
-        logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::setInitialHash: {}", () -> initialHash);
-        multiStream.setRunningHash(initialHash);
     }
 }

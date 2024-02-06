@@ -21,9 +21,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -153,7 +150,6 @@ public class IssMetrics {
      * @param consensusHash
      * 		the consensus hash computed by the network
      */
-    @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
             @NonNull final NodeId nodeId,
@@ -199,12 +195,8 @@ public class IssMetrics {
      *
      * @param round
      * 		the round of the ISS
-     * @param selfStateHash
-     * 		the hash computed by this node
      */
-    @Observer(CatastrophicIssTrigger.class)
-    public void catastrophicIssObserver(final Long round, final Hash selfStateHash) {
-
+    public void catastrophicIssObserver(final long round) {
         if (round <= highestRound) {
             // Don't report old data
             return;
