@@ -77,9 +77,9 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, NFTS_KEY)));
         dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint);
 
-        final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> test =
+        final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
-        dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), test, checkpoint);
+        dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
     }
 
     private static String getExtantDumpLoc(

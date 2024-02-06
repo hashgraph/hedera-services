@@ -36,7 +36,6 @@ record HederaFile(
 
     static HederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
         final var value = wrapper.getValue();
-
         return new HederaFile(
                 FileStore.ORDINARY,
                 (int) value.fileId().fileNum(),

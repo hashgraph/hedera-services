@@ -122,7 +122,6 @@ public class FilesDumpUtils {
         for (@NonNull
         final var file :
                 allFiles.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
-
             final var fileId = file.getKey().fileNum();
             final var hf = file.getValue();
             if (hf.isActive()) {
