@@ -127,6 +127,9 @@ include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
 include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
 include(":blocknode-state", "block-node/blocknode-state")
 
+// Base applications
+includeAllProjects("platform-sdk/base-apps/")
+
 fun include(name: String, path: String) {
     include(name)
     project(name).projectDir = File(rootDir, path)
