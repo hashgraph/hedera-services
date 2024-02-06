@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -78,10 +79,8 @@ class IndexLockTests {
 
         lock.unlock(object);
 
-        // Give the thread time to acquire the lock if it can
-        MILLISECONDS.sleep(20);
-
-        assertTrue(threadIsLocked.get(), "thread should have been able to acquire lock");
+        AssertionUtils.assertEventuallyTrue(
+                threadIsLocked::get, Duration.ofSeconds(1), "thread should have been able to acquire lock");
     }
 
     /**

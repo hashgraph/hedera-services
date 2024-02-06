@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.dispatch.triggers.flow;
+package com.swirlds.common.stream;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.dispatch.types.TriggerTwo;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Dispatches when a state has been loaded via reconnect.
+ * A record used to update the running event hash on various components when a new state is loaded
+ *
+ * @param runningEventHash the running event hash of the loaded state
+ * @param isReconnect      whether or not this is a reconnect state
  */
-@FunctionalInterface
-public interface ReconnectStateLoadedTrigger extends TriggerTwo<Long, Hash> {
-
-    /**
-     * Signal that a valid state has been received via reconnect.
-     *
-     * @param round
-     * 		the round of the state that was obtained
-     * @param stateHash
-     * 		the hash of the state that was obtained
-     */
-    @Override
-    void dispatch(Long round, Hash stateHash);
-}
+public record RunningEventHashUpdate(@NonNull Hash runningEventHash, boolean isReconnect) {}
