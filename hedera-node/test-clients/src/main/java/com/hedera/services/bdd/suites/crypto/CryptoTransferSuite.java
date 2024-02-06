@@ -114,6 +114,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -245,7 +246,8 @@ public class CryptoTransferSuite extends HapiSuite {
                 okToRepeatSerialNumbersInBurnList(),
                 canUseAliasAndAccountCombinations(),
                 testTransferToSystemAccounts(),
-                testTransferToSystemAccountsAndCheckSenderBalance());
+                testTransferToSystemAccountsAndCheckSenderBalance(),
+                transferInvalidTokenIdWithDecimals());
     }
 
     @Override
@@ -2171,6 +2173,23 @@ public class CryptoTransferSuite extends HapiSuite {
                         .sending(ONE_HBAR * 10)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getAccountBalance(SENDER, false).hasTinyBars(9994320000L));
+    }
+
+    @HapiTest
+    final HapiSpec transferInvalidTokenIdWithDecimals() {
+        return defaultHapiSpec("transferInvalidTokenIdWithDecimals", FULLY_NONDETERMINISTIC)
+                .given(cryptoCreate(TREASURY), withOpContext((spec, opLog) -> {
+                    final var acctCreate = cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS);
+                    allRunFor(spec, acctCreate);
+                    // Here we take an account ID and store it as a token ID in the registry, so that when the "token
+                    // number" is submitted by the test client, it will recreate the bug scenario:
+                    final var bogusTokenId = TokenID.newBuilder().setTokenNum(acctCreate.numOfCreatedAccount());
+                    spec.registry().saveTokenId("nonexistent", bogusTokenId.build());
+                }))
+                .when()
+                .then(sourcing(() -> cryptoTransfer(
+                                movingWithDecimals(1L, "nonexistent", 2).betweenWithDecimals(PAYER, TREASURY))
+                        .hasKnownStatus(INVALID_TOKEN_ID)));
     }
 
     @Override

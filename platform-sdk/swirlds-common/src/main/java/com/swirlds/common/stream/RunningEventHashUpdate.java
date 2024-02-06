@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+package com.swirlds.common.stream;
 
-application.mainClass.set("com.swirlds.demo.hashgraph.HashgraphDemoMain")
+import com.swirlds.common.crypto.Hash;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+/**
+ * A record used to update the running event hash on various components when a new state is loaded
+ *
+ * @param runningEventHash the running event hash of the loaded state
+ * @param isReconnect      whether or not this is a reconnect state
+ */
+public record RunningEventHashUpdate(@NonNull Hash runningEventHash, boolean isReconnect) {}

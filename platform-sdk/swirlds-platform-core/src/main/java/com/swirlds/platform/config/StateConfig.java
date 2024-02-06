@@ -66,9 +66,6 @@ import java.time.Duration;
  *                                      time a signed state reference count is changed, and logged if a signed state
  *                                      reference count bug is detected.
  * @param emergencyStateFileName        The name of the file that contains the emergency state.
- * @param signedStateFreq               hash and sign a state every signedStateFreq rounds. 1 means that a state will be
- *                                      signed every round, 2 means every other round, and so on. If the value is 0 or
- *                                      less, no states will be signed
  * @param deleteInvalidStateFiles       At startup time, if a state can not be deserialized without errors, should we
  *                                      delete that state from disk and try another? If true then states that can't be
  *                                      parsed are deleted. If false then a node will crash if it can't parse a state
@@ -98,7 +95,6 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
-        @ConfigProperty(defaultValue = "1") int signedStateFreq,
         @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles,
         @ConfigProperty(defaultValue = "true") boolean validateInitialState) {
 
