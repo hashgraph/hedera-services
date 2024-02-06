@@ -22,6 +22,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.LongSupplier;
 
 /**
  * Wiring object that allows for the staging of events that have been hashed, but haven't been passed further down the
@@ -41,11 +42,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * The concurrent scheduler will refuse to accept additional work based on the number of tasks that are waiting in the
  * sequential scheduler's queue.
  *
- * @param eventInput  the input wire for events that have been hashed
- * @param eventOutput the output wire for events to be passed further along the pipeline
+ * @param eventInput                   the input wire for events that have been hashed
+ * @param eventOutput                  the output wire for events to be passed further along the pipeline
+ * @param unprocessedTaskCountSupplier the supplier for the number of unprocessed tasks
  */
 public record PostHashCollectorWiring(
-        @NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull OutputWire<GossipEvent> eventOutput,
+        @NonNull LongSupplier unprocessedTaskCountSupplier) {
 
     /**
      * Create a new instance of this wiring.
@@ -60,6 +64,7 @@ public record PostHashCollectorWiring(
         // component in the pipeline is ready to receive them
         inputWire.bind(hashedEvent -> hashedEvent);
 
-        return new PostHashCollectorWiring(inputWire, taskScheduler.getOutputWire());
+        return new PostHashCollectorWiring(
+                inputWire, taskScheduler.getOutputWire(), taskScheduler::getUnprocessedTaskCount);
     }
 }
