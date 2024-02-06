@@ -85,8 +85,9 @@ class ContextTransactionProcessorTest {
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, processor);
+        final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
         final var subject = new ContextTransactionProcessor(
-                HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
+                hydratedEthTxData,
                 context,
                 contractsConfig,
                 CONFIGURATION,
@@ -101,7 +102,7 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, hydratedEthTxData))
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
@@ -130,7 +131,7 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, null))
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(null, rootProxyWorldUpdater);
@@ -141,8 +142,6 @@ class ContextTransactionProcessorTest {
 
     @Test
     void stillChargesHapiFeesOnAbort() {
-        given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
-
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
@@ -161,7 +160,7 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, null))
                 .willThrow(new AbortException(INVALID_CONTRACT_ID, SENDER_ID));
 
         subject.call();
@@ -192,9 +191,10 @@ class ContextTransactionProcessorTest {
     void returnedResultContainsSignerNonce() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, processor);
+        final var hudratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
 
         final var subject = new ContextTransactionProcessor(
-                HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
+                hudratedEthTxData,
                 context,
                 contractsConfig,
                 CONFIGURATION,
@@ -209,7 +209,7 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, hudratedEthTxData))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
 
         final var protoResult =

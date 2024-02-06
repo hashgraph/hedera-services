@@ -130,6 +130,7 @@ class EthereumTransactionHandlerTest {
         final var contractsConfig = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, transactionProcessor);
 
+        final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
         final var contextTransactionProcessor = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
                 handleContext,
@@ -151,7 +152,7 @@ class EthereumTransactionHandlerTest {
                         feesOnlyUpdater,
                         hederaEvmContext,
                         tracer,
-                        DEFAULT_CONFIG))
+                        DEFAULT_CONFIG, hydratedEthTxData))
                 .willReturn(SUCCESS_RESULT);
     }
 

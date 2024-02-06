@@ -1165,8 +1165,4 @@ public class SingleTransactionRecordBuilderImpl
         this.signerNonce = nonce;
         return this;
     }
-
-    public @Nullable Long getSignerNonce() {
-        return this.signerNonce;
-    }
 }

@@ -130,7 +130,7 @@ public class CustomGasCharging {
             requireNonNull(relayer);
             final var allowanceUsed = chargeWithRelayer(sender, relayer, context, worldUpdater, transaction);
 
-            // Increment nonce right before the gas is charged
+            // Increment nonce right after the gas is charged
             sender.incrementNonce();
             requireNonNull(context.recordBuilder()).signerNonce(sender.getNonce());
 

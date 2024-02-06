@@ -85,7 +85,4 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
 
     @NonNull
     ContractOperationRecordBuilder signerNonce(@NonNull Long nonce);
-
-    @Nullable
-    Long getSignerNonce();
 }

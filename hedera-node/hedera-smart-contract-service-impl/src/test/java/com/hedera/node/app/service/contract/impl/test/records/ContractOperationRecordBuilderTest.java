@@ -118,12 +118,6 @@ class ContractOperationRecordBuilderTest {
             public ContractOperationRecordBuilder signerNonce(@NonNull Long nonce) {
                 return this;
             }
-
-            @Nullable
-            @Override
-            public Long getSignerNonce() {
-                return null;
-            }
         };
 
         final var outcomeWithoutSidecars = new CallOutcome(

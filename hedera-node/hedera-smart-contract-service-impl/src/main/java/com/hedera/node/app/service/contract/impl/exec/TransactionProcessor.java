@@ -40,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
@@ -112,11 +113,12 @@ public class TransactionProcessor {
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
-            @NonNull final Configuration config) {
+            @NonNull final Configuration config,
+            @Nullable final HydratedEthTxData hydratedEthTxData) {
         final var parties = computeInvolvedParties(transaction, updater, config);
         try {
             return processTransactionWithParties(
-                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
+                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties, hydratedEthTxData);
         } catch (HandleException e) {
             throw new AbortException(e.getStatus(), parties.senderId());
         }
@@ -129,7 +131,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config,
-            @NonNull final InvolvedParties parties) {
+            @NonNull final InvolvedParties parties,
+            @Nullable final HydratedEthTxData hydratedEthTxData) {
         final var gasCharges =
                 gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         final var initialFrame = frameBuilder.buildInitialFrameWith(
@@ -145,12 +148,12 @@ public class TransactionProcessor {
         // Compute the result of running the frame to completion
         final var result = frameRunner.runToCompletion(
                 transaction.gasLimit(),
-                parties.senderId(),
+                parties.sender(),
                 initialFrame,
                 tracer,
                 messageCall,
                 contractCreation,
-                context);
+                hydratedEthTxData);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -176,16 +179,19 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
+            // TODO test that goes through here
+
             // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
             // before creating a new fees-only updater (even though from a Besu perspective, these two
             // updaters appear independent, they are not)
             updater.revert();
-            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
+            return commitResourceExhaustion(result, transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;
     }
 
     private HederaEvmTransactionResult commitResourceExhaustion(
+            @NonNull final HederaEvmTransactionResult result,
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final HederaEvmContext context,
@@ -203,7 +209,7 @@ public class TransactionProcessor {
                 transaction.gasLimit(),
                 context.gasPrice(),
                 reason,
-                requireNonNull(context.recordBuilder()).getSignerNonce());
+                result.signerNonce());
     }
 
     /**

@@ -221,16 +221,16 @@ class TransactionProcessorTest {
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context))
+                        null))
                 .willReturn(SUCCESS_RESULT);
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
         verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
@@ -271,19 +271,19 @@ class TransactionProcessorTest {
         given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context))
+                null))
                 .willReturn(SUCCESS_RESULT);
         given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
                 .willReturn(true);
         given(senderAccount.getNonce()).willReturn(NONCE);
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
         verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
@@ -324,19 +324,19 @@ class TransactionProcessorTest {
         given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context))
+                        null))
                 .willReturn(SUCCESS_RESULT);
         given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
                 .willReturn(true);
         given(senderAccount.getNonce()).willReturn(NONCE);
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
     }
@@ -383,12 +383,12 @@ class TransactionProcessorTest {
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context))
+                        null))
                 .willReturn(SUCCESS_RESULT);
         final var parsedAccount =
                 Account.newBuilder().accountId(senderAccount.hederaId()).build();
@@ -396,7 +396,7 @@ class TransactionProcessorTest {
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(worldUpdater)
                 .setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, expectedToAddress);
@@ -414,12 +414,12 @@ class TransactionProcessorTest {
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context);
+                        null);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(
                         GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
@@ -460,17 +460,17 @@ class TransactionProcessorTest {
                 .willReturn(initialFrame);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context))
+                        null))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(worldUpdater).setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT);
         inOrder.verify(gasCharging).chargeForGas(senderAccount, null, context, worldUpdater, transaction);
@@ -487,12 +487,12 @@ class TransactionProcessorTest {
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context);
+                        null);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(GAS_LIMIT - SUCCESS_RESULT.gasUsed(), 0, senderAccount, null, context, worldUpdater);
         inOrder.verify(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -531,17 +531,17 @@ class TransactionProcessorTest {
                 .willReturn(initialFrame);
         given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()),
-                        eq(SENDER_ID),
+                        eq(senderAccount),
                         eq(initialFrame),
                         eq(tracer),
                         any(),
                         eq(contractCreationProcessor),
-                        eq(context)))
+                        eq(null)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -557,12 +557,12 @@ class TransactionProcessorTest {
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context);
+                        null);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(
                         GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
@@ -606,12 +606,12 @@ class TransactionProcessorTest {
         given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()),
-                        eq(SENDER_ID),
+                        eq(senderAccount),
                         eq(initialFrame),
                         eq(tracer),
                         any(),
                         eq(contractCreationProcessor),
-                        eq(context)))
+                        eq(null)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
         given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
@@ -619,7 +619,7 @@ class TransactionProcessorTest {
         given(senderAccount.getNonce()).willReturn(NONCE);
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -635,12 +635,12 @@ class TransactionProcessorTest {
         inOrder.verify(frameRunner)
                 .runToCompletion(
                         transaction.gasLimit(),
-                        SENDER_ID,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                        context);
+                        null);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(
                         GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
@@ -682,12 +682,12 @@ class TransactionProcessorTest {
                 .willReturn(initialFrame);
         given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()),
-                        eq(SENDER_ID),
+                        eq(senderAccount),
                         eq(initialFrame),
                         eq(tracer),
                         any(),
                         eq(contractCreationProcessor),
-                        eq(context)))
+                        eq(null)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
@@ -696,7 +696,7 @@ class TransactionProcessorTest {
                 .commit();
 
         final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
@@ -727,7 +727,7 @@ class TransactionProcessorTest {
                         () -> feesOnlyUpdater,
                         wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                         tracer,
-                        config));
+                        config, null));
     }
 
     private void givenFeeOnlyParties() {
