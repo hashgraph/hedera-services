@@ -10,4 +10,5 @@ else
 fi
 
 # Change -m value to limit the number of diffs written to file
-java -jar rcdiff.jar -e $EXPECTED_LOC -a $ACTUAL_LOC -m 1000
+# Change -l value to diff a length other than 300 secs at a time
+java -jar rcdiff.jar -e $EXPECTED_LOC -a $ACTUAL_LOC -m 1000 -l 300
