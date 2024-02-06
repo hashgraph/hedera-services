@@ -143,6 +143,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.14")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.19")
     }
 }

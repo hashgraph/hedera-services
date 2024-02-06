@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hedera.node.app.workflows.ParseExceptionWorkaround.getParseExceptionCause;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -466,11 +465,7 @@ public class TransactionChecker {
         try {
             return codec.parseStrict(data);
         } catch (ParseException e) {
-
-            // Temporary workaround for unexpected behavior in PBJ. Can be removed if we agree that
-            // ParseException should not be wrapped.
-            final var cause = getParseExceptionCause(e);
-            if (cause instanceof UnknownFieldException) {
+            if (e.getCause() instanceof UnknownFieldException) {
                 // We do not allow newer clients to send transactions to older networks.
                 throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
