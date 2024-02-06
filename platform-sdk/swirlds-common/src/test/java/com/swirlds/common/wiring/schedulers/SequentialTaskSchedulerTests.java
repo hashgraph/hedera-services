@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -115,7 +117,7 @@ class SequentialTaskSchedulerTests {
 
     /**
      * Add values to the task scheduler, ensure that each value was processed in the correct order. Add a delay to the
-     * handler. The delay should not effect the final value if things are happening as we expect. If the task scheduler
+     * handler. The delay should not affect the final value if things are happening as we expect. If the task scheduler
      * is allowing things to happen with parallelism, then the delay is likely to result in a reordering of operations
      * (which will fail the test).
      */
@@ -1741,7 +1743,7 @@ class SequentialTaskSchedulerTests {
      */
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    void squelchNullValuesInWiresTest(final String typeString) {
+    void discardNullValuesInWiresTest(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
@@ -2322,6 +2324,85 @@ class SequentialTaskSchedulerTests {
 
         assertEquals(expectedCountA, countA.get());
         assertEquals(expectedCountB, countB.get());
+
+        model.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void squelching(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final AtomicInteger handleCount = new AtomicInteger();
+
+        // whether we're currently handling a task, so we can make assertions while nothing is being handled
+        final AtomicBoolean currentlyHandling = new AtomicBoolean(false);
+        final Consumer<Integer> handler = x -> {
+            currentlyHandling.set(true);
+            try {
+                NANOSECONDS.sleep(random.nextInt(1_000_000));
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            handleCount.incrementAndGet();
+            currentlyHandling.set(false);
+        };
+
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(type)
+                .withUnhandledTaskCapacity(100)
+                .withFlushingEnabled(true)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
+        inputWire.bind(handler);
+
+        model.start();
+
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        assertEventuallyTrue(() -> handleCount.get() > 5, Duration.ofMillis(10), "Some tasks should get handled");
+        assertTrue(taskScheduler.getUnprocessedTaskCount() > 10, "There should be some unprocessed tasks");
+
+        taskScheduler.startSquelching();
+
+        // get current count after the task being currently handled is done
+        assertEventuallyFalse(
+                currentlyHandling::get, Duration.ofMillis(1), "Task handling should take less than 1 milli");
+        final int countAtSquelchStart = handleCount.get();
+
+        // add more tasks, which will be squelched
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
+        assertEquals(
+                countAtSquelchStart,
+                handleCount.get(),
+                "No additional tasks should have been processed after starting to squelch");
+
+        // stop squelching, and add some more tasks to be handled
+        taskScheduler.stopSquelching();
+        for (int i = 0; i < 2; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(
+                countAtSquelchStart + 6, handleCount.get(), "New tasks should be processed after stopping squelching");
 
         model.stop();
     }
