@@ -62,7 +62,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile impleme
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeGetTokenDefaultKycStatusFailure(status, false);
+        return evmEncoder.encodeGetTokenDefaultKycStatus(status, false);
     }
 
     public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(final Bytes input) {

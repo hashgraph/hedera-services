@@ -73,7 +73,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         final var evmKey = new EvmKey();
-        return evmEncoder.encodeGetTokenKeyFailure(status, evmKey);
+        return evmEncoder.encodeGetTokenKey(status, evmKey);
     }
 
     public static GetTokenKeyWrapper<TokenID> decodeGetTokenKey(final Bytes input) {

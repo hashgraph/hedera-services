@@ -78,7 +78,7 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         final var tokenExpiry = new TokenExpiryInfo();
-        return evmEncoder.encodeGetTokenExpiryInfoFailure(status, tokenExpiry);
+        return evmEncoder.encodeGetTokenExpiryInfo(status, tokenExpiry);
     }
 
     public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {

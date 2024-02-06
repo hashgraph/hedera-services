@@ -63,7 +63,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile impl
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeGetTokenDefaultFreezeStatusFailure(status, false);
+        return evmEncoder.encodeGetTokenDefaultFreezeStatus(status, false);
     }
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(final Bytes input) {

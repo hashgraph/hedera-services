@@ -64,7 +64,7 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile implements Ev
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeIsFrozenFailure(status, false);
+        return evmEncoder.encodeIsFrozen(status, false);
     }
 
     public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeIsFrozen(

@@ -66,7 +66,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         final var customFees = new ArrayList<CustomFee>();
-        return evmEncoder.encodeTokenGetCustomFeesFailure(status, customFees);
+        return evmEncoder.encodeTokenGetCustomFees(status, customFees);
     }
 
     public static TokenGetCustomFeesWrapper<TokenID> decodeTokenGetCustomFees(final Bytes input) {

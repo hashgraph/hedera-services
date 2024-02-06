@@ -61,7 +61,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeIsTokenFailure(status, false);
+        return evmEncoder.encodeIsToken(status, false);
     }
 
     public static TokenInfoWrapper<TokenID> decodeIsToken(final Bytes input) {

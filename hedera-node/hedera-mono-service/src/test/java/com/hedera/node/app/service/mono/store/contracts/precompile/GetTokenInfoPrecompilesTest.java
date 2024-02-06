@@ -757,7 +757,7 @@ class GetTokenInfoPrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        given(evmEncoder.encodeGetTokenInfoFailure(any(), any())).willReturn(invalidTokenIdResult);
+        given(evmEncoder.encodeGetTokenInfo(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -790,7 +790,7 @@ class GetTokenInfoPrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        given(evmEncoder.encodeGetFungibleTokenInfoFailure(any(), any())).willReturn(invalidTokenIdResult);
+        given(evmEncoder.encodeGetFungibleTokenInfo(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -828,8 +828,7 @@ class GetTokenInfoPrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        given(evmEncoder.encodeGetNonFungibleTokenInfoFailure(any(), any(), any()))
-                .willReturn(invalidSerialNumberResult);
+        given(evmEncoder.encodeGetNonFungibleTokenInfo(any(), any(), any())).willReturn(invalidSerialNumberResult);
         final var result = subject.computeInternal(frame);
 
         // then:

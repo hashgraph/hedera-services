@@ -83,7 +83,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         final var tokenInfo = new EvmTokenInfo();
         final var nonFungibleTokenInfo = new EvmNftInfo();
-        return evmEncoder.encodeGetNonFungibleTokenInfoFailure(status, tokenInfo, nonFungibleTokenInfo);
+        return evmEncoder.encodeGetNonFungibleTokenInfo(status, tokenInfo, nonFungibleTokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {

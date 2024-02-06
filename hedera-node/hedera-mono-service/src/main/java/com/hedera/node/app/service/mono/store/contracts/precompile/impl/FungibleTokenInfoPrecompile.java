@@ -68,7 +68,7 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile imp
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         final var tokenInfo = new EvmTokenInfo();
-        return evmEncoder.encodeGetFungibleTokenInfoFailure(status, tokenInfo);
+        return evmEncoder.encodeGetFungibleTokenInfo(status, tokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetFungibleTokenInfo(final Bytes input) {

@@ -64,7 +64,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile implemen
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeGetTokenTypeFailure(status, 0);
+        return evmEncoder.encodeGetTokenType(status, 0);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetTokenType(final Bytes input) {

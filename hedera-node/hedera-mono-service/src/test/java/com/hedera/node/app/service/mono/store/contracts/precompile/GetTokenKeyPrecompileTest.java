@@ -346,7 +346,7 @@ class GetTokenKeyPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        given(evmEncoder.encodeGetTokenKeyFailure(any(), any())).willReturn(failResult);
+        given(evmEncoder.encodeGetTokenKey(any(), any())).willReturn(failResult);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(HTSTestsUtil.failResult, result);
@@ -365,7 +365,7 @@ class GetTokenKeyPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        given(evmEncoder.encodeGetTokenKeyFailure(any(), any())).willReturn(invalidTokenIdResult);
+        given(evmEncoder.encodeGetTokenKey(any(), any())).willReturn(invalidTokenIdResult);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(invalidTokenIdResult, result);

@@ -64,7 +64,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
 
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return evmEncoder.encodeIsKycFailure(status, false);
+        return evmEncoder.encodeIsKyc(status, false);
     }
 
     public static GrantRevokeKycWrapper<TokenID, AccountID> decodeIsKyc(
