@@ -171,10 +171,6 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
             @NonNull final List<VirtualLeafRecord<K, V>> leavesToFlush) {
         assert flushInProgress.get() : "Flush in progress flag must be set";
         try {
-            final long maxPath = leavesToFlush.parallelStream()
-                    .mapToLong(VirtualLeafRecord::getPath)
-                    .max()
-                    .orElse(-1);
             // flush it down
             try {
                 dataSource.saveRecords(
@@ -182,7 +178,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                         lastLeafPath,
                         hashesToFlush.stream(),
                         leavesToFlush.stream(),
-                        findLeavesToRemove(maxPath));
+                        findLeavesToRemove());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -192,9 +188,9 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     }
 
     /**
-     * Find the leaves that need to be removed from the data source.
-     * @param maxPath the maximum path to consider
+     * Find the leaves that need to be removed from the data source up to this moment.
+     *
      * @return a stream of leaves to remove
      */
-    protected abstract Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(final long maxPath);
+    protected abstract Stream<VirtualLeafRecord<K, V>> findLeavesToRemove();
 }
