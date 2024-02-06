@@ -35,7 +35,6 @@ import java.util.function.Consumer;
  * @param <OUT> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
 public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
-
     /**
      * The next task to be scheduled will be inserted into this placeholder task. When that happens, a new task will be
      * created and inserted into this placeholder.
@@ -60,6 +59,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
@@ -72,9 +72,10 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
             final boolean flushEnabled,
+            final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
 
-        super(model, name, TaskSchedulerType.SEQUENTIAL, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.SEQUENTIAL, flushEnabled, squelchingEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
@@ -82,8 +83,8 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
 
-        this.nextTaskPlaceholder =
-                new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, true));
+        this.nextTaskPlaceholder = new AtomicReference<>(
+                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), true));
     }
 
     /**
@@ -91,6 +92,10 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.onRamp();
         scheduleTask(handler, data);
     }
@@ -100,6 +105,11 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            // say that the data was accepted, even though it will be thrown into the void
+            return true;
+        }
+
         final boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             scheduleTask(handler, data);
@@ -112,6 +122,10 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.forceOnRamp();
         scheduleTask(handler, data);
     }
@@ -127,7 +141,8 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         // organizes tasks into a linked list. Tasks in this linked list are executed one at a time in order.
         // When execution of one task is completed, execution of the next task is scheduled on the pool.
 
-        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
+        final SequentialTask nextTask =
+                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), false);
         SequentialTask currentTask;
         do {
             currentTask = nextTaskPlaceholder.get();
@@ -162,11 +177,15 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         onRamp.forceOnRamp();
         final Semaphore semaphore = new Semaphore(0);
 
-        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
+        final SequentialTask nextTask =
+                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), false);
         SequentialTask currentTask;
         do {
             currentTask = nextTaskPlaceholder.get();
         } while (!nextTaskPlaceholder.compareAndSet(currentTask, nextTask));
+
+        // Override squelching for the flush operation, otherwise the semaphore will never be released
+        currentTask.overrideSquelch();
         currentTask.send(nextTask, x -> semaphore.release(), null);
 
         return semaphore;

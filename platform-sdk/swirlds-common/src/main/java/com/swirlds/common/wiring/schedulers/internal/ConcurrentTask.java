@@ -33,6 +33,7 @@ class ConcurrentTask extends AbstractTask {
     private final Object data;
     private final ObjectCounter offRamp;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
+    private final Squelcher squelcher;
 
     /**
      * Constructor. The task is created with zero dependencies, but not started automatically. It's
@@ -43,18 +44,21 @@ class ConcurrentTask extends AbstractTask {
      * @param uncaughtExceptionHandler the handler for uncaught exceptions
      * @param handler                  the method that will be called when this task is executed
      * @param data                     the data to be passed to the consumer for this task
+     * @param squelcher                manages squelching, which may or may not actually be enabled
      */
     ConcurrentTask(
             @NonNull final ForkJoinPool pool,
             @NonNull final ObjectCounter offRamp,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final Consumer<Object> handler,
-            @Nullable final Object data) {
+            @Nullable final Object data,
+            @NonNull final Squelcher squelcher) {
         super(pool, 0);
         this.handler = handler;
         this.data = data;
         this.offRamp = offRamp;
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;
+        this.squelcher = squelcher;
     }
 
     /**
@@ -63,6 +67,9 @@ class ConcurrentTask extends AbstractTask {
     @Override
     protected boolean exec() {
         try {
+            if (squelcher.shouldSquelch()) {
+                return true;
+            }
             handler.accept(data);
         } catch (final Throwable t) {
             uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);

@@ -70,6 +70,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      * @param busyTimer                the timer to activate when a task is being handled
      * @param sleepDuration            the duration to sleep when the queue is empty
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
@@ -82,8 +83,9 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             @NonNull final FractionalTimer busyTimer,
             @NonNull final Duration sleepDuration,
             final boolean flushEnabled,
+            final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
-        super(model, name, TaskSchedulerType.SEQUENTIAL_THREAD, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.SEQUENTIAL_THREAD, flushEnabled, squelchingEnabled, insertionIsBlocking);
 
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);
@@ -110,7 +112,9 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         throwIfFlushDisabled();
         onRamp.forceOnRamp();
         final Semaphore semaphore = new Semaphore(0);
-        tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore));
+
+        // pass in a NoopSquelcher, so that the task will ignore squelching and the semaphore will be released
+        tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore, new NoopSquelcher()));
         semaphore.acquireUninterruptibly();
     }
 
@@ -119,8 +123,12 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.onRamp();
-        tasks.add(new SequentialThreadTask(handler, data));
+        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
     }
 
     /**
@@ -128,12 +136,17 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            // say that the data was accepted, even though it will be thrown into the void
+            return true;
+        }
+
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
         }
 
-        tasks.add(new SequentialThreadTask(handler, data));
+        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
         return true;
     }
 
@@ -142,8 +155,12 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.forceOnRamp();
-        tasks.add(new SequentialThreadTask(handler, data));
+        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
     }
 
     /**

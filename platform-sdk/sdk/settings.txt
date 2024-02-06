@@ -21,7 +21,7 @@ state.saveStatePeriod,                    60
                                           #      Event Creation       #
                                           #############################
 
-event.creation.maxCreationRate,           5
+event.creation.maxCreationRate,           0
 platformStatus.observingStatusDelay,      1ms
 
                                           #############################

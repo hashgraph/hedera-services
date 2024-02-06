@@ -48,6 +48,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param onRamp                   an object counter that is incremented when data is added to the scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is
      *                                 available?
      */
@@ -59,9 +60,10 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled,
+            final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
 
-        super(model, name, TaskSchedulerType.CONCURRENT, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.CONCURRENT, flushEnabled, squelchingEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
@@ -74,8 +76,12 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.onRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
     }
 
     /**
@@ -83,9 +89,14 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        boolean accepted = onRamp.attemptOnRamp();
+        if (getSquelcher().shouldSquelch()) {
+            // say that the data was accepted, even though it will be thrown into the void
+            return true;
+        }
+
+        final boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
-            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
         }
         return accepted;
     }
@@ -95,8 +106,12 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        if (getSquelcher().shouldSquelch()) {
+            return;
+        }
+
         onRamp.forceOnRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
     }
 
     /**
