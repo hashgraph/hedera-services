@@ -1075,8 +1075,6 @@ public final class Hedera implements SwirldMain {
         // the various migration methods may depend on configuration to do their work
         logger.info("Initializing Reconnect configuration");
         this.configProvider = new ConfigProviderImpl(false);
-        observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
-        logConfiguration();
 
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
@@ -1109,6 +1107,8 @@ public final class Hedera implements SwirldMain {
         initializeExchangeRateManager(state);
         initializeFeeManager(state);
         initializeThrottles(state);
+        observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+        logConfiguration();
     }
 
     /*==================================================================================================================

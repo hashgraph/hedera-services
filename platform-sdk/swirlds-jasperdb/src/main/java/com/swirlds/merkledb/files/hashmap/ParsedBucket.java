@@ -126,18 +126,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     /**
-     * Put a key/value entry into this bucket.
-     *
-     * @param key the entry key
-     * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.INVALID_VALUE to mean delete
+     * {@inheritDoc}
      */
-    public void putValue(final K key, final long value) {
+    @Override
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         try {
             final int entryIndex = findEntryIndex(keyHashCode, key);
             if (value == INVALID_VALUE) {
-                if (entryIndex >= 0) {
+                if (entryIndex >= 0) { // if found
+                    final BucketEntry entry = entries.get(entryIndex);
+                    if (needCheckOldValue && (oldValue != entry.getValue())) {
+                        return;
+                    }
                     entries.remove(entryIndex);
                 } else {
                     // entry not found, nothing to delete
@@ -147,13 +149,18 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             if (entryIndex >= 0) {
                 // yay! we found it, so update value
                 final BucketEntry entry = entries.get(entryIndex);
+                if (needCheckOldValue && (oldValue != entry.getValue())) {
+                    return;
+                }
                 entry.setValue(value);
-                return;
+            } else {
+                if (needCheckOldValue) {
+                    return;
+                }
+                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
+                entries.add(newEntry);
+                checkLargestBucket(entries.size());
             }
-            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
-            entries.add(newEntry);
-
-            checkLargestBucket(entries.size());
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);

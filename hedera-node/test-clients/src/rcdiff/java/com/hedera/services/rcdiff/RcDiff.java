@@ -16,6 +16,8 @@
 
 package com.hedera.services.rcdiff;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.CONSENSUS_TIME_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
@@ -30,9 +32,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 import picocli.CommandLine;
 
 @Command(name = "rcdiff", description = "Diffs two record streams")
@@ -45,6 +51,12 @@ public class RcDiff implements Callable<Integer> {
             paramLabel = "max diffs to export",
             defaultValue = "10")
     Long maxDiffsToExport;
+
+    @Option(
+            names = {"-l", "--len-of-diff-secs"},
+            paramLabel = "number of seconds to diff at a time",
+            defaultValue = "300")
+    Long lenOfDiffSecs;
 
     @Option(
             names = {"-e", "--expected-stream"},
@@ -78,7 +90,7 @@ public class RcDiff implements Callable<Integer> {
             }
             throw new AssertionError("No difference to summarize");
         };
-        final var diffs = findDifferencesBetweenV6(expectedStreamsLoc, actualStreamsLoc, recordDiffSummarizer, null);
+        final var diffs = diffsGiven(recordDiffSummarizer);
         if (diffs.isEmpty()) {
             System.out.println("These streams are identical ☺️");
             return 0;
@@ -89,12 +101,57 @@ public class RcDiff implements Callable<Integer> {
         }
     }
 
+    private List<DifferingEntries> diffsGiven(
+            @NonNull final OrderedComparison.RecordDiffSummarizer recordDiffSummarizer) throws IOException {
+        final var actualBoundaries = boundaryTimesFor(actualStreamsLoc);
+        final var expectedBoundaries = boundaryTimesFor(expectedStreamsLoc);
+        final var first = Collections.min(List.of(actualBoundaries.first, expectedBoundaries.first));
+        final var last = Collections.max(List.of(actualBoundaries.last, expectedBoundaries.last));
+        final List<DifferingEntries> diffs = new ArrayList<>();
+        for (Instant i = first; !i.isAfter(last); i = i.plusSeconds(lenOfDiffSecs)) {
+            final var start = i;
+            final var end = i.plusSeconds(lenOfDiffSecs);
+            // Include files in the range [start, end)
+            final Predicate<String> inclusionTest = f -> {
+                final var consensusTime = parseRecordFileConsensusTime(f);
+                return !consensusTime.isBefore(start) && consensusTime.isBefore(end);
+            };
+            final var diffsHere = findDifferencesBetweenV6(
+                    expectedStreamsLoc,
+                    actualStreamsLoc,
+                    recordDiffSummarizer,
+                    inclusionTest,
+                    "from " + start + ", before " + end);
+            diffs.addAll(diffsHere);
+        }
+        return diffs;
+    }
+
+    record BoundaryTimes(Instant first, Instant last) {}
+
+    private static BoundaryTimes boundaryTimesFor(@NonNull final String loc) {
+        try {
+            final var orderedFiles = orderedRecordFilesFrom(loc, f -> true);
+            if (orderedFiles.isEmpty()) {
+                return new BoundaryTimes(Instant.MAX, Instant.EPOCH);
+            }
+            return new BoundaryTimes(
+                    parseRecordFileConsensusTime(orderedFiles.getFirst()),
+                    parseRecordFileConsensusTime(orderedFiles.getLast()));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private void throwOnInvalidCommandLine() {
         if (actualStreamsLoc == null) {
             throw new ParameterException(spec.commandLine(), "Please specify an actual stream location");
         }
         if (expectedStreamsLoc == null) {
             throw new ParameterException(spec.commandLine(), "Please specify an expected stream location");
+        }
+        if (lenOfDiffSecs <= 0) {
+            throw new ParameterException(spec.commandLine(), "Please specify a positive length of diff in seconds");
         }
     }
 
