@@ -31,7 +31,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -105,7 +104,13 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // Process the transaction and return its outcome
         try {
             final var result = processor.processTransaction(
-                    hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration, hydratedEthTxData);
+                    hevmTransaction,
+                    rootProxyWorldUpdater,
+                    feesOnlyUpdater,
+                    hederaEvmContext,
+                    tracer,
+                    configuration,
+                    hydratedEthTxData);
             // For mono-service fidelity, externalize an initcode-only sidecar when a top-level creation fails
             if (!result.isSuccess() && hevmTransaction.needsInitcodeExternalizedOnFailure()) {
                 final var contractBytecode = ContractBytecode.newBuilder()
@@ -121,18 +126,15 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
             Long signerNonce = null;
             if (context.body().hasEthereumTransaction()) {
-                final var signer = context.readableStore(ReadableAccountStore.class).getAccountById(e.senderId());
+                final var signer =
+                        context.readableStore(ReadableAccountStore.class).getAccountById(e.senderId());
                 if (signer != null) {
                     signerNonce = signer.ethereumNonce();
                 }
             }
 
-            final var result = HederaEvmTransactionResult.fromAborted(
-                    e.senderId(),
-                    hevmTransaction,
-                    e.getStatus(),
-                    signerNonce
-            );
+            final var result =
+                    HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus(), signerNonce);
 
             return CallOutcome.fromResultsWithoutSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);

@@ -83,7 +83,8 @@ class HederaEvmTransactionProcessorTest {
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_030, tracer, config, null);
 
-        verify(v30processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
+        verify(v30processor)
+                .processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
     }
 
     @Test
@@ -93,7 +94,8 @@ class HederaEvmTransactionProcessorTest {
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_034, tracer, config, null);
 
-        verify(v34processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
+        verify(v34processor)
+                .processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
     }
 
     @Test
@@ -103,6 +105,7 @@ class HederaEvmTransactionProcessorTest {
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_038, tracer, config, null);
 
-        verify(v38processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
+        verify(v38processor)
+                .processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config, null);
     }
 }

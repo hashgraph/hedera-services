@@ -205,11 +205,7 @@ public class TransactionProcessor {
         // to re-charge top-level HAPI fees in this edge case (not only gas); not urgent though
         updater.commit();
         return resourceExhaustionFrom(
-                parties.senderId(),
-                transaction.gasLimit(),
-                context.gasPrice(),
-                reason,
-                result.signerNonce());
+                parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason, result.signerNonce());
     }
 
     /**

@@ -102,7 +102,13 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, hydratedEthTxData))
+                        HEVM_CREATION,
+                        rootProxyWorldUpdater,
+                        feesOnlyUpdater,
+                        hederaEvmContext,
+                        tracer,
+                        CONFIGURATION,
+                        hydratedEthTxData))
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
@@ -131,7 +137,13 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, null))
+                        HEVM_CREATION,
+                        rootProxyWorldUpdater,
+                        feesOnlyUpdater,
+                        hederaEvmContext,
+                        tracer,
+                        CONFIGURATION,
+                        null))
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(null, rootProxyWorldUpdater);
@@ -160,7 +172,13 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, null))
+                        HEVM_CREATION,
+                        rootProxyWorldUpdater,
+                        feesOnlyUpdater,
+                        hederaEvmContext,
+                        tracer,
+                        CONFIGURATION,
+                        null))
                 .willThrow(new AbortException(INVALID_CONTRACT_ID, SENDER_ID));
 
         subject.call();
@@ -209,7 +227,13 @@ class ContextTransactionProcessorTest {
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
                 .willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION, hudratedEthTxData))
+                        HEVM_CREATION,
+                        rootProxyWorldUpdater,
+                        feesOnlyUpdater,
+                        hederaEvmContext,
+                        tracer,
+                        CONFIGURATION,
+                        hudratedEthTxData))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
 
         final var protoResult =

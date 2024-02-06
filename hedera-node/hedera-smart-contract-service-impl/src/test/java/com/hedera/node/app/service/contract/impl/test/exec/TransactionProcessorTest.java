@@ -221,7 +221,7 @@ class TransactionProcessorTest {
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                senderAccount,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
@@ -229,8 +229,8 @@ class TransactionProcessorTest {
                         null))
                 .willReturn(SUCCESS_RESULT);
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
         verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
@@ -276,14 +276,14 @@ class TransactionProcessorTest {
                         tracer,
                         messageCallProcessor,
                         contractCreationProcessor,
-                null))
+                        null))
                 .willReturn(SUCCESS_RESULT);
         given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
                 .willReturn(true);
         given(senderAccount.getNonce()).willReturn(NONCE);
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
         verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
@@ -324,7 +324,7 @@ class TransactionProcessorTest {
         given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                senderAccount,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
@@ -335,8 +335,8 @@ class TransactionProcessorTest {
                 .willReturn(true);
         given(senderAccount.getNonce()).willReturn(NONCE);
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertSame(SUCCESS_RESULT, result);
     }
@@ -383,7 +383,7 @@ class TransactionProcessorTest {
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                senderAccount,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
@@ -395,8 +395,8 @@ class TransactionProcessorTest {
         given(senderAccount.toNativeAccount()).willReturn(parsedAccount);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(worldUpdater)
                 .setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, expectedToAddress);
@@ -460,7 +460,7 @@ class TransactionProcessorTest {
                 .willReturn(initialFrame);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
-                senderAccount,
+                        senderAccount,
                         initialFrame,
                         tracer,
                         messageCallProcessor,
@@ -469,8 +469,8 @@ class TransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(worldUpdater).setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT);
         inOrder.verify(gasCharging).chargeForGas(senderAccount, null, context, worldUpdater, transaction);
@@ -540,8 +540,8 @@ class TransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -618,8 +618,8 @@ class TransactionProcessorTest {
                 .willReturn(true);
         given(senderAccount.getNonce()).willReturn(NONCE);
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -695,8 +695,8 @@ class TransactionProcessorTest {
                 .given(worldUpdater)
                 .commit();
 
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null);
 
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
@@ -727,7 +727,8 @@ class TransactionProcessorTest {
                         () -> feesOnlyUpdater,
                         wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                         tracer,
-                        config, null));
+                        config,
+                        null));
     }
 
     private void givenFeeOnlyParties() {

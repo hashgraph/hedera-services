@@ -22,7 +22,6 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Inject;

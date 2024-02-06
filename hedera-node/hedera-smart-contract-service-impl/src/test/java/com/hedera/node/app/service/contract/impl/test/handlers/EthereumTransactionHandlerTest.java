@@ -152,7 +152,8 @@ class EthereumTransactionHandlerTest {
                         feesOnlyUpdater,
                         hederaEvmContext,
                         tracer,
-                        DEFAULT_CONFIG, hydratedEthTxData))
+                        DEFAULT_CONFIG,
+                        hydratedEthTxData))
                 .willReturn(SUCCESS_RESULT);
     }
 

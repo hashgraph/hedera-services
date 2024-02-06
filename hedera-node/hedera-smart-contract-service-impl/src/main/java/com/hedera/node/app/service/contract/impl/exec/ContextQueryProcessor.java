@@ -81,7 +81,13 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
 
         // Process the transaction
         final var result = processor.processTransaction(
-                hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration(), null);
+                hevmTransaction,
+                worldUpdater,
+                feesOnlyUpdater,
+                hederaEvmContext,
+                tracer,
+                context.configuration(),
+                null);
 
         // Return the outcome (which cannot include sidecars to be externalized, since this is a query)
         return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
