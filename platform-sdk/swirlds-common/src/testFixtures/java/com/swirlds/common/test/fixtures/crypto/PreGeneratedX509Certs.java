@@ -16,29 +16,15 @@
 
 package com.swirlds.common.test.fixtures.crypto;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandom;
-import static com.swirlds.platform.crypto.CryptoStatic.generateKeysAndCerts;
-
 import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
 
 /**
  * A utility class for generating and retrieving pre-generated X.509 certificates for testing purposes.
@@ -61,74 +47,76 @@ public class PreGeneratedX509Certs {
         throw new IllegalStateException("Utility class");
     }
 
-    /**
-     * Generates a set of X.509 certificates for testing purposes.
-     *
-     * @param numCerts the number of certificates to generate
-     * @param random   the random number generator to use
-     */
-    public static void generateCerts(final int numCerts, @NonNull final Random random) {
-        final Path sigCertPath = Path.of(SIG_CERT_FILE);
-        final File sigCertFile = sigCertPath.toFile();
-        if (sigCertFile.exists()) {
-            sigCertFile.delete();
-        }
-
-        final Path agreeCertPath = Path.of(AGREE_CERT_FILE);
-        final File agreeCertFile = agreeCertPath.toFile();
-        if (agreeCertFile.exists()) {
-            agreeCertFile.delete();
-        }
-
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numCerts).build();
-
-        try {
-            generateKeysAndCerts(addressBook);
-
-            StringBuffer sigSB = new StringBuffer();
-            StringBuffer agreeSB = new StringBuffer();
-
-            for (final Address address : addressBook) {
-                final SerializableX509Certificate sigCert =
-                        new SerializableX509Certificate(Objects.requireNonNull(address.getSigCert()));
-                final SerializableX509Certificate agreeCert =
-                        new SerializableX509Certificate(Objects.requireNonNull(address.getAgreeCert()));
-                sigCerts.put(address.getNodeId(), sigCert);
-                agreeCerts.put(address.getNodeId(), agreeCert);
-
-                ByteArrayOutputStream sigCertOs = new ByteArrayOutputStream();
-                SerializableDataOutputStream sigCertDos = new SerializableDataOutputStream(sigCertOs);
-                sigCertDos.writeSerializable(sigCert, false);
-
-                ByteArrayOutputStream agreeCertOs = new ByteArrayOutputStream();
-                SerializableDataOutputStream agreeCertDos = new SerializableDataOutputStream(agreeCertOs);
-                agreeCertDos.writeSerializable(agreeCert, false);
-
-                sigSB.append("\"")
-                        .append(CommonUtils.hex(sigCertOs.toByteArray()))
-                        .append("\",\n");
-                agreeSB.append("\"")
-                        .append(CommonUtils.hex(agreeCertOs.toByteArray()))
-                        .append("\",\n");
-            }
-            Files.writeString(sigCertPath, sigSB.toString());
-            Files.writeString(agreeCertPath, agreeSB.toString());
-        } catch (final InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        } catch (final Exception e) {
-            throw new IllegalStateException("critical failure in generating certificates", e);
-        }
-    }
-
-    /**
-     * Generates a set of X.509 certificates for testing purposes.
-     *
-     * @param numCerts the number of certificates to generate
-     */
-    public static void generateCerts(final int numCerts) {
-        generateCerts(numCerts, getRandom());
-    }
+    //    This method is commented out because it creates a dependency to swirlds-platform-core
+    //    Uncomment this method to generate more certs.
+    //    /**
+    //     * Generates a set of X.509 certificates for testing purposes.
+    //     *
+    //     * @param numCerts the number of certificates to generate
+    //     * @param random   the random number generator to use
+    //     */
+    //    public static void generateCerts(final int numCerts, @NonNull final Random random) {
+    //        final Path sigCertPath = Path.of(SIG_CERT_FILE);
+    //        final File sigCertFile = sigCertPath.toFile();
+    //        if (sigCertFile.exists()) {
+    //            sigCertFile.delete();
+    //        }
+    //
+    //        final Path agreeCertPath = Path.of(AGREE_CERT_FILE);
+    //        final File agreeCertFile = agreeCertPath.toFile();
+    //        if (agreeCertFile.exists()) {
+    //            agreeCertFile.delete();
+    //        }
+    //
+    //        final AddressBook addressBook =
+    //                new RandomAddressBookGenerator(random).setSize(numCerts).build();
+    //
+    //        try {
+    //            generateKeysAndCerts(addressBook);
+    //
+    //            StringBuffer sigSB = new StringBuffer();
+    //            StringBuffer agreeSB = new StringBuffer();
+    //
+    //            for (final Address address : addressBook) {
+    //                final SerializableX509Certificate sigCert =
+    //                        new SerializableX509Certificate(Objects.requireNonNull(address.getSigCert()));
+    //                final SerializableX509Certificate agreeCert =
+    //                        new SerializableX509Certificate(Objects.requireNonNull(address.getAgreeCert()));
+    //                sigCerts.put(address.getNodeId(), sigCert);
+    //                agreeCerts.put(address.getNodeId(), agreeCert);
+    //
+    //                ByteArrayOutputStream sigCertOs = new ByteArrayOutputStream();
+    //                SerializableDataOutputStream sigCertDos = new SerializableDataOutputStream(sigCertOs);
+    //                sigCertDos.writeSerializable(sigCert, false);
+    //
+    //                ByteArrayOutputStream agreeCertOs = new ByteArrayOutputStream();
+    //                SerializableDataOutputStream agreeCertDos = new SerializableDataOutputStream(agreeCertOs);
+    //                agreeCertDos.writeSerializable(agreeCert, false);
+    //
+    //                sigSB.append("\"")
+    //                        .append(CommonUtils.hex(sigCertOs.toByteArray()))
+    //                        .append("\",\n");
+    //                agreeSB.append("\"")
+    //                        .append(CommonUtils.hex(agreeCertOs.toByteArray()))
+    //                        .append("\",\n");
+    //            }
+    //            Files.writeString(sigCertPath, sigSB.toString());
+    //            Files.writeString(agreeCertPath, agreeSB.toString());
+    //        } catch (final InterruptedException ie) {
+    //            Thread.currentThread().interrupt();
+    //        } catch (final Exception e) {
+    //            throw new IllegalStateException("critical failure in generating certificates", e);
+    //        }
+    //    }
+    //
+    //    /**
+    //     * Generates a set of X.509 certificates for testing purposes.
+    //     *
+    //     * @param numCerts the number of certificates to generate
+    //     */
+    //    public static void generateCerts(final int numCerts) {
+    //        generateCerts(numCerts, getRandom());
+    //    }
 
     /**
      * Retrieves a pre-generated X.509 certificate for signing purposes.
