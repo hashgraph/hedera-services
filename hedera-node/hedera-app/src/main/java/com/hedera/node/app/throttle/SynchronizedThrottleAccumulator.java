@@ -75,14 +75,6 @@ public class SynchronizedThrottleAccumulator {
         frontendThrottle.leakCapacityForNOfUnscaled(n, function);
     }
 
-    public boolean shouldThrottleNOfUnscaled(
-            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
-        setDecisionTime(consensusTime);
-        final var decision = frontendThrottle.shouldThrottleNOfUnscaled(n, function, lastDecisionTime);
-        setDecisionTime(consensusTime);
-        return decision;
-    }
-
     private void setDecisionTime(@NonNull final Instant time) {
         lastDecisionTime = time.isBefore(lastDecisionTime) ? lastDecisionTime : time;
     }
