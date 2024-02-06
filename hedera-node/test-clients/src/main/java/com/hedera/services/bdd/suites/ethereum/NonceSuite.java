@@ -759,6 +759,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(1L))));
     }
 
+    @HapiTest
     private HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec("nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate")
                 .given(
@@ -783,6 +784,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate")
@@ -810,6 +812,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
@@ -837,6 +840,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
@@ -865,6 +869,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
@@ -892,6 +897,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec("nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate")
                 .given(
@@ -918,6 +924,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCallResult(resultWith().signerNonce(0L))));
     }
 
+    @HapiTest
     private HapiSpec nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate")
                 .given(
@@ -942,6 +949,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
+    @HapiTest
     private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate")
                 .given(
@@ -966,6 +974,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
+    @HapiTest
     private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate")
                 .given(
@@ -990,6 +999,7 @@ public class NonceSuite extends HapiSuite {
                                         .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
+    @HapiTest
     private HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
         return defaultHapiSpec("nonceUpdatedAfterSuccessfulEthereumContractCreation", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(

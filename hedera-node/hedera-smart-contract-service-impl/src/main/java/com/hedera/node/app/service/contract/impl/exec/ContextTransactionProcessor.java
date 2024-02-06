@@ -48,7 +48,7 @@ import javax.inject.Inject;
 
 /**
  * A small utility that runs the
- * {@link TransactionProcessor#processTransaction(HederaEvmTransaction, HederaWorldUpdater, Supplier, HederaEvmContext, ActionSidecarContentTracer, Configuration)}
+ * {@link TransactionProcessor#processTransaction(HederaEvmTransaction, HederaWorldUpdater, Supplier, HederaEvmContext, ActionSidecarContentTracer, Configuration, HederaEvmContext)}
  * call implied by the in-scope {@link HandleContext}.
  */
 @TransactionScope
@@ -170,7 +170,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         gasCharging.chargeGasForAbortedTransaction(senderId, hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
         rootProxyWorldUpdater.commit();
         final var result = HederaEvmTransactionResult.fromAborted(
-                senderId, hevmTransaction, hevmTransaction.exception().getStatus());
+                senderId, hevmTransaction, hevmTransaction.exception().getStatus(), null);
         return CallOutcome.fromResultsWithoutSidecars(
                 result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
     }

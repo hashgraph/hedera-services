@@ -368,7 +368,7 @@ class TransactionProcessorTest {
 
         final var abortException = catchThrowableOfType(
                 () -> subject.processTransaction(
-                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
+                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config, null),
                 AbortException.class);
         assertThat(abortException.isChargeable()).isFalse();
     }

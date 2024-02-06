@@ -314,10 +314,10 @@ class ContextTransactionProcessorTest {
     void returnedResultContainsSignerNonce() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_046, processor);
-        final var hudratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
+        final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
 
         final var subject = new ContextTransactionProcessor(
-                hudratedEthTxData,
+                hydratedEthTxData,
                 context,
                 contractsConfig,
                 CONFIGURATION,
@@ -326,7 +326,8 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors);
+                processors,
+                customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
         given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
@@ -338,7 +339,7 @@ class ContextTransactionProcessorTest {
                         hederaEvmContext,
                         tracer,
                         CONFIGURATION,
-                        hudratedEthTxData))
+                        hydratedEthTxData))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
 
         final var protoResult =

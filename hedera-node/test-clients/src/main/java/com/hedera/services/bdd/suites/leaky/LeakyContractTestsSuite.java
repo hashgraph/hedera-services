@@ -2950,9 +2950,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
     final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
         final var depositAmount = 1000;
 
-        return defaultHapiSpec("htsTransferFromForNFTViaContractCreateLazyCreate",                                 NONDETERMINISTIC_NONCE,
-                NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec(
+                        "htsTransferFromForNFTViaContractCreateLazyCreate",
+                        NONDETERMINISTIC_NONCE,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
