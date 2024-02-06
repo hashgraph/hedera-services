@@ -16,16 +16,13 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.cli.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.DumpTokensSubcommand.FieldBuilder;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
@@ -43,22 +40,22 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Dump all topics from a signed state file to a text file in a deterministic order  */
+/** Dump all block info from a signed state file to a text file in a deterministic order  */
 public class DumpBlockInfoSubcommand {
 
     static void doit(
             @NonNull final SignedStateHolder state,
-            @NonNull final Path topicsPath,
+            @NonNull final Path blockInfoPath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final Verbosity verbosity) {
-        new DumpBlockInfoSubcommand(state, topicsPath, emitSummary, verbosity).doit();
+        new DumpBlockInfoSubcommand(state, blockInfoPath, emitSummary, verbosity).doit();
     }
 
     @NonNull
     final SignedStateHolder state;
 
     @NonNull
-    final Path topicsPath;
+    final Path blockInfoPath;
 
     @NonNull
     final EmitSummary emitSummary;
@@ -68,89 +65,75 @@ public class DumpBlockInfoSubcommand {
 
     DumpBlockInfoSubcommand(
             @NonNull final SignedStateHolder state,
-            @NonNull final Path topicsPath,
+            @NonNull final Path blockInfoPath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final Verbosity verbosity) {
         requireNonNull(state, "state");
-        requireNonNull(topicsPath, "topicsPath");
+        requireNonNull(blockInfoPath, "blockInfoPath");
         requireNonNull(emitSummary, "emitSummary");
         requireNonNull(verbosity, "verbosity");
 
         this.state = state;
-        this.topicsPath = topicsPath;
+        this.blockInfoPath = blockInfoPath;
         this.emitSummary = emitSummary;
         this.verbosity = verbosity;
     }
 
     void doit() {
-        final var topicsStore = state.getTopics();
-        System.out.printf("=== %d topics ===%n", topicsStore.size());
+        final var networkContext = state.getNetworkContext();
 
-        final var allTopics = gatherTopics(topicsStore);
+        System.out.printf("=== block info ===%n");
+
+        final var blockInfo = gatherBlockInfo(networkContext);
 
         int reportSize;
-        try (@NonNull final var writer = new Writer(topicsPath)) {
-            if (emitSummary == EmitSummary.YES) reportSummary(writer, allTopics);
-            reportOnTopics(writer, allTopics);
+        try (@NonNull final var writer = new Writer(blockInfoPath)) {
+            if (emitSummary == EmitSummary.YES) reportSummary(writer, blockInfo);
+            reportOnBlockInfo(writer, blockInfo);
             reportSize = writer.getSize();
         }
 
-        System.out.printf("=== topics report is %d bytes%n", reportSize);
+        System.out.printf("=== block info report is %d bytes%n", reportSize);
     }
 
     @SuppressWarnings(
             "java:S6218") // "Equals/hashcode method should be overridden in records containing array fields" - this
-    record Topic(
-            int number,
-            @NonNull String memo,
-            @NonNull RichInstant expirationTimestamp,
-            boolean deleted,
-            @NonNull JKey adminKey,
-            @NonNull JKey submitKey,
-            @NonNull byte[] runningHash,
-            long sequenceNumber,
-            long autoRenewDurationSeconds,
-            @Nullable EntityId autoRenewAccountId) {
-        Topic(@NonNull final MerkleTopic topic) {
+    record BlockInfo(
+            long lastBlockNumber,
+            @NonNull String blockHashes,
+            @Nullable RichInstant consTimeOfLastHandledTxn,
+            boolean migrationRecordsStreamed,
+            @Nullable RichInstant firstConsTimeOfCurrentBlock) {
+        BlockInfo(@NonNull final MerkleNetworkContext networkContext) {
             this(
-                    topic.getKey().intValue(),
-                    topic.getMemo(),
-                    topic.getExpirationTimestamp(),
-                    topic.isDeleted(),
-                    topic.getAdminKey(),
-                    topic.getSubmitKey(),
-                    null != topic.getRunningHash() ? topic.getRunningHash() : EMPTY_BYTES,
-                    topic.getSequenceNumber(),
-                    topic.getAutoRenewDurationSeconds(),
-                    topic.getAutoRenewAccountId());
-            Objects.requireNonNull(memo, "memo");
-            Objects.requireNonNull(adminKey, "adminKey");
-            Objects.requireNonNull(submitKey, "submitKey");
-            Objects.requireNonNull(runningHash, "runningHash");
+                    networkContext.getAlignmentBlockNo(),
+                    networkContext.stringifiedBlockHashes(),
+                    fromJava(networkContext.consensusTimeOfLastHandledTxn()),
+                    networkContext.areMigrationRecordsStreamed(),
+                    fromJava(networkContext.firstConsTimeOfCurrentBlock()));
+            Objects.requireNonNull(blockHashes, "blockHashes");
         }
-
-        static final byte[] EMPTY_BYTES = new byte[0];
     }
 
     @NonNull
-    Map<Long, Topic> gatherTopics(@NonNull final MerkleMapLike<EntityNum, MerkleTopic> topicsStore) {
-        final var allTopics = new TreeMap<Long, Topic>();
-        topicsStore.forEachNode((en, mt) -> allTopics.put(en.longValue(), new Topic(mt)));
-        return allTopics;
+    Map<Long, BlockInfo> gatherBlockInfo(@NonNull final MerkleNetworkContext networkContext) {
+        final var blockInfo = new TreeMap<Long, BlockInfo>();
+        networkContext.forEachNode((en, mt) -> blockInfo.put(en.longValue(), new BlockInfo(mt)));
+        return blockInfo;
     }
 
-    void reportSummary(@NonNull Writer writer, @NonNull Map<Long, Topic> topics) {
+    void reportSummary(@NonNull Writer writer, @NonNull Map<Long, BlockInfo> topics) {
         writer.writeln("=== %7d: topics".formatted(topics.size()));
         writer.writeln("");
     }
 
-    void reportOnTopics(@NonNull Writer writer, @NonNull Map<Long, Topic> topics) {
+    void reportOnBlockInfo(@NonNull Writer writer, @NonNull Map<Long, BlockInfo> topics) {
         writer.writeln(formatHeader());
         topics.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatTopic(writer, e.getValue()));
         writer.writeln("");
     }
 
-    void formatTopic(@NonNull final Writer writer, @NonNull final Topic topic) {
+    void formatTopic(@NonNull final Writer writer, @NonNull final BlockInfo topic) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, topic));
         writer.writeln(fb);
@@ -166,27 +149,31 @@ public class DumpBlockInfoSubcommand {
     static Function<String, String> csvQuote = s -> quoteForCsv(FIELD_SEPARATOR, s);
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, Topic>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(Topic::number, Object::toString)),
-            Pair.of("memo", getFieldFormatter(Topic::memo, csvQuote)),
-            Pair.of("expiry", getFieldFormatter(Topic::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("deleted", getFieldFormatter(Topic::deleted, booleanFormatter)),
+    static List<Pair<String, BiConsumer<FieldBuilder, BlockInfo>>> fieldFormatters = List.of(
+            Pair.of("number", getFieldFormatter(BlockInfo::number, Object::toString)),
+            Pair.of("memo", getFieldFormatter(BlockInfo::memo, csvQuote)),
+            Pair.of(
+                    "expiry",
+                    getFieldFormatter(BlockInfo::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("deleted", getFieldFormatter(BlockInfo::deleted, booleanFormatter)),
             Pair.of(
                     "adminKey",
-                    getFieldFormatter(Topic::adminKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
+                    getFieldFormatter(BlockInfo::adminKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
             Pair.of(
                     "submitKey",
-                    getFieldFormatter(Topic::submitKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("runningHash", getFieldFormatter(Topic::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
-            Pair.of("sequenceNumber", getFieldFormatter(Topic::sequenceNumber, Object::toString)),
-            Pair.of("autoRenewSecs", getFieldFormatter(Topic::autoRenewDurationSeconds, Object::toString)),
+                    getFieldFormatter(BlockInfo::submitKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of(
+                    "runningHash",
+                    getFieldFormatter(BlockInfo::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
+            Pair.of("sequenceNumber", getFieldFormatter(BlockInfo::sequenceNumber, Object::toString)),
+            Pair.of("autoRenewSecs", getFieldFormatter(BlockInfo::autoRenewDurationSeconds, Object::toString)),
             Pair.of(
                     "autoRenewAccount",
                     getFieldFormatter(
-                            Topic::autoRenewAccountId, getNullableFormatter(ThingsToStrings::toStringOfEntityId))));
+                            BlockInfo::autoRenewAccountId, getNullableFormatter(ThingsToStrings::toStringOfEntityId))));
 
-    static <T> BiConsumer<FieldBuilder, Topic> getFieldFormatter(
-            @NonNull final Function<Topic, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BlockInfo> getFieldFormatter(
+            @NonNull final Function<BlockInfo, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
@@ -196,8 +183,8 @@ public class DumpBlockInfoSubcommand {
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final Topic topic,
-            @NonNull final Function<Topic, T> fun,
+            @NonNull final BlockInfo topic,
+            @NonNull final Function<BlockInfo, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(topic)));
     }

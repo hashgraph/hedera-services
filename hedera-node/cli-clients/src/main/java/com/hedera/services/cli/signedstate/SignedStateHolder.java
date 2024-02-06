@@ -19,6 +19,7 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -341,6 +342,13 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         assertSignedStateComponentExists(rawContractStorage, "blockInfo");
         return rawContractStorage;
+    }
+
+    @NonNull
+    public MerkleNetworkContext getNetworkContext() {
+        final var networkContext = servicesState.networkCtx();
+        assertSignedStateComponentExists(networkContext, "networkContext");
+        return networkContext;
     }
 
     @NonNull

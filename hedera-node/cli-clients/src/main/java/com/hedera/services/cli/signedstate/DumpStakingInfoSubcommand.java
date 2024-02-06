@@ -79,7 +79,7 @@ public class DumpStakingInfoSubcommand {
 
     void doit() {
         final var stakingInfoStore = state.getStakingInfo();
-        System.out.printf("=== %d stakingInfo ===%n", stakingInfoStore.size());
+        System.out.printf("=== %d staking info ===%n", stakingInfoStore.size());
 
         final var allStakingInfo = gatherStakingInfo(stakingInfoStore);
 
