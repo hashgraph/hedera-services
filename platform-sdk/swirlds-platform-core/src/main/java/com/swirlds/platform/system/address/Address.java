@@ -94,6 +94,7 @@ public class Address implements SelfSerializable {
     // deprecated for removal in version 0.49.0 or later
     private SerializablePublicKey sigPublicKey = null;
     /** public key of the member used for encrypting */
+    // deprecated for removal in version 0.49.0 or later
     private SerializablePublicKey encPublicKey;
     /** public key of the member used for TLS key agreement */
     // deprecated for removal in version 0.49.0 or later
@@ -572,9 +573,6 @@ public class Address implements SelfSerializable {
             outStream.writeSerializable(encPublicKey, false);
             outStream.writeSerializable(agreePublicKey, false);
         } else {
-            if (sigCert == null || agreeCert == null) {
-                throw new IllegalStateException("Certificates must be set before serialization");
-            }
             outStream.writeSerializable(sigCert, false);
             outStream.writeSerializable(agreeCert, false);
         }
@@ -703,14 +701,17 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Throws an illegal argument exception if the certificate is not encodable.
+     * Throws an illegal argument exception if the certificate exists and is not encodable.
      *
      * @param certificate the certificate to check.
      * @return the certificate if it is encodable.
      */
-    @NonNull
+    @Nullable
     private SerializableX509Certificate checkCertificateEncoding(
-            @NonNull final SerializableX509Certificate certificate) {
+            @Nullable final SerializableX509Certificate certificate) {
+        if (certificate == null) {
+            return null;
+        }
         try {
             certificate.getCertificate().getEncoded();
             return certificate;

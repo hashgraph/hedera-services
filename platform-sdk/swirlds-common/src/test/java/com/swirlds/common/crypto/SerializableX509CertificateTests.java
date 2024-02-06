@@ -19,7 +19,6 @@ package com.swirlds.common.crypto;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
@@ -38,16 +37,10 @@ import java.security.SignatureException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Random;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.Arguments;
 
 class SerializableX509CertificateTests {
-
-    static Stream<Arguments> keyTypeProvider() {
-        return Stream.of(arguments("RSA", 3072, false), arguments("EC", 384, false));
-    }
 
     @Test
     @DisplayName("SerializableX509Certificate serialize and deserialize")
