@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.Threshold.MAJORITY;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.platform.metrics.IssMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,6 +56,8 @@ public class ConsensusHashFinder {
      */
     private final long round;
 
+    private final IssMetrics issMetrics;
+
     /**
      * The total weight of nodes that have reported their hash for this round.
      */
@@ -76,24 +78,17 @@ public class ConsensusHashFinder {
      */
     private Hash consensusHash;
 
-    private final StateHashValidityTrigger stateHashValidityDispatcher;
-
     /**
-     * Create a new object for tracking agreement on the hash of a particular round.
+     * Create a new object for tracking agreement on the hash of a particular round against the consensus hash
      *
-     * @param stateHashValidityDispatcher
-     * 		a dispatch method that should be called whenever a reported hash can be verified
-     * 		against the consensus hash
-     * @param round
-     * 		the current round
-     * @param totalWeight
-     * 		the total weight contained within the network for this round
+     * @param round       the current round
+     * @param totalWeight the total weight contained within the network for this round
+     * @param issMetrics  iss related metrics
      */
-    public ConsensusHashFinder(
-            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long totalWeight) {
-        this.stateHashValidityDispatcher = stateHashValidityDispatcher;
+    public ConsensusHashFinder(final long round, final long totalWeight, @NonNull final IssMetrics issMetrics) {
         this.round = round;
         this.totalWeight = totalWeight;
+        this.issMetrics = Objects.requireNonNull(issMetrics);
     }
 
     /**
@@ -156,7 +151,6 @@ public class ConsensusHashFinder {
 
         if (status != ConsensusHashStatus.UNDECIDED) {
             sendHashValidityDispatch(nodeId, stateHash);
-
             // Once we know the status, the status never changes.
             return;
         }
@@ -168,11 +162,12 @@ public class ConsensusHashFinder {
             status = ConsensusHashStatus.DECIDED;
             sendHashValidityDispatchForAllNodes();
         } else {
-            long remainingWeight = totalWeight - hashReportedWeight;
+            final long remainingWeight = totalWeight - hashReportedWeight;
             if (!MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.
                 status = ConsensusHashStatus.CATASTROPHIC_ISS;
+                issMetrics.catastrophicIssObserver(round);
             }
         }
     }
@@ -189,7 +184,7 @@ public class ConsensusHashFinder {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         Objects.requireNonNull(stateHash, "stateHash must not be null");
         if (consensusHash != null) {
-            stateHashValidityDispatcher.dispatch(round, nodeId, stateHash, consensusHash);
+            issMetrics.stateHashValidityObserver(round, nodeId, stateHash, consensusHash);
         }
     }
 
@@ -209,6 +204,13 @@ public class ConsensusHashFinder {
      */
     public Map<Hash, HashPartition> getPartitionMap() {
         return partitionMap;
+    }
+
+    /**
+     * @return true if there is any disagreement between nodes on the hash for this round
+     */
+    public boolean hasDisagreement() {
+        return partitionMap.size() > 1;
     }
 
     /**
