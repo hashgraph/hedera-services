@@ -916,7 +916,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
-        return synchronizedThrottleAccumulator.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
+        return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
     }
 
     public boolean shouldThrottleTxn(TransactionInfo txInfo) {

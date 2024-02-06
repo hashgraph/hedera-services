@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottle
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
@@ -208,6 +209,12 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             @NonNull final HederaState state,
             @NonNull final Instant consensusTime) {
         return backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
+    }
+
+    @Override
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
+        return backendThrottle.shouldThrottleNOfUnscaled(n, function, consensusTime);
     }
 
     @Override

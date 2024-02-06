@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -94,6 +95,18 @@ public interface NetworkUtilizationManager {
             @NonNull final TransactionInfo txnInfo,
             @NonNull final HederaState state,
             @NonNull final Instant consensusTime);
+
+    /**
+     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
+     * given function at the given time. (The time matters because we want to consider how much
+     * will have leaked between now and that time.)
+     *
+     * @param n the number of the given function
+     * @param function the function
+     * @return true if the system should throttle the given number of the given function
+     * at the instant for which throttling should be calculated
+     */
+    boolean shouldThrottleNOfUnscaled(int n, @NonNull HederaFunctionality function, @NonNull Instant consensusTime);
 
     /**
      * Returns a list of snapshots of the current usage of all active throttles.

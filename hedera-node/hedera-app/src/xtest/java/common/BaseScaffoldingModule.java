@@ -230,8 +230,6 @@ public interface BaseScaffoldingModule {
                 recordCache,
                 exchangeRateManager,
                 NoOpFeeCalculator.INSTANCE,
-                consensusTime,
-                synchronizedThrottleAccumulator,
                 payerId);
     }
 
