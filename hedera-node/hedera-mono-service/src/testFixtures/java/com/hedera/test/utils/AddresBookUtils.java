@@ -36,9 +36,9 @@ public class AddresBookUtils {
 
     public static AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
         final var pubKey = mock(PublicKey.class);
+        given(pubKey.getAlgorithm()).willReturn("EC");
         final var cert = mock(X509Certificate.class);
         when(cert.getPublicKey()).thenReturn(pubKey);
-        given(pubKey.getAlgorithm()).willReturn("EC");
         final var address1 = new Address(
                 platform.getSelfId(),
                 "",

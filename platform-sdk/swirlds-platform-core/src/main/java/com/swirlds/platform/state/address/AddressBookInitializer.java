@@ -24,6 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -230,11 +231,33 @@ public class AddressBookInitializer {
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
             previousAddressBook = stateAddressBook;
+            copyCertsIfAbsent(configAddressBook, stateAddressBook);
             // change indicator is true to indicate that the address books need to be updated in the state.
             addressBookChange = true;
         }
         recordAddressBooks(candidateAddressBook);
         return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
+    }
+
+    /**
+     * Copies the certificates from the configAddressBook to the stateAddressBook if the stateAddressBook does not have
+     * them.
+     *
+     * @param configAddressBook the address book from the configuration
+     * @param stateAddressBook  the address book from the state
+     */
+    private void copyCertsIfAbsent(
+            @NonNull final AddressBook configAddressBook, @NonNull final AddressBook stateAddressBook) {
+        for (final Address address : stateAddressBook) {
+            if (address.getSigCert() == null) {
+                stateAddressBook.add(address.copySetSigCert(Objects.requireNonNull(configAddressBook
+                                .getAddress(address.getNodeId())
+                                .getSigCert()))
+                        .copySetAgreeCert(Objects.requireNonNull(configAddressBook
+                                .getAddress(address.getNodeId())
+                                .getAgreeCert())));
+            }
+        }
     }
 
     /**

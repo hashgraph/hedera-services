@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.crypto.PreGeneratedX509Certs;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -45,7 +45,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -94,11 +93,19 @@ class EventSignatureValidatorTests {
      * @return a mock address
      */
     private static Address generateMockAddress(final @NonNull NodeId nodeId) {
-        final PublicKey publicKey = mock(PublicKey.class);
-        final SerializableX509Certificate serializableX509Certificate = mock(SerializableX509Certificate.class);
-        when(serializableX509Certificate.getPublicKey()).thenReturn(publicKey);
 
-        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializableX509Certificate, null, "");
+        return new Address(
+                nodeId,
+                "",
+                "",
+                10,
+                null,
+                77,
+                null,
+                88,
+                PreGeneratedX509Certs.getSigCert(nodeId.id()),
+                PreGeneratedX509Certs.getAgreeCert(nodeId.id()),
+                "");
     }
 
     /**
@@ -201,13 +208,10 @@ class EventSignatureValidatorTests {
     }
 
     @Test
-    @DisplayName("Node has a null public key")
+    @DisplayName("Node has null certificates")
     void missingPublicKey() {
         final NodeId nodeId = new NodeId(88);
-        final SerializableX509Certificate serializableX509Certificate = mock(SerializableX509Certificate.class);
-        when(serializableX509Certificate.getPublicKey()).thenReturn(null);
-        final Address nodeAddress =
-                new Address(nodeId, "", "", 10, null, 77, null, 88, serializableX509Certificate, null, "");
+        final Address nodeAddress = new Address(nodeId, "", "", 10, null, 77, null, 88, null, null, "");
 
         currentAddressBook.add(nodeAddress);
 

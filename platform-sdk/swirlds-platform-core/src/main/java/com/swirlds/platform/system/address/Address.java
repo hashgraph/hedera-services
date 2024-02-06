@@ -562,6 +562,9 @@ public class Address implements SelfSerializable {
         outStream.writeInt(portInternal);
         outStream.writeNormalisedString(hostnameExternal);
         outStream.writeInt(portExternal);
+        if (sigCert == null || agreeCert == null) {
+            throw new IllegalStateException("Certificates must be set before serialization");
+        }
         outStream.writeSerializable(sigCert, false);
         outStream.writeSerializable(agreeCert, false);
         outStream.writeNormalisedString(memo);
@@ -584,6 +587,7 @@ public class Address implements SelfSerializable {
 
         if (version < ClassVersion.X509_CERT_SUPPORT) {
             sigPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+            final SerializablePublicKey encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
             agreePublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
         } else {
             try {
