@@ -194,6 +194,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void syntheticTransactionForHtsCallTest() {
+        given(context.body()).willReturn(TransactionBody.DEFAULT);
         assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
