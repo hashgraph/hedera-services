@@ -125,6 +125,13 @@ class HtsSystemContractTest {
         assertSamePrecompileResult(expected, result);
     }
 
+    @Test
+    void testComputeFullyWithEmptyBytes() {
+        final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
+        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
+    }
+
     private void givenValidCallAttempt() {
         frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);

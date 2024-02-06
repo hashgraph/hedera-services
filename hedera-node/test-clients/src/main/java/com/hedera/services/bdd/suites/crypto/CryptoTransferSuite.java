@@ -2161,18 +2161,19 @@ public class CryptoTransferSuite extends HapiSuite {
     final HapiSpec testTransferToSystemAccountsAndCheckSenderBalance() {
         final var transferContract = "CryptoTransfer";
         final var balanceContract = "BalanceChecker46Version";
+        final var senderAccount = "detachedSenderAccount";
         return defaultHapiSpec("testTransferToSystemAccountsAndCheckSenderBalance", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
-                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(senderAccount).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(transferContract),
                         contractCreate(transferContract),
                         uploadInitCode(balanceContract),
                         contractCreate(balanceContract))
                 .when(contractCall(transferContract, "sendViaTransfer", mirrorAddrWith(359L))
-                        .payingWith(SENDER)
+                        .payingWith(senderAccount)
                         .sending(ONE_HBAR * 10)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getAccountBalance(SENDER, false).hasTinyBars(9994320000L));
+                .then(getAccountBalance(senderAccount, false).hasTinyBars(9994320000L));
     }
 
     @HapiTest
