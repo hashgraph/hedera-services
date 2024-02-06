@@ -34,6 +34,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -249,13 +250,18 @@ public class AddressBookInitializer {
     private void copyCertsIfAbsent(
             @NonNull final AddressBook configAddressBook, @NonNull final AddressBook stateAddressBook) {
         for (final Address address : stateAddressBook) {
-            if (address.getSigCert() == null) {
-                stateAddressBook.add(address.copySetSigCert(Objects.requireNonNull(configAddressBook
-                                .getAddress(address.getNodeId())
-                                .getSigCert()))
-                        .copySetAgreeCert(Objects.requireNonNull(configAddressBook
-                                .getAddress(address.getNodeId())
-                                .getAgreeCert())));
+            if (address.getSigCert() == null && configAddressBook.contains(address.getNodeId())) {
+                final X509Certificate sigCert =
+                        configAddressBook.getAddress(address.getNodeId()).getSigCert();
+                final X509Certificate agreeCert =
+                        configAddressBook.getAddress(address.getNodeId()).getAgreeCert();
+                if (sigCert != null && agreeCert != null) {
+                    stateAddressBook.add(address.copySetSigCert(sigCert).copySetAgreeCert(agreeCert));
+                } else {
+                    logger.warn(
+                            "Signing and Agreement certificates were not found in the config address book for node {}",
+                            address.getNodeId());
+                }
             }
         }
     }

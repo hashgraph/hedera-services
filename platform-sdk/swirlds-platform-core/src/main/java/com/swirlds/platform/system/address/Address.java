@@ -71,6 +71,9 @@ public class Address implements SelfSerializable {
     private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
 
+    /** The serialization version of this class, defaulting to most recent version.  Deserialization will override. */
+    private int serialization = ClassVersion.X509_CERT_SUPPORT;
+
     /** ID of this member. All agree on numbering for old members, and if config.txt used */
     private NodeId id;
     /** name this member uses to refer to that member */
@@ -90,6 +93,8 @@ public class Address implements SelfSerializable {
     /** public key of the member used for signing */
     // deprecated for removal in version 0.49.0 or later
     private SerializablePublicKey sigPublicKey = null;
+    /** public key of the member used for encrypting */
+    private SerializablePublicKey encPublicKey;
     /** public key of the member used for TLS key agreement */
     // deprecated for removal in version 0.49.0 or later
     private SerializablePublicKey agreePublicKey = null;
@@ -190,7 +195,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.X509_CERT_SUPPORT;
+        return serialization;
     }
 
     /**
@@ -355,7 +360,7 @@ public class Address implements SelfSerializable {
      */
     @Nullable
     public X509Certificate getSigCert() {
-        return sigCert.getCertificate();
+        return sigCert == null ? null : sigCert.getCertificate();
     }
 
     /**
@@ -365,7 +370,7 @@ public class Address implements SelfSerializable {
      */
     @Nullable
     public X509Certificate getAgreeCert() {
-        return agreeCert.getCertificate();
+        return agreeCert == null ? null : agreeCert.getCertificate();
     }
 
     /**
@@ -562,11 +567,17 @@ public class Address implements SelfSerializable {
         outStream.writeInt(portInternal);
         outStream.writeNormalisedString(hostnameExternal);
         outStream.writeInt(portExternal);
-        if (sigCert == null || agreeCert == null) {
-            throw new IllegalStateException("Certificates must be set before serialization");
+        if (serialization < ClassVersion.X509_CERT_SUPPORT) {
+            outStream.writeSerializable(sigPublicKey, false);
+            outStream.writeSerializable(encPublicKey, false);
+            outStream.writeSerializable(agreePublicKey, false);
+        } else {
+            if (sigCert == null || agreeCert == null) {
+                throw new IllegalStateException("Certificates must be set before serialization");
+            }
+            outStream.writeSerializable(sigCert, false);
+            outStream.writeSerializable(agreeCert, false);
         }
-        outStream.writeSerializable(sigCert, false);
-        outStream.writeSerializable(agreeCert, false);
         outStream.writeNormalisedString(memo);
     }
 
@@ -575,6 +586,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void deserialize(SerializableDataInputStream inStream, int version) throws IOException {
+        serialization = version;
         id = inStream.readSerializable(false, NodeId::new);
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
@@ -587,7 +599,7 @@ public class Address implements SelfSerializable {
 
         if (version < ClassVersion.X509_CERT_SUPPORT) {
             sigPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
-            final SerializablePublicKey encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+            encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
             agreePublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
         } else {
             try {
