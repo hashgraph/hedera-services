@@ -44,9 +44,9 @@ public abstract class ConfigProviderBase implements ConfigProvider {
      */
     public static final String APPLICATION_PROPERTIES_PATH_ENV = "HEDERA_APP_PROPERTIES_PATH";
     /** Default path to the genesis.properties file. */
-    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "genesis.properties";
+    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "hedera-node/data/config/genesis.properties";
     /** Default path to the application.properties file. */
-    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "application.properties";
+    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "hedera-node/data/config/application.properties";
 
     private static final Logger logger = LogManager.getLogger(ConfigProviderBase.class);
     /** Default path to the semantic-version.properties file. */
@@ -70,6 +70,8 @@ public abstract class ConfigProviderBase implements ConfigProvider {
         requireNonNull(defaultPath);
 
         final ObjIntConsumer<Path> addSource = (path, p) -> {
+            logger.info("Path for the file {} is {}", envName, path.toAbsolutePath(),
+                    path.toFile().exists() ? "exists" : "does not exist");
             if (path.toFile().exists()) {
                 if (!path.toFile().isDirectory()) {
                     try {
