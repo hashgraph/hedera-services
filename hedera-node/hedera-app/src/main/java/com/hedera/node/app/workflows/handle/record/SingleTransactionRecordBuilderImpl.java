@@ -424,7 +424,7 @@ public class SingleTransactionRecordBuilderImpl
             body.cryptoCreateAccount(transaction.body().cryptoCreateAccount());
         }
 
-        this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        this.transaction = SingleTransactionRecordBuilder.transactionWith(body.build());
         this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
