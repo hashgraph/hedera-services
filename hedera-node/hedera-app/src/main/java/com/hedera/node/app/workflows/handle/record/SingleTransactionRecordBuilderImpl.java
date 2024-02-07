@@ -415,16 +415,9 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
-        var body = inProgressBody().copyBuilder().transactionID(newTransactionID);
-
-        // for preserving correct data cases
-        if (transaction.body() != null && transaction.body().hasNodeStakeUpdate()) {
-            body.nodeStakeUpdate(transaction.body().nodeStakeUpdate());
-        } else if (transaction.body() != null && transaction.body().hasCryptoCreateAccount()) {
-            body.cryptoCreateAccount(transaction.body().cryptoCreateAccount());
-        }
-
-        this.transaction = SingleTransactionRecordBuilder.transactionWith(body.build());
+        final var body =
+                inProgressBody().copyBuilder().transactionID(newTransactionID).build();
+        this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
         this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
