@@ -328,7 +328,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.memo(op.memo());
         }
         if (op.hasMetadata()) {
-            builder.metadata(op.metadataOrThrow());
+            builder.metadata(op.metadata());
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());

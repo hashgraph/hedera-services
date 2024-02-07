@@ -76,11 +76,11 @@ public class TokenAttributesValidator {
     }
 
     /**
-     * Validates the token metadata, if it is exists and is not empty or not too long.
+     * Validates the token metadata, if it exists and is not too long.
      * @param metadata the token metadata to validate
      */
-    public void validateTokenMetadata(@Nullable final String metadata, @NonNull final TokensConfig tokensConfig) {
-        tokenStringCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), MISSING_TOKEN_METADATA, METADATA_TOO_LONG);
+    public void validateTokenMetadata(@Nullable final byte[] metadata, @NonNull final TokensConfig tokensConfig) {
+        tokenByteArrayCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), MISSING_TOKEN_METADATA, METADATA_TOO_LONG);
     }
 
     /**
@@ -101,6 +101,25 @@ public class TokenAttributesValidator {
         validateTrue(numUtf8Bytes != 0, onMissing);
         validateTrue(numUtf8Bytes <= maxLen, onTooLong);
         validateTrue(!s.contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
+    }
+
+    /**
+     * Given a token byte array, validates that it is not null, not empty, not too long.
+     * @param bytes the byte array to validate
+     * @param maxLen the maximum number of UTF-8 bytes allowed
+     * @param onMissing the response code to use if the bytes array is null or empty
+     * @param onTooLong the response code to use if the bytes array is too long
+     */
+    private void tokenByteArrayCheck(
+            @Nullable final byte[] bytes,
+            final int maxLen,
+            @NonNull final ResponseCodeEnum onMissing,
+            @NonNull final ResponseCodeEnum onTooLong) {
+        validateTrue(bytes != null, onMissing);
+        final int length = bytes.length;
+        validateTrue(length != 0, onMissing);
+        validateTrue(length <= maxLen, onTooLong);
+        validateTrue(!bytes.toString().contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
     }
 
     /**

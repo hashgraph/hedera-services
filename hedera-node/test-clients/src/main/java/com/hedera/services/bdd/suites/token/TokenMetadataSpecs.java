@@ -90,7 +90,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         return List.of(
                 rejectsMetadataTooLong(),
                 creationRequiresAppropriateSigsHappyPath(),
-                creationRequiresAppropriateSigs(),
+                creationDoesNotHaveRequiredSigs(),
                 fungibleCreationHappyPath());
     }
 
@@ -109,7 +109,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationRequiresAppropriateSigs() {
+    public HapiSpec creationDoesNotHaveRequiredSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),

@@ -1303,10 +1303,10 @@ public final class PbjConverter {
                     .TRANSACTION_HAS_UNKNOWN_FIELDS;
             case ACCOUNT_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+            case INVALID_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_METADATA_KEY;
             case TOKEN_HAS_NO_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .TOKEN_HAS_NO_METADATA_KEY;
             case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
-            case INVALID_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_METADATA_KEY;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
