@@ -28,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -314,7 +313,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = null;
         this.transactionBody = null;
-        validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
+        if (input.size() < 4) {
+            return;
+        }
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
