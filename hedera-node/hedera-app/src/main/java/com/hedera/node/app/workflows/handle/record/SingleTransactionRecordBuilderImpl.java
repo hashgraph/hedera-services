@@ -320,9 +320,7 @@ public class SingleTransactionRecordBuilderImpl
         serialNumbers.clear();
         tokenTransferLists.clear();
         automaticTokenAssociations.clear();
-        if (transferList.hasAccountAmounts()) {
-            transferList.accountAmounts().clear();
-        }
+        transferList = TransferList.DEFAULT;
         paidStakingRewards.clear();
         assessedCustomFees.clear();
 
@@ -528,8 +526,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
-        requireNonNull(transferList, "transferList must not be null");
+    public SingleTransactionRecordBuilderImpl transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }

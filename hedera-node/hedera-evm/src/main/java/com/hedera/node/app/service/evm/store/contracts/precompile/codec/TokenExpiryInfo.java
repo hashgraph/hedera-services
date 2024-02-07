@@ -30,6 +30,12 @@ public class TokenExpiryInfo {
         this.autoRenewPeriod = autoRenewPeriod;
     }
 
+    public TokenExpiryInfo() {
+        this.second = 0;
+        this.autoRenewAccount = Address.ZERO;
+        this.autoRenewPeriod = 0;
+    }
+
     public long getSecond() {
         return second;
     }

@@ -33,7 +33,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -120,8 +119,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        return Optional.ofNullable(context.blockRecordInfo().getNMinus3RunningHash())
-                .orElse(ZERO_ENTROPY);
+        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
     /**
