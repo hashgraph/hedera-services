@@ -4,4 +4,4 @@ global:
 scrape_configs:
   - job_name: 'sample-scrap'
     static_configs:
-      - targets: ['localhost:8001']
+      - targets: ['sample:81']

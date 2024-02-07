@@ -46,8 +46,16 @@ The project provides a Docker Compose file that enables the following services:
 
 ## Usage
 
-To use the application, follow these steps:
-1. Build and run the application using `gradlew assemble`.
+The best way to run the application is through docker-compose:
+1. Build the application using `gradlew assemble`.
+2. inside `./docker` folder run `docker-compose up`
+4. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8000/`.
+6. Monitor metrics using the Prometheus server running on `http://localhost:8001/`.
+7. Visualize metrics using Grafana on `http://localhost:8002/`.
+5. Example Http requests have been included in `./http-requests`.
+
+Alternatively 
+1. Build the application using `gradlew assemble`.
 2. Run the app using `gradlew run`
 3. Run all included docker containers using docker-compose. Go to docker folder and run `docker-compose up`
 4. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8080/`.
@@ -58,8 +66,7 @@ To use the application, follow these steps:
 ## To Be Included
 
 1. change log4j to swirlds-logging
-2. creating a container for the java application in docker compose. use an internal network.
-3. add loki and elasticsearch for logging
+2. add loki and elasticsearch for logging
 
 ## Contributors
 

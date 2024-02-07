@@ -26,3 +26,23 @@ tasks.withType<JavaExec> {
         notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
     }
 }
+// Copy dependencies into `build/external/libs`
+val copyLib =
+    tasks.register<Copy>("copyDockerLib") {
+        from(project.configurations.runtimeClasspath)
+        into( "${buildDir}/external/libs")
+    }
+
+val copyApp =
+    tasks.register<Copy>("copyDockerApp") {
+        inputs.property("projectName", project.name)
+
+        from(tasks.jar)
+        into( "${buildDir}/external/app")
+        rename { "app.jar" }
+    }
+
+tasks.assemble {
+    dependsOn(copyLib)
+    dependsOn(copyApp)
+}

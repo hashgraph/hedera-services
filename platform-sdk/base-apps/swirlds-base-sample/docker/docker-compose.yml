@@ -1,15 +1,21 @@
 version: '3'
 
+networks:
+  sample-net:
+    driver: bridge
+
 services:
   swagger-ui:
     image: swaggerapi/swagger-ui
-    ports:
-      - "8080:8080"
     environment:
       - SWAGGER_JSON=/api/swagger.yaml
     volumes:
       - ./swagger/api.yaml:/api/swagger.yaml:ro
-    network_mode: "host"
+    ports:
+      - "8000:8080"
+    restart: always
+    networks:
+      - sample-net
   prometheus:
     image: prom/prometheus
     volumes:
@@ -17,19 +23,38 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
-      - "9090:9090"
-    network_mode: "host"
+      - "8001:9090"
+    restart: always
+    networks:
+      - sample-net
   grafana:
     image: grafana/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning/
     volumes:
-      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ./grafana/prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
-      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "3000:3000"
-    network_mode: "host"
+      - "8002:3000"
+    restart: always
+    networks:
+      - sample-net
     depends_on:
       - prometheus
+  sample:
+    image: eclipse-temurin:21.0.2_13-jre
+    volumes:
+      - ../build/external/app:/app
+      - ../build/external/libs:/libs
+      - ./sample/config:/app/config
+      - ./sample/data:/app/data
+    command: java -cp "/app/app.jar:/libs/*" com.swirlds.base.sample.Application
+    working_dir: /app
+    ports:
+      - "8080:80"
+      - "8081:81"
+    restart: always
+    networks:
+      - sample-net
