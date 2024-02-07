@@ -18,14 +18,14 @@ package com.swirlds.demo.merkle.map;
 
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_CREATE;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_CREATE;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.VIRTUAL_MERKLE_ACCOUNT;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.VIRTUAL_MERKLE_ACCOUNT;
 
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.virtualmerkle.config.TransactionRequestConfig;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;

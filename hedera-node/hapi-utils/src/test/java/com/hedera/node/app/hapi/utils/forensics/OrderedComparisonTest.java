@@ -58,7 +58,7 @@ class OrderedComparisonTest {
         final var issStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node5";
         final var consensusStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node0";
 
-        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc, null, null);
+        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc, null, null, null);
         assertEquals(1, diffs.size());
         final var soleDiff = diffs.get(0);
         final var issEntry = soleDiff.firstEntry();
