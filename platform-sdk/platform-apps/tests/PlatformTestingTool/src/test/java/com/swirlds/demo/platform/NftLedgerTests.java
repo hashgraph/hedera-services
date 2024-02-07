@@ -31,7 +31,7 @@ import com.swirlds.demo.platform.nft.Nft;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;
 import com.swirlds.demo.platform.nft.ReferenceNftLedger;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import java.util.HashSet;
 import java.util.LinkedList;
