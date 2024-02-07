@@ -625,7 +625,7 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 appVersion,
                 transactionPool,
-                platformWiring.getHasherUnprocessedTaskCountSupplier(),
+                platformWiring.getIntakeQueueSizeSupplier(),
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
@@ -702,7 +702,7 @@ public class SwirldsPlatform implements Platform {
                 emergencyRecoveryManager,
                 consensusRef,
                 platformWiring.getGossipEventInput()::put,
-                platformWiring.getHasherUnprocessedTaskCountSupplier(),
+                platformWiring.getIntakeQueueSizeSupplier(),
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
