@@ -54,14 +54,6 @@ The best way to run the application is through docker-compose:
 7. Visualize metrics using Grafana on `http://localhost:8002/`.
 5. Example Http requests have been included in `./http-requests`.
 
-Alternatively 
-1. Build the application using `gradlew assemble`.
-2. Run the app using `gradlew run`
-3. Run all included docker containers using docker-compose. Go to docker folder and run `docker-compose up`
-4. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8080/`.
-5. Example Http requests have been included in `./http-requests`.
-6. Monitor metrics using the Prometheus server running on `http://localhost:9090/`.
-7. Visualize metrics using Grafana on `http://localhost:3000/`.
 
 ## To Be Included
 
