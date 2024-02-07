@@ -45,6 +45,12 @@ class DataFileReaderPbjTest {
                 new DataFileReaderPbj(file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
     }
 
+    /**
+     * Current algorithm for leasing file channels is to use a round-robin-like approach with one peculiarity to keep in mind:
+     * it presumes that leases are going to be released shortely after they are taken. In this case, there will be even
+     * distribution of leases among all available file channels. However, if a lease is not released, leases will be heavily
+     * biased towards the first file channel, as this test demonstrates.
+     */
     @Test
     void testLeaseFileChannel() throws IOException {
         for (int i = 0; i < THREADS_PER_FILECHANNEL; i++) {
@@ -52,14 +58,41 @@ class DataFileReaderPbjTest {
             assertEquals(0, lease);
         }
 
+        // opening new channel
         assertEquals(1, dataFileReaderPbj.leaseFileChannel());
 
-        for (int i = 0; i < THREADS_PER_FILECHANNEL - 1; i++) {
-            int lease = dataFileReaderPbj.leaseFileChannel();
-            assertEquals(1, lease);
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        for (int i = 0; i < 5; i++) {
+            dataFileReaderPbj.leaseFileChannel();
         }
 
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
         assertEquals(2, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(2, dataFileReaderPbj.leaseFileChannel());
+    }
+
+    @Test
+    void testLeaseReleaseFileChannel() throws IOException {
+        for (int i = 0; i < THREADS_PER_FILECHANNEL; i++) {
+            int lease = dataFileReaderPbj.leaseFileChannel();
+            assertEquals(0, lease);
+        }
+
+        // opening new channel
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+
+        dataFileReaderPbj.releaseFileChannel();
+        dataFileReaderPbj.releaseFileChannel();
+        dataFileReaderPbj.releaseFileChannel();
+
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
     }
 
     @Test
@@ -71,13 +104,8 @@ class DataFileReaderPbjTest {
         // verifying that all channels were created
         assertEquals(MAX_FILE_CHANNELS, dataFileReaderPbj.fileChannelsCount.get(), "File channel count is unexpected");
 
-        // verifying even distribution
-        for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
-            assertEquals(8, dataFileReaderPbj.fileChannelLeases.get(i));
-        }
-
-        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
         assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(2, dataFileReaderPbj.leaseFileChannel());
 
         // verifying that no additional channels were created
         assertEquals(MAX_FILE_CHANNELS, dataFileReaderPbj.fileChannelsCount.get(), "File channel count is unexpected");
@@ -89,13 +117,11 @@ class DataFileReaderPbjTest {
             dataFileReaderPbj.leaseFileChannel();
         }
 
-        dataFileReaderPbj.releaseFileChannel(5);
-        dataFileReaderPbj.releaseFileChannel(5);
+        dataFileReaderPbj.releaseFileChannel();
 
-        dataFileReaderPbj.releaseFileChannel(4);
-
-        assertEquals(5, dataFileReaderPbj.leaseFileChannel());
-        assertEquals(4, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(0, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(1, dataFileReaderPbj.leaseFileChannel());
+        assertEquals(2, dataFileReaderPbj.leaseFileChannel());
     }
 
     @AfterEach

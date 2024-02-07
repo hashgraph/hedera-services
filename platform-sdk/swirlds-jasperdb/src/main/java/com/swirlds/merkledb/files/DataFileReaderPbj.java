@@ -39,7 +39,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -105,8 +104,6 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     protected final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
-    /** Number of leases per file channel */
-    protected final AtomicIntegerArray fileChannelLeases = new AtomicIntegerArray(MAX_FILE_CHANNELS);
 
     /** Indicates whether this file reader is open */
     private final AtomicBoolean open = new AtomicBoolean(true);
@@ -331,8 +328,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     /**
      * Returns an index of an opened file channel to read data and increments the lease count.
      * Opens a new file channel, if possible, when the lease count per channel is greater than
-     * {@link #THREADS_PER_FILECHANNEL}. This method returns an index of a file channel that is least
-     * used at the moment.
+     * {@link #THREADS_PER_FILECHANNEL}.
      *
      * @return An index of a file channel to read data
      * @throws IOException
@@ -344,37 +340,17 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
         // Since the channels are never closed (other than when the data file reader is closed),
         // it's safe to check count against MAX_FILE_CHANNELS
-        int channelLease = 0;
-        if (((float) inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
+        if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();
-            channelLease = count - 1;
-        } else {
-            // find a channel with the least number of leases
-            // it's an estimate, as the number of leases may change while we're iterating, but it's good enough
-            int minCount = Integer.MAX_VALUE;
-            for (int i = 0; i < count; i++) {
-                final int currentLeaseCount = fileChannelLeases.get(i);
-                if (currentLeaseCount == 0) {
-                    channelLease = i;
-                    break;
-                }
-                if (minCount > currentLeaseCount) {
-                    minCount = currentLeaseCount;
-                    channelLease = i;
-                }
-            }
         }
-        fileChannelLeases.incrementAndGet(channelLease);
-        return channelLease;
+        return inUse % count;
     }
 
     /**
      * Decreases the number of opened file channels in use by one.
-     * @param fcIndex Index of the file channel to release
      */
-    protected void releaseFileChannel(int fcIndex) {
-        fileChannelLeases.decrementAndGet(fcIndex);
+    protected void releaseFileChannel() {
         fileChannelsInUse.decrementAndGet();
     }
 
@@ -456,7 +432,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
                 // and retry
                 reopenFileChannel(fcIndex, fileChannel);
             } finally {
-                releaseFileChannel(fcIndex);
+                releaseFileChannel();
             }
         }
         throw new IOException("Failed to read from file, file channel keeps getting closed");

@@ -146,7 +146,7 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
                 // and retry
                 reopenFileChannel(fcIndex, fileChannel);
             } finally {
-                releaseFileChannel(fcIndex);
+                releaseFileChannel();
             }
         }
         throw new IOException("Failed to read from file, file channels keep getting closed");

@@ -86,6 +86,10 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  *      If the value is zero, leaf records cache isn't used.
  * @param usePbj
  *      If true, use PBJ format for new (flushed) and compacted data files, otherwise use JDB.
+ * @param maxFileChannelsPerFileReader
+ *     Maximum number of file channels per file reader.
+ * @param maxThreadsPerFileChannel
+ *    Maximum number of threads per file channel.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
