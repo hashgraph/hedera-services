@@ -32,7 +32,7 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig_;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;

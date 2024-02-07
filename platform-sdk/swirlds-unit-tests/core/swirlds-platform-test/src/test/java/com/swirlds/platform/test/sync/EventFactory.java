@@ -18,7 +18,7 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 
 /**
  * A simple, deterministic factory for Event instances

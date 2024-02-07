@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event;
+package com.swirlds.platform.test.fixtures.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
@@ -30,6 +30,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;
@@ -41,6 +42,7 @@ public class GossipEventBuilder {
     private Instant timestamp;
     private int numberOfTransactions;
     private int transactionSize;
+    private ConsensusTransactionImpl[] transactions;
     private Object selfParent;
     private Object otherParent;
     private boolean fakeHash;
@@ -58,6 +60,7 @@ public class GossipEventBuilder {
         timestamp = null;
         numberOfTransactions = 0;
         transactionSize = 4;
+        transactions = null;
         selfParent = null;
         otherParent = null;
         fakeHash = true;
@@ -93,6 +96,11 @@ public class GossipEventBuilder {
 
     public GossipEventBuilder setTransactionSize(final int transactionSize) {
         this.transactionSize = transactionSize;
+        return this;
+    }
+
+    public GossipEventBuilder setTransactions(final ConsensusTransactionImpl[] transactions) {
+        this.transactions = transactions;
         return this;
     }
 
@@ -168,11 +176,17 @@ public class GossipEventBuilder {
     }
 
     public GossipEvent buildGossipEvent() {
-        final ConsensusTransactionImpl[] tr = new ConsensusTransactionImpl[numberOfTransactions];
-        for (int i = 0; i < tr.length; ++i) {
-            final byte[] bytes = new byte[] {(byte) i, (byte) i, (byte) i, (byte) i};
-            tr[i] = new SwirldTransaction(bytes);
+        final ConsensusTransactionImpl[] tr;
+        if(transactions==null){
+            tr = new ConsensusTransactionImpl[numberOfTransactions];
+            for (int i = 0; i < tr.length; ++i) {
+                final byte[] bytes = new byte[] {(byte) i, (byte) i, (byte) i, (byte) i};
+                tr[i] = new SwirldTransaction(bytes);
+            }
+        }else{
+            tr = transactions;
         }
+
         final long selfParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
                 ? fakeGeneration - 1
                 : getSelfParentGossip() != null

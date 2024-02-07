@@ -22,7 +22,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.output.SendAction;
 import com.swirlds.platform.gossip.chatter.protocol.output.VariableTimeDelay;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;

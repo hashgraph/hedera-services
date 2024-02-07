@@ -19,7 +19,7 @@ package com.swirlds.platform.test.graph;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 import java.util.List;
 import java.util.Random;
 
