@@ -39,12 +39,14 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile implements EvmGetApprovedPrecompile {
 
@@ -92,6 +94,13 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile implements
         return tokenId == null
                 ? encoder.encodeGetApproved(SUCCESS.getNumber(), canonicalSpender)
                 : evmEncoder.encodeGetApproved(canonicalSpender);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return tokenId == null
+                ? encoder.encodeGetApproved(status.getNumber(), Address.ZERO)
+                : evmEncoder.encodeGetApproved(Address.ZERO);
     }
 
     public static GetApprovedWrapper<TokenID> decodeGetApproved(final Bytes input, final TokenID impliedTokenId) {
