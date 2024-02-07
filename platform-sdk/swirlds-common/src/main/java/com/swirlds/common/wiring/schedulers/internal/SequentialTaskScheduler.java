@@ -91,7 +91,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (getSquelcher().shouldSquelch()) {
+        if (currentlySquelching()) {
             return;
         }
 
@@ -104,7 +104,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (getSquelcher().shouldSquelch()) {
+        if (currentlySquelching()) {
             // return true in order to accept and discard the data, as opposed to preventing the sender from sending it
             return true;
         }
@@ -121,7 +121,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (getSquelcher().shouldSquelch()) {
+        if (currentlySquelching()) {
             return;
         }
 

@@ -18,11 +18,11 @@ package com.swirlds.common.wiring.wires.input;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.internal.Squelcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * An input wire that can be bound to an implementation.
@@ -35,7 +35,13 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
     private final StandardWiringModel model;
-    private final Squelcher squelcher;
+
+    /**
+     * Supplier for whether the task scheduler is currently squelching.
+     * <p>
+     * As long as this supplier returns true, the handler will be executed as a no-op, and no data will be forwarded.
+     */
+    private final Supplier<Boolean> currentlySquelching;
 
     /**
      * Constructor.
@@ -52,7 +58,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
         this.model = Objects.requireNonNull(model);
         taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         taskSchedulerName = taskScheduler.getName();
-        squelcher = taskScheduler.getSquelcher();
+        currentlySquelching = taskScheduler::currentlySquelching;
 
         model.registerInputWireCreation(taskSchedulerName, name);
     }
@@ -64,7 +70,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     public void bind(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
-            if (squelcher.shouldSquelch()) {
+            if (currentlySquelching.get()) {
                 return;
             }
 
@@ -80,7 +86,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     public void bind(@NonNull final Function<IN, OUT> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
-            if (squelcher.shouldSquelch()) {
+            if (currentlySquelching.get()) {
                 return;
             }
 

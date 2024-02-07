@@ -271,16 +271,6 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     }
 
     /**
-     * Get the squelcher for this task scheduler.
-     *
-     * @return the squelcher
-     */
-    @NonNull
-    public final Squelcher getSquelcher() {
-        return squelcher;
-    }
-
-    /**
      * Start squelching, and continue doing so until {@link #stopSquelching()} is called.
      *
      * @throws UnsupportedOperationException if squelching is not supported by this scheduler
@@ -298,6 +288,15 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      */
     public void stopSquelching() {
         squelcher.stopSquelching();
+    }
+
+    /**
+     * Get whether or not this task scheduler is currently squelching.
+     *
+     * @return true if this task scheduler is currently squelching, false otherwise
+     */
+    public final boolean currentlySquelching() {
+        return squelcher.shouldSquelch();
     }
 
     /**
