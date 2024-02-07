@@ -24,12 +24,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Objects;
 
+/**
+ * A serializable wrapper for an {@link X509Certificate} instance.
+ */
 public class SerializableX509Certificate implements SelfSerializable {
-    public static final int MAX_CERT_LENGTH = 65_536;
+    public static final int MAX_CERT_LENGTH = 1024 * 8 * 8;
     private static final long CLASS_ID = 0x2332728f044c1c87L;
 
     private static final class ClassVersion {
@@ -38,10 +42,18 @@ public class SerializableX509Certificate implements SelfSerializable {
 
     private X509Certificate certificate;
 
+    /**
+     * Constructs a new instance of {@link SerializableX509Certificate}.
+     *
+     * @param certificate the {@link X509Certificate} instance
+     */
     public SerializableX509Certificate(@NonNull final X509Certificate certificate) {
         this.certificate = Objects.requireNonNull(certificate);
     }
 
+    /**
+     * Constructs a new instance of {@link SerializableX509Certificate} for deserialization.
+     */
     public SerializableX509Certificate() {
         // empty constructor for deserialization
     }
@@ -53,7 +65,7 @@ public class SerializableX509Certificate implements SelfSerializable {
      */
     @NonNull
     public X509Certificate getCertificate() {
-        return certificate;
+        return Objects.requireNonNull(certificate);
     }
 
     /**
@@ -72,6 +84,9 @@ public class SerializableX509Certificate implements SelfSerializable {
         return ClassVersion.ORIGINAL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(@NonNull SerializableDataOutputStream out) throws IOException {
         try {
@@ -82,24 +97,27 @@ public class SerializableX509Certificate implements SelfSerializable {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deserialize(@NonNull SerializableDataInputStream in, int version) throws IOException {
         final byte[] encoded = in.readByteArray(MAX_CERT_LENGTH);
         try {
             certificate = (X509Certificate)
                     CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(encoded));
-        } catch (Exception e) {
+        } catch (final CertificateException e) {
             throw new IOException("Not able to deserialize x509 certificate", e);
         }
     }
 
+    /**
+     * Gets the public key from the certificate.
+     *
+     * @return the public key
+     */
     @NonNull
     public PublicKey getPublicKey() {
-        return Objects.requireNonNull(certificate, "Certificate is null").getPublicKey();
-    }
-
-    @NonNull
-    public X509Certificate getX509Certificate() {
-        return Objects.requireNonNull(certificate, "Certificate is null");
+        return Objects.requireNonNull(certificate.getPublicKey(), "PublicKey is null");
     }
 }
