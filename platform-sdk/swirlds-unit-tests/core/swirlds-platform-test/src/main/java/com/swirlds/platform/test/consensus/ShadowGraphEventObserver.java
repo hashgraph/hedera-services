@@ -47,7 +47,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     }
 
     /**
-     * Expire events in {@link Shadowgraph} based on the new minimum round generation
+     * Expire events in {@link Shadowgraph} based on the new event window
      *
      * @param consensusRound a new consensus round
      */

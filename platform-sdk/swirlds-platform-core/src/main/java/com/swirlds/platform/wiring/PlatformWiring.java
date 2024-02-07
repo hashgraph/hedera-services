@@ -500,13 +500,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param nonAncientEventWindow the new non-ancient event window
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-
-        eventDeduplicatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        eventSignatureValidatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-        eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
     }
 

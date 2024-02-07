@@ -38,10 +38,10 @@ public final class TheirTipsAndEventWindow {
 
     @NonNull
     public static TheirTipsAndEventWindow create(
-            @NonNull final NonAncientEventWindow generations, @NonNull final List<Hash> tips) {
-        Objects.requireNonNull(generations, "generations cannot be null");
-        Objects.requireNonNull(tips, "tips cannot be null");
-        return new TheirTipsAndEventWindow(generations, tips);
+            @NonNull final NonAncientEventWindow eventWindow, @NonNull final List<Hash> tips) {
+        Objects.requireNonNull(eventWindow);
+        Objects.requireNonNull(tips);
+        return new TheirTipsAndEventWindow(eventWindow, tips);
     }
 
     @NonNull

@@ -891,6 +891,7 @@ public class SwirldsPlatform implements Platform {
 
         consensusRef.get().loadFromSignedState(signedState);
 
+        // FUTURE WORK: this needs to be updated for birth round compatibility.
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 signedState.getRound(),
                 signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
