@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.expiration;
 
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.util.Objects;
 
 /**

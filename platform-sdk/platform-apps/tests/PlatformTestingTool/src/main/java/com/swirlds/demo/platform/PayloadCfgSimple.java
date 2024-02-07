@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
