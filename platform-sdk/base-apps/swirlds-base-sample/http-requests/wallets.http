@@ -1,0 +1,33 @@
+### create wallet
+POST {{server}}/swirlds/api/wallets
+Content-Type: application/json
+
+{}
+
+### Get a wallet
+GET {{server}}/swirlds/api/wallets/0
+Accept: application/json
+
+### get all wallets
+GET {{server}}/swirlds/api/wallets
+Accept: application/json
+
+### Get balance
+GET {{server}}/swirlds/api/balances/0
+Accept: application/json
+
+
+### create transaction
+POST {{server}}/swirlds/api/transactions
+Content-Type: application/json
+
+{
+  "from": "0",
+  "to": "13c6e2ce-431b-4c4a-83d8-1d028d5d144b",
+  "amount": "100000.33"
+
+}
+
+### Get metrics
+GET http://localhost:8081/
+Accept: application/text

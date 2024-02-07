@@ -128,7 +128,7 @@ include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
 include(":blocknode-state", "block-node/blocknode-state")
 
 // Base applications
-includeAllProjects("platform-sdk/base-apps/")
+include(":swirlds-base-sample", "platform-sdk/base-apps/swirlds-base-sample")
 
 fun include(name: String, path: String) {
     include(name)

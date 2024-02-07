@@ -275,6 +275,30 @@ extraJavaModuleInfo {
         exportAllPackages()
         requires("java.compiler")
     }
+    module("org.jboss.logging:jboss-logging", "org.jboss.logging") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.jboss.threads:jboss-threads", "org.jboss.threads") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.jboss.xnio:xnio-api", "org.jboss.xnio.xnio.api") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.jboss.xnio:xnio-nio", "org.jboss.xnio") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.wildfly.common:wildfly-common", "org.wildfly.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.wildfly.client:wildfly-client-config", "org.wildfly.client") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
     module("io.undertow:undertow-core", "io.undertow.server") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -290,3 +314,4 @@ extraJavaModuleInfo {
     module("org.testcontainers:testcontainers", "org.testcontainers")
     module("org.mockito:mockito-junit-jupiter", "org.mockito.junit.jupiter")
 }
+

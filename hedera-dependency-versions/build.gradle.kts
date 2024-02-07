@@ -114,5 +114,13 @@ moduleInfo {
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
-    version("io.undertow.server", "2.3.10.Final")
+    version("org.jboss.logging", "2.3.10.Final")
+    version("org.jboss.threads", "3.5.0.Final")
+    version("org.jboss.xnio", "3.8.8.Final")
+    version("org.jboss.xnio.xnio.api", "3.8.8.Final")
+    version("org.wildfly.common", "1.5.4.Final")
+    version("org.wildfly.client", "1.0.1.Final")
+    version("io.undertow", "2.3.10.Final")
+
+
 }
