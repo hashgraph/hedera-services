@@ -39,6 +39,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -99,6 +100,13 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile imple
         return tokenId == null
                 ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
                 : evmEncoder.encodeIsApprovedForAll(answer);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return tokenId == null
+                ? encoder.encodeIsApprovedForAll(status.getNumber(), false)
+                : evmEncoder.encodeIsApprovedForAll(false);
     }
 
     public static IsApproveForAllWrapper<TokenID, AccountID, AccountID> decodeIsApprovedForAll(

@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
@@ -36,8 +37,10 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import org.junit.jupiter.api.DisplayName;
@@ -73,7 +76,10 @@ class PlatformWiringTests {
                 mock(EventCreationManager.class),
                 mock(SwirldStateManager.class),
                 mock(StateSignatureCollector.class),
-                mock(FutureEventBuffer.class));
+                mock(ConsensusRoundHandler.class),
+                mock(EventStreamManager.class),
+                mock(FutureEventBuffer.class),
+                mock(IssDetector.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
