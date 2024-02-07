@@ -123,8 +123,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "updateTokenWithInvalidKeyValues")
+        return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -172,8 +171,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
+        return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -252,8 +250,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     public HapiSpec getTokenKeyForNonFungibleNegative() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "getTokenKeyForNonFungibleNegative")
+        return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
