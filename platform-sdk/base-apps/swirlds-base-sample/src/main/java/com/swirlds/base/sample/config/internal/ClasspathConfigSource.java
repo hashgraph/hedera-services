@@ -28,11 +28,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link ConfigSource} that can read files in the application classpath.
  */
 public class ClasspathConfigSource extends AbstractConfigSource {
+    private static final Logger log = LogManager.getLogger(ClasspathConfigSource.class);
     private final @NonNull Map<String, String> internalProperties;
 
     public ClasspathConfigSource(final @NonNull Path filePath) throws IOException {
@@ -40,25 +43,16 @@ public class ClasspathConfigSource extends AbstractConfigSource {
         this.internalProperties = new HashMap<>();
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filePath.toString());
         assert inputStream != null;
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-        try {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             Properties loadedProperties = new Properties();
             loadedProperties.load(reader);
-            loadedProperties.stringPropertyNames().forEach((name) -> {
-                this.internalProperties.put(name, loadedProperties.getProperty(name));
-            });
-        } catch (Throwable var7) {
-            try {
-                reader.close();
-            } catch (Throwable var6) {
-                var7.addSuppressed(var6);
-            }
-
-            throw var7;
+            loadedProperties
+                    .stringPropertyNames()
+                    .forEach((name) -> this.internalProperties.put(name, loadedProperties.getProperty(name)));
+        } catch (Exception e) {
+            log.error("Could not load properties from classpath resource {}", filePath);
+            throw e;
         }
-
-        reader.close();
     }
 
     @Override
