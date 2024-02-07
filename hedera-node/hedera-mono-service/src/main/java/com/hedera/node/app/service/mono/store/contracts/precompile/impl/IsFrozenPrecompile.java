@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -59,6 +60,11 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile implements Ev
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final boolean isFrozen = ledgers.isFrozen(accountId, tokenId);
         return evmEncoder.encodeIsFrozen(isFrozen);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeIsFrozen(status, false);
     }
 
     public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeIsFrozen(
