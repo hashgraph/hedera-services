@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.sync.protocol;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -32,11 +31,15 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -46,6 +49,17 @@ import java.util.function.BooleanSupplier;
  * This object will be instantiated once per peer, and is bidirectional
  */
 public class SyncProtocol implements Protocol {
+    /**
+     * The platform statuses that permit syncing. If the platform isn't in one of these statuses, no syncs will be
+     * initiated or accepted
+     */
+    public static final Collection<PlatformStatus> STATUSES_THAT_PERMIT_SYNC = Set.of(
+            PlatformStatus.ACTIVE,
+            PlatformStatus.FREEZING,
+            PlatformStatus.FREEZE_COMPLETE,
+            PlatformStatus.OBSERVING,
+            PlatformStatus.CHECKING,
+            PlatformStatus.RECONNECT_COMPLETE);
     /**
      * The id of the peer being synced with in this protocol
      */
@@ -91,24 +105,23 @@ public class SyncProtocol implements Protocol {
      */
     private final Duration sleepAfterSync;
 
-    /**
-     * A source of time
-     */
-    private final Time time;
-
     private final PlatformContext platformContext;
+
+    private final PlatformStatusGetter platformStatusGetter;
 
     /**
      * Constructs a new sync protocol
      *
-     * @param platformContext        the platform context
-     * @param peerId                 the id of the peer being synced with in this protocol
-     * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager    manager to determine whether this node has fallen behind
-     * @param permitProvider         provides permits to sync
-     * @param sleepAfterSync         the amount of time to sleep after a sync
-     * @param syncMetrics            metrics tracking syncing
-     * @param time                   a source of time
+     * @param platformContext      the platform context
+     * @param peerId               the id of the peer being synced with in this protocol
+     * @param synchronizer         the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager  manager to determine whether this node has fallen behind
+     * @param permitProvider       provides permits to sync
+     * @param gossipHalted         returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull      returns true if the intake queue is too full to continue syncing, false otherwise
+     * @param sleepAfterSync       the amount of time to sleep after a sync
+     * @param syncMetrics          metrics tracking syncing
+     * @param platformStatusGetter provides the current platform status
      */
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -120,7 +133,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Time time) {
+            @NonNull final PlatformStatusGetter platformStatusGetter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
@@ -131,14 +144,15 @@ public class SyncProtocol implements Protocol {
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.time = Objects.requireNonNull(time);
+        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
     }
 
     /**
      * @return true if the cooldown period after a sync has elapsed, else false
      */
     private boolean syncCooldownComplete() {
-        final Duration elapsed = Duration.between(lastSyncTime, time.now());
+        final Duration elapsed =
+                Duration.between(lastSyncTime, platformContext.getTime().now());
 
         return isGreaterThanOrEqualTo(elapsed, sleepAfterSync);
     }
@@ -149,6 +163,10 @@ public class SyncProtocol implements Protocol {
      * @return true if the node should sync, false otherwise
      */
     private boolean shouldSync() {
+        if (!STATUSES_THAT_PERMIT_SYNC.contains(platformStatusGetter.getCurrentStatus())) {
+            syncMetrics.doNotSyncPlatformStatus();
+            return false;
+        }
 
         if (!syncCooldownComplete()) {
             syncMetrics.doNotSyncCooldown();
@@ -269,7 +287,7 @@ public class SyncProtocol implements Protocol {
         } finally {
             returnPermit();
 
-            lastSyncTime = time.now();
+            lastSyncTime = platformContext.getTime().now();
         }
     }
 }
