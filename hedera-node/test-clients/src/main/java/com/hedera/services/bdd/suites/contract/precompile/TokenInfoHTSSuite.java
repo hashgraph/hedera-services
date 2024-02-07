@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -560,17 +561,65 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(new byte[20]))
                                 .via(TOKEN_INFO_TXN + 1)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(new byte[20]))
                                 .via(TOKEN_INFO_TXN + 2)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED))))
-                .then(
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
                         getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords().logged(),
-                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
+                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged()
+
+                        //                        ,childRecordsCheck(
+                        //                                TOKEN_INFO_TXN + 2,
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(INVALID_TOKEN_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+                        //                                                        .withStatus(INVALID_TOKEN_ID)
+                        //
+                        // .withTokenInfo(getTokenInfoStructForEmptyFungibleToken(
+                        //                                                                "",
+                        //                                                                "",
+                        //                                                                "",
+                        //
+                        // AccountID.getDefaultInstance(),
+                        //                                                                0,
+                        //                                                                ByteString.EMPTY
+                        //                                                                )))))
+                        //                                                ,childRecordsCheck(
+                        //                                                        TOKEN_INFO_TXN + 1,
+                        //                                                        CONTRACT_REVERT_EXECUTED,
+                        //                                                        recordWith()
+                        //                                                                .status(INVALID_TOKEN_ID)
+                        //
+                        // .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        //                         .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
+                        //
+                        // .withStatus(INVALID_TOKEN_ID)
+                        //
+                        //                         .withTokenInfo(getTokenInfoStructForEmptyFungibleToken(
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //
+                        //                         AccountID.getDefaultInstance(),
+                        //                                                                                        0,
+                        //
+                        // ByteString.EMPTY
+                        //                                                                                        )))))
+
+                        )));
     }
 
     @HapiTest
@@ -655,7 +704,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         1L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
@@ -664,11 +713,37 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         2L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                 .andAllChildRecords()
                                 .logged(),
+                        //                                                ,childRecordsCheck(
+                        //                                NON_FUNGIBLE_TOKEN_INFO_TXN + 1,
+                        //                                                        CONTRACT_REVERT_EXECUTED,
+                        //                                                        recordWith()
+                        //                                                                .status(INVALID_TOKEN_ID)
+                        //
+                        // .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        //                         .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                        //
+                        // .withStatus(INVALID_TOKEN_ID)
+                        //
+                        //                         .withTokenInfo(getTokenInfoStructForEmptyFungibleToken(
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //                                                                                        "",
+                        //
+                        //                         AccountID.getDefaultInstance(),
+                        //                                                                                        0,
+                        //
+                        // ByteString.EMPTY
+                        //                                                                                        ))
+                        //
+                        // .withNftTokenInfo(getEmptyNft())))),
                         getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
                                 .andAllChildRecords()
                                 .logged());
@@ -714,6 +789,13 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME))))
                                 .via(TOKEN_INFO_TXN)
                                 .gas(1_000_000L),
+                        //                        , contractCall(
+                        //                                TOKEN_INFO_CONTRACT,
+                        //                                GET_CUSTOM_FEES_FOR_TOKEN,
+                        //                                HapiParserUtil.asHeadlongAddress(new byte[20]))
+                        //                                .via("fakeAddressTokenInfo")
+                        //                                .gas(1_000_000L)
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCallLocal(
                                 TOKEN_INFO_CONTRACT,
                                 GET_CUSTOM_FEES_FOR_TOKEN,
@@ -731,7 +813,19 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
                                                         .withStatus(SUCCESS)
-                                                        .withCustomFees(getExpectedCustomFees(spec))))))));
+                                                        .withCustomFees(getExpectedCustomFees(spec)))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressTokenInfo",
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(INVALID_TOKEN_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                        //                                                        .withStatus(INVALID_TOKEN_ID)
+                        //                                                        .withCustomFees(new ArrayList<>()))))
+                        )));
     }
 
     @HapiTest
@@ -834,6 +928,17 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .build();
     }
 
+    private TokenNftInfo getEmptyNft() {
+        return TokenNftInfo.newBuilder()
+                .setLedgerId(ByteString.empty())
+                .setNftID(NftID.getDefaultInstance())
+                .setAccountID(AccountID.getDefaultInstance())
+                .setCreationTime(Timestamp.newBuilder().build())
+                .setMetadata(ByteString.empty())
+                .setSpenderId(AccountID.getDefaultInstance())
+                .build();
+    }
+
     private TokenInfo getTokenInfoStructForFungibleToken(
             final HapiSpec spec,
             final String tokenName,
@@ -868,6 +973,39 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
                 .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .build();
+    }
+
+    private TokenInfo getTokenInfoStructForEmptyFungibleToken(
+            final String tokenName,
+            final String symbol,
+            final String memo,
+            final AccountID treasury,
+            final long expirySecond,
+            ByteString ledgerId) {
+
+        final ArrayList<CustomFee> customFees = new ArrayList<>();
+
+        return TokenInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setSupplyTypeValue(0)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
+                .setAutoRenewAccount(AccountID.getDefaultInstance())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(0).build())
+                .setSymbol(symbol)
+                .setName(tokenName)
+                .setMemo(memo)
+                .setTreasury(treasury)
+                .setTotalSupply(0)
+                .setMaxSupply(0)
+                .addAllCustomFees(customFees)
+                .setAdminKey(Key.newBuilder().build())
+                .setKycKey(Key.newBuilder().build())
+                .setFreezeKey(Key.newBuilder().build())
+                .setWipeKey(Key.newBuilder().build())
+                .setSupplyKey(Key.newBuilder().build())
+                .setFeeScheduleKey(Key.newBuilder().build())
+                .setPauseKey(Key.newBuilder().build())
                 .build();
     }
 

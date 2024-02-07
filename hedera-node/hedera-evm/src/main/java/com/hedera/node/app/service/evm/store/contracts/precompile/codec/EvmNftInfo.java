@@ -29,7 +29,14 @@ public class EvmNftInfo {
     private Address spender;
     private byte[] ledgerId;
 
-    public EvmNftInfo() {}
+    public EvmNftInfo() {
+        this.serialNumber = 0L;
+        this.account = Address.ZERO;
+        this.creationTime = 0;
+        this.metadata = new byte[0];
+        this.spender = Address.ZERO;
+        this.ledgerId = new byte[0];
+    }
 
     public EvmNftInfo(
             long serialNumber,
