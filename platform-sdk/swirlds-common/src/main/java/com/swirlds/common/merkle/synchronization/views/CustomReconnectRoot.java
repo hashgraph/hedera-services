@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 
 /**
  * Nodes that are want to use a custom view for reconnect must extend this interface and
@@ -60,7 +61,7 @@ public interface CustomReconnectRoot<T, L> extends MerkleNode {
      * @param originalNode
      * 		the original node in the learner's tree in the root position of this subtree
      */
-    void setupWithOriginalNode(final MerkleNode originalNode);
+    void setupWithOriginalNode(final ReconnectConfig reconnectConfig, final MerkleNode originalNode);
 
     /**
      * Called on a node if there is no data to be copied.

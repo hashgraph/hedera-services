@@ -50,6 +50,7 @@ import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.internal.AbstractMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -73,9 +74,9 @@ import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
+import com.swirlds.virtualmap.internal.reconnect.LearnerPushReceiveVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
-import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -310,7 +311,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     private VirtualStateAccessor fullyReconnectedState;
 
-    private VirtualLearnerTreeView<K, V> learnerTreeView;
+    private LearnerPushReceiveVirtualTreeView<K, V> learnerTreeView;
 
     private final long fastCopyVersion;
 
@@ -1373,7 +1374,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void setupWithOriginalNode(final MerkleNode originalNode) {
+    public void setupWithOriginalNode(final ReconnectConfig reconnectConfig, final MerkleNode originalNode) {
         assert originalNode instanceof VirtualRootNode : "The original node was not a VirtualRootNode!";
 
         // NOTE: If we're reconnecting, then the old tree is toast. We hold onto the originalMap to
@@ -1409,8 +1410,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         reconnectRecords = new RecordAccessorImpl<>(reconnectState, snapshotCache, dataSource);
 
         // During reconnect we want to look up state from the original records
-        learnerTreeView =
-                new VirtualLearnerTreeView<>(this, originalMap.records, originalMap.getState(), reconnectState);
+        learnerTreeView = new LearnerPushReceiveVirtualTreeView<>(
+                reconnectConfig, this, originalMap.records, originalMap.getState(), reconnectState);
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
