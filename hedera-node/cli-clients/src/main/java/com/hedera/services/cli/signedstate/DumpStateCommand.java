@@ -350,8 +350,7 @@ public class DumpStateCommand extends AbstractCommand {
         Objects.requireNonNull(blockInfoPath);
         init();
         System.out.println("=== Block info ===");
-        DumpBlockInfoSubcommand.doit(
-                parent.signedState, blockInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        DumpBlockInfoSubcommand.doit(parent.signedState, blockInfoPath);
         finish();
     }
 
