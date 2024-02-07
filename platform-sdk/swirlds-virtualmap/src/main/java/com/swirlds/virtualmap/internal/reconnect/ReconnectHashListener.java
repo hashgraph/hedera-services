@@ -77,7 +77,7 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(long maxPath) {
-        return nodeRemover.getRecordsToDelete(maxPath);
+    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove() {
+        return nodeRemover.getRecordsToDelete();
     }
 }

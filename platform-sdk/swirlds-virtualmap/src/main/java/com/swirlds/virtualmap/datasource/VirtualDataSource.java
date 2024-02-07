@@ -196,14 +196,6 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     void stopAndDisableBackgroundCompaction();
 
     /**
-     * Build an empty {@link VirtualKeySet}. This key set should be compatible with data in this data source,
-     * but should otherwise have no direct connection to the data in this data source.
-     *
-     * @return a new key set
-     */
-    VirtualKeySet<K> buildKeySet();
-
-    /**
      * Provides estimation how much space is needed to store the given number of internal / leaf nodes in the data
      * source. This estimation is used to decide when to flush virtual node caches to data sources.
      *

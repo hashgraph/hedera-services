@@ -16,13 +16,13 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Append;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Append;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Transfer;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.demo.platform.Triple;
@@ -36,9 +36,9 @@ import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalance;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalanceFCQ;
 import com.swirlds.demo.platform.fs.stresstest.proto.UpdateAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.UpdateAccountFCQ;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -51,12 +48,6 @@ public class TokenUriCall extends AbstractNftViewCall {
      */
     @Override
     protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
-        requireNonNull(token);
-        // #10568 - We add this check to match mono behavior
-        if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            return revertResult(ResponseCodeEnum.INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
-        }
-
         String metadata;
         if (nft != null) {
             metadata = new String(nft.metadata().toByteArray());
