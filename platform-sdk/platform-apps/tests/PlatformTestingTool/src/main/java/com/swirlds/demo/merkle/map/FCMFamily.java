@@ -20,9 +20,9 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import java.util.Map;
 
 public class FCMFamily extends PartialNaryMerkleInternal implements MerkleInternal {
