@@ -10,4 +10,5 @@ module com.swirlds.base.sample {
     requires io.undertow;
     requires jdk.management;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 }
