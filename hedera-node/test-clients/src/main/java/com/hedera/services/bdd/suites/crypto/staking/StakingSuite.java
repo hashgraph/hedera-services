@@ -357,7 +357,7 @@ public class StakingSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .countStakingRecords()
                                 .stakingFeeExempted()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .hasPaidStakingRewards(List.of()),
 
@@ -372,7 +372,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged(),
                         getTxnRecord("endOfStakingPeriodXfer")
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .countStakingRecords()
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
                         getAccountInfo(ALICE)
@@ -396,7 +396,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("expectNoReward")
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(0)
+                                .hasChildRecordCount(0)
                                 .hasStakingFeesPaid()
                                 //                                .hasPaidStakingRewards(List.of())
                                 .logged());
@@ -423,7 +423,7 @@ public class StakingSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .countStakingRecords()
                                 .stakingFeeExempted()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
                         // alice - 100, carol - 100
                         /* --- third period reward eligible from period 2--- */
@@ -431,7 +431,7 @@ public class StakingSuite extends HapiSuite {
                         cryptoUpdate(CAROL).newStakedAccountId(ALICE).via("stakedIdUpdate"),
                         getTxnRecord("stakedIdUpdate")
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .countStakingRecords()
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .hasPaidStakingRewardsCount(2)
@@ -537,7 +537,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(FIRST_TXN)
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .hasPaidStakingRewards(List.of()),
 
@@ -552,7 +552,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged()
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                //                                .hasNonStakingChildRecordCount(1)
+                                //                                .hasChildRecordCount(1)
                                 //
                                 // .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 333333300L))),
@@ -563,7 +563,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("samePeriodTxn")
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(0)
+                                .hasChildRecordCount(0)
                                 .hasPaidStakingRewards(List.of()),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
@@ -576,7 +576,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("contractRewardTxn")
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .logged()
                         //                                .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT,
@@ -600,25 +600,25 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("trigger")
                                 .logged()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("transfer"),
                         getTxnRecord("transfer")
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .logged(),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("noEndOfStakingPeriodRecord"),
                         getTxnRecord("noEndOfStakingPeriodRecord")
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(0)
+                                .hasChildRecordCount(0)
                                 .logged(),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("transfer1"),
                         getTxnRecord("transfer1")
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .logged());
     }
@@ -641,7 +641,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(deletion)
                                 .andAllChildRecords()
                                 .countStakingRecords()
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .hasPaidStakingRewards(List.of(Pair.of(bob, 3333333000000L)))
                                 .logged());

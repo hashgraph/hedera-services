@@ -708,7 +708,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then(
-                        getTxnRecord(TRANSFER_TXN).hasNonStakingChildRecordCount(1),
+                        getTxnRecord(TRANSFER_TXN).hasChildRecordCount(1),
                         childRecordsCheck(
                                 TRANSFER_TXN,
                                 SUCCESS,

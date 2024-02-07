@@ -1039,7 +1039,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         //								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias",
                         // ONE_HUNDRED_HBARS)).via(
                         //								"txn2"),
-                        //						getTxnRecord("txn2").hasNonStakingChildRecordCount(1).logged()
+                        //						getTxnRecord("txn2").hasChildRecordCount(1).logged()
                         );
     }
 
@@ -1395,7 +1395,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 }))
                 .then(
                         getTxnRecord(HBAR_XFER)
-                                .hasNonStakingChildRecordCount(1)
+                                .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
                         // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
                         cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
@@ -1544,7 +1544,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             getHollowAccountInfoAfterTransfers);
                 }))
                 .then(getTxnRecord(FT_XFER)
-                        .hasNonStakingChildRecordCount(1)
+                        .hasChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
@@ -1679,7 +1679,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     getTxnRecord("failedTxn").logged();
                     getTxnRecord("passedTxn")
-                            .hasNonStakingChildRecordCount(1)
+                            .hasChildRecordCount(1)
                             .hasChildRecords(
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
                 }));
