@@ -45,7 +45,7 @@ class DefaultDurationGaugeTest {
                 new DurationGauge.Config(CATEGORY, NAME, SECONDS).withDescription(DESCRIPTION));
 
         assertEquals(CATEGORY, gauge.getCategory(), "The category was not set correctly in the constructor");
-        assertEquals(NAME , gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
         assertEquals(DESCRIPTION, gauge.getDescription(), "The description was not set correctly in the constructor");
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_3,
@@ -60,7 +60,7 @@ class DefaultDurationGaugeTest {
                 FloatFormats.FORMAT_DECIMAL_3,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for milliseconds");
-        assertEquals(NAME , gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
         gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
         assertEquals(

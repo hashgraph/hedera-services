@@ -18,7 +18,6 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
@@ -112,7 +111,6 @@ public interface DurationGauge extends Metric {
             this.timeUnit = timeUnit;
         }
 
-
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -187,6 +185,5 @@ public interface DurationGauge extends Metric {
                 default -> throw new IllegalArgumentException(UNSUPPORTED_TIME_UNIT + timeUnit);
             };
         }
-
     }
 }
