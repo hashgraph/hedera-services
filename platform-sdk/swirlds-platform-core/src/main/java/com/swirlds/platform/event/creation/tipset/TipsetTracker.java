@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -40,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Computes and tracks tipsets for non-ancient events.
  */
-public class TipsetTracker {
+public class TipsetTracker implements Clearable {
 
     private static final Logger logger = LogManager.getLogger(TipsetTracker.class);
 
@@ -60,6 +61,7 @@ public class TipsetTracker {
 
     private final AddressBook addressBook;
 
+    private final AncientMode ancientMode;
     private NonAncientEventWindow nonAncientEventWindow;
 
     private final RateLimitedLogger ancientEventLogger;
@@ -82,6 +84,7 @@ public class TipsetTracker {
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
+        this.ancientMode = Objects.requireNonNull(ancientMode);
         this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
@@ -176,5 +179,15 @@ public class TipsetTracker {
      */
     public int size() {
         return tipsets.getSize();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        latestGenerations = new Tipset(addressBook);
+        tipsets.clear();
     }
 }

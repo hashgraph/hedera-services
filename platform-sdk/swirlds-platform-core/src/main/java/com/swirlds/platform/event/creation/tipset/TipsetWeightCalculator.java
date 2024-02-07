@@ -20,9 +20,9 @@ import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Calculates tipset advancement weights for events created by a node.
  */
-public class TipsetWeightCalculator {
+public class TipsetWeightCalculator implements Clearable {
 
     private static final Logger logger = LogManager.getLogger(TipsetWeightCalculator.class);
 
@@ -102,6 +102,8 @@ public class TipsetWeightCalculator {
      */
     private Tipset latestSelfEventTipset;
 
+    private final AddressBook addressBook;
+
     private final RateLimitedLogger ancientParentLogger;
     private final RateLimitedLogger allParentsAreAncientLogger;
 
@@ -109,7 +111,6 @@ public class TipsetWeightCalculator {
      * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
-     * @param time                  provides wall clock time
      * @param addressBook           the current address book
      * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
@@ -117,7 +118,6 @@ public class TipsetWeightCalculator {
      */
     public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final TipsetTracker tipsetTracker,
@@ -126,7 +126,7 @@ public class TipsetWeightCalculator {
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetTracker = Objects.requireNonNull(tipsetTracker);
         this.childlessEventTracker = Objects.requireNonNull(childlessEventTracker);
-        Objects.requireNonNull(addressBook);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
         totalWeight = addressBook.getTotalWeight();
         selfWeight = addressBook.getAddress(selfId).getWeight();
@@ -140,8 +140,8 @@ public class TipsetWeightCalculator {
         latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
 
-        ancientParentLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-        allParentsAreAncientLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        ancientParentLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        allParentsAreAncientLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
     }
 
     /**
@@ -324,6 +324,18 @@ public class TipsetWeightCalculator {
         }
 
         return selfishness;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        snapshot = new Tipset(addressBook);
+        latestSelfEventTipset = snapshot;
+        snapshotHistory.clear();
+        snapshotHistory.add(snapshot);
+        previousAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
     }
 
     @NonNull

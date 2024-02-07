@@ -21,7 +21,6 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBL
 import static com.swirlds.platform.event.creation.EventCreationStatus.PAUSED;
 import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
@@ -63,20 +62,19 @@ public class EventCreationManager {
      * Constructor.
      *
      * @param platformContext    the platform context
-     * @param time               provides wall clock time
      * @param creator            creates events
      * @param eventCreationRules rules for deciding when it is permitted to create events
      */
     public EventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final EventCreator creator,
             @NonNull final EventCreationRule eventCreationRules) {
 
         this.creator = Objects.requireNonNull(creator);
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
 
-        phase = new PhaseTimerBuilder<>(platformContext, time, "platform", EventCreationStatus.class)
+        phase = new PhaseTimerBuilder<>(
+                        platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)
                 .enableFractionalMetrics()
                 .setInitialPhase(PAUSED)
                 .setMetricsNamePrefix("eventCreation")
