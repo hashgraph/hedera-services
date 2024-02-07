@@ -1,24 +1,24 @@
 ### create wallet
-POST {{server}}/swirlds/api/wallets
+POST http://{{server}}:{{port}}/swirlds/api/wallets
 Content-Type: application/json
 
 {}
 
 ### Get a wallet
-GET {{server}}/swirlds/api/wallets/0
+GET http://{{server}}:{{port}}/swirlds/api/wallets/0
 Accept: application/json
 
 ### get all wallets
-GET {{server}}/swirlds/api/wallets
+GET http://{{server}}:{{port}}/swirlds/api/wallets
 Accept: application/json
 
 ### Get balance
-GET {{server}}/swirlds/api/balances/0
+GET http://{{server}}:{{port}}/swirlds/api/balances/0
 Accept: application/json
 
 
 ### create transaction
-POST {{server}}/swirlds/api/transactions
+POST http://{{server}}:{{port}}/swirlds/api/transactions
 Content-Type: application/json
 
 {
@@ -29,5 +29,5 @@ Content-Type: application/json
 }
 
 ### Get metrics
-GET http://localhost:8081/
+GET http://{{server}}:{{metrics-port}}/
 Accept: application/text
