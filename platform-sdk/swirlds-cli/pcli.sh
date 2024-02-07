@@ -167,7 +167,7 @@ run () {
 }
 
 squelch_spam () {
-  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.utility.SquelchSpam
+  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.utility.SpamSquelcher
 }
 
 colorize () {

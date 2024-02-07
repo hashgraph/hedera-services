@@ -20,14 +20,33 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class SquelchSpam {
+/**
+ * An entry point that log output can be piped into squelching spam lines.
+ */
+public class SpamSquelcher {
 
-    private static final String startOfSpam = "] Bad JNI lookup accessibilityHitTest";
-    private static final String endOfSpam = "Exception in thread \"AppKit Thread\" java.lang.NoSuchMethodError: accessibilityHitTest";
+    public static final String startOfSpam = "] Bad JNI lookup accessibilityHitTest";
+    public static final String endOfSpam = "Exception in thread \"AppKit Thread\" java.lang.NoSuchMethodError: accessibilityHitTest";
+    /**
+     * Tracks if log line is inside spam boundaries
+     */
+    private static boolean inSpam;
+    /**
+     * Tracks if next log line is inside spam boundaries
+     */
+    private static boolean nextLineIsSpam;
 
-    private static boolean inSpam = false;
-    private static boolean nextLineIsSpam = false;
+    /**
+     * Hidden constructor
+     */
+    private SpamSquelcher(){}
 
+    /**
+     * Checks if log line is spam
+     *
+     * @param line the log line string
+     * @return true if log line is spam, false otherwise
+     */
     public static boolean lineIsSpam(String line) {
 
         if (!nextLineIsSpam) {
@@ -48,22 +67,33 @@ public class SquelchSpam {
         return inSpam;
     }
 
+    /**
+     * Resets both inSpam and nextLineIsSpam states to default values
+     * <p>
+     * Useful for SpamSquelcher tests
+     */
     public static void resetSpamStatus(){
         inSpam = false;
         nextLineIsSpam = false;
     }
 
-    public static void main(String[] args) {
+
+    /**
+     * Main entrypoint for SpamSquelcher utility
+     *
+     * @param args program args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
+            String line = reader.readLine();
+            while (line != null) {
                 if (!lineIsSpam(line)) {
                     System.out.println(line);
                     System.out.flush();
                 }
+                line = reader.readLine();
             }
-        } catch (IOException e) {
-            System.err.println("Error during spam squelching: " + e.getMessage());
         }
     }
 }

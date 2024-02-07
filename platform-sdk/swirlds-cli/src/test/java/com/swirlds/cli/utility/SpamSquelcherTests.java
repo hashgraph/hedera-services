@@ -25,43 +25,40 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
- * Tests for the SquelchSpam class
+ * Tests for the SpamSquelcher class
  */
-@DisplayName("SquelchSpam Tests")
-class SquelchSpamTests {
-
-    private final String startOfSpam = "] Bad JNI lookup accessibilityHitTest";
-    private final String endOfSpam = "Exception in thread \"AppKit Thread\" java.lang.NoSuchMethodError: accessibilityHitTest";
+@DisplayName("SpamSquelcher Tests")
+class SpamSquelcherTests {
 
     @BeforeEach()
     void reset() {
-        SquelchSpam.resetSpamStatus();
+        SpamSquelcher.resetSpamStatus();
     }
 
     @Test
     @DisplayName("Test line is not spam")
-    public void lineIsNotSpam() {
-        assertFalse(SquelchSpam.lineIsSpam("This is a line outside spam."));
+    void lineIsNotSpam() {
+        assertFalse(SpamSquelcher.lineIsSpam("This is a line outside spam."));
     }
 
     @Test
     @DisplayName("Test line is start of spam")
-    public void lineIsStartOfSpam() {
-        assertTrue(SquelchSpam.lineIsSpam(startOfSpam));
+    void lineIsStartOfSpam() {
+        assertTrue(SpamSquelcher.lineIsSpam(SpamSquelcher.startOfSpam));
     }
 
     @Test
     @DisplayName("Test line is in middle of spam")
-    public void lineIsMiddleOfSpam() {
-        assertTrue(SquelchSpam.lineIsSpam(startOfSpam));
-        assertTrue(SquelchSpam.lineIsSpam("This line is in middle of spam."));
+    void lineIsMiddleOfSpam() {
+        assertTrue(SpamSquelcher.lineIsSpam(SpamSquelcher.startOfSpam));
+        assertTrue(SpamSquelcher.lineIsSpam("This line is in middle of spam."));
     }
 
     @Test
     @DisplayName("Test line is end of spam")
-    public void lineIsEndOfSpam() {
-        assertTrue(SquelchSpam.lineIsSpam(startOfSpam));
-        assertTrue(SquelchSpam.lineIsSpam("This line is in middle of spam."));
-        assertTrue(SquelchSpam.lineIsSpam(endOfSpam));
+    void lineIsEndOfSpam() {
+        assertTrue(SpamSquelcher.lineIsSpam(SpamSquelcher.startOfSpam));
+        assertTrue(SpamSquelcher.lineIsSpam("This line is in middle of spam."));
+        assertTrue(SpamSquelcher.lineIsSpam(SpamSquelcher.endOfSpam));
     }
 }
