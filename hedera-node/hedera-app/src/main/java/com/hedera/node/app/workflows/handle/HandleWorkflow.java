@@ -357,13 +357,8 @@ public class HandleWorkflow {
 
             // Log start of user transaction to transaction state log
             logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(
-                    preHandleResult.payer(),
-                    preHandleResult.payerKey(),
-                    preHandleResult.status(),
-                    preHandleResult.responseCode());
-            logStartUserTransactionPreHandleResultP3(
-                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.getVerificationResults());
+            logStartUserTransactionPreHandleResultP2(preHandleResult);
+            logStartUserTransactionPreHandleResultP3(preHandleResult);
 
             // Initialize record builder list
             recordBuilder
