@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.gas;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging.ONE_HBAR_IN_TINYBARS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MAX_GAS_ALLOWANCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK_GAS_PRICE;
@@ -377,11 +378,41 @@ class CustomGasChargingTest {
         verify(worldUpdater).collectFee(RELAYER_ID, relayerGasCost);
     }
 
+    @Test
+    void chargeGasForAbortedTransaction() {
+        givenWellKnownIntrinsicGasCost();
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(sender);
+        given(sender.getBalance()).willReturn(Wei.of(100_000_000));
+        subject.chargeGasForAbortedTransaction(
+                SENDER_ID,
+                wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                wellKnownHapiCall());
+        verify(worldUpdater).collectFee(SENDER_ID, Math.multiplyExact(NETWORK_GAS_PRICE, TestHelpers.INTRINSIC_GAS));
+    }
+
+    @Test
+    void chargeGasForAbortedTransactionChargesMax() {
+        givenExcessiveIntrinsicGasCost(false);
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(sender);
+        given(sender.getBalance()).willReturn(Wei.of(100_000_000));
+        subject.chargeGasForAbortedTransaction(
+                SENDER_ID,
+                wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                wellKnownHapiCall());
+        verify(worldUpdater).collectFee(SENDER_ID, ONE_HBAR_IN_TINYBARS);
+    }
+
     private void givenWellKnownIntrinsicGasCost() {
         givenWellKnownIntrinsicGasCost(false);
     }
 
     private void givenWellKnownIntrinsicGasCost(boolean isCreation) {
         given(gasCalculator.transactionIntrinsicGasCost(any(), eq(isCreation))).willReturn(TestHelpers.INTRINSIC_GAS);
+    }
+
+    private void givenExcessiveIntrinsicGasCost(boolean isCreation) {
+        given(gasCalculator.transactionIntrinsicGasCost(any(), eq(isCreation))).willReturn(100_000_000L);
     }
 }

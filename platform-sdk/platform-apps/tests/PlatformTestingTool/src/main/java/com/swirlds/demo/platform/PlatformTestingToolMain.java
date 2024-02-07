@@ -30,10 +30,10 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 import static java.lang.System.exit;
@@ -69,8 +69,8 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.logging.legacy.payload.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
@@ -169,7 +169,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private TransactionSubmitter submitter;
 
     private static final Counter.Config TRANSACTION_SUBMITTED_CONFIG =
-            new Counter.Config("Debug.info", "tranSub").withDescription("number of transactions submitted to platform");
+            new Counter.Config("Debug:info", "tranSub").withDescription("number of transactions submitted to platform");
     private Counter transactionSubmitted;
 
     private boolean checkedThisIdleInterval = false; // each long idle interval only check once
@@ -238,7 +238,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private SpeedometerMetric vmContractExecutionSpeed;
 
     private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+            new SpeedometerMetric.Config("Debug:info", "tranSubTPS").withDescription("Transaction submitted TPS");
     private SpeedometerMetric transactionSubmitSpeedometer;
 
     private FCMQueryController queryController;

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
@@ -55,15 +54,12 @@ public class CounterAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public CounterAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType);
+        super(adapterType, metric);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Counter.Builder builder = new Counter.Builder()
-                .subsystem(fix(metric.getCategory()))
-                .name(fix(metric.getName()))
-                .help(metric.getDescription())
-                .unit(metric.getUnit())
-                .withoutExemplars();
+
+        final Counter.Builder builder =
+                super.assignCommonValues(new Counter.Builder()).withoutExemplars();
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

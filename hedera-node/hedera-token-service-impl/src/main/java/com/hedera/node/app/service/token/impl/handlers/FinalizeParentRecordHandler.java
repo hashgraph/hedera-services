@@ -19,10 +19,13 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
@@ -68,7 +71,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     }
 
     @Override
-    public void finalizeParentRecord(@NonNull final AccountID payer, @NonNull final FinalizeContext context) {
+    public void finalizeParentRecord(
+            @NonNull final AccountID payer,
+            @NonNull final FinalizeContext context,
+            @NonNull final HederaFunctionality functionality) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -88,7 +94,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
             final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
-            if (!rewardsPaid.isEmpty()) {
+            if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
         }
@@ -106,13 +112,16 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
             throw e;
         }
-        final var tokenChanges =
-                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
+        // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
+        // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
+        final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
+        final var tokenChanges = tokenRelChangesFrom(
+                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
 
         if (nftChanges.isEmpty()) {
-            final var nonFungibleTokenChanges =
-                    tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+            final var nonFungibleTokenChanges = tokenRelChangesFrom(
+                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
             nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
         }
 
@@ -132,7 +141,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
         final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
         if (hasTokenTransferLists) {
-            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges);
+            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges, !isCryptoTransfer);
             final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
             tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
@@ -170,8 +179,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
-            final var childHbarChangesFromRecord = childRecord.transferList();
-            for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
+            final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
+                    ? emptyList()
+                    : childRecord.transferList().accountAmountsOrElse(emptyList());
+            for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {
                     final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);

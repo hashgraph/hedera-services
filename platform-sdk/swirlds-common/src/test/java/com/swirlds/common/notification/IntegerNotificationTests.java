@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.notification.internal.AsyncNotificationEngine;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.common.threading.futures.StandardFuture;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;

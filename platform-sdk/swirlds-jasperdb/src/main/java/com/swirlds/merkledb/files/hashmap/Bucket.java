@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -80,7 +80,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     protected static final FieldDefinition FIELD_BUCKET_INDEX =
             new FieldDefinition("index", FieldType.FIXED32, false, false, false, 1);
     protected static final FieldDefinition FIELD_BUCKET_ENTRIES =
-            new FieldDefinition("entries", FieldType.MESSAGE, true, false, false, 11);
+            new FieldDefinition("entries", FieldType.MESSAGE, true, true, false, 11);
 
     protected static final FieldDefinition FIELD_BUCKETENTRY_HASHCODE =
             new FieldDefinition("hashCode", FieldType.FIXED32, false, false, false, 1);
@@ -91,7 +91,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     /** Size of FIELD_BUCKET_INDEX, in bytes. */
     private static final int METADATA_SIZE =
-            ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG) + Integer.BYTES;
+            ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
 
     /** Key serializer */
     protected final KeySerializer<K> keySerializer;
@@ -125,16 +125,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     protected Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
         this.keySerializer = keySerializer;
         this.bucketPool = bucketPool;
+        this.bucketData = BufferedData.allocate(METADATA_SIZE);
         clear();
     }
 
     private void setSize(final int size) {
-        if ((bucketData == null) || bucketData.capacity() < size) {
+        if (bucketData.capacity() < size) {
             final BufferedData newData = BufferedData.allocate(size);
-            if (bucketData != null) {
-                bucketData.resetPosition();
-                newData.writeBytes(bucketData);
-            }
+            bucketData.resetPosition();
+            newData.writeBytes(bucketData);
             bucketData = newData;
         }
         bucketData.resetPosition();
@@ -227,13 +226,32 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
-    public void putValue(final K key, final long value) {
+    public final void putValue(final K key, final long value) {
+        putValue(key, INVALID_VALUE, value);
+    }
+
+    /**
+     * Optionally check the current value, and if it matches the given value, then put a
+     * key/value entry into this bucket. If the existing value check is requested, but there
+     * is no existing value for the key, the value is not added.
+     *
+     * @param key the entry key
+     * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
+     *                 {@code checkOldValue} is false, this old value is ignored
+     * @param value the entry value, this can also be special
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
+     */
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         final FindResult result = findEntry(keyHashCode, key);
-        if (value == SPECIAL_DELETE_ME_VALUE) {
+        if (value == INVALID_VALUE) {
             if (result.found()) {
+                if (needCheckOldValue && (oldValue != result.entryValue)) {
+                    return;
+                }
                 final long nextEntryOffset = result.entryOffset() + result.entrySize();
                 final long remainderSize = bucketData.length() - nextEntryOffset;
                 if (remainderSize > 0) {
@@ -241,8 +259,14 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
                     bucketData.position(result.entryOffset());
                     bucketData.writeBytes(remainder);
                 }
+                if (bucketIndexFieldOffset > result.entryOffset()) {
+                    // It should not happen with default implementation, but if buckets are serialized
+                    // using 3rd-party tools, field order may be arbitrary, and "bucket index" field
+                    // may be after the deleted entry
+                    bucketIndexFieldOffset -= result.entrySize();
+                }
                 bucketData.position(0); // limit() doesn't work if the new limit is less than the current pos
-                bucketData.limit(result.entryOffset + remainderSize);
+                bucketData.limit(result.entryOffset() + remainderSize);
                 entryCount--;
             } else {
                 // entry not found, nothing to delete
@@ -251,10 +275,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         }
         if (result.found()) {
             // yay! we found it, so update value
+            if (needCheckOldValue && (oldValue != result.entryValue)) {
+                return;
+            }
             bucketData.position(result.entryValueOffset());
             bucketData.writeLong(value);
-            return;
         } else {
+            if (needCheckOldValue) {
+                return;
+            }
             // add a new entry
             writeNewEntry(keyHashCode, value, key);
             checkLargestBucket(++entryCount);
@@ -262,7 +291,6 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     }
 
     private void writeNewEntry(final int hashCode, final long value, final K key) {
-        findEntry(hashCode, key);
         final long entryOffset = bucketData.limit();
         final int keySize = keySerializer.getSerializedSize(key);
         final int entrySize =

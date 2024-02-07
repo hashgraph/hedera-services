@@ -25,7 +25,7 @@ description = "Hedera API"
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "use-ContractID-in-SlotKey"
+    branchOrTag = "add-pbj-types-for-state"
     // As long as the 'branchOrTag' above is not stable, run always:
     outputs.upToDateWhen { false }
 }

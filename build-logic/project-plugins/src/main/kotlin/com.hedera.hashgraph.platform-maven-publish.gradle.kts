@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+import org.gradle.kotlin.dsl.support.serviceOf
+
 plugins {
     id("java")
     id("com.hedera.hashgraph.maven-publish")
 }
 
 @Suppress("UnstableApiUsage")
-if (!gradle.startParameter.isConfigurationCacheRequested) {
+if (!serviceOf<BuildFeatures>().configurationCache.active.get()) {
     // plugin to support 'artifactregistry' repositories that currently only works without
     // configuration cache
     // https://github.com/GoogleCloudPlatform/artifact-registry-maven-tools/issues/85

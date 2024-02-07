@@ -23,6 +23,15 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Contains configuration values for the platform schedulers.
  *
+ * @param defaultPoolMultiplier                             used when calculating the size of the default platform fork
+ *                                                          join pool. Maximum parallelism in this pool is calculated as
+ *                                                          max(1, (defaultPoolMultipler * [number of processors] +
+ *                                                          defaultPoolConstant)).
+ * @param defaultPoolConstant                               used when calculating the size of the default platform fork
+ *                                                          join pool. Maximum parallelism in this pool is calculated as
+ *                                                          max(1, (defaultPoolMultipler * [number of processors] +
+ *                                                          defaultPoolConstant)). It is legal for this constant to be a
+ *                                                          negative number.
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
  * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
@@ -69,9 +78,19 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          collector
  * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
  * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
+ * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
+ * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
+ *                                                          handler
+ * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
+ * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
+ *                                                          buffer
+ * @param issDetectorSchedulerType                          the ISS detector scheduler type
+ * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
+        @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
+        @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
         @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
@@ -102,4 +121,10 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
         @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
-        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
+        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
+        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
+        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity) {}

@@ -146,6 +146,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -163,13 +164,40 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallLocal(
-                                FREEZE_CONTRACT,
-                                IS_FROZEN_FUNC,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get())))))
-                .then();
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallLocal(
+                                        FREEZE_CONTRACT,
+                                        IS_FROZEN_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get()))))
+                        //                ,contractCall(
+                        //                        FREEZE_CONTRACT,
+                        //                                IS_FROZEN_FUNC,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(GENESIS)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .via("fakeAddressIsFrozen")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+
+                        )
+                .then(
+                        //                        withOpContext(((spec, assertLog) -> allRunFor(
+                        //                                spec,
+                        //                                childRecordsCheck(
+                        //                                        "fakeAddressIsFrozen",
+                        //                                        CONTRACT_REVERT_EXECUTED,
+                        //                                        recordWith()
+                        //                                                .status(INVALID_TOKEN_ID)
+                        //                                                .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_IS_FROZEN)
+                        //                                                                .withStatus(INVALID_TOKEN_ID)
+                        //                                                                .withIsFrozen(false)))))))
+                        );
     }
 }

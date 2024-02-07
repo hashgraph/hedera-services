@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -181,23 +181,6 @@ class HalfDiskHashMapTest {
         checkData(testType, map, 0, 200, 1);
         checkData(testType, map, 200, 400, 2);
         checkData(testType, map, 600, 400, 1);
-    }
-
-    @Test
-    void testPrints() throws IOException {
-        final FilesTestType testType = FilesTestType.fixed;
-        // create map
-        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000);
-        // create some data
-        map.startWriting();
-        for (int i = 100; i < 300; i++) {
-            map.put(testType.createVirtualLongKey(i), i);
-        }
-        // print debug
-        map.debugDumpTransactionCache();
-        map.debugDumpTransactionCacheCondensed();
-        // end
-        map.endWriting();
     }
 
     @Test
