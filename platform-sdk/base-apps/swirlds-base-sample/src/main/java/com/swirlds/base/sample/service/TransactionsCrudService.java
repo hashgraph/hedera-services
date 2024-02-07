@@ -30,12 +30,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-public class TransactionsService extends Service<Transaction> {
+/**
+ * Controls transactions operations
+ */
+public class TransactionsCrudService extends CrudService<Transaction> {
     private final @NonNull TransactionDao transactionDao;
     private final @NonNull BalanceDao balanceDao;
     private final @NonNull PlatformContext context;
 
-    public TransactionsService(@NonNull final PlatformContext context) {
+    public TransactionsCrudService(@NonNull final PlatformContext context) {
         super(Transaction.class);
         this.context = Objects.requireNonNull(context, "transaction cannot be null");
         this.transactionDao = TransactionDao.getInstance();
@@ -88,12 +91,6 @@ public class TransactionsService extends Service<Transaction> {
                 UUID.randomUUID().toString(), transaction.from(), transaction.to(), transaction.amount()));
         context.getMetrics().getOrCreate(ApplicationMetrics.TRANSACTION_COUNT).increment();
         return save;
-    }
-
-    @NonNull
-    @Override
-    public Transaction retrieve(@NonNull final String key) {
-        return super.retrieve(key);
     }
 
     @NonNull

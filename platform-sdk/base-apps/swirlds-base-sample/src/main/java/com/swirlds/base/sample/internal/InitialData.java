@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.sample.service;
+package com.swirlds.base.sample.internal;
 
 import com.swirlds.base.sample.domain.Balance;
+import com.swirlds.base.sample.domain.Wallet;
 import com.swirlds.base.sample.persistence.BalanceDao;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.base.sample.persistence.Version;
+import com.swirlds.base.sample.persistence.WalletDao;
+import java.math.BigDecimal;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class BalanceService extends Service<Balance> {
-    private final BalanceDao dao;
+public class InitialData {
 
-    public BalanceService() {
-        super(Balance.class);
-        this.dao = BalanceDao.getInstance();
-    }
+    private static final Logger log = LogManager.getLogger(InitialData.class);
 
-    @NonNull
-    @Override
-    public Balance retrieve(@NonNull final String key) {
-        return dao.findById(key);
+    /**
+     * Populates seed data
+     */
+    public static void populate() {
+        WalletDao.getInstance().save(new Wallet("0"));
+        BalanceDao.getInstance().save(new Balance(new Wallet("0"), BigDecimal.valueOf(Long.MAX_VALUE), new Version(0)));
+        log.debug("Seed data added");
     }
 }

@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * in-memory simple data layer for Transactions
+ */
 public class TransactionDao {
 
     private static class InstanceHolder {
@@ -35,7 +38,7 @@ public class TransactionDao {
 
     private static final Map<String, Map<String, Transaction>> TRANSACTION_REPOSITORY = new ConcurrentHashMap<>();
 
-    public Transaction save(final @NonNull Transaction transaction) {
+    public @NonNull Transaction save(final @NonNull Transaction transaction) {
         TRANSACTION_REPOSITORY.computeIfPresent(transaction.from(), (a, b) -> {
             if (b.containsKey(transaction.id())) {
                 throw new IllegalArgumentException("Non modifiable resource");
@@ -50,7 +53,7 @@ public class TransactionDao {
         return transaction;
     }
 
-    public List<Transaction> findByWalletId(final @NonNull String id) {
+    public @NonNull List<Transaction> findByWalletId(final @NonNull String id) {
         return TRANSACTION_REPOSITORY.getOrDefault(id, ImmutableMap.of()).values().stream()
                 .toList();
     }

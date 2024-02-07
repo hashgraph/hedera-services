@@ -30,13 +30,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-public class WalletsService extends Service<Wallet> {
+/**
+ * Controls wallets operations
+ */
+public class WalletsCrudService extends CrudService<Wallet> {
 
     private final @NonNull WalletDao dao;
     private final @NonNull BalanceDao balanceDao;
     private final @NonNull PlatformContext context;
 
-    public WalletsService(final @NonNull PlatformContext context) {
+    public WalletsCrudService(final @NonNull PlatformContext context) {
         super(Wallet.class);
         this.context = Objects.requireNonNull(context, "transaction cannot be null");
         this.dao = WalletDao.getInstance();

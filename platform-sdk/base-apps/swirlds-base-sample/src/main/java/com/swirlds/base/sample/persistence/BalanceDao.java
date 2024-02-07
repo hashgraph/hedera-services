@@ -18,9 +18,13 @@ package com.swirlds.base.sample.persistence;
 
 import com.swirlds.base.sample.domain.Balance;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * in-memory simple data layer for Balance
+ */
 public class BalanceDao {
 
     private static class InstanceHolder {
@@ -33,7 +37,7 @@ public class BalanceDao {
 
     private static final Map<String, Balance> BALANCE_REPOSITORY = new ConcurrentHashMap<>();
 
-    public Balance save(final @NonNull Balance balance) {
+    public @NonNull Balance save(final @NonNull Balance balance) {
         BALANCE_REPOSITORY.computeIfPresent(balance.wallet().address(), (k, b) -> {
             final Version version = b.version().checkAgainst(balance.version());
             return new Balance(b.wallet(), balance.amount(), version);
@@ -42,7 +46,7 @@ public class BalanceDao {
         return balance;
     }
 
-    public Balance findById(final @NonNull String id) {
+    public @Nullable Balance findById(final @NonNull String id) {
         return BALANCE_REPOSITORY.get(id);
     }
 }

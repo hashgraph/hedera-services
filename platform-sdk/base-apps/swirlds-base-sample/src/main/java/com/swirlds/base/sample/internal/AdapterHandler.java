@@ -19,7 +19,7 @@ package com.swirlds.base.sample.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
-import com.swirlds.base.sample.service.Service;
+import com.swirlds.base.sample.service.CrudService;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,11 +38,12 @@ import org.apache.logging.log4j.Logger;
 public class AdapterHandler<T> implements HttpHandler {
     private static final Logger log = LogManager.getLogger(AdapterHandler.class);
     private final PlatformContext context;
-    private final Service<T> delegatedService;
+    private final CrudService<T> delegatedService;
     private final String path;
     private final CountPerSecond tps;
 
-    protected AdapterHandler(final @NonNull PlatformContext context, Service<T> delegatedService, final String path) {
+    protected AdapterHandler(
+            final @NonNull PlatformContext context, CrudService<T> delegatedService, final String path) {
         this.context = Objects.requireNonNull(context);
         this.path = Objects.requireNonNull(path);
         this.delegatedService = Objects.requireNonNull(delegatedService);
@@ -56,7 +57,7 @@ public class AdapterHandler<T> implements HttpHandler {
      * @throws NullPointerException if exchange is {@code null}
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) {
+    public void handleRequest(final @NonNull HttpServerExchange exchange) {
         String requestMethod = exchange.getRequestMethod().toString();
         long start = System.nanoTime();
         context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_COUNT).increment();
@@ -166,7 +167,7 @@ public class AdapterHandler<T> implements HttpHandler {
         pathHandler.addPrefixPath(path, this);
     }
 
-    private static void handleOptionsRequest(HttpServerExchange exchange) {
+    private static void handleOptionsRequest(@NonNull final HttpServerExchange exchange) {
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
         exchange.getResponseHeaders()
                 .put(new HttpString("Access-Control-Allow-Methods"), "GET, POST, PUT, DELETE, OPTIONS");

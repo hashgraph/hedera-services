@@ -17,9 +17,9 @@
 package com.swirlds.base.sample.internal;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
-import com.swirlds.base.sample.service.BalanceService;
-import com.swirlds.base.sample.service.TransactionsService;
-import com.swirlds.base.sample.service.WalletsService;
+import com.swirlds.base.sample.service.BalanceCrudService;
+import com.swirlds.base.sample.service.TransactionsCrudService;
+import com.swirlds.base.sample.service.WalletsCrudService;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.undertow.Undertow;
@@ -28,8 +28,12 @@ import io.undertow.server.handlers.PathHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Http Server manager utils
+ */
 public class ServerUtils {
     private static final Logger log = LogManager.getLogger(ServerUtils.class);
+    private static final String HOST = "localhost";
 
     /**
      * Creates and starts a Http server with a set of defined handlers
@@ -39,17 +43,20 @@ public class ServerUtils {
         // Create a path handler to associate handlers with different paths
         PathHandler pathHandler = new PathHandler();
 
-        new AdapterHandler<>(swirldsContext, new BalanceService(), config.apiBasePath() + "/balances")
+        new AdapterHandler<>(swirldsContext, new BalanceCrudService(), config.apiBasePath() + "/balances")
                 .into(pathHandler);
         new AdapterHandler<>(
-                        swirldsContext, new TransactionsService(swirldsContext), config.apiBasePath() + "/transactions")
+                        swirldsContext,
+                        new TransactionsCrudService(swirldsContext),
+                        config.apiBasePath() + "/transactions")
                 .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new WalletsService(swirldsContext), config.apiBasePath() + "/wallets")
+        new AdapterHandler<>(swirldsContext, new WalletsCrudService(swirldsContext), config.apiBasePath() + "/wallets")
                 .into(pathHandler);
 
         // Create the Undertow server with the path handler and bind it to port
         Undertow server = Undertow.builder()
-                .addHttpListener(config.port(), "localhost")
+                .addHttpListener(config.port(), HOST)
+                // Blocking adapter
                 .setHandler(new BlockingHandler(pathHandler))
                 .build();
 
@@ -68,6 +75,6 @@ public class ServerUtils {
                     + "|___/\\__,_|_| |_| |_| .__/|_|\\___(_) ");
         }
         log.info("Server started on port {}", config.port());
-        log.debug("registered paths {}", pathHandler);
+        log.debug("All registered paths {}", pathHandler);
     }
 }

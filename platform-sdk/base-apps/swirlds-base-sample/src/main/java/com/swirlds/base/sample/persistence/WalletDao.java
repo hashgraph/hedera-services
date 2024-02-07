@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * in-memory simple data layer for Transactions
+ */
 public class WalletDao {
 
     private static class InstanceHolder {

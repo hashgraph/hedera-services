@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Util class for Serializations and deserialization purposes
+ * Utility class for transforming information
  */
 public class DataTransferUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -79,7 +79,8 @@ public class DataTransferUtils {
     }
 
     /**
-     * Deserializes a json string {@code json} into an object instance of type {@code type} from a {@code HttpServerExchange}
+     * Deserializes a json string {@code json} into an object instance of type {@code type} from a
+     * {@code HttpServerExchange}
      */
     public static <T> @Nullable T deserializeJsonFromExchange(
             final @NonNull HttpServerExchange exchange, final @NonNull Class<T> clazz) {
@@ -99,6 +100,8 @@ public class DataTransferUtils {
     }
 
     /**
+     * Separate the requestUri into a list of components.
+     *
      * @param exchange Http exchange
      * @return the path components of the URL
      */
@@ -107,6 +110,8 @@ public class DataTransferUtils {
     }
 
     /**
+     * Separate the path into a list of components.
+     *
      * @param path the url
      * @return the path components of the URL
      */
@@ -125,10 +130,16 @@ public class DataTransferUtils {
         return paths;
     }
 
-    public static @NonNull Map<String, String> getUrlParams(final @NonNull String input) {
-        int lastIndex = input.lastIndexOf("?");
-        if (lastIndex >= 0 && lastIndex < input.length() - 1) {
-            return Arrays.stream(input.substring(lastIndex + 1).split("&"))
+    /**
+     * It does not convert lists into List objects.
+     *
+     * @param url the url to get the parameters from
+     * @return all parameters after ? in a map.
+     */
+    public static @NonNull Map<String, String> getUrlParams(final @NonNull String url) {
+        int lastIndex = url.lastIndexOf("?");
+        if (lastIndex >= 0 && lastIndex < url.length() - 1) {
+            return Arrays.stream(url.substring(lastIndex + 1).split("&"))
                     .map(v -> v.split("="))
                     .filter(v -> v.length == 2)
                     .collect(Collectors.toMap(v -> v[0], v -> v[1]));

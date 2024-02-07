@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.sample.internal;
+package com.swirlds.base.sample.service;
 
 import com.swirlds.base.sample.domain.Balance;
-import com.swirlds.base.sample.domain.Wallet;
 import com.swirlds.base.sample.persistence.BalanceDao;
-import com.swirlds.base.sample.persistence.Version;
-import com.swirlds.base.sample.persistence.WalletDao;
-import java.math.BigDecimal;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class InternalTestData {
+/**
+ * Controls balance operations
+ */
+public class BalanceCrudService extends CrudService<Balance> {
+    private final BalanceDao dao;
 
-    private static final Logger log = LogManager.getLogger(InternalTestData.class);
+    public BalanceCrudService() {
+        super(Balance.class);
+        this.dao = BalanceDao.getInstance();
+    }
 
-    public static void create() {
-        WalletDao.getInstance().save(new Wallet("0"));
-        BalanceDao.getInstance().save(new Balance(new Wallet("0"), BigDecimal.valueOf(Long.MAX_VALUE), new Version(0)));
-        log.debug("Created internal test data");
+    @NonNull
+    @Override
+    public Balance retrieve(@NonNull final String key) {
+        return dao.findById(key);
     }
 }

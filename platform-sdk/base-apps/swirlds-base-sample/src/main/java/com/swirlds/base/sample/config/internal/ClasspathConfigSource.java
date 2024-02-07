@@ -33,7 +33,7 @@ import java.util.Properties;
  * A {@link ConfigSource} that can read files in the application classpath.
  */
 public class ClasspathConfigSource extends AbstractConfigSource {
-    private final Map<String, String> internalProperties;
+    private final @NonNull Map<String, String> internalProperties;
 
     public ClasspathConfigSource(final @NonNull Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath can not be null");
@@ -62,7 +62,7 @@ public class ClasspathConfigSource extends AbstractConfigSource {
     }
 
     @Override
-    protected Map<String, String> getInternalProperties() {
+    protected @NonNull Map<String, String> getInternalProperties() {
         return internalProperties;
     }
 }

@@ -21,11 +21,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 
-public class Service<T> {
+/**
+ * A service that supports crud operations for {@code <T>}
+ * @param <T>
+ */
+public class CrudService<T> {
 
     private final Class<T> resultType;
 
-    public Service(@NonNull final Class<T> resultType) {
+    public CrudService(@NonNull final Class<T> resultType) {
         this.resultType = resultType;
     }
 

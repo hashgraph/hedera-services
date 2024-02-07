@@ -18,7 +18,7 @@ package com.swirlds.base.sample;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
 import com.swirlds.base.sample.config.internal.ClasspathConfigSource;
-import com.swirlds.base.sample.internal.InternalTestData;
+import com.swirlds.base.sample.internal.InitialData;
 import com.swirlds.base.sample.internal.ServerUtils;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.metrics.BenchmarkMetrics;
@@ -73,7 +73,7 @@ public class Application {
             metricsProvider.start();
 
             final BaseApiConfig baseApiConfig = context.getConfiguration().getConfigData(BaseApiConfig.class);
-            InternalTestData.create();
+            InitialData.populate();
             ServerUtils.createServer(baseApiConfig, context);
 
             log.trace("Loaded configuration {}", baseApiConfig);
