@@ -26,6 +26,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -53,20 +54,6 @@ public class SerializationTests {
     }
 
     static Stream<Arguments> selfSerializableProvider() {
-        return Stream.of(arguments(
-                RandomEventUtils.randomEventHashedData(
-                        68164523688792345L,
-                        new NodeId(0),
-                        RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
-                        TransactionUtils.randomSwirldTransactions(1234321, 10),
-                        null,
-                        null),
-                RandomEventUtils.randomEventHashedData(
-                        68164523688792345L,
-                        new NodeId(0),
-                        RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
-                        null,
-                        null,
-                        null)));
+        return Stream.of(arguments(GossipEventBuilder.builder().buildGossipEvent().getHashedData()));
     }
 }

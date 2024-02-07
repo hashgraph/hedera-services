@@ -28,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import com.swirlds.platform.test.utils.EqualsVerifier;
@@ -51,9 +52,7 @@ class GossipEventTest {
     @Test
     @DisplayName("Serialize and deserialize event")
     void serializeDeserialize() throws IOException, ConstructableRegistryException {
-        final IndexedEvent indexedEvent = RandomEventUtils.randomEvent(new Random(), new NodeId(0), null, null);
-        final GossipEvent gossipEvent =
-                new GossipEvent(indexedEvent.getBaseEventHashedData(), indexedEvent.getBaseEventUnhashedData());
+        final GossipEvent gossipEvent = GossipEventBuilder.builder().buildGossipEvent();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final GossipEvent copy = SerializationUtils.serializeDeserialize(gossipEvent);
         assertEquals(gossipEvent, copy, "deserialized version should be the same");
