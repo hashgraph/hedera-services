@@ -20,4 +20,8 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("baseapi")
-public record BaseApiConfig(int port, String apiBasePath, @ConfigProperty(defaultValue = "true") boolean banner) {}
+public record BaseApiConfig(
+        @ConfigProperty(defaultValue = "localhost") String host,
+        int port,
+        String apiBasePath,
+        @ConfigProperty(defaultValue = "true") boolean banner) {}

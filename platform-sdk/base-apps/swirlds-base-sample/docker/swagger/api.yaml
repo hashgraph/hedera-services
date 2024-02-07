@@ -4,7 +4,7 @@ info:
   description: testing API for Platform Base frameworks
   version: 1.0.0
 servers:
-  - url: 'http://sample/swirlds/api/'
+  - url: 'http://localhost:8080/swirlds/api/'
 paths:
   /wallets:
     post:

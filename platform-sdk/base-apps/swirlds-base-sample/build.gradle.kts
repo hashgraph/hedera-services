@@ -30,7 +30,7 @@ tasks.withType<JavaExec> {
 val copyLib =
     tasks.register<Copy>("copyDockerLib") {
         from(project.configurations.runtimeClasspath)
-        into( "${buildDir}/external/libs")
+        into("${buildDir}/external/libs")
     }
 
 val copyApp =
@@ -38,7 +38,7 @@ val copyApp =
         inputs.property("projectName", project.name)
 
         from(tasks.jar)
-        into( "${buildDir}/external/app")
+        into("${buildDir}/external/app")
         rename { "app.jar" }
     }
 

@@ -82,10 +82,9 @@ public class Application {
             metricsProvider.start();
 
             final BaseApiConfig baseApiConfig = context.getConfiguration().getConfigData(BaseApiConfig.class);
+            log.trace("Loaded configuration {}", baseApiConfig);
             InitialData.populate();
             ServerUtils.createServer(baseApiConfig, context);
-
-            log.trace("Loaded configuration {}", baseApiConfig);
 
         } catch (Exception e) {
             log.error("Error starting up", e);

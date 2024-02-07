@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class ServerUtils {
     private static final Logger log = LogManager.getLogger(ServerUtils.class);
-    private static final String HOST = "localhost";
 
     /**
      * Creates and starts a Http server with a set of defined handlers
@@ -55,7 +54,7 @@ public class ServerUtils {
 
         // Create the Undertow server with the path handler and bind it to port
         Undertow server = Undertow.builder()
-                .addHttpListener(config.port(), HOST)
+                .addHttpListener(config.port(), config.host())
                 // Blocking adapter
                 .setHandler(new BlockingHandler(pathHandler))
                 .build();
@@ -69,12 +68,12 @@ public class ServerUtils {
                     + "/ __\\ \\ /\\ / / | '__| |/ _` / __|_____| '_ \\ / _` / __|/ _ \\\n"
                     + "\\__ \\\\ V  V /| | |  | | (_| \\__ \\_____| |_) | (_| \\__ \\  __/\n"
                     + "|___/ \\_/\\_/ |_|_|  |_|\\__,_|___/ _   |_.__/ \\__,_|___/\\___|\n"
-                    + " ___  __ _ _ __ ___  _ __ | | ___| |                        \n"
+                    + " ___  __ _ _ __ ___  _ __ | | ___| |           q             \n"
                     + "/ __|/ _` | '_ ` _ \\| '_ \\| |/ _ \\ |                        \n"
                     + "\\__ \\ (_| | | | | | | |_) | |  __/_|                        \n"
                     + "|___/\\__,_|_| |_| |_| .__/|_|\\___(_) ");
         }
-        log.info("Server started on port {}", config.port());
+        log.info("Server started on {}:{}", config.host(), config.port());
         log.debug("All registered paths {}", pathHandler);
     }
 }

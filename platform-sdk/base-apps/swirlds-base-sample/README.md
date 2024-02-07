@@ -51,12 +51,12 @@ The best way to run the application is through docker-compose:
 2. inside `./docker` folder run `docker-compose up`
 3. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8000/`.
 4. Monitor metrics using the Prometheus server running on `http://localhost:8001/`.
-5. Visualize metrics using Grafana on `http://localhost:8002/`. 
+5. Visualize metrics using Grafana on `http://localhost:8002/`.
  user:admin password:admin
  There is a dashboard automatically included under explore.
  First time logging will require to change admin password.
 6. Example Http requests have been included in `./http-requests`.
-7. Rest api would be running on port 8080. 
+7. Rest api would be running on port 8080.
 
 
 ## To Be Included
