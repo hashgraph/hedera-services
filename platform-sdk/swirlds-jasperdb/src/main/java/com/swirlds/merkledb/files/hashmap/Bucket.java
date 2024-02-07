@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -226,13 +226,32 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
-    public void putValue(final K key, final long value) {
+    public final void putValue(final K key, final long value) {
+        putValue(key, INVALID_VALUE, value);
+    }
+
+    /**
+     * Optionally check the current value, and if it matches the given value, then put a
+     * key/value entry into this bucket. If the existing value check is requested, but there
+     * is no existing value for the key, the value is not added.
+     *
+     * @param key the entry key
+     * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
+     *                 {@code checkOldValue} is false, this old value is ignored
+     * @param value the entry value, this can also be special
+     *     HalfDiskHashMap.INVALID_VALUE to mean delete
+     */
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         final FindResult result = findEntry(keyHashCode, key);
-        if (value == SPECIAL_DELETE_ME_VALUE) {
+        if (value == INVALID_VALUE) {
             if (result.found()) {
+                if (needCheckOldValue && (oldValue != result.entryValue)) {
+                    return;
+                }
                 final long nextEntryOffset = result.entryOffset() + result.entrySize();
                 final long remainderSize = bucketData.length() - nextEntryOffset;
                 if (remainderSize > 0) {
@@ -256,10 +275,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         }
         if (result.found()) {
             // yay! we found it, so update value
+            if (needCheckOldValue && (oldValue != result.entryValue)) {
+                return;
+            }
             bucketData.position(result.entryValueOffset());
             bucketData.writeLong(value);
-            return;
         } else {
+            if (needCheckOldValue) {
+                return;
+            }
             // add a new entry
             writeNewEntry(keyHashCode, value, key);
             checkLargestBucket(++entryCount);

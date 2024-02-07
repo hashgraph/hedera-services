@@ -126,8 +126,13 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         if (isViewCall) {
             contractCallBodyBuilder.gas(1L);
         }
+        final var parentTxBody = context.body();
         var transactionBody = TransactionBody.newBuilder()
+                .nodeAccountID(parentTxBody.nodeAccountID())
                 .transactionID(TransactionID.DEFAULT)
+                .transactionFee(parentTxBody.transactionFee())
+                .transactionValidDuration(parentTxBody.transactionValidDuration())
+                .memo(parentTxBody.memo())
                 .contractCall(contractCallBodyBuilder.build())
                 .build();
         return transactionWith(transactionBody);

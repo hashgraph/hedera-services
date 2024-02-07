@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -59,6 +60,11 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final boolean isKyc = ledgers.isKyc(accountId, tokenId);
         return evmEncoder.encodeIsKyc(isKyc);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeIsKyc(status, false);
     }
 
     public static GrantRevokeKycWrapper<TokenID, AccountID> decodeIsKyc(

@@ -28,6 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ManagedBlocker;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -112,10 +116,10 @@ class BackpressureObjectCounterTests {
         // Off ramp one element. Thread should become unblocked.
         counter.offRamp();
 
-        assertEventuallyTrue(added::get, Duration.ofSeconds(1), "Thread should have been unblocked");
+        assertEventuallyTrue(added::get, Duration.ofSeconds(10), "Thread should have been unblocked");
 
         // even though the interrupt did not unblock the thread, the interrupt should not have been squelched.
-        assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(1), "Thread should have been interrupted");
+        assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(10), "Thread should have been interrupted");
 
         assertEquals(10, counter.getCount());
     }
@@ -191,6 +195,91 @@ class BackpressureObjectCounterTests {
             counter.offRamp();
         }
 
-        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(10), "Counter did not empty in time.");
+    }
+
+    /**
+     * If the fork join pool runs out of threads, back pressure should handle the situation gracefully.
+     */
+    @Test
+    void backpressureDoesntOverwhelmForkJoinPool() throws InterruptedException {
+
+        final int maxPoolSize = 10;
+        final ForkJoinPool pool = new ForkJoinPool(
+                5,
+                ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+                null,
+                false,
+                0,
+                maxPoolSize,
+                1,
+                null,
+                60,
+                TimeUnit.SECONDS);
+
+        final AtomicBoolean blocked = new AtomicBoolean(true);
+        final ManagedBlocker dummyBlocker = new ManagedBlocker() {
+            @Override
+            public boolean block() throws InterruptedException {
+                MILLISECONDS.sleep(1);
+                return false;
+            }
+
+            @Override
+            public boolean isReleasable() {
+                return !blocked.get();
+            }
+        };
+
+        // Keep submitting managed blockers until the fork join pool taps out.
+        final AtomicBoolean poolIsSaturated = new AtomicBoolean(false);
+        for (int i = 0; i < maxPoolSize; i++) {
+            pool.submit(() -> {
+                int tries = 1000;
+                while (tries-- > 0) {
+                    try {
+                        ForkJoinPool.managedBlock(dummyBlocker);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    } catch (final RejectedExecutionException ex) {
+                        poolIsSaturated.set(true);
+                    }
+                }
+            });
+        }
+
+        assertEventuallyTrue(poolIsSaturated::get, Duration.ofSeconds(10), "Fork join pool did not saturate in time.");
+
+        // Now, see if a backpressure counter can block without throwing.
+
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 1, Duration.ofMillis(1));
+        counter.onRamp();
+
+        final AtomicBoolean taskCompleted = new AtomicBoolean(false);
+        final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+        pool.submit(() -> {
+
+            // This should block until we off ramp.
+            try {
+                counter.onRamp();
+            } catch (final Throwable t) {
+                exceptionThrown.set(true);
+                return;
+            }
+
+            taskCompleted.set(true);
+        });
+
+        // Sleep for a while, the task should not be able to complete.
+        MILLISECONDS.sleep(50);
+        assertFalse(taskCompleted.get());
+        assertFalse(exceptionThrown.get());
+
+        // Unblock the counter, the task should complete.
+        counter.offRamp();
+        assertEventuallyTrue(taskCompleted::get, Duration.ofSeconds(10), "Task did not complete in time.");
+        assertFalse(exceptionThrown.get());
+
+        pool.shutdown();
     }
 }

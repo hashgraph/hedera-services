@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
@@ -126,18 +126,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     /**
-     * Put a key/value entry into this bucket.
-     *
-     * @param key the entry key
-     * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     * {@inheritDoc}
      */
-    public void putValue(final K key, final long value) {
+    @Override
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         try {
             final int entryIndex = findEntryIndex(keyHashCode, key);
-            if (value == SPECIAL_DELETE_ME_VALUE) {
-                if (entryIndex >= 0) {
+            if (value == INVALID_VALUE) {
+                if (entryIndex >= 0) { // if found
+                    final BucketEntry entry = entries.get(entryIndex);
+                    if (needCheckOldValue && (oldValue != entry.getValue())) {
+                        return;
+                    }
                     entries.remove(entryIndex);
                 } else {
                     // entry not found, nothing to delete
@@ -147,13 +149,18 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             if (entryIndex >= 0) {
                 // yay! we found it, so update value
                 final BucketEntry entry = entries.get(entryIndex);
+                if (needCheckOldValue && (oldValue != entry.getValue())) {
+                    return;
+                }
                 entry.setValue(value);
-                return;
+            } else {
+                if (needCheckOldValue) {
+                    return;
+                }
+                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
+                entries.add(newEntry);
+                checkLargestBucket(entries.size());
             }
-            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
-            entries.add(newEntry);
-
-            checkLargestBucket(entries.size());
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);

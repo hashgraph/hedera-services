@@ -64,7 +64,7 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var maybeSnapshot = SnapshotModeOp.maybeLoadSnapshotFor(spec);
-        if (maybeSnapshot.isPresent()) {
+        if (maybeSnapshot.isPresent() && !spec.setup().overrideExistingSnapshot()) {
             final var snapshotMode = (autoMatchSource == MONO_SERVICE)
                     ? SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS
                     : SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;

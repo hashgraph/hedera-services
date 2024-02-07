@@ -112,7 +112,13 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * Returns the number of tokens in the state.
      * @return the number of tokens in the state.
      */
+    @Override
     public long sizeOfState() {
         return tokenState.size();
+    }
+
+    @Override
+    public void warm(@NonNull final TokenID tokenId) {
+        tokenState.warm(tokenId);
     }
 }
