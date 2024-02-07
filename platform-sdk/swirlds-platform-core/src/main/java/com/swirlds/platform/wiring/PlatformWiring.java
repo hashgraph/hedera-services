@@ -126,7 +126,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final IssDetectorWiring issDetectorWiring;
     private final HashLoggerWiring hashLoggerWiring;
 
-
     private final PlatformCoordinator platformCoordinator;
 
     /**
