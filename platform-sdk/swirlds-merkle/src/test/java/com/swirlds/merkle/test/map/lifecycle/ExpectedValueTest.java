@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.test.map.lifecycle;
 
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import java.util.Random;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

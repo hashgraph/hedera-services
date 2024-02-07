@@ -21,8 +21,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -67,7 +65,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * @param platformContext    the platform context
      * @param threadManager      manages platform thread resources
-     * @param dispatchBuilder    builds dispatchers. This is deprecated, do not wire new things together with this.
      * @param fatalErrorConsumer consumer to invoke when a fatal error has occurred
      * @param stateSigner        signs a state
      * @param sigCollector       collects signatures for a state
@@ -76,7 +73,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Consumer<ReservedSignedState> stateSigner,
             @NonNull final Consumer<ReservedSignedState> sigCollector,
@@ -96,9 +92,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         hashLogger =
                 new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
 
-        final StateHashedTrigger stateHashedTrigger =
-                dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
-        signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
+        signedStateHasher = new SignedStateHasher(signedStateMetrics, fatalErrorConsumer);
     }
 
     private void logHashes(final SignedState signedState) {
