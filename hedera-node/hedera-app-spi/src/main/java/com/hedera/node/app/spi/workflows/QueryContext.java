@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Context of a single query. Contains all query specific information.
  */
-public interface QueryContext extends OperationContext {
+public interface QueryContext {
 
     /**
      * Returns the {@link Query} that is currently being processed.

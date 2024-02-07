@@ -68,7 +68,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         this.worldUpdater = Objects.requireNonNull(worldUpdater);
         this.hederaEvmContext = Objects.requireNonNull(hederaEvmContext);
         this.hevmStaticTransactionFactory = Objects.requireNonNull(hevmStaticTransactionFactory);
-        this.worldUpdater.setupContext(context);
     }
 
     @Override

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
@@ -144,15 +143,5 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public FeeCalculator feeCalculator() {
         return feeCalculator;
-    }
-
-    @Override
-    public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
-        return false;
-    }
-
-    @Override
-    public boolean hasThrottleCapacityForChildTransactions() {
-        return true;
     }
 }
