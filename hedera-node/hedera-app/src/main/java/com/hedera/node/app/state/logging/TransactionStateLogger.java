@@ -18,17 +18,20 @@ package com.hedera.node.app.state.logging;
 
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandler.TRANSACTION_HANDLING_THREAD_NAME;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.system.Round;
@@ -39,7 +42,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -117,50 +119,46 @@ public final class TransactionStateLogger {
             @NonNull final ConsensusTransaction transaction,
             @Nullable final TransactionBody txBody,
             @NonNull final AccountID payer) {
-        logger.debug(
-                "    Starting user transaction {} at platform time {} from payer 0.0.{}",
-                txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
-                transaction.getConsensusTimestamp(),
-                payer.accountNum());
+        if (logger.isDebugEnabled()) {
+            logger.debug(
+                    "    Starting user transaction {} at platform time {} from payer 0.0.{}",
+                    txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
+                    transaction.getConsensusTimestamp(),
+                    payer.accountNum());
+        }
     }
 
     /**
      * Log the start of a user transaction pre-handle result.
      *
-     * @param payer The payer
-     * @param payerKey The payer key
-     * @param status The status
-     * @param responseCode The response code
+     * @param preHandleResult The pre-handle result
      */
-    public static void logStartUserTransactionPreHandleResultP2(
-            @Nullable AccountID payer,
-            @Nullable Key payerKey,
-            @NonNull PreHandleResult.Status status,
-            @NonNull ResponseCodeEnum responseCode) {
-        logger.debug(
-                "      with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
-                payer == null ? "null" : payer.accountNum(),
-                payerKey == null ? "null" : payerKey.toString(),
-                status,
-                responseCode);
+    public static void logStartUserTransactionPreHandleResultP2(@NonNull PreHandleResult preHandleResult) {
+        if (logger.isDebugEnabled()) {
+            final var payer = preHandleResult.payer();
+            final var payerKey = preHandleResult.payerKey();
+            logger.debug(
+                    "      with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
+                    payer == null ? "null" : payer.accountNum(),
+                    payerKey == null ? "null" : payerKey.toString(),
+                    preHandleResult.status(),
+                    preHandleResult.responseCode());
+        }
     }
 
     /**
      * Log the start of a user transaction pre-handle result.
      *
-     * @param txInfo The transaction info
-     * @param requiredKeys The required keys
-     * @param verificationResults The verification results
+     * @param preHandleResult The pre-handle result
      */
-    public static void logStartUserTransactionPreHandleResultP3(
-            @Nullable TransactionInfo txInfo,
-            @Nullable Set<Key> requiredKeys,
-            @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
-        logger.trace(
-                "      with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
-                txInfo,
-                requiredKeys,
-                verificationResults);
+    public static void logStartUserTransactionPreHandleResultP3(@NonNull PreHandleResult preHandleResult) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(
+                    "      with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
+                    preHandleResult.txInfo(),
+                    preHandleResult.requiredKeys(),
+                    preHandleResult.verificationResults());
+        }
     }
 
     /**
