@@ -39,7 +39,7 @@ public final class QueryMethod extends MethodBase {
     // Constants for metric names and descriptions
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
-    private static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
+    private static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub_per_sec";
     private static final String SPEEDOMETER_ANSWERED_DESC_TPL = "number of %s answered per second";
 
     /** The workflow contains all the steps needed for handling the query. */

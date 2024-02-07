@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -56,6 +57,11 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var isToken = ledgers.tokens().contains(tokenId);
         return evmEncoder.encodeIsToken(isToken);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeIsToken(status, false);
     }
 
     public static TokenInfoWrapper<TokenID> decodeIsToken(final Bytes input) {

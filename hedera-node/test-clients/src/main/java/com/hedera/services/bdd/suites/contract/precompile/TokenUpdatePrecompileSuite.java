@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -40,6 +41,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -52,7 +57,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -64,7 +68,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class TokenUpdatePrecompileSuite extends HapiSuite {
 
@@ -123,7 +127,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("updateTokenWithInvalidKeyValues")
+        return defaultHapiSpec(
+                        "updateTokenWithInvalidKeyValues",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -171,7 +178,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
+        return defaultHapiSpec(
+                        "updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -240,17 +251,21 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 UPDATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(INVALID_TOKEN_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 NO_ADMIN_KEY,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(TOKEN_IS_IMMUTABLE)))));
+                                recordWith().status(TOKEN_IS_IMMUTABLE)))));
     }
 
     @HapiTest
     public HapiSpec getTokenKeyForNonFungibleNegative() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
+        return defaultHapiSpec(
+                        "getTokenKeyForNonFungibleNegative",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
@@ -298,10 +313,19 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 "InvalidTokenId",
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(INVALID_TOKEN_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 NO_ADMIN_KEY,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(KEY_NOT_PROVIDED)))));
+                                recordWith().status(KEY_NOT_PROVIDED)
+                                // .contractCallResult(ContractFnResultAsserts.resultWith()
+                                //
+                                // .contractCallResult(htsPrecompileResult()
+                                //
+                                // .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                                //                                                        .withStatus(KEY_NOT_PROVIDED)
+                                //
+                                // .withTokenKeyValue(Key.newBuilder().build()))))
+                                ))));
     }
 }
