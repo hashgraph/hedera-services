@@ -22,9 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -121,5 +124,11 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     void returnSizeOfState() {
         final var store = new ReadableTokenStoreImpl(readableStates);
         assertEquals(readableStates.get(TOKENS).size(), store.sizeOfState());
+    }
+
+    @Test
+    void warmWarmsUnderlyingState(@Mock ReadableKVState<EntityIDPair, TokenRelation> tokenRelations) {
+        subject.warm(tokenId);
+        verify(tokens).warm(tokenId);
     }
 }
