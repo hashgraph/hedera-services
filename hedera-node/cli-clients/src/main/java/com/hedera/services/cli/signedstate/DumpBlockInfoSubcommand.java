@@ -58,7 +58,6 @@ public class DumpBlockInfoSubcommand {
 
     void doit() {
         final var networkContext = state.getNetworkContext();
-
         System.out.printf("=== block info ===%n");
 
         final var blockInfo = new BlockInfo(networkContext);
@@ -68,6 +67,8 @@ public class DumpBlockInfoSubcommand {
             reportOnBlockInfo(writer, blockInfo);
             reportSize = writer.getSize();
         }
+
+        final var runningHashLeaf = state.getRunningHashLeaf();
 
         System.out.printf("=== block info report is %d bytes%n", reportSize);
     }

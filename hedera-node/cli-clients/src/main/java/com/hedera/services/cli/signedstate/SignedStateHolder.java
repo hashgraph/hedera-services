@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
@@ -319,6 +320,13 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var stakingInfo = servicesState.stakingInfo();
         assertSignedStateComponentExists(stakingInfo, "stakingInfo");
         return stakingInfo;
+    }
+
+    @NonNull
+    public RecordsRunningHashLeaf getRunningHashLeaf() {
+        final var runningHashLeaf = servicesState.runningHashLeaf();
+        assertSignedStateComponentExists(runningHashLeaf, "runningHashLeaf");
+        return runningHashLeaf;
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
