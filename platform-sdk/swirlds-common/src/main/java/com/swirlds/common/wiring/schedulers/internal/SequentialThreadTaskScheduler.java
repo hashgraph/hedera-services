@@ -117,10 +117,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (currentlySquelching()) {
-            return;
-        }
-
         onRamp.onRamp();
         tasks.add(new SequentialThreadTask(handler, data));
     }
@@ -130,11 +126,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (currentlySquelching()) {
-            // return true in order to accept and discard the data, as opposed to preventing the sender from sending it
-            return true;
-        }
-
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
@@ -149,10 +140,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        if (currentlySquelching()) {
-            return;
-        }
-
         onRamp.forceOnRamp();
         tasks.add(new SequentialThreadTask(handler, data));
     }
