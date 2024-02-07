@@ -25,7 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -83,8 +82,8 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
 
-        this.nextTaskPlaceholder = new AtomicReference<>(
-                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), true));
+        this.nextTaskPlaceholder =
+                new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, true));
     }
 
     /**
@@ -141,8 +140,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         // organizes tasks into a linked list. Tasks in this linked list are executed one at a time in order.
         // When execution of one task is completed, execution of the next task is scheduled on the pool.
 
-        final SequentialTask nextTask =
-                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), false);
+        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
         SequentialTask currentTask;
         do {
             currentTask = nextTaskPlaceholder.get();
@@ -164,30 +162,6 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public void flush() {
         throwIfFlushDisabled();
-        flushWithSemaphore().acquireUninterruptibly();
-    }
-
-    /**
-     * Start a flush operation with a semaphore. The flush is completed when the semaphore can be acquired.
-     *
-     * @return the semaphore that will be released when the flush is complete
-     */
-    @NonNull
-    private Semaphore flushWithSemaphore() {
-        onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(0);
-
-        final SequentialTask nextTask =
-                new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, getSquelcher(), false);
-        SequentialTask currentTask;
-        do {
-            currentTask = nextTaskPlaceholder.get();
-        } while (!nextTaskPlaceholder.compareAndSet(currentTask, nextTask));
-
-        // Override squelching for the flush operation, otherwise the semaphore will never be released
-        currentTask.overrideSquelch();
-        currentTask.send(nextTask, x -> semaphore.release(), null);
-
-        return semaphore;
+        onRamp.waitUntilEmpty();
     }
 }

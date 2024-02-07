@@ -22,20 +22,15 @@ import java.util.function.Consumer;
 /**
  * A task that is performed by a {@link SequentialThreadTaskScheduler}.
  *
- * @param handler   the handler to call
- * @param data      the data to pass to the handler
- * @param squelcher manages squelching, which may or may not actually be enabled
+ * @param handler the handler to call
+ * @param data    the data to pass to the handler
  */
-record SequentialThreadTask(@NonNull Consumer<Object> handler, @NonNull Object data, @NonNull Squelcher squelcher) {
+record SequentialThreadTask(@NonNull Consumer<Object> handler, @NonNull Object data) {
 
     /**
      * Handle the task.
      */
     public void handle() {
-        if (squelcher.shouldSquelch()) {
-            return;
-        }
-
         handler.accept(data);
     }
 }

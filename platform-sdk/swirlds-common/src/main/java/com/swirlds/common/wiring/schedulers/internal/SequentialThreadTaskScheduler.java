@@ -113,8 +113,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         onRamp.forceOnRamp();
         final Semaphore semaphore = new Semaphore(0);
 
-        // pass in a NoopSquelcher, so that the task will ignore squelching and the semaphore will be released
-        tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore, new NoopSquelcher()));
+        tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore));
         semaphore.acquireUninterruptibly();
     }
 
@@ -128,7 +127,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         }
 
         onRamp.onRamp();
-        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
+        tasks.add(new SequentialThreadTask(handler, data));
     }
 
     /**
@@ -146,7 +145,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             return false;
         }
 
-        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
+        tasks.add(new SequentialThreadTask(handler, data));
         return true;
     }
 
@@ -160,7 +159,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         }
 
         onRamp.forceOnRamp();
-        tasks.add(new SequentialThreadTask(handler, data, getSquelcher()));
+        tasks.add(new SequentialThreadTask(handler, data));
     }
 
     /**

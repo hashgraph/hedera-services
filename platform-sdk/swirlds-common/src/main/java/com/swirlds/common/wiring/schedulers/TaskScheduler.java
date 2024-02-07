@@ -276,7 +276,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      * @return the squelcher
      */
     @NonNull
-    protected final Squelcher getSquelcher() {
+    public final Squelcher getSquelcher() {
         return squelcher;
     }
 

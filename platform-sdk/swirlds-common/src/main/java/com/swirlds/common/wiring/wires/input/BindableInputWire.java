@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.wires.input;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.Squelcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -34,6 +35,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
     private final StandardWiringModel model;
+    private final Squelcher squelcher;
 
     /**
      * Constructor.
@@ -50,6 +52,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
         this.model = Objects.requireNonNull(model);
         taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         taskSchedulerName = taskScheduler.getName();
+        squelcher = taskScheduler.getSquelcher();
 
         model.registerInputWireCreation(taskSchedulerName, name);
     }
@@ -60,7 +63,13 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     @SuppressWarnings("unchecked")
     public void bind(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
-        setHandler((Consumer<Object>) handler);
+        setHandler(i -> {
+            if (squelcher.shouldSquelch()) {
+                return;
+            }
+
+            handler.accept((IN) i);
+        });
         model.registerInputWireBinding(taskSchedulerName, getName());
     }
 
@@ -71,6 +80,10 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     public void bind(@NonNull final Function<IN, OUT> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
+            if (squelcher.shouldSquelch()) {
+                return;
+            }
+
             final OUT output = handler.apply((IN) i);
             if (output != null) {
                 taskSchedulerInput.forward(output);

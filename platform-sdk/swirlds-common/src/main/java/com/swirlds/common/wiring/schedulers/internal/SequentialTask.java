@@ -37,20 +37,6 @@ class SequentialTask extends AbstractTask {
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
 
     /**
-     * If true, then this task will be executed even if scheduler is currently squelching.
-     * <p>
-     * This flag is necessary for flushing, since we want the flush task to execute even if the task scheduler is
-     * squelching normal handling. It isn't known at the time of construction whether a given task will be responsible
-     * for flushing, so we need a dynamic flag that can be set when the flush work is submitted.
-     */
-    private boolean overrideSquelch = false;
-
-    /**
-     * Manages squelching, which may or may not actually be enabled.
-     */
-    private final Squelcher squelcher;
-
-    /**
      * Constructor.
      *
      * @param pool                     the fork join pool that will execute tasks on this task scheduler
@@ -58,7 +44,6 @@ class SequentialTask extends AbstractTask {
      *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the task scheduler is busy
      * @param uncaughtExceptionHandler the uncaught exception handler
-     * @param squelcher                manages squelching, which may or may not actually be enabled
      * @param firstTask                true if this is the first task in the scheduler, false otherwise
      */
     SequentialTask(
@@ -66,12 +51,10 @@ class SequentialTask extends AbstractTask {
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
-            @NonNull final Squelcher squelcher,
             final boolean firstTask) {
         super(pool, firstTask ? 1 : 2);
         this.offRamp = offRamp;
         this.busyTimer = busyTimer;
-        this.squelcher = squelcher;
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;
     }
 
@@ -100,25 +83,12 @@ class SequentialTask extends AbstractTask {
     }
 
     /**
-     * When called, causes this task to be executed even if squelching is enabled. This is necessary for flushing.
-     */
-    public void overrideSquelch() {
-        overrideSquelch = true;
-    }
-
-    /**
      * Execute this task.
      */
     @Override
     public boolean exec() {
         busyTimer.activate();
         try {
-            // we must respect overrideSquelch even if squelching is enabled, since this task might be responsible for
-            // flushing. Flush tasks must not be squelched under any circumstances.
-            if (!overrideSquelch && squelcher.shouldSquelch()) {
-                return true;
-            }
-
             handler.accept(data);
         } catch (final Throwable t) {
             uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);

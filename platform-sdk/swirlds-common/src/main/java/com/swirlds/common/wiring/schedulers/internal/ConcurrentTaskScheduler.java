@@ -81,7 +81,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
         }
 
         onRamp.onRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
@@ -96,7 +96,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
         final boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
-            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
+            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
         }
         return accepted;
     }
@@ -111,7 +111,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
         }
 
         onRamp.forceOnRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data, getSquelcher()).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
