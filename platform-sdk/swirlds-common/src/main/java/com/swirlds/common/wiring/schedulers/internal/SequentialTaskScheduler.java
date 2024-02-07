@@ -105,7 +105,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         if (getSquelcher().shouldSquelch()) {
-            // say that the data was accepted, even though it will be thrown into the void
+            // return true in order to accept and discard the data, as opposed to preventing the sender from sending it
             return true;
         }
 

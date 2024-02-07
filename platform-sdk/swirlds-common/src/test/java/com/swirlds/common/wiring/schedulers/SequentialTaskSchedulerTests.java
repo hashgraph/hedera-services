@@ -1124,8 +1124,7 @@ class SequentialTaskSchedulerTests {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
-        // The flush operation puts a task on the wire, which bumps the number up to 12 from 11
-        assertEquals(12, taskScheduler.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(

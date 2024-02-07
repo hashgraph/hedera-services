@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -110,11 +109,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     @Override
     public void flush() {
         throwIfFlushDisabled();
-        onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(0);
-
-        tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore));
-        semaphore.acquireUninterruptibly();
+        onRamp.waitUntilEmpty();
     }
 
     /**
@@ -136,7 +131,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         if (getSquelcher().shouldSquelch()) {
-            // say that the data was accepted, even though it will be thrown into the void
+            // return true in order to accept and discard the data, as opposed to preventing the sender from sending it
             return true;
         }
 
