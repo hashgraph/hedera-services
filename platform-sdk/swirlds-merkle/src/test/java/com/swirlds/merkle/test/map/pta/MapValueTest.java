@@ -19,7 +19,7 @@ package com.swirlds.merkle.test.map.pta;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
-import com.swirlds.merkle.map.test.pta.MapValue;
+import com.swirlds.merkle.test.fixtures.map.pta.MapValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

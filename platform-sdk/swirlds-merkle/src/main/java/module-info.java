@@ -5,7 +5,7 @@ open module com.swirlds.merkle {
     exports com.swirlds.merkle.map;
     exports com.swirlds.merkle.tree;
     exports com.swirlds.merkle.tree.internal to
-            com.swirlds.merkle.test;
+            com.swirlds.merkle.test.fixtures;
     exports com.swirlds.merkle.map.internal;
 
     requires transitive com.swirlds.common;

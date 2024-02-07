@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.test.map;
 
-import com.swirlds.merkle.map.test.util.KeyValueProvider;
+import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;

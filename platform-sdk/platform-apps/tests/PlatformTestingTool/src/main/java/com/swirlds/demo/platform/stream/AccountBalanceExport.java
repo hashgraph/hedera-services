@@ -24,7 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;

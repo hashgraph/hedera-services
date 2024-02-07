@@ -42,7 +42,7 @@ import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
 import com.swirlds.demo.platform.iss.IssConfig;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.transaction.pool.VirtualMerkleTransactionPool;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.system.Platform;
 import java.time.Instant;

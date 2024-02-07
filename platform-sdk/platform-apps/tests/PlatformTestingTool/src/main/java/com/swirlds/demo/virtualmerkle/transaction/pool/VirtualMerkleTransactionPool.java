@@ -32,7 +32,7 @@ import com.swirlds.demo.virtualmerkle.config.TransactionRequestConfig;
 import com.swirlds.demo.virtualmerkle.config.TransactionRequestSupplierFactory;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.util.function.Supplier;
 
 /**

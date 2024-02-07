@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.pool;
 
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Create;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -26,12 +26,12 @@ import com.swirlds.demo.platform.fs.stresstest.proto.DeleteAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.UpdateAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
-import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
-import com.swirlds.merkle.map.test.lifecycle.TransactionState;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.LifecycleStatus;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.time.Instant;
 import java.util.ArrayList;
 

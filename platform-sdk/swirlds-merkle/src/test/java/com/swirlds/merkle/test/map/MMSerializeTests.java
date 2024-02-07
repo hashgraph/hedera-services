@@ -28,7 +28,7 @@ import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.util.KeyValueProvider;
+import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;

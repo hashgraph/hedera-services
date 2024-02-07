@@ -24,7 +24,7 @@ import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;

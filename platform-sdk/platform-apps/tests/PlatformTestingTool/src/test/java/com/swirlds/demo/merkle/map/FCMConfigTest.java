@@ -16,8 +16,8 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.demo.platform.SuperConfig;
 import com.swirlds.demo.platform.TestUtil;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

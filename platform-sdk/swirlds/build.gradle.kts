@@ -19,7 +19,7 @@ plugins { id("com.hedera.hashgraph.application") }
 mainModuleInfo {
     runtimeOnly("com.swirlds.platform.core")
     runtimeOnly("com.swirlds.merkle")
-    runtimeOnly("com.swirlds.merkle.test")
+    runtimeOnly("com.swirlds.merkle.test.fixtures")
 }
 
 application.mainClass.set("com.swirlds.platform.Browser")
