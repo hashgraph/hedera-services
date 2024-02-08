@@ -17,14 +17,14 @@
 package com.swirlds.demo.merkle.map;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Append;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.BurnToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.MintToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.TransferToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Append;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.BurnToken;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.MintToken;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Transfer;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.TransferToken;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 
 import com.swirlds.demo.platform.fs.stresstest.proto.BurnToken;
 import com.swirlds.demo.platform.fs.stresstest.proto.FCMTransaction;
@@ -34,9 +34,9 @@ import com.swirlds.demo.platform.fs.stresstest.proto.MintToken;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalance;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalanceFCQ;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferToken;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
