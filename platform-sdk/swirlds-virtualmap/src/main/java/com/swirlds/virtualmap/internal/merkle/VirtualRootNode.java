@@ -77,7 +77,7 @@ import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPushReceiveVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
-import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
+import com.swirlds.virtualmap.internal.reconnect.TeacherPushReceiveVirtualTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -304,6 +304,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private AtomicBoolean reconnectHashingStarted;
 
+    private VirtualStateAccessor reconnectState;
     /**
      * The {@link RecordAccessor} for the state, cache, and data source needed during reconnect.
      */
@@ -394,7 +395,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @SuppressWarnings("ClassEscapesDefinedScope")
     public void postInit(final VirtualStateAccessor state) {
         // We're reconnecting, state doesn't match cache or dataSource, gotta bail.
-        if (learnerTreeView != null) {
+        //        if (learnerTreeView != null) {
+        if (originalMap != null) {
             fullyReconnectedState = state;
             return;
         }
@@ -634,7 +636,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public <T extends MerkleNode> T getChild(final int index) {
         if (isDestroyed()
                 || dataSource == null
-                || learnerTreeView != null
+                || originalMap != null
                 || state.getFirstLeafPath() == INVALID_PATH
                 || index > 1) {
             return null;
@@ -1365,16 +1367,19 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public TeacherTreeView<Long> buildTeacherView() {
-        return new VirtualTeacherTreeView<>(getStaticThreadManager(), this, state, pipeline);
+    public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
+        return new TeacherPushReceiveVirtualTreeView<>(
+                getStaticThreadManager(), reconnectConfig, this, state, pipeline);
     }
+
+    private VirtualRootNode<K, V> originalMap;
 
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void setupWithOriginalNode(final ReconnectConfig reconnectConfig, final MerkleNode originalNode) {
+    public void setupWithOriginalNode(final MerkleNode originalNode) {
         assert originalNode instanceof VirtualRootNode : "The original node was not a VirtualRootNode!";
 
         // NOTE: If we're reconnecting, then the old tree is toast. We hold onto the originalMap to
@@ -1382,7 +1387,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // the old map again. We need the data source builder from the old map so, we can create
         // new data sources in this new map with all the right settings.
         //noinspection unchecked
-        final VirtualRootNode<K, V> originalMap = (VirtualRootNode<K, V>) originalNode;
+        originalMap = (VirtualRootNode<K, V>) originalNode;
         this.dataSourceBuilder = originalMap.dataSourceBuilder;
 
         // shutdown background compaction on original data source as it is no longer needed to be running as all data
@@ -1406,12 +1411,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         reconnectHashingFuture = new CompletableFuture<>();
         reconnectHashingStarted = new AtomicBoolean(false);
 
-        final VirtualStateAccessor reconnectState = new ReconnectState(-1, -1);
+        reconnectState = new ReconnectState(-1, -1);
         reconnectRecords = new RecordAccessorImpl<>(reconnectState, snapshotCache, dataSource);
-
-        // During reconnect we want to look up state from the original records
-        learnerTreeView = new LearnerPushReceiveVirtualTreeView<>(
-                reconnectConfig, this, originalMap.records, originalMap.getState(), reconnectState);
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
@@ -1431,7 +1432,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<Long> buildLearnerView() {
+    public LearnerTreeView<Long> buildLearnerView(final ReconnectConfig reconnectConfig) {
+        assert originalMap != null;
+
+        // During reconnect we want to look up state from the original records
+        learnerTreeView = new LearnerPushReceiveVirtualTreeView<>(
+                reconnectConfig, this, originalMap.records, originalMap.getState(), reconnectState);
         return learnerTreeView;
     }
 
@@ -1507,6 +1513,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 logger.warn(RECONNECT.getMarker(), "virtual map hashing thread was never started");
             }
             learnerTreeView = null;
+            originalMap = null;
             postInit(fullyReconnectedState);
             // Start up data source compaction now
             dataSource.enableBackgroundCompaction();

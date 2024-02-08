@@ -37,8 +37,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
 
     private static final long CLASS_ID = 0x3d03994ec6d42dccL;
 
-    private ReconnectConfig reconnectConfig;
-    private final List<DummyTeacherTreeView> views;
+    private final List<DummyTeacherPushReceiveMerkleTreeView> views;
 
     public DummyCustomReconnectRoot() {
         views = new LinkedList<>();
@@ -72,10 +71,11 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public TeacherTreeView<NodeToSend> buildTeacherView() {
+    public TeacherTreeView<NodeToSend> buildTeacherView(final ReconnectConfig reconnectConfig) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final DummyTeacherTreeView view = new DummyTeacherTreeView(platformContext.getConfiguration(), this);
+        final DummyTeacherPushReceiveMerkleTreeView view =
+                new DummyTeacherPushReceiveMerkleTreeView(platformContext.getConfiguration(), this);
         views.add(view);
         return view;
     }
@@ -84,7 +84,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * Throw an exception if all views have not yet been closed.
      */
     public void assertViewsAreClosed() {
-        for (final DummyTeacherTreeView view : views) {
+        for (final DummyTeacherPushReceiveMerkleTreeView view : views) {
             assertTrue(view.isClosed(), "view should have been closed");
         }
     }
@@ -93,9 +93,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void setupWithOriginalNode(final ReconnectConfig reconnectConfig, final MerkleNode originalNode) {
-        this.reconnectConfig = reconnectConfig;
-    }
+    public void setupWithOriginalNode(final MerkleNode originalNode) {}
 
     /**
      * {@inheritDoc}
@@ -107,7 +105,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<MerkleNode> buildLearnerView() {
+    public LearnerTreeView<MerkleNode> buildLearnerView(final ReconnectConfig reconnectConfig) {
         return new DummyLearnerPushReceiveMerkleTreeView(reconnectConfig, this);
     }
 

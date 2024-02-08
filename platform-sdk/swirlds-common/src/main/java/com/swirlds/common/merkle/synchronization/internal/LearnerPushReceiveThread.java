@@ -119,7 +119,7 @@ public class LearnerPushReceiveThread<T> {
         }
 
         if (originalNode != null && view.getClassId(originalNode) == lesson.getCustomViewClassId()) {
-            customRoot.setupWithOriginalNode(view.getReconnectConfig(), view.getMerkleRoot(originalNode));
+            customRoot.setupWithOriginalNode(view.getMerkleRoot(originalNode));
         } else {
             customRoot.setupWithNoData();
         }

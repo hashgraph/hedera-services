@@ -16,14 +16,25 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
+import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
+import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
+import com.swirlds.common.merkle.synchronization.internal.TeacherSendingThread;
+import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -33,11 +44,14 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A teaching tree view for a standard in memory merkle tree.
  */
-public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
+public class TeacherPushReceiveMerkleTreeView implements TeacherTreeView<NodeToSend> {
+
+    private final ReconnectConfig reconnectConfig;
 
     private final Queue<NodeToSend> nodesToHandle;
     private final BlockingQueue<NodeToSend> expectedResponses;
@@ -52,15 +66,44 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
      * @param configuration the configuration
      * @param root          the root of the tree
      */
-    public StandardTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
-
-        maxAckDelayMilliseconds = (int)
-                configuration.getConfigData(ReconnectConfig.class).maxAckDelay().toMillis();
+    public TeacherPushReceiveMerkleTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
+        this.reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+        maxAckDelayMilliseconds = (int) reconnectConfig.maxAckDelay().toMillis();
 
         this.root = new NodeToSend(root, maxAckDelayMilliseconds);
 
         nodesToHandle = new LinkedList<>();
         expectedResponses = new LinkedBlockingDeque<>();
+    }
+
+    @Override
+    public void startTeacherThreads(
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees) {
+        final AsyncInputStream<QueryResponse> in =
+                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
+        final AsyncOutputStream<Lesson<NodeToSend>> out =
+                new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+
+        in.start();
+        out.start();
+
+        final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
+
+        final TeacherSendingThread<NodeToSend> teacherSendingThread =
+                new TeacherSendingThread<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        teacherSendingThread.start();
+        final TeacherReceivingThread<NodeToSend> teacherReceivingThread =
+                new TeacherReceivingThread<>(workGroup, in, this, senderIsFinished);
+        teacherReceivingThread.start();
+    }
+
+    @Override
+    public ReconnectConfig getReconnectConfig() {
+        return reconnectConfig;
     }
 
     /**

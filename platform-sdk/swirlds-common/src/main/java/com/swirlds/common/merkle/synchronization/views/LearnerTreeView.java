@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, LearnerInitializer<T>, TreeView<T> {
 
-    void startLearnerThread(
+    void startLearnerThreads(
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,

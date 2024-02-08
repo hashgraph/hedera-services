@@ -22,12 +22,24 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
 import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.internal.Lesson;
+import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
+import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
+import com.swirlds.common.merkle.synchronization.internal.TeacherSendingThread;
+import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -37,7 +49,9 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,10 +63,12 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
-public final class VirtualTeacherTreeView<K extends VirtualKey, V extends VirtualValue>
+public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
 
-    private static final Logger logger = LogManager.getLogger(VirtualTeacherTreeView.class);
+    private static final Logger logger = LogManager.getLogger(TeacherPushReceiveVirtualTreeView.class);
+
+    private final ReconnectConfig reconnectConfig;
 
     /**
      * A queue of the nodes (by path) that we are about to handle. Note that ConcurrentBitSetQueue
@@ -81,7 +97,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     private final CountDownLatch ready = new CountDownLatch(1);
 
     /**
-     * Create a new {@link VirtualTeacherTreeView}.
+     * Create a new {@link TeacherPushReceiveVirtualTreeView}.
      *
      * @param threadManager
      * 		responsible for creating and managing threads
@@ -92,15 +108,15 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      * @param pipeline
      * 		The pipeline managing the virtual map.
      */
-    public VirtualTeacherTreeView(
+    public TeacherPushReceiveVirtualTreeView(
             final ThreadManager threadManager,
+            final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final VirtualStateAccessor state,
             final VirtualPipeline pipeline) {
-
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
-
+        this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
@@ -110,6 +126,35 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
                 .setThreadName("detacher")
                 .build()
                 .start();
+    }
+
+    @Override
+    public void startTeacherThreads(
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees) {
+        final AsyncInputStream<QueryResponse> in =
+                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
+        final AsyncOutputStream<Lesson<Long>> out = new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+
+        in.start();
+        out.start();
+
+        final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
+
+        final TeacherSendingThread<Long> teacherSendingThread =
+                new TeacherSendingThread<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        teacherSendingThread.start();
+        final TeacherReceivingThread<Long> teacherReceivingThread =
+                new TeacherReceivingThread<>(workGroup, in, this, senderIsFinished);
+        teacherReceivingThread.start();
+    }
+
+    @Override
+    public ReconnectConfig getReconnectConfig() {
+        return reconnectConfig;
     }
 
     /**

@@ -44,14 +44,14 @@ public interface CustomReconnectRoot<T, L> extends MerkleNode {
      *
      * @return a view representing this subtree
      */
-    TeacherTreeView<T> buildTeacherView();
+    TeacherTreeView<T> buildTeacherView(final ReconnectConfig reconnectConfig);
 
     /**
      * Build a view of this subtree to be used for reconnect by the learner.
      *
      * @return a view representing this subtree
      */
-    LearnerTreeView<L> buildLearnerView();
+    LearnerTreeView<L> buildLearnerView(final ReconnectConfig reconnectConfig);
 
     /**
      * If the original node in this position is of the correct type then the learner's node is initialized via
@@ -61,7 +61,7 @@ public interface CustomReconnectRoot<T, L> extends MerkleNode {
      * @param originalNode
      * 		the original node in the learner's tree in the root position of this subtree
      */
-    void setupWithOriginalNode(final ReconnectConfig reconnectConfig, final MerkleNode originalNode);
+    void setupWithOriginalNode(final MerkleNode originalNode);
 
     /**
      * Called on a node if there is no data to be copied.

@@ -30,7 +30,6 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
@@ -513,9 +512,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         VirtualRootNode<TestKey, TestValue> root = createRoot();
         VirtualRootNode<TestKey, TestValue> anotherRoot = createRoot();
         anotherRoot.computeHash();
-        final ReconnectConfig config =
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(ReconnectConfig.class);
-        root.setupWithOriginalNode(config, anotherRoot);
+        root.setupWithOriginalNode(anotherRoot);
         assertDoesNotThrow(() -> root.postInit(null));
     }
 }

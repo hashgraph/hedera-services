@@ -143,7 +143,7 @@ public final class LearnerPushReceiveVirtualTreeView<K extends VirtualKey, V ext
     }
 
     @Override
-    public void startLearnerThread(
+    public void startLearnerThreads(
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,

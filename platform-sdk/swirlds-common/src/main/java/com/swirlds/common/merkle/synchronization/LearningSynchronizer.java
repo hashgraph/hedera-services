@@ -260,12 +260,12 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             view = (LearnerTreeView<T>) new LearnerPushReceiveMerkleTreeView(reconnectConfig, root);
         } else {
             assert root instanceof CustomReconnectRoot;
-            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView();
+            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
         }
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        view.startLearnerThread(workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
+        view.startLearnerThreads(workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();

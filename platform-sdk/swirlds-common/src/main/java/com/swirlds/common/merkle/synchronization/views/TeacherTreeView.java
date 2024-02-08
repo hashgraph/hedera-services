@@ -16,9 +16,16 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Queue;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -29,6 +36,15 @@ import java.io.IOException;
  */
 public interface TeacherTreeView<T>
         extends TeacherHandleQueue<T>, TeacherResponseQueue<T>, TeacherResponseTracker<T>, TreeView<T> {
+
+    void startTeacherThreads(
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees);
+
+    ReconnectConfig getReconnectConfig();
 
     /**
      * Get the root of the tree.
