@@ -42,7 +42,7 @@ val timingSensitive =
         usesService(
             gradle.sharedServices.registerIfAbsent(
                 "lock",
-                com.hedera.hashgraph.gradlebuild.service.TaskLockService::class
+                com.hedera.hashgraph.gradlebuild.services.TaskLockService::class
             ) {
                 maxParallelUsages = 1
             }

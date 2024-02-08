@@ -19,7 +19,7 @@ import Utils.Companion.versionTxt
 import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
-import com.hedera.hashgraph.gradlebuild.service.TaskLockService
+import com.hedera.hashgraph.gradlebuild.services.TaskLockService
 
 plugins {
     id("java")
