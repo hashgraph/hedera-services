@@ -25,6 +25,7 @@ java {
     withSourcesJar()
 }
 
+tasks.withType<Jar>().configureEach { setGroup(null) }
 
 val maven =
     publishing.publications.create<MavenPublication>("maven") {

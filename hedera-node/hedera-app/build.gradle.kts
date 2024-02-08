@@ -197,7 +197,8 @@ tasks.register<JavaExec>("run") {
 }
 
 tasks.register<JavaExec>("modrun") {
-    group = "application"
+    group = "build"
+    description = "Run a Hedera consensus node instance."
     dependsOn(tasks.assemble)
     workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
