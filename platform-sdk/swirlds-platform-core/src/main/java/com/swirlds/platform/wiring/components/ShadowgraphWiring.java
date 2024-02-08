@@ -58,6 +58,6 @@ public record ShadowgraphWiring(
     public void bind(@NonNull final Shadowgraph shadowgraph) {
         ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
         ((BindableInputWire<NonAncientEventWindow, Void>) nonExpiredEventWindowInput)
-                .bind(shadowgraph::updateNonExpiredEventWindow);
+                .bind(shadowgraph::updateEventWindow);
     }
 }
