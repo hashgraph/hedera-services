@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -51,6 +52,9 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
+            if (isDeficientGas(frame, gasCalculator(), this::cost)) {
+                return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
             final var address = Words.toAddress(frame.getStackItem(0));
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {

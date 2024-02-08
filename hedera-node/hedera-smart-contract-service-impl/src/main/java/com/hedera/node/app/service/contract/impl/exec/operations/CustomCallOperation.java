@@ -67,6 +67,11 @@ public class CustomCallOperation extends CallOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
+            final long cost = cost(frame);
+            if (frame.getRemainingGas() < cost) {
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             final var toAddress = to(frame);
             if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
                 return new OperationResult(cost(frame), INVALID_ALIAS_KEY);

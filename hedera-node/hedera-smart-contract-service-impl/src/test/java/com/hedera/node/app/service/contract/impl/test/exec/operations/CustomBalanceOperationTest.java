@@ -82,6 +82,7 @@ class CustomBalanceOperationTest {
     @Test
     void systemAccountBalanceHardCodedToZero() {
         setupWarmGasCost();
+        given(frame.getRemainingGas()).willReturn(1L);
         given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
         final var expected = new Operation.OperationResult(3L, null);
@@ -95,6 +96,7 @@ class CustomBalanceOperationTest {
     void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
+            given(frame.getRemainingGas()).willReturn(1L);
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             frameUtils
@@ -111,7 +113,6 @@ class CustomBalanceOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
@@ -124,8 +125,8 @@ class CustomBalanceOperationTest {
     void delegatesToSuperForPresentUserAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
+            given(frame.getRemainingGas()).willReturn(1L);
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);

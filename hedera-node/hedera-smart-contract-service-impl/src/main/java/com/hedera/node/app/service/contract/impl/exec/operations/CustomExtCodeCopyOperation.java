@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -60,6 +61,11 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             final var memOffset = clampedToLong(frame.getStackItem(1));
             final var sourceOffset = clampedToLong(frame.getStackItem(2));
             final var numBytes = clampedToLong(frame.getStackItem(3));
+            if (isDeficientGas(frame, gasCalculator(), address, memOffset, numBytes)) {
+                return new OperationResult(
+                        cost(frame, memOffset, numBytes, true), ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {
                 frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
@@ -75,5 +81,16 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
         } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
+    }
+
+    private boolean isDeficientGas(
+            @NonNull final MessageFrame frame,
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final Address address,
+            final long memOffset,
+            final long numBytes) {
+        final boolean accountIsWarm = frame.warmUpAddress(address) || gasCalculator.isPrecompile(address);
+        final long cost = cost(frame, memOffset, numBytes, accountIsWarm);
+        return frame.getRemainingGas() < cost;
     }
 }
