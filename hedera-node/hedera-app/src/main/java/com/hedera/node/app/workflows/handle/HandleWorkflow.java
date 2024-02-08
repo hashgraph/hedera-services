@@ -302,7 +302,7 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        if(consensusNow.equals(Instant.parse("2024-01-11T05:49:18.630392004Z"))) {
+        if (consensusNow.equals(Instant.parse("2024-01-11T05:49:18.630392004Z"))) {
             logger.info("consensusNow: {}", consensusNow);
         }
 
@@ -361,7 +361,7 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
-            if(txBody.transactionID().equals(testTransactionID(1704952148,325482138, 3064793, 1))){
+            if (txBody.transactionID().equals(testTransactionID(1704952148, 325482138, 3064793, 1))) {
                 logger.info("txBody: {}", txBody);
             }
 
@@ -538,18 +538,6 @@ public class HandleWorkflow {
                     }
                     recordBuilder.status(SUCCESS);
 
-                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
-                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
-                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-                        if (contractsConfig.throttleThrottleByGas()) {
-                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-                            final var gasLimitForContractTx =
-                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
-                            final var excessAmount = gasLimitForContractTx - gasUsed;
-                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-                        }
-                    }
-
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
@@ -585,6 +573,21 @@ public class HandleWorkflow {
                             e,
                             chargeException);
                 }
+            }
+        }
+
+        // After a contract operation was handled (i.e., not throttled), update the
+        // gas throttle by leaking any unused gas
+        if (isGasThrottled(transactionInfo.functionality())
+                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                && recordBuilder.hasContractResult()) {
+            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+            if (contractsConfig.throttleThrottleByGas()) {
+                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                final var gasLimitForContractTx =
+                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                final var excessAmount = gasLimitForContractTx - gasUsed;
+                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
             }
         }
 
@@ -838,10 +841,9 @@ public class HandleWorkflow {
                 previousResult);
     }
 
-    private TransactionID testTransactionID(final long seconds, final int nanos, final long payerAccountNum, final int nonce) {
-        var toTxnValidStart = Timestamp.newBuilder()
-                .seconds(seconds)
-                .nanos(nanos);
+    private TransactionID testTransactionID(
+            final long seconds, final int nanos, final long payerAccountNum, final int nonce) {
+        var toTxnValidStart = Timestamp.newBuilder().seconds(seconds).nanos(nanos);
         return TransactionID.newBuilder()
                 .accountID(AccountID.newBuilder().accountNum(payerAccountNum).build())
                 .transactionValidStart(toTxnValidStart)
