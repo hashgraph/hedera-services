@@ -17,6 +17,7 @@
 package com.hedera.node.app.records;
 
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.platform.system.Round;
@@ -74,5 +75,8 @@ public interface FunctionalBlockRecordManager extends BlockRecordManager, BlockR
             @NonNull HederaState state, @NonNull ConsensusEvent platformEvent, @NonNull Runnable runnable);
 
     void processSystemTransaction(
-            @NonNull HederaState state, @NonNull ConsensusTransaction systemTxn, @NonNull Runnable runnable);
+            @NonNull HederaState state,
+            @NonNull NodeInfo creator,
+            @NonNull ConsensusTransaction systemTxn,
+            @NonNull Runnable runnable);
 }

@@ -34,6 +34,8 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -128,11 +130,29 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    public void endBlock(@NonNull final BlockStateProof blockStateProof) {
-        final var lastRunningHash = getRunningHashObject();
-        // We must write out the block proof before closing the writer.
-        writeStateProof(blockStateProof);
-        closeWriter(lastRunningHash, this.currentBlockNumber);
+    public CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
+        // We block until the block state proof is available, then we write it out and close the writer.
+        // Since we need to conform to the interface, we return a new CompletableFuture that will complete when the
+        // writer has been closed.
+        return blockStateProof.thenApply(blockState -> {
+            try {
+                // Perform the operations within the try block to handle potential exceptions
+                final var lastRunningHash = getRunningHashObject();
+
+                // Assuming writeStateProof and closeWriter are methods that throw checked exceptions
+                writeStateProof(blockState);
+                closeWriter(lastRunningHash, this.currentBlockNumber);
+
+                // If the operations complete successfully, return null for CompletableFuture<Void>
+                return null;
+            } catch (Exception e) {
+                // Handle exceptions possibly thrown by the synchronous operations
+                // Since CompletableFuture's lambda cannot throw checked exceptions directly,
+                // you'll need to wrap any checked exceptions in a RuntimeException for simplicity,
+                // or handle them according to your error handling policy
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -205,7 +225,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         writeSerializedBlockItem(serializedBlockItem);
     }
 
-    /** {@inheritDoc} */
     public void writeStateProof(@NonNull final BlockStateProof blockStateProof) {
         // We do not update running hashes with the block state proof hash like we do for other block items, we simply
         // write it out.

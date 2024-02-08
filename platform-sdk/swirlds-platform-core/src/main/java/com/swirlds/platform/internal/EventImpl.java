@@ -46,6 +46,8 @@ import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.bouncycastle.util.Arrays;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -385,6 +387,17 @@ public class EventImpl extends EventMetadata
             return Collections.emptyIterator();
         }
         return new SkippingIterator<>(getTransactions(), systemTransactionIndices);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterator<ConsensusTransaction> unfilteredConsensusTransactionIterator() {
+        if (getTransactions() == null) {
+            return Collections.emptyIterator();
+        }
+        return new SkippingIterator<>(getTransactions(), Collections.emptySet());
     }
 
     //////////////////////////////////////////

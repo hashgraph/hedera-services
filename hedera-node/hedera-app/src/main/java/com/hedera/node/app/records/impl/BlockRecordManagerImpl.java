@@ -28,6 +28,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.FunctionalBlockRecordManager;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -420,7 +421,10 @@ public final class BlockRecordManagerImpl implements FunctionalBlockRecordManage
 
     @Override
     public void processSystemTransaction(
-            @NonNull HederaState state, @NonNull ConsensusTransaction systemTxn, @NonNull Runnable runnable) {
+            @NonNull HederaState state,
+            @NonNull final NodeInfo creator,
+            @NonNull ConsensusTransaction systemTxn,
+            @NonNull Runnable runnable) {
         runnable.run(); // NO-OP stub
     }
 

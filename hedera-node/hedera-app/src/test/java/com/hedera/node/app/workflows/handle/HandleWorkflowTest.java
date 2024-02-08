@@ -308,7 +308,7 @@ class HandleWorkflowTest extends AppTestBase {
                     return null; // Since the method is void, return null
                 })
                 .when(blockRecordManager)
-                .processSystemTransaction(any(), any(), any());
+                .processSystemTransaction(any(), any(), any(), any());
 
         workflow = new HandleWorkflow(
                 networkInfo,

@@ -26,6 +26,9 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 /**
  * Produces a stream of blocks. This is used by the {@link BlockStreamManagerImpl}.
  *
@@ -48,7 +51,7 @@ public interface BlockStreamProducer extends AutoCloseable {
      * Get the current running hash of block items. This is called on the handle transaction thread. It will
      * block if a background thread is still hashing. It will always return the running hash after the last block item
      * is added. Hence, any block items not yet committed via write methods called before
-     * {@link BlockStreamProducer#endBlock(BlockStateProof)} will not be included.
+     * {@link BlockStreamProducer#endBlock} will not be included.
      *
      * <p>TODO(nickpoorman): The comment above may not be correct for BlockStreamProducerConcurrent. We are treating
      *     getRunningHash the same as getNMinus3RunningHash. We should verify this is ok to do.
@@ -78,8 +81,11 @@ public interface BlockStreamProducer extends AutoCloseable {
      * Called at the end of a block.
      *
      * <p>If there is a currently open block stream, it produces the block proof, and closes the block.
+     *
+     * @param blockStateProof the block state proof
+     * @return a completable future that is completed when the block is closed and the data has been persisted
      */
-    void endBlock(@NonNull final BlockStateProof blockStateProof);
+    CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof);
 
     /**
      * Write ConsensusEvent to the block stream. It must be in exact consensus time order! This must only be called

@@ -30,8 +30,10 @@ import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.records.streams.state.StateChangesSink;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -43,6 +45,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -204,7 +207,19 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
     /** {@inheritDoc} */
     //    @Override
-    public void endSystemTransaction(@NonNull HederaState state, @NonNull ConsensusTransaction systemTxn) {
+    public void endSystemTransaction(
+            @NonNull HederaState state, @NonNull final NodeInfo creator, @NonNull ConsensusTransaction systemTxn) {
+        // When we get a system StateSignatureTransaction, we need to collect all the signatures and write them to the
+        // block stream. However, as it relates to keeping the running hash, these platform events will need to be
+        // included in the following block, because they are the signatures for the end root hash of the current block.
+        //
+        // I'm not sure I like that as we then have state changes that are lingering and not committed to disk yet.
+
+        // If the system transaction is a state signature transaction, we collect the signature.
+        if (systemTxn instanceof StateSignatureTransaction txn) {
+            blockStreamProducer.writeStateSignatureTransaction(txn);
+        }
+
         blockStreamProducer.writeSystemTransaction(systemTxn);
     }
 
@@ -348,6 +363,16 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     @Override
     public void processRound(
             @NonNull final HederaState state, @NonNull final Round round, @NonNull final Runnable runnable) {
+        // FUTURE: We may want to provide a callback to let the Platform know that a round has been completed
+        // and persisted to disk. If that's the case, we should modify this API for the Platform to provide a promise
+        // to be fulfilled by the BlockStreamProducer.
+
+        // At the beginning of a round, we create a new StateProofProducer. The StateProofProducer is responsible for
+        // collecting system transaction asynchronously outside the single threaded handle workflow. It is also able to
+        // asynchronously produce a state proof, once enough signatures have been collected for the round. The
+        // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
+        final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(state, round.getRoundNum());
+
         try {
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
                 this.startRound(state, round);
@@ -360,7 +385,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             });
         } finally {
             // Write the block proof which should not result in any changes to state.
-            blockStreamProducer.endBlock(constructBlockStateProof(state));
+            blockStreamProducer.endBlock(stateProofProducer.getBlockStateProof());
         }
     }
 
@@ -401,14 +426,17 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     /** {@inheritDoc} */
     @Override
     public void processSystemTransaction(
-            @NonNull HederaState state, @NonNull ConsensusTransaction systemTxn, @NonNull Runnable runnable) {
+            @NonNull HederaState state,
+            @NonNull final NodeInfo creator,
+            @NonNull ConsensusTransaction systemTxn,
+            @NonNull Runnable runnable) {
         BlockObserverSingleton.getInstanceOrThrow().recordSystemTransactionStateChanges(this, systemTxn, () -> {
             this.startSystemTransaction(state, systemTxn);
             try {
                 runnable.run();
             } finally {
                 // In BlockStreams we want to make sure we close any opened rounds.
-                this.endSystemTransaction(state, systemTxn);
+                this.endSystemTransaction(state, creator, systemTxn);
             }
         });
     }
@@ -479,38 +507,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
                     justFinishedBlockNumber + 1,
                     consensusTime);
         }
-    }
-
-    private BlockStateProof constructBlockStateProof(@NonNull final HederaState state) {
-        // Construct everything we need for the block proof.
-
-        // Pass the RunningHashes to the BlockStreamProducer so it can create the block proof.
-        final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
-
-        // TODO(nickpoorman): Fill in with the real hashes.
-        SecureRandom random = new SecureRandom();
-        List<Bytes> treeHashes = new ArrayList<>();
-        for (int i = 0; i < 20; i++) { // generate a good amount of sibling hashes
-            byte[] hash = new byte[48];
-            random.nextBytes(hash);
-            treeHashes.add(Bytes.wrap(hash));
-        }
-        SiblingHashes siblingHashes = new SiblingHashes(treeHashes);
-
-        // TODO(nickpoorman): Fill in with the real signatures.
-        List<BlockSignature> blockSignatures = new ArrayList<>();
-        for (int i = 0; i < 21; i++) { // 2/3 +1 nodes
-            byte[] signature = new byte[48];
-            random.nextBytes(signature);
-            blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
-        }
-
-        return BlockStateProof.newBuilder()
-                .siblingHashes(siblingHashes)
-                .endRunningHashes(runningHashState.get())
-                .blockSignatures(blockSignatures)
-                .build();
     }
 
     /**

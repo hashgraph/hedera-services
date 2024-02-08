@@ -87,6 +87,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -132,6 +133,8 @@ public class HandleWorkflow {
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final CacheWarmer cacheWarmer;
     private final boolean useBlockStreams;
+
+    private final boolean gatherSignaturesEnabled;
 
     @Inject
     public HandleWorkflow(
@@ -232,7 +235,7 @@ public class HandleWorkflow {
 
                 blockRecordManager.processConsensusEvent(state, event, () -> {
                     // handle each transaction of the event
-                    for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
+                    for (final var it = event.unfilteredConsensusTransactionIterator(); it.hasNext(); ) {
                         final var platformTxn = it.next();
                         try {
                             if (!platformTxn.isSystem()) {
@@ -241,7 +244,7 @@ public class HandleWorkflow {
                                 handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                             } else if (usingBlockStreams()) {
                                 // Handle system transaction
-                                handleSystemTransaction(state, platformTxn);
+                                handleSystemTransaction(state, creator, platformTxn);
                             }
                         } catch (final Exception e) {
                             logger.fatal(
@@ -264,8 +267,21 @@ public class HandleWorkflow {
     }
 
     private void handleSystemTransaction(
-            @NonNull final HederaState state, @NonNull final ConsensusTransaction platformTxn) {
-        blockRecordManager.processSystemTransaction(state, platformTxn, () -> {});
+            @NonNull final HederaState state,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn) {
+        if (gatherSignaturesEnabled()) {
+            // Check if the transaction is a StateSignatureTransaction.
+            // FUTURE: We can probably skip this check in the future, but it's here for now so we can toggle the
+            // ability to pull these from preHandle or handle.
+            if (platformTxn instanceof StateSignatureTransaction txn) {
+                blockRecordManager.processSystemTransaction(state, creator, platformTxn, () -> {});
+                return;
+            }
+
+            // Log out that we encountered a system transaction we are not aware of.
+            logger.warn("Encountered an unknown system transaction type: {}", platformTxn);
+        }
     }
 
     private void handlePlatformTransaction(
@@ -870,6 +886,10 @@ public class HandleWorkflow {
 
     private boolean usingBlockStreams() {
         return useBlockStreams;
+    }
+
+    private boolean gatherSignaturesEnabled() {
+        return gatherSignaturesEnabled;
     }
 
     private boolean isConsTimeFirstTransactionInBlock(Instant consensusTimestamp) {

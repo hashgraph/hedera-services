@@ -59,7 +59,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
      * Maybe we should use the platform executor here? What we need is a pool of executors to write the files out.
      * We're talking mostly IO and gzip compression. The work stealing pool is really a ForkJoin pool that has async
      * enabled to process as a LIFO execution order which means we'll have lower latency for the last item submitted to
-     * the service. We chain our write futures so we can ensure the order of the writes.
+     * the service. We chain our write futures, so we can ensure the order of the writes.
      */
     private final ExecutorService writerExecutorService = Executors.newWorkStealingPool();
     /**
@@ -68,7 +68,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
      * 1. Call `writeUserTransactionItems` which will submit a task to the executor service.
      * 2. Call `getRunningHash` or `getNMinus3RunningHash` which will block until the task from step 1 is complete.
      *
-     * We assume that the this is only updated by the handle thread. This is a volatile field, so we can ensure that
+     * We assume that this is only updated by the handle thread. This is a volatile field, so we can ensure that
      * the handle thread and any other thread can see the most recent value when calling `getRunningHash` or
      * `getNMinus3RunningHash`.
      */
@@ -154,13 +154,19 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
     }
 
     /** {@inheritDoc} */
-    public void endBlock(@NonNull final BlockStateProof blockStateProof) {
+    public CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
         lastUpdateTaskFuture = submitTask(() -> {
             final var lastRunningHash = getRunningHashObject();
             // We must write out the block proof before closing the writer.
-            writeStateProof(blockStateProof);
-            closeWriter(lastRunningHash, this.currentBlockNumber.get());
+            blockStateProof
+                    .thenAccept(proof -> {
+                        writeStateProof(proof);
+                        closeWriter(lastRunningHash, this.currentBlockNumber.get());
+                    })
+                    .thenRun(() -> future.complete(null));
         });
+        return future;
     }
 
     /** {@inheritDoc} */
