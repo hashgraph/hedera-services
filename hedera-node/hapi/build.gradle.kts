@@ -25,7 +25,7 @@ description = "Hedera API"
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "add-pbj-types-for-state"
+    branchOrTag = "block-node"
     // As long as the 'branchOrTag' above is not stable, run always:
     outputs.upToDateWhen { false }
 }
@@ -35,8 +35,10 @@ sourceSets {
         pbj {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
         }
         proto {
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
         }
