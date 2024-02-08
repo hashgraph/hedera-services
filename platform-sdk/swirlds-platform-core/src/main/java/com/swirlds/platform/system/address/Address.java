@@ -20,11 +20,11 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.SerializablePublicKey;
-import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

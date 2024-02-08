@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.crypto;
+package com.swirlds.platform.crypto;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.crypto.KeyGeneratingException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;

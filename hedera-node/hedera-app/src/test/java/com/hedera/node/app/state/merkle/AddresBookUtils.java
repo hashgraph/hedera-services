@@ -20,8 +20,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;

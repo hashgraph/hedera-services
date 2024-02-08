@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.crypto;
+package com.swirlds.platform.crypto;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

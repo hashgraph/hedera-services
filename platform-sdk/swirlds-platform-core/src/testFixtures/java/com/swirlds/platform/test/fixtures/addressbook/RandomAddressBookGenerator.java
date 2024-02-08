@@ -19,10 +19,10 @@ package com.swirlds.platform.test.fixtures.addressbook;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.NameUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
