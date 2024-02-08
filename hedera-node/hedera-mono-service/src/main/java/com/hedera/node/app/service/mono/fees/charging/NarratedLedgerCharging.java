@@ -205,6 +205,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
         long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
         ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
         feeDistribution.distributeChargedFee(+chargeableNetworkFee, ledger.getAccountsLedger());
+        totalCharged = chargeableNetworkFee;
     }
 
     private void initEffPayerBalance(EntityNum effPayerId) {
