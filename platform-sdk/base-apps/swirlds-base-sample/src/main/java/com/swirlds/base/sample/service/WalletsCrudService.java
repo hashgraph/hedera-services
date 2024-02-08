@@ -18,9 +18,7 @@ package com.swirlds.base.sample.service;
 
 import com.swirlds.base.sample.domain.Balance;
 import com.swirlds.base.sample.domain.Wallet;
-import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.BalanceDao;
-import com.swirlds.base.sample.persistence.Version;
 import com.swirlds.base.sample.persistence.WalletDao;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +46,7 @@ public class WalletsCrudService extends CrudService<Wallet> {
 
     @Override
     public void delete(@NonNull final String key) {
+
         dao.deleteById(key);
     }
 
@@ -55,8 +54,7 @@ public class WalletsCrudService extends CrudService<Wallet> {
     @Override
     public Wallet create(@NonNull final Wallet body) {
         final Wallet save = dao.save(new Wallet(UUID.randomUUID().toString()));
-        balanceDao.save(new Balance(save, BigDecimal.ZERO, new Version(0)));
-        context.getMetrics().getOrCreate(ApplicationMetrics.WALLETS_COUNT).increment();
+        balanceDao.saveOrUpdate(new Balance(save, BigDecimal.ZERO));
         return save;
     }
 

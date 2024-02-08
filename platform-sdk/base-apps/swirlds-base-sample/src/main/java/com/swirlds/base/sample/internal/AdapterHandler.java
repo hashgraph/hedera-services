@@ -47,7 +47,7 @@ public class AdapterHandler<T> implements HttpHandler {
         this.context = Objects.requireNonNull(context);
         this.path = Objects.requireNonNull(path);
         this.delegatedService = Objects.requireNonNull(delegatedService);
-        this.tps = new CountPerSecond(context.getMetrics(), ApplicationMetrics.TRANSACTION_PER_SECOND);
+        this.tps = new CountPerSecond(context.getMetrics(), ApplicationMetrics.REQUESTS_PER_SECOND);
     }
 
     /**
@@ -72,7 +72,7 @@ public class AdapterHandler<T> implements HttpHandler {
                 case "GET":
                     result = (isId && !id.contains("?"))
                             ? retrieve(id)
-                            : retrieveAll(DataTransferUtils.getUrlParams(urlParts.getLast()));
+                            : retrieveAll(DataTransferUtils.getUrlParams(exchange));
                     statusCode = result == null ? 404 : 200;
                     break;
                 case "POST":

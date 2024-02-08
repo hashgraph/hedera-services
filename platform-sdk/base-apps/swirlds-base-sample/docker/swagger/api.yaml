@@ -1,70 +1,222 @@
-openapi: 3.0.0
+openapi: 3.0.1
 info:
-  title: Base API
-  description: testing API for Platform Base frameworks
+  title: Platform Base Sample
+  description: Simple Rest API sample for Platform Base frameworks
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/swirlds/api/'
+  - url: 'http://localhost:8000/swirlds/api/'
 paths:
   /wallets:
     post:
-      summary: Create Wallet
+      summary: Create a new wallet
       requestBody:
-        required: true
+        description: new Wallet
         content:
           application/json:
             schema:
               type: object
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Wallet successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '500':
+          description: Server error
     get:
-      summary: Get All Wallets
+      summary: Get all Wallets
       responses:
-        '200':
+        "200":
           description: OK
-  /wallets/{walletId}:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wallet'
+  /wallets/{address}:
     get:
       summary: Get a Wallet
       parameters:
-        - name: walletId
+        - name: address
           in: path
-          description: ID of the wallet to retrieve
+          description: address of the wallet to retrieve
           required: true
           schema:
             type: string
       responses:
         '200':
           description: OK
-  /balances/{walletId}:
-    get:
-      summary: Get Balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '404':
+          description: Wallet not found
+        '500':
+          description: Server error
+    delete:
+      summary: Delete a wallet by address
       parameters:
-        - name: walletId
+        - name: address
           in: path
-          description: ID of the wallet to get balance for
+          description: address of the wallet to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Wallet successfully deleted
+        '404':
+          description: Wallet not found
+        '500':
+          description: Server error
+  /balances/{address}:
+    get:
+      summary: Retrieve full balance by address
+      parameters:
+        - name: address
+          in: path
+          description: address of the wallet to retrieve
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: OK
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullBalance'
+        '404':
+          description: Wallet not found
   /transactions:
+    get:
+      summary: Retrieve transactions based on parameters
+      parameters:
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: addressFrom
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: addressTo
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: amountFrom
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+        - name: amountTo
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Search parameters error
     post:
-      summary: Create Transaction
+      summary: Create a new transaction
       requestBody:
-        required: true
+        description: new transaction
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                from:
-                  type: string
-                to:
-                  type: string
-                amount:
-                  type: string
+              $ref: '#/components/schemas/TransactionInput'
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Transaction successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Input error
+        '404':
+          description: Wallets not found
+components:
+  schemas:
+    Wallet:
+      type: object
+      properties:
+        address:
+          type: string
+    Transaction:
+      type: object
+      properties:
+        uuid:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        amount:
+          type: number
+          format: float
+        timestamp:
+          type: integer
+          format: int64
+    TransactionInput:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        amount:
+          type: number
+          format: float
+    Movement:
+      type: object
+      properties:
+        transactionUUID:
+          type: string
+        date:
+          type: string
+          format: date-time
+        amount:
+          type: number
+          format: float
+    FullBalance:
+      type: object
+      properties:
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        amount:
+          type: number
+          format: float
+        balanceMovements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'

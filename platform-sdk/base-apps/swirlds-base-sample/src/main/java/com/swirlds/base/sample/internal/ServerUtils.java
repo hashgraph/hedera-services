@@ -17,7 +17,7 @@
 package com.swirlds.base.sample.internal;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
-import com.swirlds.base.sample.service.BalanceCrudService;
+import com.swirlds.base.sample.service.FullBalanceCrudService;
 import com.swirlds.base.sample.service.TransactionsCrudService;
 import com.swirlds.base.sample.service.WalletsCrudService;
 import com.swirlds.common.context.PlatformContext;
@@ -42,7 +42,7 @@ public class ServerUtils {
         // Create a path handler to associate handlers with different paths
         PathHandler pathHandler = new PathHandler();
 
-        new AdapterHandler<>(swirldsContext, new BalanceCrudService(), config.apiBasePath() + "/balances")
+        new AdapterHandler<>(swirldsContext, new FullBalanceCrudService(), config.apiBasePath() + "/balances")
                 .into(pathHandler);
         new AdapterHandler<>(
                         swirldsContext,

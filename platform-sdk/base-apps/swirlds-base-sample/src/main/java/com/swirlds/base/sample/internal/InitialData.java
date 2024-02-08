@@ -19,7 +19,6 @@ package com.swirlds.base.sample.internal;
 import com.swirlds.base.sample.domain.Balance;
 import com.swirlds.base.sample.domain.Wallet;
 import com.swirlds.base.sample.persistence.BalanceDao;
-import com.swirlds.base.sample.persistence.Version;
 import com.swirlds.base.sample.persistence.WalletDao;
 import java.math.BigDecimal;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +33,11 @@ public class InitialData {
      */
     public static void populate() {
         WalletDao.getInstance().save(new Wallet("0"));
-        BalanceDao.getInstance().save(new Balance(new Wallet("0"), BigDecimal.valueOf(Long.MAX_VALUE), new Version(0)));
+        BalanceDao.getInstance().saveOrUpdate(new Balance(new Wallet("0"), BigDecimal.valueOf(Long.MAX_VALUE)));
+
+        WalletDao.getInstance().save(new Wallet("X"));
+        BalanceDao.getInstance().saveOrUpdate(new Balance(new Wallet("X"), BigDecimal.ZERO));
+
         log.debug("Seed data added");
     }
 }

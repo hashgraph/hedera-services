@@ -59,4 +59,8 @@ public class WalletDao {
     public List<Wallet> findAll() {
         return WALLET_REPOSITORY.values().stream().toList();
     }
+
+    public Integer countAll() {
+        return WALLET_REPOSITORY.size();
+    }
 }

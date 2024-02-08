@@ -18,24 +18,32 @@ package com.swirlds.base.sample.service;
 
 import com.google.common.base.Preconditions;
 import com.swirlds.base.sample.domain.Balance;
+import com.swirlds.base.sample.domain.BalanceMovement;
 import com.swirlds.base.sample.domain.Transaction;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.BalanceDao;
+import com.swirlds.base.sample.persistence.BalanceMovementDao;
 import com.swirlds.base.sample.persistence.TransactionDao;
-import com.swirlds.base.sample.persistence.Version.VersionMismatchException;
+import com.swirlds.base.sample.persistence.TransactionDao.Criteria;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Controls transactions operations
  */
 public class TransactionsCrudService extends CrudService<Transaction> {
+    private static final Logger log = LogManager.getLogger(TransactionsCrudService.class);
     private final @NonNull TransactionDao transactionDao;
     private final @NonNull BalanceDao balanceDao;
+    private final @NonNull BalanceMovementDao balanceMovementDao;
     private final @NonNull PlatformContext context;
 
     public TransactionsCrudService(@NonNull final PlatformContext context) {
@@ -43,62 +51,84 @@ public class TransactionsCrudService extends CrudService<Transaction> {
         this.context = Objects.requireNonNull(context, "transaction cannot be null");
         this.transactionDao = TransactionDao.getInstance();
         this.balanceDao = BalanceDao.getInstance();
+        this.balanceMovementDao = BalanceMovementDao.getInstance();
     }
 
     @NonNull
     @Override
     public Transaction create(@NonNull final Transaction transaction) {
+        final long timestamp = System.currentTimeMillis();
+        final long startNano = System.nanoTime();
         Objects.requireNonNull(transaction, "transaction cannot be null");
         Preconditions.checkArgument(transaction.from() != null, "transaction#from cannot be null");
         Preconditions.checkArgument(transaction.to() != null, "transaction#to cannot be null");
         Preconditions.checkArgument(transaction.amount() != null, "transaction#amount cannot be null");
-        Preconditions.checkArgument(balanceDao.findById(transaction.from()) != null, "origin wallet not found");
-        Preconditions.checkArgument(balanceDao.findById(transaction.to()) != null, "destiny wallet not found");
 
-        boolean done = false;
-        while (!done) {
-            try {
-                final Balance fromBalance = balanceDao.findById(transaction.from());
-                Preconditions.checkArgument(
-                        fromBalance.amount().compareTo(transaction.amount()) >= 0,
-                        "Not enough balance in originating account");
-                final Balance afterFromBalance = new Balance(
-                        fromBalance.wallet(),
-                        fromBalance.amount().subtract(transaction.amount()),
-                        fromBalance.version());
-                balanceDao.save(afterFromBalance);
-                done = true;
-            } catch (VersionMismatchException e) {
-                // retry
-            }
-        }
-        done = false;
-        while (!done) {
-            try {
-                final Balance toBalance = balanceDao.findById(transaction.to());
-                Preconditions.checkArgument(toBalance != null, "destiny wallet not found");
-
-                final Balance afterToBalance = new Balance(
-                        toBalance.wallet(), toBalance.amount().add(transaction.amount()), toBalance.version());
-                balanceDao.save(afterToBalance);
-                done = true;
-            } catch (VersionMismatchException e) {
-                // retry
-            }
+        final Balance fromBalance = balanceDao.findWithBlockForUpdate(transaction.from());
+        try {
+            Preconditions.checkArgument(fromBalance != null, "origin wallet not found");
+            Preconditions.checkArgument(
+                    fromBalance.amount().compareTo(transaction.amount()) >= 0,
+                    "Not enough balance in originating account");
+        } catch (IllegalArgumentException e) {
+            balanceDao.release(transaction.from());
+            context.getMetrics()
+                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
+            throw e;
         }
 
-        final Transaction save = transactionDao.save(new Transaction(
-                UUID.randomUUID().toString(), transaction.from(), transaction.to(), transaction.amount()));
-        context.getMetrics().getOrCreate(ApplicationMetrics.TRANSACTION_COUNT).increment();
-        return save;
+        final Balance toBalance = balanceDao.findWithBlockForUpdate(transaction.to());
+        try {
+            Preconditions.checkArgument(toBalance != null, "destination wallet not found");
+        } catch (IllegalArgumentException e) {
+            balanceDao.release(transaction.from());
+            balanceDao.release(transaction.to());
+            context.getMetrics()
+                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
+            throw e;
+        }
+
+        final String uuid = UUID.randomUUID().toString();
+
+        try {
+            balanceMovementDao.save(new BalanceMovement(
+                    uuid, timestamp, fromBalance.wallet(), transaction.amount().negate()));
+            balanceMovementDao.save(new BalanceMovement(uuid, timestamp, toBalance.wallet(), transaction.amount()));
+            final Transaction save = transactionDao.save(
+                    new Transaction(uuid, transaction.from(), transaction.to(), transaction.amount(), timestamp));
+            balanceDao.saveOrUpdate(fromBalance);
+            balanceDao.saveOrUpdate(toBalance);
+            context.getMetrics()
+                    .getOrCreate(ApplicationMetrics.TRANSACTION_COUNT)
+                    .increment();
+            return save;
+        } catch (Exception e) {
+            balanceMovementDao.deleteAllWith(transaction.from(), uuid, timestamp);
+            balanceMovementDao.deleteAllWith(transaction.to(), uuid, timestamp);
+            transactionDao.delete(uuid);
+            log.error("unexpected error applying transaction", e);
+            throw new RuntimeException("unexpected error applying transaction");
+        } finally {
+            balanceDao.release(transaction.from());
+            balanceDao.release(transaction.to());
+            context.getMetrics()
+                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
+        }
     }
 
     @NonNull
     @Override
     public List<Transaction> retrieveAll(@NonNull final Map<String, String> params) {
         Objects.requireNonNull(params, "params must not be null");
-        final String walletId = params.get("walletId");
-        Preconditions.checkArgument(walletId != null, "walletId must not be null");
-        return transactionDao.findByWalletId(walletId);
+        final Criteria criteria;
+        try {
+            criteria = Criteria.fromMap(params);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error parsing parameters for search" + params);
+        }
+        return transactionDao.findByCriteria(criteria);
     }
 }

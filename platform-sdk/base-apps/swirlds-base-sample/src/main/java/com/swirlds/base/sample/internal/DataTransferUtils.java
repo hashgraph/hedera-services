@@ -17,7 +17,6 @@
 package com.swirlds.base.sample.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.undertow.server.HttpServerExchange;
@@ -25,10 +24,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -133,18 +138,26 @@ public class DataTransferUtils {
     /**
      * It does not convert lists into List objects.
      *
-     * @param url the url to get the parameters from
-     * @return all parameters after ? in a map.
+     * @param exchange Http exchange
+     * @return all url parameters in a map.
      */
-    public static @NonNull Map<String, String> getUrlParams(final @NonNull String url) {
-        int lastIndex = url.lastIndexOf("?");
-        if (lastIndex >= 0 && lastIndex < url.length() - 1) {
-            return Arrays.stream(url.substring(lastIndex + 1).split("&"))
-                    .map(v -> v.split("="))
-                    .filter(v -> v.length == 2)
-                    .collect(Collectors.toMap(v -> v[0], v -> v[1]));
+    public static @NonNull Map<String, String> getUrlParams(final @NonNull HttpServerExchange exchange) {
+        return exchange.getQueryParameters().entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().getFirst()));
+    }
+
+    public static Date parseDate(final String dateString) {
+
+        Instant result;
+        if (dateString.contains(":")) {
+            result = LocalDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME)
+                    .atZone(ZoneOffset.systemDefault())
+                    .toInstant();
         } else {
-            return ImmutableMap.of();
+            result = LocalDate.parse(dateString, DateTimeFormatter.ISO_DATE)
+                    .atStartOfDay(ZoneOffset.systemDefault())
+                    .toInstant();
         }
+        return Date.from(result);
     }
 }

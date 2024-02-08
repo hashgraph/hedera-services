@@ -14,26 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.sample.service;
+package com.swirlds.base.sample.domain;
 
-import com.swirlds.base.sample.domain.Balance;
-import com.swirlds.base.sample.persistence.BalanceDao;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigDecimal;
 
-/**
- * Controls balance operations
- */
-public class BalanceCrudService extends CrudService<Balance> {
-    private final BalanceDao dao;
-
-    public BalanceCrudService() {
-        super(Balance.class);
-        this.dao = BalanceDao.getInstance();
-    }
-
-    @NonNull
-    @Override
-    public Balance retrieve(@NonNull final String key) {
-        return dao.findById(key);
-    }
-}
+public record BalanceMovement(
+        String transactionUUID, @NonNull Long timestamp, @NonNull Wallet wallet, @NonNull BigDecimal amount) {}

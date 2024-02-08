@@ -16,12 +16,18 @@
 
 package com.swirlds.base.sample.persistence;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Predicates;
 import com.swirlds.base.sample.domain.Transaction;
+import com.swirlds.base.sample.internal.DataTransferUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import org.apache.logging.log4j.util.Strings;
 
 /**
  * in-memory simple data layer for Transactions
@@ -36,39 +42,91 @@ public class TransactionDao {
         return InstanceHolder.INSTANCE;
     }
 
-    private static final Map<String, Map<String, Transaction>> TRANSACTION_REPOSITORY = new ConcurrentHashMap<>();
+    private static final Map<String, Transaction> TRANSACTION_REPOSITORY = new ConcurrentHashMap<>();
 
     public @NonNull Transaction save(final @NonNull Transaction transaction) {
-        TRANSACTION_REPOSITORY.computeIfPresent(transaction.from(), (a, b) -> {
-            if (b.containsKey(transaction.id())) {
-                throw new IllegalArgumentException("Non modifiable resource");
-            }
 
-            b.put(transaction.id(), transaction);
-            return b;
-        });
-
-        TRANSACTION_REPOSITORY.putIfAbsent(
-                transaction.from(), new ConcurrentHashMap<>(ImmutableMap.of(transaction.id(), transaction)));
+        if (TRANSACTION_REPOSITORY.containsKey(transaction.uuid())) {
+            throw new IllegalArgumentException("Non modifiable resource");
+        }
+        TRANSACTION_REPOSITORY.put(transaction.uuid(), transaction);
         return transaction;
     }
 
-    public @NonNull List<Transaction> findByWalletId(final @NonNull String id) {
-        return TRANSACTION_REPOSITORY.getOrDefault(id, ImmutableMap.of()).values().stream()
+    /**
+     * Search using a criteria
+     */
+    public @NonNull List<Transaction> findByCriteria(final @NonNull Criteria criteria) {
+        return TRANSACTION_REPOSITORY.values().stream()
+                .filter(criteria.toSearchPredicate())
                 .toList();
     }
 
-    public void delete(final @NonNull Transaction transaction) {
-        if (!TRANSACTION_REPOSITORY.containsKey(transaction.from())) {
-            throw new IllegalArgumentException("Resource does not exist");
+    /**
+     * Delete the transaction
+     */
+    public void delete(final String uuid) {
+        TRANSACTION_REPOSITORY.remove(uuid);
+    }
+
+    /**
+     * Searching criteria
+     */
+    public record Criteria(
+            String uuid,
+            String addressFrom,
+            String addressTo,
+            Date from,
+            Date to,
+            BigDecimal amountFrom,
+            BigDecimal amountTo) {
+
+        /**
+         * Create a searching criteria based on a map containing values
+         */
+        public static @NonNull Criteria fromMap(final @NonNull Map<String, String> parameters) {
+            String uuid = parameters.get("uuid");
+            String addressFrom = parameters.get("addressFrom");
+            String addressTo = parameters.get("addressTo");
+            Date from = parameters.get("from") != null ? DataTransferUtils.parseDate(parameters.get("from")) : null;
+            Date to = parameters.get("to") != null ? DataTransferUtils.parseDate(parameters.get("to")) : null;
+            BigDecimal amountFrom =
+                    parameters.get("amountFrom") != null ? new BigDecimal(parameters.get("amountFrom")) : null;
+            BigDecimal amountTo =
+                    parameters.get("amountTo") != null ? new BigDecimal(parameters.get("amountTo")) : null;
+
+            return new Criteria(uuid, addressFrom, addressTo, from, to, amountFrom, amountTo);
         }
 
-        TRANSACTION_REPOSITORY.computeIfPresent(transaction.from(), (a, b) -> {
-            if (!b.containsKey(transaction.id())) {
-                throw new IllegalArgumentException("Resource does not exist");
+        /**
+         * @return a predicate to perform the search
+         */
+        private Predicate<Transaction> toSearchPredicate() {
+            if (Strings.isNotBlank(uuid)) {
+                return (t) -> t.uuid().equals(uuid);
             }
-            b.remove(transaction.id());
-            return b;
-        });
+
+            Predicate<Transaction> result = Predicates.alwaysTrue();
+            if (Strings.isNotBlank(addressFrom)) {
+                result = result.and(t -> t.from().equals(addressFrom));
+            }
+            if (Strings.isNotBlank(addressTo)) {
+                result = result.and(t -> t.to().equals(addressTo));
+            }
+            if (Objects.nonNull(from)) {
+                result = result.and(t -> new Date(t.timestamp()).after(from));
+            }
+            if (Objects.nonNull(to)) {
+                result = result.and(t -> new Date(t.timestamp()).before(to));
+            }
+            if (Objects.nonNull(amountFrom)) {
+                result = result.and(t -> amountFrom.compareTo(t.amount()) <= 0);
+            }
+            if (Objects.nonNull(amountTo)) {
+                result = result.and(t -> amountTo.compareTo(t.amount()) >= 0);
+            }
+
+            return result;
+        }
     }
 }

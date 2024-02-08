@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.sample.persistence;
+package com.swirlds.base.sample.domain;
 
-public record Version(int version) {
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
-    public Version checkAgainst(Version other) {
-        if (this.version != other.version()) {
-            throw new VersionMismatchException();
-        }
-        return new Version(this.version + 1);
-    }
+public record FullBalance(@NonNull Wallet wallet, @NonNull BigDecimal amount, @NonNull List<Movement> movements) {
 
-    public static class VersionMismatchException extends RuntimeException {}
+    public record Movement(@NonNull Date date, @NonNull BigDecimal amount, @NonNull String transactionUUID) {}
 }

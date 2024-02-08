@@ -17,10 +17,15 @@
 package com.swirlds.base.sample.persistence;
 
 import com.swirlds.base.sample.domain.Balance;
+import com.swirlds.base.sample.domain.Wallet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * in-memory simple data layer for Balance
@@ -35,18 +40,58 @@ public class BalanceDao {
         return InstanceHolder.INSTANCE;
     }
 
-    private static final Map<String, Balance> BALANCE_REPOSITORY = new ConcurrentHashMap<>();
+    private static final Map<String, InternalBalance> BALANCE_REPOSITORY = new ConcurrentHashMap<>();
 
-    public @NonNull Balance save(final @NonNull Balance balance) {
-        BALANCE_REPOSITORY.computeIfPresent(balance.wallet().address(), (k, b) -> {
-            final Version version = b.version().checkAgainst(balance.version());
-            return new Balance(b.wallet(), balance.amount(), version);
+    /**
+     * Saves or updates the object
+     */
+    public @NonNull Balance saveOrUpdate(final @NonNull Balance balance) {
+        BALANCE_REPOSITORY.computeIfPresent(balance.wallet().address(), (s, b) -> {
+            b.lock.writeLock().lock();
+            if (b.value.compareAndSet(b.value.get(), balance.amount())) {
+                b.version.incrementAndGet();
+            }
+            b.lock.writeLock().unlock();
+            return b;
         });
-        BALANCE_REPOSITORY.putIfAbsent(balance.wallet().address(), balance);
+        BALANCE_REPOSITORY.putIfAbsent(
+                balance.wallet().address(),
+                new InternalBalance(
+                        new AtomicReference<>(balance.amount()),
+                        new AtomicLong(0),
+                        balance.wallet(),
+                        new ReentrantReadWriteLock()));
         return balance;
     }
 
-    public @Nullable Balance findById(final @NonNull String id) {
-        return BALANCE_REPOSITORY.get(id);
+    public @Nullable Balance findById(final @NonNull String address) {
+        final InternalBalance internalBalance = BALANCE_REPOSITORY.get(address);
+        return internalBalance == null ? null : new Balance(internalBalance.wallet, internalBalance.value.get());
     }
+
+    /**
+     * Retrieves the object with a lock for update. No other write operations can be performed against the object until
+     * released.
+     */
+    public @Nullable Balance findWithBlockForUpdate(final @NonNull String address) {
+        final InternalBalance iBalance = BALANCE_REPOSITORY.get(address);
+        if (iBalance == null) {
+            return null;
+        }
+        iBalance.lock.writeLock().lock();
+        return new Balance(iBalance.wallet, iBalance.value.get());
+    }
+
+    /**
+     * Release the write lock. Must be hold by the thread.
+     */
+    public void release(final @NonNull String address) {
+        final InternalBalance iBalance = BALANCE_REPOSITORY.get(address);
+        if (iBalance != null) {
+            iBalance.lock.writeLock().unlock();
+        }
+    }
+
+    private record InternalBalance(
+            AtomicReference<BigDecimal> value, AtomicLong version, Wallet wallet, ReentrantReadWriteLock lock) {}
 }
