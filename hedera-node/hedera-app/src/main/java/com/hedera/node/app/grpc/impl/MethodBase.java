@@ -140,7 +140,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             callsHandledSpeedometer.cycle();
         } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            logger.error("Failed to handle call! Unexpected exception", e);
+            logger.error("Possibly CATASTROPHIC failure while handling a call and running the ingest workflow", e);
             callsFailedCounter.increment();
             responseObserver.onError(e);
         }
