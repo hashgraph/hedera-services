@@ -6,7 +6,7 @@ import "./HederaTokenService.sol";
 
 contract CryptoTransfer is HederaTokenService {
 
-    constructor() public {
+    constructor() public payable {
     }
 
     function transferMultipleTokens(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
@@ -14,6 +14,10 @@ contract CryptoTransfer is HederaTokenService {
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Crypto Transfer Failed");
         }
+    }
+
+    function sendViaTransferWithAmount(address payable _to, uint256 amount) public {
+        _to.transfer(amount);
     }
 
     function sendViaTransfer(address payable _to) public payable {

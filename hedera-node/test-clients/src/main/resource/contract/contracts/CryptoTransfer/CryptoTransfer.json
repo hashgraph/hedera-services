@@ -1,7 +1,7 @@
 [
   {
     "inputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "constructor"
   },
   {
@@ -60,6 +60,24 @@
     "name": "sendViaTransfer",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "sendViaTransferWithAmount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

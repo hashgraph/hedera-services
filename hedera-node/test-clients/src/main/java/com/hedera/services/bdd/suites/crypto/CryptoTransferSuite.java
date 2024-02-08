@@ -145,6 +145,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2166,14 +2167,17 @@ public class CryptoTransferSuite extends HapiSuite {
                 .given(
                         cryptoCreate(senderAccount).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(transferContract),
-                        contractCreate(transferContract),
+                        contractCreate(transferContract).balance(ONE_HBAR),
                         uploadInitCode(balanceContract),
                         contractCreate(balanceContract))
-                .when(contractCall(transferContract, "sendViaTransfer", mirrorAddrWith(359L))
+                .when(contractCall(
+                                transferContract,
+                                "sendViaTransferWithAmount",
+                                mirrorAddrWith(359L),
+                                BigInteger.valueOf(15L))
                         .payingWith(senderAccount)
-                        .sending(ONE_HBAR * 10)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getAccountBalance(senderAccount, false).hasTinyBars(9994320000L));
+                .then(getAccountBalance(transferContract, true).hasTinyBars(ONE_HBAR));
     }
 
     @HapiTest
