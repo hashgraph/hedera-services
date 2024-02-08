@@ -89,7 +89,7 @@ public class FutureEventBuffer {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
-        } else if (event.getHashedData().getBirthRound() <= eventWindow.pendingConsensusRound()) {
+        } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
             // this is not a future event, no need to buffer it
             return List.of(event);
         }
@@ -113,7 +113,7 @@ public class FutureEventBuffer {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         final List<GossipEvent> events = new ArrayList<>();
-        futureEvents.shiftWindow(eventWindow.pendingConsensusRound(), (round, roundEvents) -> {
+        futureEvents.shiftWindow(eventWindow.getPendingConsensusRound(), (round, roundEvents) -> {
             for (final GossipEvent event : roundEvents) {
                 if (!eventWindow.isAncient(event)) {
                     events.add(event);
