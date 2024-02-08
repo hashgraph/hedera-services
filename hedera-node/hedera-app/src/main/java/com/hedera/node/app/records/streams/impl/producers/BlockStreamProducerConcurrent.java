@@ -154,18 +154,33 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
     }
 
     /** {@inheritDoc} */
-    public CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        lastUpdateTaskFuture = submitTask(() -> {
-            final var lastRunningHash = getRunningHashObject();
-            // We must write out the block proof before closing the writer.
-            blockStateProof
-                    .thenAccept(proof -> {
+    public CompletableFuture<BlockStateProof> endBlock(
+            @NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
+        final var future = CompletableFuture.supplyAsync(
+                () -> {
+                    throwIfClosed();
+                    try {
+                        // Wait/block until the blockStateProof is available
+                        BlockStateProof proof =
+                                blockStateProof.get(); // This will block the thread until the future completes.
+
+                        // Execute the necessary operations with the BlockStateProof
+                        final var lastRunningHash = getRunningHashObject();
                         writeStateProof(proof);
                         closeWriter(lastRunningHash, this.currentBlockNumber.get());
-                    })
-                    .thenRun(() -> future.complete(null));
-        });
+
+                        return proof; // The future completes with the BlockStateProof once closeWriter returns
+                    } catch (InterruptedException | ExecutionException e) {
+                        // Handle possible exceptions from blockStateProof.get()
+                        throw new RuntimeException("Error waiting for block state proof", e);
+                    }
+                },
+                executorService); // Ensure this runs in the specified executor, maintaining the sequential logic
+
+        // We must maintain a reference to the most recent future for the blocking calls in this class.
+        lastUpdateTaskFuture = future;
+
+        // The returned future completes once closeWriter returns and contains the BlockStateProof.
         return future;
     }
 
@@ -247,10 +262,6 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
         lastUpdateTaskFuture = submitTask(() -> {
-            // If we get a ConsensusEvent that has a different version from the one we have been working on for this
-            // block, then we must force a new block to be created.
-            //            if (lastConsensusEventVersion == null) {}
-
             final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
             updateRunningHashes(serializedBlockItem);
             writeSerializedBlockItem(serializedBlockItem);

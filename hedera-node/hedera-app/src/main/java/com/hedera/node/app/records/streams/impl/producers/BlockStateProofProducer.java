@@ -46,7 +46,10 @@ public class BlockStateProofProducer {
 
     public CompletableFuture<BlockStateProof> getBlockStateProof() {
         // TODO(nickpoorman): Implement this.
+        return CompletableFuture.completedFuture(null);
+    }
 
+    private CompletableFuture<BlockStateProof> buildProof() {
         // Construct everything we need for the block proof.
 
         // Pass the RunningHashes to the BlockStreamProducer so it can create the block proof.

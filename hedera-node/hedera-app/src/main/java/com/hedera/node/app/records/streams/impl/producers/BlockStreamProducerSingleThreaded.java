@@ -130,29 +130,28 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    public CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
-        // We block until the block state proof is available, then we write it out and close the writer.
-        // Since we need to conform to the interface, we return a new CompletableFuture that will complete when the
-        // writer has been closed.
-        return blockStateProof.thenApply(blockState -> {
-            try {
-                // Perform the operations within the try block to handle potential exceptions
-                final var lastRunningHash = getRunningHashObject();
+    public CompletableFuture<BlockStateProof> endBlock(
+            @NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
+        try {
+            // Block until the blockStateProof is available. This call makes the operation synchronous.
+            BlockStateProof proof = blockStateProof.get();
 
-                // Assuming writeStateProof and closeWriter are methods that throw checked exceptions
-                writeStateProof(blockState);
-                closeWriter(lastRunningHash, this.currentBlockNumber);
+            // Perform the synchronous operations.
+            final var lastRunningHash = getRunningHashObject();
+            writeStateProof(proof);
+            closeWriter(lastRunningHash, this.currentBlockNumber);
 
-                // If the operations complete successfully, return null for CompletableFuture<Void>
-                return null;
-            } catch (Exception e) {
-                // Handle exceptions possibly thrown by the synchronous operations
-                // Since CompletableFuture's lambda cannot throw checked exceptions directly,
-                // you'll need to wrap any checked exceptions in a RuntimeException for simplicity,
-                // or handle them according to your error handling policy
-                throw new RuntimeException(e);
-            }
-        });
+            // Return a CompletableFuture that is immediately completed with the proof.
+            // This fulfills the contract of returning a CompletableFuture and ensures it is only completed after
+            // closeWriter has completed.
+            return CompletableFuture.completedFuture(proof);
+        } catch (InterruptedException | ExecutionException e) {
+            // Handle the checked exceptions thrown by Future.get()
+            // CompletableFuture's completion exceptionally handles cases where the future cannot complete normally.
+            CompletableFuture<BlockStateProof> exceptionallyCompletedFuture = new CompletableFuture<>();
+            exceptionallyCompletedFuture.completeExceptionally(e);
+            return exceptionallyCompletedFuture;
+        }
     }
 
     /** {@inheritDoc} */

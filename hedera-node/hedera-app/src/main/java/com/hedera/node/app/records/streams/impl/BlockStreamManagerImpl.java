@@ -52,6 +52,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -361,7 +362,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
     /** {@inheritDoc} */
     @Override
-    public void processRound(
+    public CompletableFuture<BlockStateProof> processRound(
             @NonNull final HederaState state, @NonNull final Round round, @NonNull final Runnable runnable) {
         // FUTURE: We may want to provide a callback to let the Platform know that a round has been completed
         // and persisted to disk. If that's the case, we should modify this API for the Platform to provide a promise
@@ -385,7 +386,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             });
         } finally {
             // Write the block proof which should not result in any changes to state.
-            blockStreamProducer.endBlock(stateProofProducer.getBlockStateProof());
+            return blockStreamProducer.endBlock(stateProofProducer.getBlockStateProof());
         }
     }
 

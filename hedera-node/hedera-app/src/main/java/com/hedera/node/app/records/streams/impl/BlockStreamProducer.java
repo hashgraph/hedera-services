@@ -85,7 +85,7 @@ public interface BlockStreamProducer extends AutoCloseable {
      * @param blockStateProof the block state proof
      * @return a completable future that is completed when the block is closed and the data has been persisted
      */
-    CompletableFuture<Void> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof);
+    CompletableFuture<BlockStateProof> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof);
 
     /**
      * Write ConsensusEvent to the block stream. It must be in exact consensus time order! This must only be called
