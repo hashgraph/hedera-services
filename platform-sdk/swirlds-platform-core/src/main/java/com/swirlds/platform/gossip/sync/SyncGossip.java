@@ -30,7 +30,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -69,7 +68,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -109,7 +107,6 @@ public class SyncGossip extends AbstractGossip {
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
-     * @param consensusRef                  a pointer to consensus
      * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
@@ -133,7 +130,6 @@ public class SyncGossip extends AbstractGossip {
             @Nullable final Hash epochHash,
             @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -172,14 +168,10 @@ public class SyncGossip extends AbstractGossip {
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
-                consensusRef::get,
                 receivedEventHandler,
                 syncManager,
                 intakeEventCounter,
-                shadowgraphExecutor,
-                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
-                false,
-                () -> {});
+                shadowgraphExecutor);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);

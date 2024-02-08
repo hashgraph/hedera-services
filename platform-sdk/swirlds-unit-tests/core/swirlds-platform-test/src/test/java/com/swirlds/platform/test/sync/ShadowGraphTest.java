@@ -164,7 +164,7 @@ class ShadowgraphTest {
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
 
-        shadowgraph.updateNonExpiredEventWindow(eventWindow);
+        shadowgraph.updateEventWindow(eventWindow);
 
         Set<ShadowEvent> allEvents = shadowgraph.findAncestors(shadowgraph.getTips(), (e) -> true);
         for (ShadowEvent event : allEvents) {
@@ -306,7 +306,7 @@ class ShadowgraphTest {
         ShadowgraphReservation r1 = shadowgraph.reserve();
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
-        shadowgraph.updateNonExpiredEventWindow(eventWindow);
+        shadowgraph.updateEventWindow(eventWindow);
 
         ShadowgraphReservation r2 = shadowgraph.reserve();
         assertNotEquals(
@@ -369,7 +369,7 @@ class ShadowgraphTest {
         long expireBelowGen = random.nextInt((int) maxGen) + 2;
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
-        shadowgraph.updateNonExpiredEventWindow(eventWindow);
+        shadowgraph.updateEventWindow(eventWindow);
 
         assertEventsBelowGenAreExpired(expireBelowGen);
     }
@@ -409,13 +409,13 @@ class ShadowgraphTest {
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
         ShadowgraphReservation r0 = shadowgraph.reserve();
-        shadowgraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 1,
                 GENERATION_THRESHOLD));
         ShadowgraphReservation r1 = shadowgraph.reserve();
-        shadowgraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -431,7 +431,7 @@ class ShadowgraphTest {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowgraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -441,7 +441,7 @@ class ShadowgraphTest {
         assertEventsBelowGenAreExpired(0);
 
         r0.close();
-        shadowgraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -553,7 +553,7 @@ class ShadowgraphTest {
     void testAddEventWithExpiredGeneration() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowgraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 1,
@@ -597,7 +597,7 @@ class ShadowgraphTest {
                 0 /* ignored by shadowgraph */,
                 newEvent.getGeneration(),
                 GENERATION_THRESHOLD);
-        shadowgraph.updateNonExpiredEventWindow(eventWindow);
+        shadowgraph.updateEventWindow(eventWindow);
 
         assertDoesNotThrow(() -> shadowgraph.addEvent(newEvent), "Events with expired parents should be added.");
     }
@@ -716,7 +716,7 @@ class ShadowgraphTest {
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, oldestTipGen + 1, GENERATION_THRESHOLD);
-        shadowgraph.updateNonExpiredEventWindow(eventWindow);
+        shadowgraph.updateEventWindow(eventWindow);
 
         assertEquals(
                 numTipsBeforeExpiry - tipsToExpire.size(),

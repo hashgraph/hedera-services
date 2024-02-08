@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.sync;
 
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import java.util.HashSet;
@@ -55,10 +55,10 @@ class SyncTestUtilsTest {
         knownSet.add(e3);
         knownSet.add(e1);
 
-        final GraphGenerations generations = new Generations(0, 1, 3);
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(0, 1, 0, GENERATION_THRESHOLD);
 
         final Predicate<ShadowEvent> unknownNonAncient =
-                SyncUtils.unknownNonAncient(knownSet, generations, generations);
+                SyncUtils.unknownNonAncient(knownSet, eventWindow, eventWindow, GENERATION_THRESHOLD);
 
         assertFalse(unknownNonAncient.test(e1), "e1 is both ancient and known, should be false");
         assertFalse(unknownNonAncient.test(e2), "e2 is ancient, should be false");

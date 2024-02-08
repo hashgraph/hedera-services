@@ -176,7 +176,7 @@ class ShadowgraphByBirthRoundTests {
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
 
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
 
         Set<ShadowEvent> allEvents = shadowGraph.findAncestors(shadowGraph.getTips(), (e) -> true);
         for (ShadowEvent event : allEvents) {
@@ -322,7 +322,7 @@ class ShadowgraphByBirthRoundTests {
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
 
         ShadowgraphReservation r2 = shadowGraph.reserve();
         assertNotEquals(
@@ -388,7 +388,7 @@ class ShadowgraphByBirthRoundTests {
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
 
         assertEventsBelowBirthRoundAreExpired(expireBelowBirthRound);
     }
@@ -428,13 +428,13 @@ class ShadowgraphByBirthRoundTests {
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
         ShadowgraphReservation r0 = shadowGraph.reserve();
-        shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
         ShadowgraphReservation r1 = shadowGraph.reserve();
-        shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -450,7 +450,7 @@ class ShadowgraphByBirthRoundTests {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -460,7 +460,7 @@ class ShadowgraphByBirthRoundTests {
         assertEventsBelowBirthRoundAreExpired(0);
 
         r0.close();
-        shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -572,7 +572,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithExpiredBirthRound() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowGraph.updateNonExpiredEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new NonAncientEventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
@@ -616,7 +616,7 @@ class ShadowgraphByBirthRoundTests {
                 1 /* ignored by shadowgraph */,
                 newEvent.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD),
                 BIRTH_ROUND_THRESHOLD);
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
 
         assertDoesNotThrow(() -> shadowGraph.addEvent(newEvent), "Events with expired parents should be added.");
     }
@@ -740,7 +740,7 @@ class ShadowgraphByBirthRoundTests {
                 1 /* ignored by shadowgraph */,
                 oldestTipBirthRound + 1,
                 BIRTH_ROUND_THRESHOLD);
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        shadowGraph.updateEventWindow(eventWindow);
 
         assertEquals(
                 numTipsBeforeExpiry - tipsToExpire.size(),

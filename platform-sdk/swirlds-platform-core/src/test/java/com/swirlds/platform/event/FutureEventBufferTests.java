@@ -115,7 +115,7 @@ class FutureEventBufferTests {
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.pendingConsensusRound()) {
+            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {
@@ -195,7 +195,7 @@ class FutureEventBufferTests {
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.pendingConsensusRound()) {
+            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {
