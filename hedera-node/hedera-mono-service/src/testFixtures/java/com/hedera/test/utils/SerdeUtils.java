@@ -97,7 +97,8 @@ public class SerdeUtils {
                 that.getFunctionParameters().isEmpty()
                         ? EvmFnResult.EMPTY
                         : that.getFunctionParameters().toByteArray(),
-                that.hasSenderId() ? EntityId.fromGrpcAccountId(that.getSenderId()) : null);
+                that.hasSenderId() ? EntityId.fromGrpcAccountId(that.getSenderId()) : null,
+                that.hasSignerNonce() ? that.getSignerNonce().getValue() : null);
     }
 
     public static EvmLog fromGrpc(ContractLoginfo grpc) {
