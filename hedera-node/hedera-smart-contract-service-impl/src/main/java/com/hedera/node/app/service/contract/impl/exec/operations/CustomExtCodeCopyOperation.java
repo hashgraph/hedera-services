@@ -89,7 +89,7 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             @NonNull final Address address,
             final long memOffset,
             final long numBytes) {
-        final long cost = cost(frame, memOffset, numBytes, frame.isAddressWarm(address));
+        final long cost = cost(frame, memOffset, numBytes, false);
         return frame.getRemainingGas() < cost;
     }
 }
