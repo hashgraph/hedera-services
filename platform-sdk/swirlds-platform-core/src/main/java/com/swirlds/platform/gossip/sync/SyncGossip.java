@@ -267,7 +267,7 @@ public class SyncGossip extends AbstractGossip {
                                                     >= eventConfig.eventIntakeQueueThrottleSize(),
                                             Duration.ZERO,
                                             syncMetrics,
-                                            time)))))
+                                            platformStatusManager)))))
                     .build());
         }
 
