@@ -32,7 +32,6 @@ testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions")
-    requires("com.swirlds.platform.core")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

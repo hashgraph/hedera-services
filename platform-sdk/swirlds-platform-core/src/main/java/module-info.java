@@ -78,7 +78,8 @@ module com.swirlds.platform.core {
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
-            com.hedera.node.test.clients;
+            com.hedera.node.test.clients,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test;

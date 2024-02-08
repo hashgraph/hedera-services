@@ -33,7 +33,15 @@ import java.util.Objects;
  * A serializable wrapper for an {@link X509Certificate} instance.
  */
 public class SerializableX509Certificate implements SelfSerializable {
-    public static final int MAX_CERT_LENGTH = 1024 * 8 * 8;
+
+    /**
+     * There is no upper bound on the size of certs.
+     * A basic cert is around 1KB, with the possibility of certificate chains, this increases.
+     * Our use case includes RSA self-signed certificates with an EC TLS certificate signed by the RSA cert.
+     * 8KB is probably more space than needed for our use case, but better to be safe than sorry.
+     */
+    public static final int MAX_CERT_LENGTH = 1024 * 8;
+
     private static final long CLASS_ID = 0x2332728f044c1c87L;
 
     private static final class ClassVersion {
