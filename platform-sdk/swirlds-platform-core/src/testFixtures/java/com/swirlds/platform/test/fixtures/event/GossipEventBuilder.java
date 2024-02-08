@@ -58,7 +58,7 @@ public class GossipEventBuilder {
         random = new Random();
         creatorId = new NodeId(0);
         timestamp = null;
-        numberOfTransactions = 0;
+        numberOfTransactions = 2;
         transactionSize = 4;
         transactions = null;
         selfParent = null;
@@ -71,6 +71,11 @@ public class GossipEventBuilder {
 
     public GossipEventBuilder setRandom(final Random random) {
         this.random = random;
+        return this;
+    }
+
+    public GossipEventBuilder setSeed(final long seed) {
+        this.random = new Random(seed);
         return this;
     }
 
@@ -180,7 +185,8 @@ public class GossipEventBuilder {
         if(transactions==null){
             tr = new ConsensusTransactionImpl[numberOfTransactions];
             for (int i = 0; i < tr.length; ++i) {
-                final byte[] bytes = new byte[] {(byte) i, (byte) i, (byte) i, (byte) i};
+                final byte[] bytes = new byte[transactionSize];
+                random.nextBytes(bytes);
                 tr[i] = new SwirldTransaction(bytes);
             }
         }else{

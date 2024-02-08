@@ -82,6 +82,6 @@ class GossipEventTest {
 
     @Test
     void validateEqualsHashCode() {
-        assertTrue(EqualsVerifier.verify(EqualsVerifier::randomGossipEvent));
+        assertTrue(EqualsVerifier.verify(r-> GossipEventBuilder.builder().setRandom(r).buildGossipEvent()));
     }
 }

@@ -41,70 +41,6 @@ public final class EqualsVerifier {
     // Do not instantiate
     private EqualsVerifier() {}
 
-    private static EventImpl randomEventImpl(
-            final RandomGenerator r, final EventImpl selfParent, final EventImpl otherParent) {
-        return new EventImpl(randomGossipEvent(r), randomConsensusData(r), selfParent, otherParent);
-    }
-
-    public static EventImpl randomEventImpl(final RandomGenerator r) {
-        return randomEventImpl(r, randomEventImpl(r, null, null), randomEventImpl(r, null, null));
-    }
-
-    public static GossipEvent randomGossipEvent(final RandomGenerator r) {
-        final GossipEvent data = new GossipEvent(randomBaseEventHashedData(r), randomBaseEventUnhashedData(r));
-        data.buildDescriptor();
-        return data;
-    }
-
-    public static ConsensusData randomConsensusData(final RandomGenerator r) {
-        final ConsensusData data = new ConsensusData();
-        final long DELTA = 1L << 32;
-        final long roundCreated = r.nextLong(Long.MAX_VALUE - DELTA);
-        final long roundReceived = roundCreated + r.nextLong(DELTA);
-        data.setRoundReceived(roundReceived);
-        data.setConsensusOrder(r.nextLong(Long.MAX_VALUE));
-        data.setConsensusTimestamp(randomInstant(r));
-        return data;
-    }
-
-    public static BaseEventHashedData randomBaseEventHashedData(final RandomGenerator r) {
-        final int NUM_TRANSACTIONS = 10;
-        final SwirldTransaction[] transactions = new SwirldTransaction[NUM_TRANSACTIONS];
-        for (int i = 0; i < transactions.length; ++i) {
-            transactions[i] = randomSwirldTransaction(r);
-        }
-
-        final NodeId selfId = new NodeId(r.nextLong(Long.MAX_VALUE));
-        final EventDescriptor selfParent = new EventDescriptor(
-                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent = new EventDescriptor(
-                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
-
-        final BaseEventHashedData data = new BaseEventHashedData(
-                new BasicSoftwareVersion(1),
-                selfId,
-                selfParent,
-                Collections.singletonList(otherParent),
-                EventConstants.BIRTH_ROUND_UNDEFINED,
-                randomInstant(r),
-                transactions);
-        data.setHash(randomHash(r));
-        return data;
-    }
-
-    public static SwirldTransaction randomSwirldTransaction(final RandomGenerator r) {
-        final int SIZE = 128;
-        byte[] contents = new byte[SIZE];
-        r.nextBytes(contents);
-        return new SwirldTransaction(contents);
-    }
-
-    public static BaseEventUnhashedData randomBaseEventUnhashedData(final RandomGenerator r) {
-        final int SIZE = 48;
-        byte[] value = new byte[SIZE];
-        r.nextBytes(value);
-        return new BaseEventUnhashedData(new NodeId(r.nextLong(Long.MAX_VALUE)), value);
-    }
 
     public static Hash randomHash(final RandomGenerator r) {
         final int SIZE = 48;
@@ -113,14 +49,9 @@ public final class EqualsVerifier {
         return new Hash(value, DigestType.SHA_384);
     }
 
-    public static Instant randomInstant(final RandomGenerator r) {
-        final long MAX_MILLIS = 1L << 42;
-        return Instant.ofEpochMilli(r.nextLong(MAX_MILLIS));
-    }
-
     private static final Random random = new Random();
 
-    private static <R> List<R> generateObjects(final Function<RandomGenerator, R> supplier, final long[] seeds) {
+    public static <R> List<R> generateObjects(final Function<Random, R> supplier, final long[] seeds) {
         final ArrayList<R> objects = new ArrayList<>();
         for (final long seed : seeds) {
             random.setSeed(seed);
@@ -142,7 +73,7 @@ public final class EqualsVerifier {
      * 		arbitrary type
      * @return true if all checks pass
      */
-    private static <R> boolean verifyEqualsHashCode(final R original, final R copy, final R other) { // NOSONAR
+    public static <R> boolean verifyEqualsHashCode(final R original, final R copy, final R other) { // NOSONAR
 
         // Not equal null
         if (original.equals(null)) { // NOSONAR
@@ -203,7 +134,7 @@ public final class EqualsVerifier {
      * 		arbitrary type
      * @return true if all checks pass
      */
-    public static <R> boolean verify(final Function<RandomGenerator, R> supplier) {
+    public static <R> boolean verify(final Function<Random, R> supplier) {
         final List<R> list = generateObjects(supplier, new long[] {1, 1, 2}); // NOSONAR
         return verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)); // NOSONAR
     }
@@ -221,7 +152,7 @@ public final class EqualsVerifier {
      * 		arbitrary type implementing Comparable
      * @return true if all checks pass
      */
-    private static <R extends Comparable<R>> boolean verifyCompareTo(
+    public static <R extends Comparable<R>> boolean verifyCompareTo(
             final R original, final R copy, final R other) { // NOSONAR
         // Reflexive
         if (original.compareTo(original) != 0) {
@@ -246,18 +177,4 @@ public final class EqualsVerifier {
         return true;
     }
 
-    /**
-     * Verifies if equals()/hashCode()/compareTo() implemented by type R fulfill the contracts
-     *
-     * @param supplier
-     * 		predefined supplier of random instances of type R
-     * @param <R>
-     * 		arbitrary type implementing Comparable
-     * @return true if all checks pass
-     */
-    public static <R extends Comparable<R>> boolean verifyComparable(final Function<RandomGenerator, R> supplier) {
-        final List<R> list = generateObjects(supplier, new long[] {1, 1, 2}); // NOSONAR
-        return verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)) // NOSONAR
-                && verifyCompareTo(list.get(0), list.get(1), list.get(2)); // NOSONAR
-    }
 }
