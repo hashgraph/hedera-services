@@ -26,13 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("shadow event tests")
 class ShadowEventTest {
-    private final GossipEventBuilder builder = GossipEventBuilder.builder();
+    private final TestingEventBuilder builder = TestingEventBuilder.builder();
 
     @Test
     @DisplayName("toString")

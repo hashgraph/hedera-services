@@ -18,7 +18,7 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 
 /**
  * A simple, deterministic factory for Event instances
@@ -33,7 +33,7 @@ public class EventFactory {
     }
 
     public static ShadowEvent makeShadow(final ShadowEvent selfParent, final ShadowEvent otherParent) {
-        final EventImpl e = GossipEventBuilder.builder()
+        final EventImpl e = TestingEventBuilder.builder()
                 .setSelfParent(selfParent == null ? null : selfParent.getEvent())
                 .setOtherParent(otherParent == null ? null : otherParent.getEvent())
                 .buildEventImpl();

@@ -22,12 +22,9 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
-import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +51,6 @@ public class SerializationTests {
     }
 
     static Stream<Arguments> selfSerializableProvider() {
-        return Stream.of(arguments(GossipEventBuilder.builder().buildGossipEvent().getHashedData()));
+        return Stream.of(arguments(TestingEventBuilder.builder().buildGossipEvent().getHashedData()));
     }
 }

@@ -30,7 +30,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class EventImplTests {
-    private final GossipEventBuilder gossipEventBuilder = GossipEventBuilder.builder();
+    private final TestingEventBuilder testingEventBuilder = TestingEventBuilder.builder();
 
     private static Stream<Arguments> params() {
         return Stream.of(
@@ -59,7 +59,7 @@ public class EventImplTests {
     void testNoSystemTransaction() {
         final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
 
-        final EventImpl event = gossipEventBuilder.setDefaults().setTransactions(transactions).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(transactions).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -74,7 +74,7 @@ public class EventImplTests {
     @Test
     @DisplayName("findSystemTransactions() no transactions")
     void testTransaction() {
-        final EventImpl event = gossipEventBuilder.setDefaults().setNumberOfTransactions(0).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setNumberOfTransactions(0).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -89,7 +89,7 @@ public class EventImplTests {
     void testFindSystemTransactions(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = gossipEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
         verifySystemIterator(data, event);
         assertEquals(
                 data.transactions.length - data.systemIndices.size(),
@@ -103,7 +103,7 @@ public class EventImplTests {
     void testConsensusTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = gossipEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
         final Set<ConsensusTransaction> transactionSet = new HashSet<>();
         while (iter.hasNext()) {
@@ -124,7 +124,7 @@ public class EventImplTests {
     void testTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = gossipEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
         final Iterator<Transaction> iter = event.transactionIterator();
 
         final Set<Transaction> transactionSet = new HashSet<>();
@@ -217,7 +217,7 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event = gossipEventBuilder.setDefaults().setTransactions(mixedTransactions).buildEventImpl();
+        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(mixedTransactions).buildEventImpl();
         event.setConsensusOrder(3L);
         event.setConsensusTimestamp(eventConsTime);
 

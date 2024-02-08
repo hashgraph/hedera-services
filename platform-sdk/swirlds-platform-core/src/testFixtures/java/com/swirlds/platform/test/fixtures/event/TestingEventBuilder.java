@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -30,140 +29,148 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.Transaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;
 
-public class GossipEventBuilder {
+/**
+ * A builder for creating event instances for testing purposes.
+ */
+public class TestingEventBuilder {
+    /** default timestamp to use when none is set */
     private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
+    /** source of randomness */
     private Random random;
+    /** creator ID to use */
     private NodeId creatorId;
-    private Instant timestamp;
+    /** the time created of an event */
+    private Instant timeCreated;
+    /** the number of transactions an event should contain */
     private int numberOfTransactions;
+    /** the transaction size */
     private int transactionSize;
+    /** the transactions of an event */
     private ConsensusTransactionImpl[] transactions;
+    /** the event's self-parent, could be a GossipEvent or EventImpl */
     private Object selfParent;
+    /** the event's other-parent, could be a GossipEvent or EventImpl */
     private Object otherParent;
-    private boolean fakeHash;
+    /** a fake generation to set for an event */
     private long fakeGeneration;
 
     private boolean consensus;
 
-    public static GossipEventBuilder builder() {
-        return new GossipEventBuilder().setDefaults();
+    private TestingEventBuilder() {
     }
 
-    public GossipEventBuilder setDefaults() {
+    public static TestingEventBuilder builder() {
+        return new TestingEventBuilder().setDefaults();
+    }
+
+    public TestingEventBuilder setDefaults() {
         random = new Random();
         creatorId = new NodeId(0);
-        timestamp = null;
+        timeCreated = null;
         numberOfTransactions = 2;
         transactionSize = 4;
         transactions = null;
         selfParent = null;
         otherParent = null;
-        fakeHash = true;
         fakeGeneration = Long.MIN_VALUE;
         consensus = false;
         return this;
     }
 
-    public GossipEventBuilder setRandom(final Random random) {
+    public TestingEventBuilder setRandom(final Random random) {
         this.random = random;
         return this;
     }
 
-    public GossipEventBuilder setSeed(final long seed) {
+    public TestingEventBuilder setSeed(final long seed) {
         this.random = new Random(seed);
         return this;
     }
 
-    public GossipEventBuilder setCreatorId(final long creatorId) {
+    public TestingEventBuilder setCreatorId(final long creatorId) {
         this.creatorId = new NodeId(creatorId);
         return this;
     }
 
-    public GossipEventBuilder setCreatorId(final NodeId creatorId) {
+    public TestingEventBuilder setCreatorId(final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
 
-    public GossipEventBuilder setTimestamp(final Instant timestamp) {
-        this.timestamp = timestamp;
+    public TestingEventBuilder setTimeCreated(final Instant timeCreated) {
+        this.timeCreated = timeCreated;
         return this;
     }
 
-    public GossipEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
+    public TestingEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
         this.numberOfTransactions = numberOfTransactions;
         return this;
     }
 
-    public GossipEventBuilder setTransactionSize(final int transactionSize) {
+    public TestingEventBuilder setTransactionSize(final int transactionSize) {
         this.transactionSize = transactionSize;
         return this;
     }
 
-    public GossipEventBuilder setTransactions(final ConsensusTransactionImpl[] transactions) {
+    public TestingEventBuilder setTransactions(final ConsensusTransactionImpl[] transactions) {
         this.transactions = transactions;
         return this;
     }
 
-    public GossipEventBuilder setSelfParent(final GossipEvent selfParent) {
+    public TestingEventBuilder setSelfParent(final GossipEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public GossipEventBuilder setOtherParent(final GossipEvent otherParent) {
+    public TestingEventBuilder setOtherParent(final GossipEvent otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public GossipEventBuilder setSelfParent(final EventImpl selfParent) {
+    public TestingEventBuilder setSelfParent(final EventImpl selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public GossipEventBuilder setOtherParent(final EventImpl otherParent) {
+    public TestingEventBuilder setOtherParent(final EventImpl otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public GossipEventBuilder setFakeHash(final boolean fakeHash) {
-        this.fakeHash = fakeHash;
-        return this;
-    }
-
-    public GossipEventBuilder setGeneration(final long generation) {
+    public TestingEventBuilder setGeneration(final long generation) {
         fakeGeneration = generation;
         return this;
     }
 
-    public GossipEventBuilder setConsensus(final boolean consensus) {
+    public TestingEventBuilder setConsensus(final boolean consensus) {
         this.consensus = consensus;
         return this;
     }
 
     private EventImpl getSelfParentImpl() {
-        return selfParent instanceof EventImpl ei ? ei : null;
+        return selfParent instanceof final EventImpl ei ? ei : null;
     }
 
     private EventImpl getOtherParentImpl() {
-        return otherParent instanceof EventImpl ei ? ei : null;
+        return otherParent instanceof final EventImpl ei ? ei : null;
     }
 
     private GossipEvent getSelfParentGossip() {
-        if (selfParent instanceof GossipEvent ge) {
+        if (selfParent instanceof final GossipEvent ge) {
             return ge;
         }
-        return selfParent instanceof EventImpl ei ? ei.getBaseEvent() : null;
+        return selfParent instanceof final EventImpl ei ? ei.getBaseEvent() : null;
     }
 
     private GossipEvent getOtherParentGossip() {
-        if (otherParent instanceof GossipEvent ge) {
+        if (otherParent instanceof final GossipEvent ge) {
             return ge;
         }
-        return otherParent instanceof EventImpl ei ? ei.getBaseEvent() : null;
+        return otherParent instanceof final EventImpl ei ? ei.getBaseEvent() : null;
     }
 
     private Instant getParentTime() {
@@ -236,14 +243,10 @@ public class GossipEventBuilder {
                 selfParent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
                 EventConstants.BIRTH_ROUND_UNDEFINED,
-                timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
+                timeCreated == null ? getParentTime().plusMillis(1 + creatorId.id()) : timeCreated,
                 tr);
 
-        if (fakeHash) {
-            hashedData.setHash(RandomUtils.randomHash(random));
-        } else {
-            CryptographyHolder.get().digestSync(hashedData);
-        }
+        hashedData.setHash(RandomUtils.randomHash(random));
 
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
@@ -264,7 +267,7 @@ public class GossipEventBuilder {
         return event;
     }
 
-    public GossipEventBuilder reset() {
+    public TestingEventBuilder reset() {
         return setDefaults();
     }
 }

@@ -27,7 +27,7 @@ import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.test.fixtures.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -61,7 +61,7 @@ class TransactionHandlerTest {
     @DisplayName("preHandle() invokes SwirldState.preHandle() with the correct arguments")
     void testSwirldStatePreHandle() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = GossipEventBuilder.builder()
+        final EventImpl event = TestingEventBuilder.builder()
                 .setTransactions(TransactionUtils.incrementingMixedTransactions(r))
                         .buildEventImpl();
 
