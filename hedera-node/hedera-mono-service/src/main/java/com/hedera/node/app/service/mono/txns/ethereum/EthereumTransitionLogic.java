@@ -134,6 +134,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         } catch (InvalidTransactionException e) {
             var result = TransactionProcessingResult.failed(
                     0, 0, 0, Optional.of(e.messageBytes()), Optional.empty(), Collections.emptyMap(), List.of());
+            result.setSignerNonce((Long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE));
             recordService.externaliseEvmCallTransaction(result);
             throw e;
         } finally {

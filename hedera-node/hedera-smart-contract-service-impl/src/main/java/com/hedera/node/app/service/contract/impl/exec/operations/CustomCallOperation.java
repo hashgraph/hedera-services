@@ -73,12 +73,12 @@ public class CustomCallOperation extends CallOperation {
             }
 
             final var toAddress = to(frame);
-            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
-                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
-            }
             final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
             if (isMissing) {
                 return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
+            }
+            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
+                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
             }
 
             return super.execute(frame, evm);
