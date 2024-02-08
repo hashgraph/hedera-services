@@ -40,6 +40,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
@@ -88,6 +89,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -276,12 +278,15 @@ class HandleWorkflowTest extends AppTestBase {
         lenient()
                 .doAnswer((Answer<Void>) invocation -> {
                     Object[] args = invocation.getArguments();
-                    Runnable runnable = (Runnable) args[2]; // Get the Runnable argument
+                    Runnable runnable = (Runnable) args[3]; // Get the Runnable argument
                     runnable.run(); // Execute the runnable
+                    CompletableFuture<?> future = (CompletableFuture<?>) args[2]; // Get the future argument
+                    // Complete the future
+                    future.complete(null);
                     return null; // Since the method is void, return null
                 })
                 .when(blockRecordManager)
-                .processRound(any(), any(), any());
+                .processRound(any(), any(), any(), any());
         lenient()
                 .doAnswer((Answer<Stream<SingleTransactionRecord>>) invocation -> {
                     Object[] args = invocation.getArguments();

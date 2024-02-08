@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -25,6 +26,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 /**
@@ -58,7 +60,23 @@ import java.util.function.Supplier;
  */
 public interface FunctionalBlockRecordManager extends BlockRecordManager, BlockRecordInfo, AutoCloseable {
 
-    void processRound(@NonNull HederaState state, @NonNull Round round, @NonNull Runnable runnable);
+    /**
+     * Process a round of consensus events. This method is called by the
+     * {@link com.hedera.node.app.workflows.handle.HandleWorkflow}. It is responsible for processing a round of
+     * consensus events.
+     *
+     * <p>We may want to provide a callback to let the Platform know that a round has been completed and persisted to
+     *    disk. To do that, we allow Platform to provide a promise to be fulfilled by the BlockStreamProducer.
+     * @param state the state of the node
+     * @param round the round to process
+     * @param runnable the callback to run for processing the round
+     * @param persistedBlock the promise to complete when the block is complete with the BlockProof.
+     */
+    void processRound(
+            @NonNull HederaState state,
+            @NonNull Round round,
+            @NonNull CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull Runnable runnable);
 
     void processUserTransaction(
             @NonNull Instant consensusTime,

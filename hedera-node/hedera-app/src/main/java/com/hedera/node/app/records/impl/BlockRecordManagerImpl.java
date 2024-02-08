@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.FunctionalBlockRecordManager;
@@ -44,6 +45,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -401,8 +403,16 @@ public final class BlockRecordManagerImpl implements FunctionalBlockRecordManage
     // FunctionalBlockRecordManager Implementation
 
     @Override
-    public void processRound(@NonNull HederaState state, @NonNull Round round, @NonNull Runnable runnable) {
-        runnable.run(); // NO-OP stub
+    public void processRound(
+            @NonNull HederaState state,
+            @NonNull Round round,
+            @NonNull final CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull Runnable runnable) {
+        try {
+            runnable.run(); // NO-OP stub
+        } finally {
+            persistedBlock.complete(null);
+        }
     }
 
     @Override

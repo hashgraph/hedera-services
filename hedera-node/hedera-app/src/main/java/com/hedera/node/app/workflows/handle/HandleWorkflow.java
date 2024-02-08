@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -94,6 +95,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -188,8 +190,9 @@ public class HandleWorkflow {
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
 
-        // TODO(nickpoorman): Grab this from a config property.
+        // TODO(nickpoorman): Grab these from a config property.
         useBlockStreams = true;
+        gatherSignaturesEnabled = true;
     }
 
     /**
@@ -214,7 +217,11 @@ public class HandleWorkflow {
         // Signal the BlockRecordManager that a new round is being handled. This is needed to align rounds to blocks. We
         // can have empty rounds. If we want a block per round than we need to allow the creation of a block for this
         // round even if there are no events in it. A round can have no events and an event can have no transactions.
-        blockRecordManager.processRound(state, round, () -> {
+        //
+        // We also provide a CompletableFuture to the BlockRecordManager that will be completed when the block is
+        // persisted. Should platform need this signal in the future, we will have it available.
+        CompletableFuture<BlockStateProof> persistedBlock = new CompletableFuture<>();
+        blockRecordManager.processRound(state, round, persistedBlock, () -> {
 
             // handle each event in the round
             for (final ConsensusEvent event : round) {

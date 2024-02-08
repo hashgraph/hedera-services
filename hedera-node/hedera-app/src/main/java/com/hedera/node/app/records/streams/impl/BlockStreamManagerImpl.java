@@ -362,16 +362,17 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BlockStateProof> processRound(
-            @NonNull final HederaState state, @NonNull final Round round, @NonNull final Runnable runnable) {
-        // FUTURE: We may want to provide a callback to let the Platform know that a round has been completed
-        // and persisted to disk. If that's the case, we should modify this API for the Platform to provide a promise
-        // to be fulfilled by the BlockStreamProducer.
+    public void processRound(
+            @NonNull final HederaState state,
+            @NonNull final Round round,
+            @NonNull final CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull final Runnable runnable) {
 
         // At the beginning of a round, we create a new StateProofProducer. The StateProofProducer is responsible for
         // collecting system transaction asynchronously outside the single threaded handle workflow. It is also able to
         // asynchronously produce a state proof, once enough signatures have been collected for the round. The
         // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
+
         final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(state, round.getRoundNum());
 
         try {
@@ -380,13 +381,20 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
                 try {
                     runnable.run();
                 } finally {
-                    // In BlockStreams we want to make sure we close any opened rounds.
+                    // Ensure any opened rounds are closed.
                     this.endRound(state);
                 }
             });
         } finally {
-            // Write the block proof which should not result in any changes to state.
-            return blockStreamProducer.endBlock(stateProofProducer.getBlockStateProof());
+            // Regardless of what happens in the try block, attempt to close the block.
+            // The result of `endBlock` is directed to the `completionPromise`.
+            blockStreamProducer
+                    .endBlock(stateProofProducer.getBlockStateProof())
+                    .thenAccept(persistedBlock::complete)
+                    .exceptionally(ex -> {
+                        persistedBlock.completeExceptionally(ex);
+                        return null;
+                    });
         }
     }
 
