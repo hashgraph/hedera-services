@@ -32,7 +32,6 @@ import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
 
 /**
