@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -115,7 +116,7 @@ class SequentialTaskSchedulerTests {
 
     /**
      * Add values to the task scheduler, ensure that each value was processed in the correct order. Add a delay to the
-     * handler. The delay should not effect the final value if things are happening as we expect. If the task scheduler
+     * handler. The delay should not affect the final value if things are happening as we expect. If the task scheduler
      * is allowing things to happen with parallelism, then the delay is likely to result in a reordering of operations
      * (which will fail the test).
      */
@@ -1123,8 +1124,7 @@ class SequentialTaskSchedulerTests {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
-        // The flush operation puts a task on the wire, which bumps the number up to 12 from 11
-        assertEquals(12, taskScheduler.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1741,7 +1741,7 @@ class SequentialTaskSchedulerTests {
      */
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    void squelchNullValuesInWiresTest(final String typeString) {
+    void discardNullValuesInWiresTest(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
@@ -2322,6 +2322,80 @@ class SequentialTaskSchedulerTests {
 
         assertEquals(expectedCountA, countA.get());
         assertEquals(expectedCountB, countB.get());
+
+        model.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void squelching(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final AtomicInteger handleCount = new AtomicInteger();
+
+        final Consumer<Integer> handler = x -> {
+            handleCount.incrementAndGet();
+            try {
+                NANOSECONDS.sleep(random.nextInt(1_000_000));
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(type)
+                .withUnhandledTaskCapacity(100)
+                .withFlushingEnabled(true)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
+        inputWire.bind(handler);
+
+        model.start();
+
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        assertEventuallyTrue(() -> handleCount.get() > 5, Duration.ofMillis(10), "Some tasks should get handled");
+        assertTrue(taskScheduler.getUnprocessedTaskCount() > 10, "There should be some unprocessed tasks");
+
+        taskScheduler.startSquelching();
+        final int countAtSquelchStart = handleCount.get();
+
+        // add more tasks, which will be squelched
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
+
+        final int countAtSquelchEnd = handleCount.get();
+
+        // it's very unlikely, but possible, that a single task was being handled when squelching started, but the
+        // atomic int hadn't been incremented yet. therefore, it could be the case that one more task was handled than
+        // the count we got would otherwise expect.
+        assertTrue(countAtSquelchEnd == countAtSquelchStart || countAtSquelchEnd == countAtSquelchStart + 1);
+
+        // stop squelching, and add some more tasks to be handled
+        taskScheduler.stopSquelching();
+        for (int i = 0; i < 2; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(
+                countAtSquelchEnd + 6, handleCount.get(), "New tasks should be processed after stopping squelching");
 
         model.stop();
     }

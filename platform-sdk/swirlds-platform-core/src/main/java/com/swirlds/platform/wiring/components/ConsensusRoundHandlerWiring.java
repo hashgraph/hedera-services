@@ -27,14 +27,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link com.swirlds.platform.eventhandling.ConsensusRoundHandler}
  *
- * @param roundInput             the input wire for consensus rounds to be applied to the state
- * @param runningHashUpdateInput the input wire for updating the running event hash
- * @param flushRunnable          the runnable to flush the task scheduler
+ * @param roundInput              the input wire for consensus rounds to be applied to the state
+ * @param runningHashUpdateInput  the input wire for updating the running event hash
+ * @param flushRunnable           the runnable to flush the task scheduler
+ * @param startSquelchingRunnable the runnable to start squelching
+ * @param stopSquelchingRunnable  the runnable to stop squelching
  */
 public record ConsensusRoundHandlerWiring(
         @NonNull InputWire<ConsensusRound> roundInput,
         @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
-        @NonNull Runnable flushRunnable) {
+        @NonNull Runnable flushRunnable,
+        @NonNull Runnable startSquelchingRunnable,
+        @NonNull Runnable stopSquelchingRunnable) {
     /**
      * Create a new instance of this wiring.
      *
@@ -46,7 +50,9 @@ public record ConsensusRoundHandlerWiring(
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
                 taskScheduler.buildInputWire("running hash update"),
-                taskScheduler::flush);
+                taskScheduler::flush,
+                taskScheduler::startSquelching,
+                taskScheduler::stopSquelching);
     }
 
     /**

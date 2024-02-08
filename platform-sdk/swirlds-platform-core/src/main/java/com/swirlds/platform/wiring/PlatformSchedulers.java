@@ -154,6 +154,7 @@ public record PlatformSchedulers(
                         .withType(config.linkedEventIntakeSchedulerType())
                         .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
                         .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
@@ -161,6 +162,7 @@ public record PlatformSchedulers(
                         .withType(config.eventCreationManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
@@ -228,6 +230,7 @@ public record PlatformSchedulers(
                                 .withUnhandledTaskMetricEnabled(true)
                                 .withBusyFractionMetricsEnabled(true))
                         .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
                         .build()
                         .cast(),
                 // though the eventStreamManager is of DIRECT_STATELESS type, it isn't actually stateless: it just
