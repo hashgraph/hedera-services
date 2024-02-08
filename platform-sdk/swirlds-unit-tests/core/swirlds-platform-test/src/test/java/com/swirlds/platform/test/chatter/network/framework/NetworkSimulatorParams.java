@@ -18,8 +18,8 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.test.simulated.NetworkLatency;
-import com.swirlds.platform.test.simulated.config.NetworkConfig;
+import com.swirlds.platform.test.fixtures.simulated.NetworkLatency;
+import com.swirlds.platform.test.fixtures.simulated.config.NetworkConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

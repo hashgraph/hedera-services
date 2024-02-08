@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.platform.test.observers.ObservationType.ADDED;
-import static com.swirlds.platform.test.observers.ObservationType.STALE;
+import static com.swirlds.platform.test.fixtures.observers.ObservationType.ADDED;
+import static com.swirlds.platform.test.fixtures.observers.ObservationType.STALE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -30,12 +30,12 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.event.SimpleEvent;
-import com.swirlds.platform.test.observers.AddedObserver;
-import com.swirlds.platform.test.observers.ConsRound;
-import com.swirlds.platform.test.observers.ObservationType;
-import com.swirlds.platform.test.observers.SimpleEventTracker;
-import com.swirlds.platform.test.observers.StaleObserver;
+import com.swirlds.platform.test.fixtures.event.SimpleEvent;
+import com.swirlds.platform.test.fixtures.observers.AddedObserver;
+import com.swirlds.platform.test.fixtures.observers.ConsRound;
+import com.swirlds.platform.test.fixtures.observers.ObservationType;
+import com.swirlds.platform.test.fixtures.observers.SimpleEventTracker;
+import com.swirlds.platform.test.fixtures.observers.StaleObserver;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

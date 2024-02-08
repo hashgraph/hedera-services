@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.platform.test.consensus.framework.TestInput;
+import com.swirlds.platform.test.fixtures.consensus.framework.TestInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 import org.junit.jupiter.api.function.ThrowingConsumer;

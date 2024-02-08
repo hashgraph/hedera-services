@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.gui;
 
+import com.swirlds.platform.test.fixtures.gui.TestGuiSource;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

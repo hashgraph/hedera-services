@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 
 /**
  * A class that can be configured by {@link NodeConfig}

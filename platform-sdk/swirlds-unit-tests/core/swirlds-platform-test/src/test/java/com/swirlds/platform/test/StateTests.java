@@ -17,7 +17,7 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

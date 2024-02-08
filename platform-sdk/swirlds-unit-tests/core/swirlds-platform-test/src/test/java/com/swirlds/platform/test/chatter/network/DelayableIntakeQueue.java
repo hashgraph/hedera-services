@@ -22,7 +22,7 @@ import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;

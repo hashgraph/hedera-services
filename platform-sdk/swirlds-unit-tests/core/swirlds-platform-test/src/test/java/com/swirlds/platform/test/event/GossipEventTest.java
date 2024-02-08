@@ -30,7 +30,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
-import com.swirlds.platform.test.utils.EqualsVerifier;
+import com.swirlds.platform.test.fixtures.utils.EqualsVerifier;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;

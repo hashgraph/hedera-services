@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 
 /**
  * An abstraction of a pipeline component that takes care of invoking the next component.

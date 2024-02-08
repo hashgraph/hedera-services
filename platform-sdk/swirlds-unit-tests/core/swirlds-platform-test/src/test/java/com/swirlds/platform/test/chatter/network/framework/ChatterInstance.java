@@ -24,9 +24,9 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
-import com.swirlds.platform.test.simulated.GossipMessage;
-import com.swirlds.platform.test.simulated.GossipMessageHandler;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.GossipMessage;
+import com.swirlds.platform.test.fixtures.simulated.GossipMessageHandler;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 import java.util.ArrayList;
 import java.util.List;
 

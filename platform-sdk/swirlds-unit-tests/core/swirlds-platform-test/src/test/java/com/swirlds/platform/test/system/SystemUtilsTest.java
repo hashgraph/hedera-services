@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.test.fixtures.system.NoExitSecurityManager;
+import com.swirlds.platform.test.fixtures.system.SystemExitException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.test.utils.EqualsVerifier;
+import com.swirlds.platform.test.fixtures.utils.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
 public class EventImplTest {

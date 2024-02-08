@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.event.creation;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.util.Map;
 

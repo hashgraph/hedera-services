@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 
 /**
  * One component in an event processing pipeline. Components are linked together as a singly linked list. The first

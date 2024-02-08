@@ -19,7 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.base.time.Time;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventCreator;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;

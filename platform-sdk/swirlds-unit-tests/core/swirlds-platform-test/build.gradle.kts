@@ -22,6 +22,7 @@ plugins {
 testModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")

@@ -70,9 +70,9 @@ module com.swirlds.platform.core {
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.swirldapp to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.observers to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
@@ -81,13 +81,13 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.notifications to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.iss to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.iss.internal to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.gossip.chatter.protocol.processing;
     exports com.swirlds.platform.dispatch to
             com.swirlds.platform.test,
@@ -95,16 +95,16 @@ module com.swirlds.platform.core {
             com.swirlds.common,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.types to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.dispatch.triggers.control to
             com.swirlds.platform.test,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.triggers.error to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.reconnect.emergency to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.recovery.internal to
-            com.swirlds.platform.test;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl,
             com.swirlds.common,

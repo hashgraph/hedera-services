@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.utility.DurationUtils;
-import com.swirlds.platform.test.simulated.config.NetworkConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NetworkConfig;
 import java.time.Instant;
 import java.util.Map.Entry;
 

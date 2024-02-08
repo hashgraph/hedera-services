@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -29,6 +29,7 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.test.fixtures.SignedStateUtils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;

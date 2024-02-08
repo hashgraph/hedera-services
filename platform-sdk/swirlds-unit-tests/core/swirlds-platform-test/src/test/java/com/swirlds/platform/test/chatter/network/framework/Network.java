@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.test.simulated.SimpleSimulatedGossip;
-import com.swirlds.platform.test.simulated.config.NetworkConfig;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.SimpleSimulatedGossip;
+import com.swirlds.platform.test.fixtures.simulated.config.NetworkConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

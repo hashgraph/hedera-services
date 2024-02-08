@@ -19,7 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventPipeline;
-import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.fixtures.simulated.config.NodeConfig;
 
 /**
  * An event pipeline component that does nothing
