@@ -27,14 +27,19 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Service for providing incrementing entity id numbers. It stores the most recent entity id in state.
  */
 @SuppressWarnings("rawtypes")
 public class EntityIdService implements Service {
+    private static final Logger log = LogManager.getLogger(EntityIdService.class);
     public static final String NAME = "EntityIdService";
     public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
+
+    private long fs = -1;
 
     /** {@inheritDoc} */
     @NonNull
@@ -43,9 +48,13 @@ public class EntityIdService implements Service {
         return NAME;
     }
 
+    public void setFs(long fs) {
+        this.fs = fs;
+    }
+
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(new Schema(version) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
@@ -76,8 +85,21 @@ public class EntityIdService implements Service {
                 final var isGenesis = ctx.previousStates().isEmpty();
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
-                    entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
+                    final var entityNum = config.firstUserEntity() - 1;
+                    log.info("Setting initial entity id to " + entityNum);
+                    entityIdState.put(new EntityNumber(entityNum));
                 }
+
+                if (fs > -1) {
+                    log.info("BBM: Setting initial entity id to " + fs);
+                    entityIdState.put(new EntityNumber(fs - 1));
+                } else {
+                    log.warn("BBM: no entity ID 'from' state found");
+                }
+
+                // Usually we un-assign the 'from' state here, but in this case there's no need because the only field
+                // is
+                // a copied long
             }
         });
     }

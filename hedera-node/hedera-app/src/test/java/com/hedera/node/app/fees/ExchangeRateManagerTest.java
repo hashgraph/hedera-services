@@ -31,8 +31,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,13 +44,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ExchangeRateManagerTest {
-    static final int hbarEquiv = 30_000;
-    static final int centEquiv = 120_000;
-    static TimestampSeconds expirationTime =
+    private static final int hbarEquiv = 30_000;
+    private static final int centEquiv = 120_000;
+    private static final TimestampSeconds expirationTime =
             TimestampSeconds.newBuilder().seconds(150_000L).build();
-    static ExchangeRate.Builder someRate =
+    private static final ExchangeRate.Builder someRate =
             ExchangeRate.newBuilder().hbarEquiv(hbarEquiv).centEquiv(centEquiv).expirationTime(expirationTime);
-    static ExchangeRate.Builder anotherRate = ExchangeRate.newBuilder()
+    private static final ExchangeRate.Builder anotherRate = ExchangeRate.newBuilder()
             .hbarEquiv(hbarEquiv * 2)
             .centEquiv(centEquiv * 2)
             .expirationTime(expirationTime);
@@ -73,7 +73,7 @@ class ExchangeRateManagerTest {
     }
 
     @Test
-    void hasExpectedFields() throws IOException {
+    void hasExpectedFields() throws ParseException {
         // when
         subject.update(validRateBytes, AccountID.DEFAULT);
 
@@ -120,7 +120,7 @@ class ExchangeRateManagerTest {
                         someRate.build()),
                 Arguments.of(
                         Instant.ofEpochSecond(expirationTime.seconds()), // consensus time at expiration
-                        someRate.build()),
+                        anotherRate.build()),
                 Arguments.of(
                         Instant.ofEpochSecond(expirationTime.seconds() + 1L), // consensus time after expiration
                         anotherRate.build()));

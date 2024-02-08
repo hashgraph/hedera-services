@@ -16,13 +16,13 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_3;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * This class collects and reports various statistics about advanced cryptography module operation.
@@ -68,26 +68,27 @@ public final class CryptoMetrics {
             .withFormat("%,d")
             .withInitialValue(Long.MIN_VALUE);
     private static final SpeedometerMetric.Config DIG_WORK_PULSE_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "DigPulse/sec")
+                    CATEGORY, "DigPulse_per_sec")
             .withDescription("average digest worker pulses per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config DIG_LOCK_UPGRADES_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "DigLockUp/sec")
+                    CATEGORY, "DigLockUp_per_sec")
             .withDescription("average digest lock upgrades per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config DIG_SPANS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "DigSpans/sec")
+                    CATEGORY, "DigSpans_per_sec")
             .withDescription("average: digest batch spans per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config DIG_BATCHES_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "DigBatches/sec")
+                    CATEGORY, "DigBatches_per_sec")
             .withDescription("average: digest batches created per second")
             .withFormat(FORMAT_11_3);
-    private static final SpeedometerMetric.Config DIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(CATEGORY, "Dig/sec")
+    private static final SpeedometerMetric.Config DIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(
+                    CATEGORY, "Dig_per_sec")
             .withDescription("number of digests per second (complete)")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_WORK_PULSE_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigPulse/sec")
+                    CATEGORY, "SigPulse_per_sec")
             .withDescription("average Signature worker pulses per second")
             .withFormat(FORMAT_11_3);
     private static final RunningAverageMetric.Config AVG_DIGEST_TIME_CONFIG = new RunningAverageMetric.Config(
@@ -107,15 +108,15 @@ public final class CryptoMetrics {
                     .withDescription("average: time spent (in millis) in signature verification submission")
                     .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_LOCK_UPGRADES_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigLockUp/sec")
+                    CATEGORY, "SigLockUp_per_sec")
             .withDescription("average Signature lock upgrades per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_SPANS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigSpans/sec")
+                    CATEGORY, "SigSpans_per_sec")
             .withDescription("average: signature verification batch spans per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_BATCHES_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigBatches/sec")
+                    CATEGORY, "SigBatches_per_sec")
             .withDescription("average: signature verification batches created per second")
             .withFormat(FORMAT_11_3);
     private static final RunningAverageMetric.Config AVG_DIGEST_SLICE_SIZE_CONFIG = new RunningAverageMetric.Config(
@@ -126,15 +127,16 @@ public final class CryptoMetrics {
                     CATEGORY, "SigSliceSz")
             .withDescription("average signature slice size")
             .withFormat(FORMAT_11_3);
-    private static final SpeedometerMetric.Config SIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(CATEGORY, "Sig/sec")
+    private static final SpeedometerMetric.Config SIG_PER_SEC_CONFIG = new SpeedometerMetric.Config(
+                    CATEGORY, "Sig_per_sec")
             .withDescription("number of signature verifications per second (complete)")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_VALID_PER_SEC_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigVal/sec")
+                    CATEGORY, "SigVal_per_sec")
             .withDescription("number of valid signatures per second")
             .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_INVALID_PER_SEC_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigInval/sec")
+                    CATEGORY, "SigInval_per_sec")
             .withDescription("number of invalid signatures per second")
             .withFormat(FORMAT_11_3);
     private static final RunningAverageMetric.Config AVG_SIG_INTAKE_QUEUE_DEPTH_CONFIG =
@@ -142,7 +144,7 @@ public final class CryptoMetrics {
                     .withDescription("depth of the signature intake queue")
                     .withFormat(FORMAT_11_3);
     private static final SpeedometerMetric.Config SIG_INTAKE_PULSE_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "SigIntakePulse/sec")
+                    CATEGORY, "SigIntakePulse_per_sec")
             .withDescription("number of times the signature intake worker thread is executed per second")
             .withFormat(FORMAT_11_3);
     private static final RunningAverageMetric.Config AVG_SIG_INTAKE_PULSE_TIME_CONFIG = new RunningAverageMetric.Config(

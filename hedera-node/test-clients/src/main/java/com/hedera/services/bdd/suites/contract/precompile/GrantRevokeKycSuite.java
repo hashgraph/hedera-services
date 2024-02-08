@@ -277,6 +277,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("grantRevokeKycSpecWithAliasLocalCall")
                 .given(
@@ -294,13 +295,40 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallLocal(
-                                GRANT_REVOKE_KYC_CONTRACT,
-                                IS_KYC_GRANTED,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get())))))
-                .then();
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallLocal(
+                                        GRANT_REVOKE_KYC_CONTRACT,
+                                        IS_KYC_GRANTED,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get()))))
+                        //                        ,contractCall(
+                        //                                GRANT_REVOKE_KYC_CONTRACT,
+                        //                                IS_KYC_GRANTED,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(GENESIS)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .via("fakeAddressIsKyc")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+
+                        )
+                .then(
+                        //                        withOpContext(((spec, assertLog) -> allRunFor(
+                        //                                spec,
+                        //                                childRecordsCheck(
+                        //                                        "fakeAddressIsKyc",
+                        //                                        CONTRACT_REVERT_EXECUTED,
+                        //                                        recordWith()
+                        //                                                .status(INVALID_TOKEN_ID)
+                        //                                                .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_IS_KYC)
+                        //                                                                .withStatus(INVALID_TOKEN_ID)
+                        //                                                                .withIsFrozen(false)))))))
+                        );
     }
 }

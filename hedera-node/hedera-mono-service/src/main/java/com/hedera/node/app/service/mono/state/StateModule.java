@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -167,7 +168,7 @@ public interface StateModule {
             @NonNull final RecordStreamManager recordStreamManager,
             @NonNull final BalancesExporter balancesExporter,
             @NonNull final NodeId nodeId) {
-        if (initTrigger == InitTrigger.EVENT_STREAM_RECOVERY) {
+        if (initTrigger == EVENT_STREAM_RECOVERY) {
             return Optional.of(new ExportingRecoveredStateListener(recordStreamManager, balancesExporter, nodeId));
         } else {
             return Optional.empty();
@@ -224,10 +225,15 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Optional<PrintStream> providePrintStream(final ConsoleCreator consoleCreator, final Platform platform) {
-        return Optional.ofNullable(consoleCreator.createConsole(
-                        platform, (int) platform.getSelfId().id(), true))
-                .map(c -> c.out);
+    static Optional<PrintStream> providePrintStream(
+            @NonNull final ConsoleCreator consoleCreator,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final Platform platform) {
+        return initTrigger == EVENT_STREAM_RECOVERY
+                ? Optional.empty()
+                : Optional.ofNullable(consoleCreator.createConsole(
+                                platform, (int) platform.getSelfId().id(), true))
+                        .map(c -> c.out);
     }
 
     @Provides

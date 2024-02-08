@@ -55,9 +55,9 @@ import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -79,12 +79,13 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.io.IOException;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -152,7 +153,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private QueryWorkflowImpl workflow;
 
     @BeforeEach
-    void setup(@Mock FeeCalculator feeCalculator) throws IOException, PreCheckException {
+    void setup(@Mock FeeCalculator feeCalculator) throws ParseException, PreCheckException {
         setupStandardStates();
 
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
@@ -162,7 +163,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
         configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(configuration);
@@ -398,7 +399,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfPaymentNotRequired() throws IOException {
+    void testSuccessIfPaymentNotRequired() throws ParseException {
         // given
         final var responseBuffer = newEmptyBuffer();
         // when
@@ -413,7 +414,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfPaymentRequired() throws IOException {
+    void testSuccessIfPaymentRequired() throws ParseException {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
@@ -437,14 +438,14 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfCostOnly() throws IOException {
+    void testSuccessIfCostOnly() throws ParseException {
         // given
         final var queryHeader =
                 QueryHeader.newBuilder().responseType(COST_ANSWER).build();
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
         when(dispatcher.getHandler(query)).thenReturn(handler);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(handler.needsAnswerOnlyCost(COST_ANSWER)).thenReturn(true);
@@ -473,9 +474,10 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testParsingFails() throws IOException {
+    void testParsingFails() throws ParseException {
         // given
-        when(queryParser.parseStrict(notNull())).thenThrow(new IOException("Expected failure"));
+        when(queryParser.parseStrict((ReadableSequentialData) notNull()))
+                .thenThrow(new ParseException(new RuntimeException("Expected failure")));
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -487,10 +489,10 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testUnrecognizableQueryTypeFails() throws IOException {
+    void testUnrecognizableQueryTypeFails() throws ParseException {
         // given
         final var query = Query.newBuilder().build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -504,7 +506,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testInvalidNodeFails() throws PreCheckException, IOException {
+    void testInvalidNodeFails() throws PreCheckException, ParseException {
         // given
         doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).checkNodeState();
         final var responseBuffer = newEmptyBuffer();
@@ -521,7 +523,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testUnsupportedResponseTypeFails() throws IOException {
+    void testUnsupportedResponseTypeFails() throws ParseException {
         // given
         final var localRequestBuffer = newEmptyBuffer();
         final var queryHeader =
@@ -529,7 +531,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
                 .build();
-        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
@@ -548,7 +550,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testThrottleFails() throws IOException {
+    void testThrottleFails() throws ParseException {
         // given
         when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
                 .thenReturn(true);
@@ -566,7 +568,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInvalidTransactionFails() throws PreCheckException, IOException {
+    void testPaidQueryWithInvalidTransactionFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
@@ -586,7 +588,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, IOException {
+    void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
@@ -604,7 +606,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryForSuperUserDoesNotSubmitCryptoTransfer() throws PreCheckException, IOException {
+    void testPaidQueryForSuperUserDoesNotSubmitCryptoTransfer() throws PreCheckException, ParseException {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
@@ -631,7 +633,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, IOException {
+    void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(NOT_SUPPORTED))
@@ -651,7 +653,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInsufficientBalanceFails() throws PreCheckException, IOException {
+    void testPaidQueryWithInsufficientBalanceFails() throws PreCheckException, ParseException {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(1L, 20L, 300L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
@@ -676,7 +678,7 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Test
     void testUnpaidQueryWithRestrictedFunctionalityFails(@Mock NetworkGetExecutionTimeHandler networkHandler)
-            throws IOException {
+            throws ParseException {
         // given
         final var localRequestBuffer = newEmptyBuffer();
         final var localQueryHeader =
@@ -687,7 +689,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
-        when(queryParser.parseStrict(notNull())).thenReturn(localQuery);
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(localQuery);
         when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
         when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);
 
@@ -714,7 +716,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testQuerySpecificValidationFails() throws PreCheckException, IOException {
+    void testQuerySpecificValidationFails() throws PreCheckException, ParseException {
         final var captor = ArgumentCaptor.forClass(QueryContext.class);
         // given
         doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
@@ -736,7 +738,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithFailingSubmissionFails() throws PreCheckException, IOException {
+    void testPaidQueryWithFailingSubmissionFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
@@ -756,7 +758,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.cost()).isZero();
     }
 
-    private static Response parseResponse(BufferedData responseBuffer) throws IOException {
+    private static Response parseResponse(BufferedData responseBuffer) throws ParseException {
         final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
         responseBuffer.resetPosition();
         responseBuffer.readBytes(bytes);

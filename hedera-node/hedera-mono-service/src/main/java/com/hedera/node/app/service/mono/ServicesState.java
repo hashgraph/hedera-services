@@ -116,6 +116,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
+    // Uncomment the following class ID to run a mono -> modular state migration
+    // NOTE: also change class ID of MerkleHederaState
+    //    private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1bL;
     public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
     // Only over-written when Platform deserializes a legacy version of the state

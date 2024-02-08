@@ -379,7 +379,7 @@ public class WiringFlowchart {
     @NonNull
     public String render() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("flowchart LR\n");
+        sb.append("flowchart TD\n");
 
         final List<ModelVertex> sortedVertices =
                 vertexMap.values().stream().sorted().toList();

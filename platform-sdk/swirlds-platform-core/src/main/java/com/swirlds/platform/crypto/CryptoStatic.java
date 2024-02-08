@@ -23,7 +23,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -32,6 +31,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
@@ -59,6 +59,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -280,8 +281,7 @@ public final class CryptoStatic {
      * @throws KeyStoreException   if {@link #createEmptyTrustStore()} throws
      * @throws KeyLoadingException if the file is empty or another issue occurs while reading it
      */
-    private static KeyStore loadKeys(final Path file, final char[] password)
-            throws KeyStoreException, KeyLoadingException {
+    static KeyStore loadKeys(final Path file, final char[] password) throws KeyStoreException, KeyLoadingException {
         final KeyStore store = createEmptyTrustStore();
         try (final FileInputStream fis = new FileInputStream(file.toFile())) {
             store.load(fis, password);
@@ -316,8 +316,10 @@ public final class CryptoStatic {
      * @return map of key stores
      * @throws KeyStoreException   if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      * @throws KeyLoadingException in an issue occurs while loading keys and certificates
+     * @deprecated use {@link EnhancedKeyStoreLoader} instead.
      */
     @NonNull
+    @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
             @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
@@ -440,7 +442,7 @@ public final class CryptoStatic {
      * @param addressBook  the address book to modify
      * @throws KeyLoadingException if {@link PublicStores#getPublicKey(KeyCertPurpose, String)} throws
      */
-    private static void copyPublicKeys(final PublicStores publicStores, final AddressBook addressBook)
+    static void copyPublicKeys(final PublicStores publicStores, final AddressBook addressBook)
             throws KeyLoadingException {
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
@@ -514,15 +516,27 @@ public final class CryptoStatic {
             if (basicConfig.loadKeysFromPfxFiles()) {
                 try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
-                            + list.filter(path -> path.getFileName().endsWith("pfx"))
-                                    .toList());
-                    logger.debug(STARTUP.getMarker(), "About start loading keys");
+                            + Arrays.toString(list.map(p -> p.getFileName().toString())
+                                    .filter(fileName -> fileName.endsWith("pfx") || fileName.endsWith("pem"))
+                                    .toArray()));
+                }
+
+                logger.debug(STARTUP.getMarker(), "About to start loading keys");
+                if (cryptoConfig.enableNewKeyStoreModel()) {
+                    logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
+                    keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
+                            .scan()
+                            .verify()
+                            .injectInAddressBook()
+                            .keysAndCerts();
+                } else {
+                    logger.debug(STARTUP.getMarker(), "Reading keys using the legacy key loader");
                     keysAndCerts = loadKeysAndCerts(
                             addressBook,
                             pathsConfig.getKeysDirPath(),
                             cryptoConfig.keystorePassword().toCharArray());
-                    logger.debug(STARTUP.getMarker(), "Done loading keys");
                 }
+                logger.debug(STARTUP.getMarker(), "Done loading keys");
             } else {
                 // if there are no keys on the disk, then create our own keys
                 CommonUtils.tellUserConsole(

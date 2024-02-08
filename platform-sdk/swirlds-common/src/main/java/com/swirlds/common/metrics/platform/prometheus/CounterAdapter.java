@@ -16,22 +16,21 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import java.util.Objects;
 
 /**
- * Adapter that synchronizes a {@link com.swirlds.common.metrics.Counter}
+ * Adapter that synchronizes a {@link Counter}
  * with the corresponding Prometheus {@link Collector}.
  */
 public class CounterAdapter extends AbstractMetricAdapter {
@@ -44,9 +43,9 @@ public class CounterAdapter extends AbstractMetricAdapter {
      * @param registry
      * 		The {@link CollectorRegistry} with which the Prometheus {@link Collector} should be registered
      * @param metric
-     * 		The {@link com.swirlds.common.metrics.Counter} which value should be reported to Prometheus
+     * 		The {@link Counter} which value should be reported to Prometheus
      * @param adapterType
-     * 		Scope of the {@link com.swirlds.common.metrics.Counter},
+     * 		Scope of the {@link Counter},
      * 		either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
      * @throws NullPointerException if any of the following parameters are {@code null}.
      *     <ul>
@@ -55,15 +54,12 @@ public class CounterAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public CounterAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType);
+        super(adapterType, metric);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Counter.Builder builder = new Counter.Builder()
-                .subsystem(fix(metric.getCategory()))
-                .name(fix(metric.getName()))
-                .help(metric.getDescription())
-                .unit(metric.getUnit())
-                .withoutExemplars();
+
+        final Counter.Builder builder =
+                super.assignCommonValues(new Counter.Builder()).withoutExemplars();
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

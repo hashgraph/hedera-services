@@ -23,10 +23,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.DefaultFunctionGauge;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -160,5 +160,26 @@ class BooleanAdapterTest {
         // then
         assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testAdaptedUnitIsEmptyWhenConfigUnitIsSet() {
+        // given
+        final CollectorRegistry registry = new CollectorRegistry();
+        final Metric metric =
+                new DefaultFunctionGauge<>(new FunctionGauge.Config<>(CATEGORY, NAME, Boolean.class, () -> true)
+                        .withUnit("AnUnit")
+                        .withDescription(DESCRIPTION));
+
+        // when
+        new BooleanAdapter(registry, metric, PLATFORM);
+
+        // then
+        final Collector.MetricFamilySamples mapping =
+                registry.metricFamilySamples().nextElement();
+        assertThat(mapping.type).isEqualTo(Collector.Type.GAUGE);
+        assertThat(mapping.name).isEqualTo(MAPPING_NAME);
+        assertThat(mapping.help).isEqualTo(DESCRIPTION);
+        assertThat(mapping.unit).isEmpty();
     }
 }

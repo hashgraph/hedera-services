@@ -16,14 +16,14 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.util.Arrays;
@@ -102,7 +102,7 @@ class BucketTest {
             checkKey(bucket, testKeys[j]);
         }
         // now delete last key and check
-        bucket.putValue(testKeys[9], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[9], INVALID_VALUE);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 9; j++) {
             checkKey(bucket, testKeys[j]);
@@ -112,7 +112,7 @@ class BucketTest {
                 bucket.findValue(testKeys[9].hashCode(), testKeys[9], -1),
                 "Should not find entry 10 any more we deleted it");
         // now delete a middle, index 5
-        bucket.putValue(testKeys[5], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[5], INVALID_VALUE);
         assertEquals(8, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -125,7 +125,7 @@ class BucketTest {
                 bucket.findValue(testKeys[5].hashCode(), testKeys[5], -1),
                 "Should not find entry 5 any more we deleted it");
         // now delete first, index 0
-        bucket.putValue(testKeys[0], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[0], INVALID_VALUE);
         assertEquals(7, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -253,6 +253,36 @@ class BucketTest {
         bucket.setBucketIndex(0);
         final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=31}";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
+    }
+
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    void emptyParsedBucketToBucketIndexZero(final KeyType keyType) throws IOException {
+        final Bucket<VirtualLongKey> inBucket = new ParsedBucket<>(keyType.keySerializer);
+        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
+        final VirtualLongKey key2 = keyType.keyConstructor.apply(2L);
+        inBucket.setBucketIndex(0);
+        inBucket.putValue(key1, 2);
+        inBucket.putValue(key2, 1);
+        final BufferedData buf = BufferedData.allocate(inBucket.sizeInBytes());
+        inBucket.writeTo(buf);
+        buf.reset();
+        final Bucket<VirtualLongKey> outBucket = new Bucket<>(keyType.keySerializer);
+        outBucket.readFrom(buf);
+        outBucket.putValue(key1, INVALID_VALUE);
+        outBucket.putValue(key2, INVALID_VALUE);
+        assertDoesNotThrow(outBucket::getBucketIndex);
+        assertDoesNotThrow(outBucket::getBucketEntryCount);
+        assertEquals(0, outBucket.getBucketEntryCount());
+        assertEquals(0, outBucket.getBucketIndex());
+    }
+
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    void parsedBucketPutIfEqual(final KeyType keyType) throws IOException {
+        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
+        final Bucket<VirtualLongKey> bucket = new ParsedBucket<>(keyType.keySerializer, null);
+        assertDoesNotThrow(() -> bucket.putValue(key1, INVALID_VALUE, 1));
     }
 
     private void checkKey(Bucket<VirtualLongKey> bucket, VirtualLongKey key) {

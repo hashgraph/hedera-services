@@ -18,7 +18,7 @@ package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
@@ -194,14 +194,6 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * Cancels all compactions that are currently running and disables background compaction process.
      */
     void stopAndDisableBackgroundCompaction();
-
-    /**
-     * Build an empty {@link VirtualKeySet}. This key set should be compatible with data in this data source,
-     * but should otherwise have no direct connection to the data in this data source.
-     *
-     * @return a new key set
-     */
-    VirtualKeySet<K> buildKeySet();
 
     /**
      * Provides estimation how much space is needed to store the given number of internal / leaf nodes in the data

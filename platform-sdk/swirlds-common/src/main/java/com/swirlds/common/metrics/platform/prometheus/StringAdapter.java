@@ -16,15 +16,14 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Info;
@@ -54,13 +53,10 @@ public class StringAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public StringAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType);
+        super(adapterType, metric, false);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Info.Builder builder = new Info.Builder()
-                .subsystem(fix(metric.getCategory()))
-                .name(fix(metric.getName()))
-                .help(metric.getDescription());
+        final Info.Builder builder = assignCommonValues(new Info.Builder());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }

@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -28,7 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class OnDiskReadableStateTest extends MerkleTestBase {
     private StateMetadata<String, String> md;
     private VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMap;
@@ -106,5 +111,13 @@ class OnDiskReadableStateTest extends MerkleTestBase {
             assertThat(state.get(F_KEY)).isNull();
             assertThat(state.get(G_KEY)).isNull();
         }
+    }
+
+    @Test
+    @DisplayName("The method warm() calls the appropriate method on the virtual map")
+    void warm(@Mock VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMapMock) {
+        final var state = new OnDiskReadableKVState<>(md, virtualMapMock, Runnable::run);
+        state.warm(A_KEY);
+        verify(virtualMapMock).warm(new OnDiskKey<>(md, A_KEY));
     }
 }

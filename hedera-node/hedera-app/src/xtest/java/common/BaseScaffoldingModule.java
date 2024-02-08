@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -42,6 +43,8 @@ import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.service.file.FileSignatureWaivers;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
@@ -66,6 +69,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -83,9 +87,9 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
@@ -99,6 +103,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A helper module for Dagger2 to instantiate an {@link ContractScaffoldingComponent}; provides
@@ -131,6 +136,10 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     CryptoSignatureWaivers bindCryptoSignatureWaivers(CryptoSignatureWaiversImpl cryptoSignatureWaivers);
+
+    @Binds
+    @Singleton
+    FileSignatureWaivers bindFileSignatureWaivers(FileSignatureWaiversImpl fileSignatureWaivers);
 
     @Binds
     @Singleton
@@ -235,7 +244,8 @@ public interface BaseScaffoldingModule {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
-            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -273,7 +283,8 @@ public interface BaseScaffoldingModule {
                     consensusTime,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    synchronizedThrottleAccumulator);
         };
     }
 
@@ -281,7 +292,23 @@ public interface BaseScaffoldingModule {
     @Singleton
     static CongestionMultipliers createCongestionMultipliers(@NonNull ConfigProvider configProvider) {
         var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
-        final var genericFeeMultiplier = new ThrottleMultiplier(
+        final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
+
+        return getCongestionMultipliers(configProvider, genericFeeMultiplier, backendThrottle);
+    }
+
+    @Provides
+    @Singleton
+    static SynchronizedThrottleAccumulator createSynchronizedThrottleAccumulator(
+            @NonNull ConfigProvider configProvider) {
+        var frontendThrottle = new ThrottleAccumulator(() -> 1, configProvider, FRONTEND_THROTTLE);
+        return new SynchronizedThrottleAccumulator(frontendThrottle);
+    }
+
+    @NotNull
+    private static ThrottleMultiplier getThrottleMultiplier(
+            @NotNull ConfigProvider configProvider, ThrottleAccumulator backendThrottle) {
+        return new ThrottleMultiplier(
                 "logical TPS",
                 "TPS",
                 "CryptoTransfer throughput",
@@ -294,7 +321,13 @@ public interface BaseScaffoldingModule {
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
                 () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
+    }
 
+    @NotNull
+    private static CongestionMultipliers getCongestionMultipliers(
+            @NotNull ConfigProvider configProvider,
+            ThrottleMultiplier genericFeeMultiplier,
+            ThrottleAccumulator backendThrottle) {
         final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
 
         final var gasFeeMultiplier = new ThrottleMultiplier(

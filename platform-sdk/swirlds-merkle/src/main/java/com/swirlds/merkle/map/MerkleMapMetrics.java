@@ -16,8 +16,8 @@
 
 package com.swirlds.merkle.map;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Singleton factory for loading and registering {@link MerkleMap} statistics. This is the primary entry point for all

@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_2;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_14_2;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,13 +36,13 @@ import java.util.Objects;
  */
 public class EventIntakeMetrics implements StaleEventObserver {
     private static final SpeedometerMetric.Config DUPLICATE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "dupEv/sec")
+                    INTERNAL_CATEGORY, "dupEv_per_sec")
             .withDescription("number of events received per second that are already known")
             .withFormat(FORMAT_14_2);
     private final SpeedometerMetric duplicateEventsPerSecond;
 
     private static final RunningAverageMetric.Config AVG_DUPLICATE_PERCENT_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "dupEv%")
+                    PLATFORM_CATEGORY, "dupEvPercent")
             .withDescription("percentage of events received that are already known")
             .withFormat(FORMAT_10_2);
     private final RunningAverageMetric avgDuplicatePercent;

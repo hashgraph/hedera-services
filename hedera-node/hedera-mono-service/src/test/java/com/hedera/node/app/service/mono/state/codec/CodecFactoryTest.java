@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -74,7 +75,7 @@ class CodecFactoryTest {
     }
 
     @Test
-    void delegatesParse() throws IOException {
+    void delegatesParse() throws IOException, ParseException {
         given(parser.parse(any())).willReturn("C");
 
         final var value = subject.parse(input);
@@ -83,7 +84,7 @@ class CodecFactoryTest {
     }
 
     @Test
-    void codecWorksForSchedulingState() throws IOException {
+    void codecWorksForSchedulingState() throws IOException, ParseException {
         final Codec<MerkleScheduledTransactionsState> subject =
                 MonoMapCodecAdapter.codecForSelfSerializable(CURRENT_VERSION, MerkleScheduledTransactionsState::new);
 

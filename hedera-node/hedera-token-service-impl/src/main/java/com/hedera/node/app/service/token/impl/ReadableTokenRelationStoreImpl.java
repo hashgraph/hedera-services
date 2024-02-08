@@ -68,4 +68,14 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
     public long sizeOfState() {
         return readableTokenRelState.size();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void warm(@NonNull final AccountID accountID, @NonNull final TokenID tokenId) {
+        final EntityIDPair key =
+                EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenId).build();
+        readableTokenRelState.warm(key);
+    }
 }

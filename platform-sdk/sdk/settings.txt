@@ -21,7 +21,6 @@ state.saveStatePeriod,                    60
                                           #      Event Creation       #
                                           #############################
 
-freezeSecondsAfterStartup,                0
 event.creation.maxCreationRate,           5
 platformStatus.observingStatusDelay,      1ms
 
@@ -44,5 +43,6 @@ prometheus.endpointEnabled,               false
                                           #############################
 
 loadKeysFromPfxFiles,                     false
+crypto.enableNewKeyStoreModel,            false
 crypto.cpuVerifierThreadRatio,            0.1
 crypto.cpuDigestThreadRatio,              0.1

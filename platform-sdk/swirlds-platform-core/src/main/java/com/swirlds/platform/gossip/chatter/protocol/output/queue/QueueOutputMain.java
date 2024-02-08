@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.output.queue;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.output.MessageOutput;
 import com.swirlds.platform.gossip.chatter.protocol.output.SendCheck;

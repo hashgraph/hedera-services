@@ -23,7 +23,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -33,8 +32,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation of a reusable background thread that dispatches asynchronous work items to the provided {@link
- * AsyncOperationHandler} by removing the work items from the provided {@link Queue}.
+ * Implementation of a reusable background thread that dispatches asynchronous work items to the provided
+ * {@link AsyncOperationHandler} by removing the work items from the provided {@link Queue}.
  */
 public class IntakeDispatcher<Element, Provider extends OperationProvider, Handler extends AsyncOperationHandler> {
 
@@ -52,7 +51,7 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     /**
      * The queue of incoming items to be processed by the {@code worker} thread.
      */
-    private final BlockingQueue<List<Element>> backingQueue;
+    private final Queue<List<Element>> backingQueue;
 
     /**
      * The underlying {@link OperationProvider} to use for handling the work items.
@@ -60,8 +59,8 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     private final Provider provider;
 
     /**
-     * A {@link BiFunction} that accepts an {@link OperationProvider} and a list of work items then returns an {@link
-     * AsyncOperationHandler} instance.
+     * A {@link BiFunction} that accepts an {@link OperationProvider} and a list of work items then returns an
+     * {@link AsyncOperationHandler} instance.
      */
     private final BiFunction<Provider, List<Element>, Handler> handlerSupplier;
 
@@ -79,27 +78,21 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
      * Constructor that initializes all internal variables and launches the background thread. All background threads
      * are launched with a {@link java.lang.Thread.UncaughtExceptionHandler} to handle and log all exceptions thrown by
      * the thread.
-     *
+     * <p>
      * All threads constructed by this class are launched with the {@link Thread#setDaemon(boolean)} value specified as
      * {@code true}. This class will launch a total of {@code parallelism + 1} threads.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param elementType
-     * 		the type of Element
-     * @param backingQueue
-     * 		the queue of Elements to be processed
-     * @param provider
-     * 		the cryptographic transformation provider
-     * @param parallelism
-     * 		the number of threads in the pool
-     * @param handlerSupplier
-     * 		the supplier of the handler
+     * @param threadManager   responsible for managing thread lifecycles
+     * @param elementType     the type of Element
+     * @param backingQueue    the queue of Elements to be processed
+     * @param provider        the cryptographic transformation provider
+     * @param parallelism     the number of threads in the pool
+     * @param handlerSupplier the supplier of the handler
      */
     public IntakeDispatcher(
             final ThreadManager threadManager,
             final Class<Element> elementType,
-            final BlockingQueue<List<Element>> backingQueue,
+            final Queue<List<Element>> backingQueue,
             final Provider provider,
             final int parallelism,
             final BiFunction<Provider, List<Element>, Handler> handlerSupplier) {
@@ -153,13 +146,13 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
      */
     private void execute() {
         while (running) {
-            try {
-                final List<Element> workItems = backingQueue.take();
-                if (!workItems.isEmpty()) {
-                    executorService.submit(handlerSupplier.apply(provider, workItems));
-                }
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
+            final List<Element> workItems = backingQueue.poll();
+            if (workItems == null) {
+                Thread.onSpinWait();
+                continue;
+            }
+            if (!workItems.isEmpty()) {
+                executorService.submit(handlerSupplier.apply(provider, workItems));
             }
         }
     }

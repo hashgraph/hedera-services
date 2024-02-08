@@ -55,7 +55,7 @@ function end_task {
 
 start_group "Configuring Environment"
   # Access workflow environment variables
-  export GITHUB_WORKSPACE GITHUB_SHA GITHUB_OUTPUT MANIFEST_PATH DOCKER_REGISTRY DOCKER_TAG
+  export GITHUB_WORKSPACE GITHUB_SHA GITHUB_OUTPUT MANIFEST_PATH DOCKER_REGISTRY DOCKER_TAG SKOPEO_VERSION SKOPEO_IMAGE_NAME
 
   start_task "Initializing Temporary Directory"
     TEMP_DIR="$(mktemp -d)" || fail "ERROR (Exit Code: ${?})" "${?}"
@@ -94,12 +94,35 @@ start_group "Configuring Environment"
     fi
   end_task
 
-  start_task "Checking for the skopeo command"
+  start_task "Resolving the SKOPEO_VERSION variable"
+    if [[ -z "${SKOPEO_VERSION}" ]]; then
+      SKOPEO_VERSION="v1.14.0"
+    fi
+  end_task "DONE (Version: ${SKOPEO_VERSION})"
+
+  start_task "Resolving the SKOPEO_IMAGE_NAME variable"
+    if [[ -z "${SKOPEO_IMAGE_NAME}" ]]; then
+      SKOPEO_IMAGE_NAME="quay.io/skopeo/stable:${SKOPEO_VERSION}"
+    fi
+  end_task "DONE (Image Name: ${SKOPEO_IMAGE_NAME})"
+
+  start_task "Checking for the DOCKER command"
+    if command -v docker >/dev/null 2>&1; then
+      DOCKER="$(command -v docker)" || fail "ERROR (Exit Code: ${?})" "${?}"
+      export DOCKER
+    else
+      fail "ERROR (Exit Code: ${?})" "${?}"
+    fi
+  end_task "DONE (Found: ${DOCKER})"
+
+  start_task "Checking for the SKOPEO command"
     if command -v skopeo >/dev/null 2>&1; then
       SKOPEO="$(command -v skopeo)" || fail "ERROR (Exit Code: ${?})" "${?}"
       export SKOPEO
     else
-      fail "ERROR (Exit Code: ${?})" "${?}"
+      ${DOCKER} pull "${SKOPEO_IMAGE_NAME}" >/dev/null 2>&1 || fail "ERROR (Exit Code: ${?})" "${?}"
+      SKOPEO="${DOCKER} run --rm --network host ${SKOPEO_IMAGE_NAME}"
+      export SKOPEO
     fi
   end_task "DONE (Found: ${SKOPEO})"
 
