@@ -156,7 +156,7 @@ final class TransactionMethodTest {
     }
 
     private Counter counter(String suffix) {
-        return (Counter) metrics.getMetric("app", SERVICE_NAME + "/" + METHOD_NAME + suffix);
+        return (Counter) metrics.getMetric("app", SERVICE_NAME + ":" + METHOD_NAME + suffix);
     }
 
     @Test

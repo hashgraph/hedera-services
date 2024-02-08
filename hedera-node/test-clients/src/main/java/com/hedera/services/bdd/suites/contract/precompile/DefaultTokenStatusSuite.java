@@ -88,6 +88,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec(
                         "GetTokenDefaultFreezeStatus",
@@ -115,25 +116,47 @@ public class DefaultTokenStatusSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via("GetTokenDefaultFreezeStatusTx")
                                 .gas(GAS_TO_OFFER),
+                        //                        ,contractCall(
+                        //                                TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
+                        //                                GET_TOKEN_DEFAULT_FREEZE,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(ACCOUNT)
+                        //                                        .via("fakeAddressDefaultFreezeStatus")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCallLocal(
                                 TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                 GET_TOKEN_DEFAULT_FREEZE,
                                 HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get()))))))
-                .then(childRecordsCheck(
-                        "GetTokenDefaultFreezeStatusTx",
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-                                                .withStatus(SUCCESS)
-                                                .withTokenDefaultFreezeStatus(true)))));
+                .then(
+                        childRecordsCheck(
+                                "GetTokenDefaultFreezeStatusTx",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+                                                        .withStatus(SUCCESS)
+                                                        .withTokenDefaultFreezeStatus(true))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressDefaultFreezeStatus",
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(FAIL_INVALID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+                        //                                                        .withStatus(FAIL_INVALID)
+                        //
+                        // .withTokenDefaultFreezeStatus(false))))
+                        );
     }
 
     @HapiTest
     final HapiSpec getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec(
                         "GetTokenDefaultKycStatus",
@@ -161,19 +184,40 @@ public class DefaultTokenStatusSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via("GetTokenDefaultKycStatusTx")
                                 .gas(GAS_TO_OFFER),
+                        //                        ,contractCall(
+                        //                                TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
+                        //                                GET_TOKEN_DEFAULT_KYC,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(ACCOUNT)
+                        //                                .via("fakeAddressDefaultKycStatus")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCallLocal(
                                 TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                 GET_TOKEN_DEFAULT_KYC,
                                 HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get()))))))
-                .then(childRecordsCheck(
-                        "GetTokenDefaultKycStatusTx",
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
-                                                .withStatus(SUCCESS)
-                                                .withTokenDefaultKycStatus(false)))));
+                .then(
+                        childRecordsCheck(
+                                "GetTokenDefaultKycStatusTx",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                                                        .withStatus(SUCCESS)
+                                                        .withTokenDefaultKycStatus(false))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressDefaultKycStatus",
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(FAIL_INVALID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                        //                                                        .withStatus(FAIL_INVALID)
+                        //
+                        // .withTokenDefaultFreezeStatus(false))))
+                        );
     }
 }
