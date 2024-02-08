@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -42,7 +43,6 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -82,6 +82,8 @@ public class TestIntake implements LoadableFromSignedState {
      * @param addressBook the address book used by this intake
      */
     public TestIntake(@NonNull final AddressBook addressBook, @NonNull final ConsensusConfig consensusConfig) {
+        final NodeId selfId = new NodeId(0);
+
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
 
@@ -123,11 +125,13 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkerWiring.bind(linker);
 
-        final EventObserverDispatcher dispatcher =
-                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
-
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                () -> consensus, dispatcher, shadowGraph, intakeEventCounter, mock(StandardOutputWire.class));
+                platformContext,
+                selfId,
+                () -> consensus,
+                shadowGraph,
+                intakeEventCounter,
+                mock(StandardOutputWire.class));
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);

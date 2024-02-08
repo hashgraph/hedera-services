@@ -71,8 +71,6 @@ module com.swirlds.platform.core {
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.observers to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
