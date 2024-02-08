@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -77,6 +78,9 @@ class RootProxyWorldUpdaterTest {
 
     @Mock
     private StorageSizeValidator storageSizeValidator;
+
+    @Mock
+    private HandleContext context;
 
     @Mock
     private EvmFrameState evmFrameState;
@@ -154,7 +158,8 @@ class RootProxyWorldUpdaterTest {
                 () -> evmFrameState,
                 rentCalculator,
                 storageManager,
-                storageSizeValidator);
+                storageSizeValidator,
+                context);
     }
 
     private List<StorageAccesses> pendingChanges() {

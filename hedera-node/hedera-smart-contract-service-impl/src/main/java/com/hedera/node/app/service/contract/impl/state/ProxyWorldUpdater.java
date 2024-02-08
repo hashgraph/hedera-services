@@ -37,7 +37,6 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -80,12 +79,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     private final WorldUpdater parent;
-
-    /**
-     * Context
-     */
-    @Nullable
-    private HandleContext context;
 
     /**
      * The current checkpoint of the child records for this ProxyWorldUpdater.
@@ -446,22 +439,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (!reverted) {
             enhancement.operations().commit();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setupContext(@NonNull final HandleContext context) {
-        this.context = context;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull Optional<HandleContext> context() {
-        return Optional.ofNullable(context);
     }
 
     /**

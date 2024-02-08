@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperatio
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +49,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private final ContractsConfig contractsConfig;
     private final IterableStorageManager storageManager;
     private final StorageSizeValidator storageSizeValidator;
+    private final HandleContext context;
 
     private boolean committed = false;
     private List<ContractID> createdContractIds;
@@ -60,12 +62,14 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final IterableStorageManager storageManager,
-            @NonNull final StorageSizeValidator storageSizeValidator) {
+            @NonNull final StorageSizeValidator storageSizeValidator,
+            @NonNull final HandleContext context) {
         super(enhancement, evmFrameStateFactory, null);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.storageManager = Objects.requireNonNull(storageManager);
         this.rentCalculator = Objects.requireNonNull(rentCalculator);
         this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
+        this.context = context;
     }
 
     /**
@@ -101,17 +105,13 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         createdContractIds = contractChangeSummary.newContractIds();
 
         if (contractsConfig.enforceCreationThrottle()) {
-            context().ifPresent(context -> {
-                final var creationCapacityIsAvailable =
-                        !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
-                validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
-            });
+            final var creationCapacityIsAvailable =
+                    !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+            validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
         }
 
-        context().ifPresent(context -> {
-            final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
-            validateTrue(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
-        });
+        final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
+        validateTrue(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
 
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {
