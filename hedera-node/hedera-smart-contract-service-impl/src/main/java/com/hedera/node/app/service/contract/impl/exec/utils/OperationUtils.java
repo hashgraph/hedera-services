@@ -29,8 +29,7 @@ public class OperationUtils {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final Function<Boolean, Long> cost) {
         final Address address = Words.toAddress(frame.getStackItem(0));
-        final boolean accountIsWarm = frame.warmUpAddress(address) || gasCalculator.isPrecompile(address);
-        final long totalCost = cost.apply(accountIsWarm);
+        final long totalCost = cost.apply(false);
         return frame.getRemainingGas() < totalCost;
     }
 }

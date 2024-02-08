@@ -89,8 +89,7 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             @NonNull final Address address,
             final long memOffset,
             final long numBytes) {
-        final boolean accountIsWarm = frame.warmUpAddress(address) || gasCalculator.isPrecompile(address);
-        final long cost = cost(frame, memOffset, numBytes, accountIsWarm);
+        final long cost = cost(frame, memOffset, numBytes, false);
         return frame.getRemainingGas() < cost;
     }
 }
