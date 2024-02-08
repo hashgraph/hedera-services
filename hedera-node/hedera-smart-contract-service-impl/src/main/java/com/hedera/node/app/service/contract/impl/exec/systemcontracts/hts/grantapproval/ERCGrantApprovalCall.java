@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
