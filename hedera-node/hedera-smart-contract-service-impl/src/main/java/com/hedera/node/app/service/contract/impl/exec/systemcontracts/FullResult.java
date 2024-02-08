@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -58,6 +59,13 @@ public record FullResult(
     public void recordInsufficientGas() {
         if (recordBuilder != null) {
             recordBuilder.status(INSUFFICIENT_GAS);
+            //match mono - update function result with the INSUFFICIENT_GAS status
+            recordBuilder.contractCallResult(
+                    recordBuilder.contractFunctionResult().copyBuilder().
+                            contractCallResult(
+                                    tuweniToPbjBytes(
+                                            Bytes.wrap(UInt256.valueOf(INSUFFICIENT_GAS.protoOrdinal()))
+                                    )).build());
         }
     }
 

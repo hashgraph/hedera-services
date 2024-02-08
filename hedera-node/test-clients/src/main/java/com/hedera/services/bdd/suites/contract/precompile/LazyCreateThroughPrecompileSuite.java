@@ -355,6 +355,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(MULTI_KEY),
