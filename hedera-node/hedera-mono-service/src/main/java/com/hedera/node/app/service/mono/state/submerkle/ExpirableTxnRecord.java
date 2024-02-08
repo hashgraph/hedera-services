@@ -78,7 +78,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     static final int RELEASE_0280_VERSION = 11;
     // Debatable -- 0.33/0.34?
     static final int RELEASE_0340_VERSION = 12;
-    static final int CURRENT_VERSION = RELEASE_0340_VERSION;
+    static final int RELEASE_0470_VERSION = 13;
+    static final int CURRENT_VERSION = RELEASE_0470_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
     static final int MAX_MEMO_BYTES = 32 * 1_024;

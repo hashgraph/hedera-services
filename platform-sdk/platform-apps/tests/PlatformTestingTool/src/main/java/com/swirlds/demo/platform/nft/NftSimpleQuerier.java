@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.nft.config.NftQueryConfig;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.system.Platform;
 import java.security.SecureRandom;
 import java.util.Objects;

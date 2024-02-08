@@ -137,6 +137,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(context);
 
         final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final ReadableTokenStore tokenStore = context.createStore(ReadableTokenStore.class);
         final ReadableNftStore nftStore = context.createStore(ReadableNftStore.class);
         final ReadableTokenRelationStore tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
         final CryptoTransferTransactionBody op = context.body().cryptoTransferOrThrow();
@@ -155,6 +156,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 .filter(TokenTransferList::hasNftTransfers)
                 .forEach(tokenTransferList -> {
                     final TokenID tokenID = tokenTransferList.tokenOrThrow();
+                    tokenStore.warm(tokenID);
                     final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
                     for (final NftTransfer nftTransfer : nftTransfers) {
                         warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
