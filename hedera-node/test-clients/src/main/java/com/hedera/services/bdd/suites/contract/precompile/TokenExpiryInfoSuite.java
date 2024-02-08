@@ -137,7 +137,16 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                         childRecordsCheck(
                                 "expiryForInvalidTokenIDTxn",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)
+                                //                                        .contractCallResult(resultWith()
+                                //
+                                // .contractCallResult(htsPrecompileResult()
+                                //
+                                // .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                                //                                                        .withStatus(INVALID_TOKEN_ID)
+                                //                                                        .withExpiry(0,
+                                // AccountID.getDefaultInstance(), 0)))
+                                ),
                         withOpContext((spec, opLog) -> {
                             final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
                             allRunFor(spec, getTokenInfoQuery);
