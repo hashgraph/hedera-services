@@ -20,11 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.SocketException;

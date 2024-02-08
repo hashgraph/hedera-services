@@ -12,4 +12,5 @@ open module com.swirlds.platform.core.test.fixtures {
     exports com.swirlds.platform.test.fixtures.event.source;
     exports com.swirlds.platform.test.fixtures.event.generator;
     exports com.swirlds.platform.test.fixtures.state;
+    exports com.swirlds.platform.test.fixtures.addressbook;
 }

@@ -20,7 +20,6 @@ import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.bui
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -30,6 +29,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

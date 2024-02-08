@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
@@ -31,6 +30,7 @@ import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.extension.ExtendWith;

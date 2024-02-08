@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures;
+package com.swirlds.platform.test.fixtures.addressbook;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
@@ -22,6 +22,8 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.NameUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
