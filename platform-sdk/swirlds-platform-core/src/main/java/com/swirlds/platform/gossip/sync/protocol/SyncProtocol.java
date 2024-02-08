@@ -31,15 +31,12 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -49,17 +46,6 @@ import java.util.function.BooleanSupplier;
  * This object will be instantiated once per peer, and is bidirectional
  */
 public class SyncProtocol implements Protocol {
-    /**
-     * The platform statuses that permit syncing. If the platform isn't in one of these statuses, no syncs will be
-     * initiated or accepted
-     */
-    public static final Collection<PlatformStatus> STATUSES_THAT_PERMIT_SYNC = Set.of(
-            PlatformStatus.ACTIVE,
-            PlatformStatus.FREEZING,
-            PlatformStatus.FREEZE_COMPLETE,
-            PlatformStatus.OBSERVING,
-            PlatformStatus.CHECKING,
-            PlatformStatus.RECONNECT_COMPLETE);
     /**
      * The id of the peer being synced with in this protocol
      */
@@ -163,7 +149,7 @@ public class SyncProtocol implements Protocol {
      * @return true if the node should sync, false otherwise
      */
     private boolean shouldSync() {
-        if (!STATUSES_THAT_PERMIT_SYNC.contains(platformStatusGetter.getCurrentStatus())) {
+        if (!SyncStatusChecker.doesStatusPermitSync(platformStatusGetter.getCurrentStatus())) {
             syncMetrics.doNotSyncPlatformStatus();
             return false;
         }
