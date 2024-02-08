@@ -32,11 +32,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -44,6 +47,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.List;
@@ -52,6 +56,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class EventSignatureValidatorTests {
     private Random random;
@@ -247,20 +253,48 @@ class EventSignatureValidatorTests {
         assertEquals(1, exitedIntakePipelineCount.get());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Ancient events are discarded")
-    void ancientEvent() {
-        final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
+    void ancientEvent(final boolean useBirthRoundForAncientThreshold) {
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, useBirthRoundForAncientThreshold)
+                        .getOrCreateConfig())
+                .build();
+        final AddressBook previousAddressBook = new AddressBook(List.of(previousNodeAddress));
 
-        assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
+        final EventSignatureValidator validator = new EventSignatureValidator(
+                platformContext,
+                time,
+                trueVerifier,
+                defaultVersion,
+                previousAddressBook,
+                currentAddressBook,
+                intakeEventCounter);
+
+        final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
+        final BaseEventHashedData hData = event.getHashedData();
+        when(hData.getBirthRound()).thenReturn(EventConstants.MINIMUM_ROUND_CREATED);
+        when(hData.getGeneration()).thenReturn(EventConstants.FIRST_GENERATION);
+        when(event.getAncientIndicator(any())).thenAnswer(invocation -> {
+            final AncientMode mode = invocation.getArgument(0);
+            return mode == AncientMode.GENERATION_THRESHOLD
+                    ? EventConstants.FIRST_GENERATION
+                    : EventConstants.MINIMUM_ROUND_CREATED;
+        });
+
+        assertNotEquals(null, validator.validateSignature(event));
         assertEquals(0, exitedIntakePipelineCount.get());
 
-        // FUTURE WORK: expand to handle birthRound comparison for ancient.
         validatorWithTrueVerifier.setNonAncientEventWindow(new NonAncientEventWindow(
                 ConsensusConstants.ROUND_FIRST,
                 100L,
-                0 /* ignored in this context */,
-                AncientMode.GENERATION_THRESHOLD));
+                ConsensusConstants.ROUND_FIRST /* ignored in this context */,
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .getAncientMode()));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
