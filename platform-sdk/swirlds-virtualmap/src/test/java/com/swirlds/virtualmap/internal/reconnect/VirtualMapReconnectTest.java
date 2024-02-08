@@ -40,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TestQualifierTags.TIMING_SENSITIVE)
 @DisplayName("Virtual Map Reconnect Test")
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
@@ -51,7 +52,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.1")})
     @DisplayName("Empty teacher and empty learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void emptyTeacherAndLearner() {
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
     }
@@ -59,7 +59,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.2")})
     @DisplayName("Empty teacher and full learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void emptyTeacherFullLearner() {
         learnerMap.put(A_KEY, APPLE);
         learnerMap.put(B_KEY, BANANA);
@@ -74,7 +73,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.3")})
     @DisplayName("Full teacher and empty learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void fullTeacherEmptyLearner() {
         teacherMap.put(A_KEY, APPLE);
         teacherMap.put(B_KEY, BANANA);
@@ -89,7 +87,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.4")})
     @DisplayName("Single-leaf teacher and empty learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void singleLeafTeacherEmptyLearner() {
         teacherMap.put(A_KEY, APPLE);
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
@@ -98,7 +95,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.5")})
     @DisplayName("Empty teacher and single leaf learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void emptyTeacherSingleLeafLearner() {
         learnerMap.put(A_KEY, APPLE);
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
@@ -107,7 +103,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.6")})
     @DisplayName("Two-leaf teacher and empty learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void twoLeafTeacherEmptyLearner() {
         teacherMap.put(A_KEY, APPLE);
         teacherMap.put(B_KEY, BANANA);
@@ -117,7 +112,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.7")})
     @DisplayName("Empty teacher and two-leaf learner")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void emptyTeacherTwoLeafLearner() {
         learnerMap.put(A_KEY, APPLE);
         learnerMap.put(B_KEY, BANANA);
@@ -127,7 +121,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.8")})
     @DisplayName("Teacher and Learner that are the same size but completely different")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void equalFullTeacherFullLearner() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -150,7 +143,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.9")})
     @DisplayName("Equivalent teacher and learner that are full")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void sameSizeFullTeacherFullLearner() {
         teacherMap.put(A_KEY, APPLE);
         teacherMap.put(B_KEY, BANANA);
@@ -174,7 +166,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.10")})
     @DisplayName("Single leaf teacher and full learner where the leaf is the same")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void singleLeafTeacherFullLearner() {
         teacherMap.put(A_KEY, APPLE);
 
@@ -192,7 +183,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.11")})
     @DisplayName("Single leaf teacher and full learner where the leaf differs")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void singleLeafTeacherFullLearner2() {
         teacherMap.put(A_KEY, AARDVARK);
 
@@ -209,7 +199,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.12")})
     @DisplayName("Full teacher and single-leaf learner where the leaf is equivalent")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void fullTeacherSingleLeafLearner() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -226,7 +215,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.13")})
     @DisplayName("Full teacher and single-leaf learner where the leaf differs")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void fullTeacherSingleLeafLearner2() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -244,7 +232,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-005"), @Tag("VMAP-006")})
     @DisplayName("Reconnect aborts 5 times before success")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
@@ -262,7 +249,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void deleteAlreadyDeletedAccount() throws Exception {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);

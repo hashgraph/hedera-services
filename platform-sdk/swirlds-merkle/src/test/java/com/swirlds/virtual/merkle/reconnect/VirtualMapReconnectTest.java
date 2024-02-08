@@ -16,7 +16,6 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,6 +26,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TestQualifierTags.TIMING_SENSITIVE)
 @DisplayName("Virtual Map Reconnect Test")
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
@@ -249,7 +250,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
         "100000,2500,1", "100000,2500,10", "100000,2500,60", "100000,2500,90"
     })
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-027")})
-    @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect two trees of the same size with some leaves clean and some leaves in cache")
     void reconnectWithSomeLeavesCleanAndSomeInCache(final int max, final int batches, final int chance) {
         final Random rand = new Random(8);
@@ -304,7 +304,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect On First Operation")
-    @Tag(TIME_CONSUMING)
     void learnerAbortsReconnectOnFirstOperation(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 
@@ -333,7 +332,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect On Last Operation")
-    @Tag(TIME_CONSUMING)
     void learnerAbortsReconnectOnLastOperation(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 
@@ -369,7 +367,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On First Internal")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnFirstInternal(final TreePermutation treePermutation) {
 
         configureReconnectToFailQuickly();
@@ -386,7 +383,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On Last Internal")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnLastInternal(final TreePermutation treePermutation) {
 
         configureReconnectToFailQuickly();
@@ -403,7 +399,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On First Leaf")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnFirstLeaf(final TreePermutation treePermutation) {
 
         configureReconnectToFailQuickly();
@@ -420,7 +415,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On Last Leaf")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnLastLeaf(final TreePermutation treePermutation) {
 
         configureReconnectToFailQuickly();
