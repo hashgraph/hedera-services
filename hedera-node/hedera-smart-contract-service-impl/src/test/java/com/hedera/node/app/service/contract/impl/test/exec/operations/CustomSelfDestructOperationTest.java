@@ -158,8 +158,6 @@ class CustomSelfDestructOperationTest {
         given(frame.getRecipientAddress()).willReturn(TBD);
         given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(TBD, BENEFICIARY, frame))
-                .willReturn(Optional.empty());
         given(proxyWorldUpdater.get(TBD)).willReturn(account);
         given(account.getBalance()).willReturn(INHERITANCE);
     }
