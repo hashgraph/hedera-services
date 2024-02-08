@@ -20,13 +20,13 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -39,23 +39,15 @@ public interface WiringModel extends Startable, Stoppable {
      *
      * @param platformContext the platform context
      * @param time            provides wall clock time
+     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      * @return a new wiring model instance
      */
     @NonNull
-    static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        return new StandardWiringModel(platformContext.getMetrics(), time);
-    }
-
-    /**
-     * Build a new wiring model instance.
-     *
-     * @param metrics provides metrics
-     * @param time    provides wall clock time
-     * @return a new wiring model instance
-     */
-    @NonNull
-    static WiringModel create(@NonNull final Metrics metrics, @NonNull final Time time) {
-        return new StandardWiringModel(metrics, time);
+    static WiringModel create(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
+            @NonNull final ForkJoinPool defaultPool) {
+        return new StandardWiringModel(platformContext.getMetrics(), time, defaultPool);
     }
 
     /**

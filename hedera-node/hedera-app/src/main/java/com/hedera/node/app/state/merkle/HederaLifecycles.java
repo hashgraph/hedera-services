@@ -80,4 +80,11 @@ public interface HederaLifecycles {
      */
     void onUpdateWeight(
             @NonNull MerkleHederaState state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
+
+    /**
+     * Called when event stream recovery finishes.
+     *
+     * @param recoveredState the recovered state after reapplying all events
+     */
+    void onNewRecoveredState(@NonNull MerkleHederaState recoveredState);
 }

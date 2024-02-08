@@ -18,12 +18,13 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -97,11 +98,10 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     /** Get the size of this bucket in bytes, including header */
     public int sizeInBytes() {
         int size = 0;
-        if (bucketIndex > 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
-        }
+        // Include bucket index even if it has default value (zero)
+        size += ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
         for (final BucketEntry entry : entries) {
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
         }
         return size;
     }
@@ -126,18 +126,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     /**
-     * Put a key/value entry into this bucket.
-     *
-     * @param key the entry key
-     * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     * {@inheritDoc}
      */
-    public void putValue(final K key, final long value) {
+    @Override
+    public void putValue(final K key, final long oldValue, final long value) {
+        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
         final int keyHashCode = key.hashCode();
         try {
             final int entryIndex = findEntryIndex(keyHashCode, key);
-            if (value == SPECIAL_DELETE_ME_VALUE) {
-                if (entryIndex >= 0) {
+            if (value == INVALID_VALUE) {
+                if (entryIndex >= 0) { // if found
+                    final BucketEntry entry = entries.get(entryIndex);
+                    if (needCheckOldValue && (oldValue != entry.getValue())) {
+                        return;
+                    }
                     entries.remove(entryIndex);
                 } else {
                     // entry not found, nothing to delete
@@ -147,13 +149,18 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             if (entryIndex >= 0) {
                 // yay! we found it, so update value
                 final BucketEntry entry = entries.get(entryIndex);
+                if (needCheckOldValue && (oldValue != entry.getValue())) {
+                    return;
+                }
                 entry.setValue(value);
-                return;
+            } else {
+                if (needCheckOldValue) {
+                    return;
+                }
+                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
+                entries.add(newEntry);
+                checkLargestBucket(entries.size());
             }
-            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
-            entries.add(newEntry);
-
-            checkLargestBucket(entries.size());
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);
@@ -196,12 +203,11 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     }
 
     public void writeTo(final WritableSequentialData out) {
-        if (bucketIndex > 0) {
-            ProtoUtils.writeTag(out, FIELD_BUCKET_INDEX);
-            out.writeInt(bucketIndex);
-        }
+        // Bucket index is not optional, write the value even if default (zero)
+        ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
+        out.writeInt(bucketIndex);
         for (final BucketEntry entry : entries) {
-            ProtoUtils.writeTag(out, FIELD_BUCKET_ENTRIES);
+            ProtoWriterTools.writeTag(out, FIELD_BUCKET_ENTRIES);
             out.writeVarInt(entry.sizeInBytes(), false);
             entry.writeTo(out);
         }
@@ -346,22 +352,24 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
 
         public int sizeInBytes() {
             int size = 0;
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
+                    + Integer.BYTES;
             if (value != 0) {
-                size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+                size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                        + Long.BYTES;
             }
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
             return size;
         }
 
         public void writeTo(final WritableSequentialData out) {
-            ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
+            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeInt(hashCode);
             if (value != 0) {
-                ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
+                ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
                 out.writeLong(value);
             }
-            ProtoUtils.writeDelimited(
+            ProtoWriterTools.writeDelimited(
                     out,
                     FIELD_BUCKETENTRY_KEYBYTES,
                     keySerializer.getSerializedSize(key),

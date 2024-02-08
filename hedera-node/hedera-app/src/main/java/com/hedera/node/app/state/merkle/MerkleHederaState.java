@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -59,6 +60,7 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -111,7 +113,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
     private static final long CLASS_ID = 0x2de3ead3caf06392L;
-    private static final int VERSION_1 = 1;
+    // Uncomment the following class ID to run a mono -> modular state migration
+    // NOTE: also change class ID of ServicesState
+    //    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
 
     private long classId;
@@ -174,6 +179,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        // If we are initialized for event stream recovery, we have to register an
+        // extra listener to make sure we call all the required Hedera lifecycles
+        if (trigger == EVENT_STREAM_RECOVERY) {
+            final var notificationEngine = platform.getNotificationEngine();
+            notificationEngine.register(
+                    NewRecoveredStateListener.class,
+                    notification -> lifecycles.onNewRecoveredState(notification.getSwirldState()));
+        }
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
@@ -414,7 +427,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @param stateKey the state key
      * @return -1 if not found, otherwise the index into the children
      */
-    private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
+    public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);
@@ -559,7 +572,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
          * @return The found node
          */
         @NonNull
-        private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
+        MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
             final var index =
                     findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
             if (index == -1) {
@@ -634,6 +647,20 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 @NonNull final String serviceName, @NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             super(stateMetadata);
             this.serviceName = requireNonNull(serviceName);
+        }
+
+        /**
+         * Copies and releases the {@link VirtualMap} for the given state key. This ensures
+         * data is continually flushed to disk
+         *
+         * @param stateKey the state key
+         */
+        public void copyAndReleaseVirtualMap(@NonNull final String stateKey) {
+            final var md = stateMetadata.get(stateKey);
+            final VirtualMap<?, ?> virtualMap = (VirtualMap<?, ?>) findNode(md);
+            final var mutableCopy = virtualMap.copy();
+            setChild(findNodeIndex(serviceName, stateKey), mutableCopy);
+            kvInstances.put(stateKey, createReadableKVState(md, mutableCopy));
         }
 
         @NonNull

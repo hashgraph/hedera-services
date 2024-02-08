@@ -16,12 +16,12 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 import java.util.Objects;
 
 /**
@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class VirtualMapStatistics {
 
-    public static final String STAT_CATEGORY = "virtual-map";
+    public static final String STAT_CATEGORY = "virtual_map";
 
     /** Metric name prefix for all virtual map metric names */
     private static final String VMAP_PREFIX = "vmap_";

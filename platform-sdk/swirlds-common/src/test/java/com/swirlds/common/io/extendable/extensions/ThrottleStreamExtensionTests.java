@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

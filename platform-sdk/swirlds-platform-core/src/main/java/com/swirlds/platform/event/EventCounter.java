@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,16 +48,16 @@ public class EventCounter {
     }
 
     /**
-     * Called when an event is created
+     * Called when an event is linked.
      */
-    public static void eventCreated() {
+    public static void incrementLinkedEventCount() {
         numEventsInMemory.incrementAndGet();
     }
 
     /**
-     * Called when an event is cleared, to decrement the count of how many uncleared events are in memory
+     * Called when a linked event is cleared, to decrement the count of how many uncleared events are in memory
      */
-    public static void eventCleared() {
+    public static void decrementLinkedEventCount() {
         numEventsInMemory.decrementAndGet();
     }
 

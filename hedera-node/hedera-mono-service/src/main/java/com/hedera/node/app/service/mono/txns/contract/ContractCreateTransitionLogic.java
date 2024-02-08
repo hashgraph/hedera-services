@@ -197,7 +197,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
 
         // --- Do the business logic ---
-        final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+        final ContractCustomizer hapiSenderCustomizer =
+                fromHapiCreation(key, consensusTime, op, newContractMirrorAddress);
         worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
         TransactionProcessingResult result;
         try {
@@ -210,9 +211,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         codeWithConstructorArgs,
                         consensusTime);
             } else {
-                sender.incrementEthereumNonce();
-                accountStore.commitAccount(sender);
-
                 result = evmTxProcessor.executeEth(
                         sender,
                         newContractAddress,
@@ -223,6 +221,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         accountStore.loadAccount(relayerId),
                         userOfferedGasPrice,
                         maxGasAllowance);
+                result.setSignerNonce(worldState.get(senderId.asEvmAddress()).getNonce());
             }
         } finally {
             worldState.resetHapiSenderCustomizer();

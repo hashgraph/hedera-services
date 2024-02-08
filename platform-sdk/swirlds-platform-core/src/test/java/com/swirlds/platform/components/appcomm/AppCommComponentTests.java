@@ -24,23 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.ResettableRandom;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -117,30 +112,6 @@ public class AppCommComponentTests {
         // The notification listener has completed, but the post-listener callback may not have yet
         assertEventuallyEquals(
                 -1, signedState::getReservationCount, Duration.ofSeconds(1), "Signed state should be fully released");
-        assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");
-    }
-
-    @RepeatedTest(100)
-    @DisplayName("IssNotification")
-    void testIssNotification() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final long round = random.nextLong();
-        final int numTypes = IssNotification.IssType.values().length;
-        final IssNotification.IssType issType = IssNotification.IssType.values()[random.nextInt(numTypes)];
-        final NodeId otherNodeId = random.nextDouble() > 0.8 ? null : new NodeId(Math.abs(random.nextLong()));
-
-        final AtomicInteger numInvocations = new AtomicInteger();
-        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        notificationEngine.register(IssListener.class, n -> {
-            numInvocations.getAndIncrement();
-            assertEquals(round, n.getRound(), "Unexpected ISS round");
-            assertEquals(issType, n.getIssType(), "Unexpected ISS Type");
-            assertEquals(otherNodeId, n.getOtherNodeId(), "Unexpected other node id");
-        });
-
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.iss(round, issType, otherNodeId);
-
         assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");
     }
 }

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.io.IOException;
@@ -50,7 +51,7 @@ class EntityNumCodecTest {
     }
 
     @Test
-    void canDeserializeFromAppropriateStream() throws IOException {
+    void canDeserializeFromAppropriateStream() throws ParseException {
         given(input.readInt()).willReturn(SOME_NUM.intValue());
 
         final var parsed = subject.parse(input);

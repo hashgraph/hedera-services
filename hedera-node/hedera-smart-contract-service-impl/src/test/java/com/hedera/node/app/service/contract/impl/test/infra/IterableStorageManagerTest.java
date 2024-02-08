@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.token.Account;
@@ -44,8 +45,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IterableStorageManagerTest {
-    private final Long CONTRACT_1 = 1L;
-    private final Long CONTRACT_2 = 2L;
+    private final ContractID CONTRACT_1 =
+            ContractID.newBuilder().contractNum(1L).build();
+    private final ContractID CONTRACT_2 =
+            ContractID.newBuilder().contractNum(2L).build();
     private final Bytes BYTES_1 = ConversionUtils.tuweniToPbjBytes(UInt256.ONE);
     private final Bytes BYTES_2 = ConversionUtils.tuweniToPbjBytes(UInt256.valueOf(2L));
     private final Bytes BYTES_3 = ConversionUtils.tuweniToPbjBytes(UInt256.valueOf(3L));
@@ -72,7 +75,7 @@ class IterableStorageManagerTest {
         final var sizeChanges = List.of(
                 new StorageSizeChange(CONTRACT_1, 2, 3),
                 new StorageSizeChange(CONTRACT_2, 3, 2),
-                new StorageSizeChange(3L, 4, 4));
+                new StorageSizeChange(ContractID.newBuilder().contractNum(3L).build(), 4, 4));
 
         given(enhancement.operations()).willReturn(hederaOperations);
         subject.persistChanges(enhancement, List.of(), sizeChanges, store);
@@ -96,10 +99,11 @@ class IterableStorageManagerTest {
                                 StorageAccess.newRead(UInt256.ONE, UInt256.MAX_VALUE),
                                 StorageAccess.newWrite(UInt256.ONE, UInt256.MAX_VALUE, UInt256.ZERO))));
 
-        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 0), new StorageSizeChange(2L, 1, 0));
+        final var sizeChanges =
+                List.of(new StorageSizeChange(CONTRACT_1, 0, 0), new StorageSizeChange(CONTRACT_2, 1, 0));
 
         given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
-        given(hederaNativeOperations.getAccount(anyLong())).willReturn(account);
+        given(hederaNativeOperations.getAccount((ContractID) any())).willReturn(account);
         given(account.firstContractStorageKey()).willReturn(BYTES_1);
         given(enhancement.operations()).willReturn(hederaOperations);
         // Deleting the last slot contract storage for CONTRACT_2
@@ -109,13 +113,13 @@ class IterableStorageManagerTest {
         subject.persistChanges(enhancement, accesses, sizeChanges, store);
 
         // Model deleting the second contract storage
-        verify(store).getSlotValue(new SlotKey(2L, BYTES_1));
-        verify(store).removeSlot(new SlotKey(2L, BYTES_1));
+        verify(store).getSlotValue(new SlotKey(CONTRACT_2, BYTES_1));
+        verify(store).removeSlot(new SlotKey(CONTRACT_2, BYTES_1));
         verifyNoMoreInteractions(store);
 
         // Model call to modify metadata for CONTRACT_2.
         // The new first key is Bytes.EMPTY as the last slot for the contract was deleted.
-        verify(hederaOperations).updateStorageMetadata(2L, Bytes.EMPTY, -1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_2, Bytes.EMPTY, -1);
         verifyNoMoreInteractions(hederaOperations);
     }
 
@@ -142,7 +146,7 @@ class IterableStorageManagerTest {
         verify(store).putSlot(new SlotKey(CONTRACT_1, BYTES_2), new SlotValue(BYTES_2, Bytes.EMPTY, BYTES_3));
         verify(store).removeSlot(new SlotKey(CONTRACT_1, BYTES_1));
         // The new first key is BYTES_2 as the first slot for the contract was deleted.
-        verify(hederaOperations).updateStorageMetadata(1L, BYTES_2, -1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, -1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -173,7 +177,7 @@ class IterableStorageManagerTest {
         verify(store).putSlot(new SlotKey(CONTRACT_1, BYTES_3), new SlotValue(BYTES_3, BYTES_1, BYTES_3));
         verify(store).removeSlot(new SlotKey(CONTRACT_1, BYTES_2));
         // The new first key is BYTES_1 as before running the test
-        verify(hederaOperations).updateStorageMetadata(1L, BYTES_1, -1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_1, -1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -194,7 +198,7 @@ class IterableStorageManagerTest {
         subject.persistChanges(enhancement, accesses, sizeChanges, store);
 
         // The new first key is BYTES_1 as before running the test
-        verify(hederaOperations).updateStorageMetadata(1L, BYTES_1, -1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_1, -1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -221,7 +225,7 @@ class IterableStorageManagerTest {
                         new SlotValue(ConversionUtils.tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, Bytes.EMPTY));
 
         // The new first key is BYTES_2
-        verify(hederaOperations).updateStorageMetadata(1L, BYTES_2, 1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, 1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -248,7 +252,7 @@ class IterableStorageManagerTest {
                         new SlotValue(ConversionUtils.tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
 
         // The new first key is BYTES_2
-        verify(hederaOperations).updateStorageMetadata(1L, BYTES_2, 1);
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, 1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }

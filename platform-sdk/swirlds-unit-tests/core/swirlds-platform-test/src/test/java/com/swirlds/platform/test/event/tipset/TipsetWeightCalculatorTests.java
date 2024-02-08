@@ -34,6 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -45,7 +46,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -548,7 +548,7 @@ class TipsetWeightCalculatorTests {
         // FUTURE WORK: Change the test to use birthRound instead of generation for ancient.
         // Mark generation 1 as ancient.
         final NonAncientEventWindow nonAncientEventWindow =
-                new NonAncientEventWindow(1, 1, 2, AncientMode.GENERATION_THRESHOLD);
+                new NonAncientEventWindow(1, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
         builder.setNonAncientEventWindow(nonAncientEventWindow);
         childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
 

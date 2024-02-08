@@ -19,7 +19,7 @@ package com.swirlds.virtualmap.internal.reconnect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.virtualmap.VirtualTestBase;
+import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;

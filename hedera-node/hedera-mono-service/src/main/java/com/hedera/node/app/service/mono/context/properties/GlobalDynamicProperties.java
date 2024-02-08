@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOper
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_CREATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
@@ -298,6 +299,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
+    private boolean releaseAliasAfterDeletion;
     private boolean enforceContractCreationThrottle;
     private Set<Address> permittedDelegateCallers;
     private Set<Address> grandfatherContracts;
@@ -457,6 +459,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
+        releaseAliasAfterDeletion = properties.getBooleanProperty(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
@@ -940,6 +943,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isCryptoCreateWithAliasEnabled() {
         return cryptoCreateWithAliasEnabled;
+    }
+
+    public boolean releaseAliasAfterDeletion() {
+        return releaseAliasAfterDeletion;
     }
 
     public EntityScaleFactors entityScaleFactors() {

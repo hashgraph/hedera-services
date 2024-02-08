@@ -19,8 +19,8 @@ package com.swirlds.platform.stats;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

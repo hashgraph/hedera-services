@@ -59,10 +59,11 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -286,21 +287,22 @@ class HandleHederaOperationsTest {
 
     @Test
     void chargeStorageRentIsNoop() {
-        assertDoesNotThrow(() -> subject.chargeStorageRent(1L, 2L, true));
+        assertDoesNotThrow(() -> subject.chargeStorageRent(
+                ContractID.newBuilder().contractNum(1L).build(), 2L, true));
     }
 
     @Test
     void updateStorageMetadataUsesApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
-        subject.updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), Bytes.EMPTY, 2);
+        subject.updateStorageMetadata(NON_SYSTEM_CONTRACT_ID, Bytes.EMPTY, 2);
 
-        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID, Bytes.EMPTY, 2);
+        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_CONTRACT_ID, Bytes.EMPTY, 2);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+    void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
                 .accountId(AccountID.newBuilder().accountNum(123L).build())
@@ -384,7 +386,7 @@ class HandleHederaOperationsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+    void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
                 .accountId(AccountID.newBuilder().accountNum(123L).build())
@@ -433,7 +435,7 @@ class HandleHederaOperationsTest {
     private void assertInternalFinisherAsExpected(
             @NonNull final UnaryOperator<Transaction> internalFinisher,
             @NonNull final ContractCreateTransactionBody expectedOp)
-            throws IOException {
+            throws ParseException {
         Objects.requireNonNull(internalFinisher);
 
         // The finisher should swap the crypto create body with the contract create body
@@ -467,7 +469,7 @@ class HandleHederaOperationsTest {
         final var nonsenseInput = Transaction.newBuilder()
                 .signedTransactionBytes(Bytes.wrap("NONSENSE"))
                 .build();
-        assertThrows(UncheckedIOException.class, () -> internalFinisher.apply(nonsenseInput));
+        assertThrows(UncheckedParseException.class, () -> internalFinisher.apply(nonsenseInput));
     }
 
     @Test
@@ -610,8 +612,8 @@ class HandleHederaOperationsTest {
     @Test
     void getOriginalSlotsUsedDelegatesToApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(tokenServiceApi.originalKvUsageFor(A_NEW_ACCOUNT_ID)).willReturn(123L);
-        assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
+        given(tokenServiceApi.originalKvUsageFor(A_NEW_CONTRACT_ID)).willReturn(123L);
+        assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_CONTRACT_ID));
     }
 
     @Test

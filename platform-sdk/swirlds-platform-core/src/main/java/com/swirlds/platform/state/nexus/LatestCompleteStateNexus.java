@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.state.nexus;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;

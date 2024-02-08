@@ -80,9 +80,9 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(
-                        GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long)
-                                ResponseCodeEnum.SUCCESS.protoOrdinal())),
+                asBytesResult(GrantApprovalTranslator.GRANT_APPROVAL
+                        .getOutputs()
+                        .encodeElements(ResponseCodeEnum.SUCCESS.protoOrdinal(), true)),
                 result.getOutput());
     }
 
@@ -101,8 +101,6 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        given(token.treasuryAccountId()).willReturn(OWNER_ID);
-        given(nativeOperations.getAccount(OWNER_ID.accountNum())).willReturn(account);
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());

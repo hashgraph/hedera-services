@@ -85,7 +85,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -95,7 +94,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -114,6 +112,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -243,7 +242,8 @@ public class CryptoTransferSuite extends HapiSuite {
                 hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
                 okToRepeatSerialNumbersInWipeList(),
                 okToRepeatSerialNumbersInBurnList(),
-                canUseAliasAndAccountCombinations());
+                canUseAliasAndAccountCombinations(),
+                transferInvalidTokenIdWithDecimals());
     }
 
     @Override
@@ -1829,7 +1829,7 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     final HapiSpec specialAccountsBalanceCheck() {
         return defaultHapiSpec("SpecialAccountsBalanceCheck")
-                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS))
+                .given()
                 .when()
                 .then(IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
                         .mapToObj(i -> getAccountBalance("0.0." + i).logged())
@@ -2114,6 +2114,23 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE)
                                 .fee(ONE_HUNDRED_HBARS))
                 .then();
+    }
+
+    @HapiTest
+    final HapiSpec transferInvalidTokenIdWithDecimals() {
+        return defaultHapiSpec("transferInvalidTokenIdWithDecimals", FULLY_NONDETERMINISTIC)
+                .given(cryptoCreate(TREASURY), withOpContext((spec, opLog) -> {
+                    final var acctCreate = cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS);
+                    allRunFor(spec, acctCreate);
+                    // Here we take an account ID and store it as a token ID in the registry, so that when the "token
+                    // number" is submitted by the test client, it will recreate the bug scenario:
+                    final var bogusTokenId = TokenID.newBuilder().setTokenNum(acctCreate.numOfCreatedAccount());
+                    spec.registry().saveTokenId("nonexistent", bogusTokenId.build());
+                }))
+                .when()
+                .then(sourcing(() -> cryptoTransfer(
+                                movingWithDecimals(1L, "nonexistent", 2).betweenWithDecimals(PAYER, TREASURY))
+                        .hasKnownStatus(INVALID_TOKEN_ID)));
     }
 
     @Override

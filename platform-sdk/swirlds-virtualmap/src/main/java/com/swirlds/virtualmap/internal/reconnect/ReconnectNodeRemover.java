@@ -16,36 +16,34 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
-import static com.swirlds.common.threading.interrupt.Uninterruptable.tryToSleep;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.Stoppable;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * Unlike some data structures like MerkleMap that rebuild all metadata after a reconnect, a virtual map's metadata
- * is very large and is prohibitive to rebuild in its entirety. This means that the virtual map's metadata must
- * be modified as new data is streamed from the teacher. This class is responsible for removing metadata entries
- * for data that his no longer present in the tree after a reconnect.
+ * During reconnect, information about all existing nodes is sent from the teacher to the learner. However,
+ * the leaner may have old nodes in its virtual tree, and these nodes aren't transferred from the teacher.
+ * This class is used to identify such stale nodes in the learner tree. The list of nodes to remove is then
+ * used during flushes that happen periodically during reconnects (during hashing).
+ *
+ * <p>Node remover gets notifications about internal and leaf nodes received from the teacher during reconnect
+ * and checks what nodes were in the learner (original) virtual tree at the corresponding paths. For example,
+ * if an internal node is received for a path from the teacher, but it was a leaf node on the learner, the
+ * key (that corresponds to that leaf) needs to removed. Other cases are handled in a similar way.
+ *
+ * <p>One particular case is complicated. Assume the learner tree has a key K at path N, and the teacher has
+ * the same key at path M, and M &lt; N, while at path N the teacher has a different key L. During reconnects the
+ * path M is processed first. At this step, some old key is marked for removal. Some time later path N is
+ * processed, and this time key K is marked for removal, but this is wrong as it's still a valid key, just at
+ * a different path. To handle this case, during flushes we check all leaf candidates for removal, where in
+ * the tree they are located. In the scenario above, when path M was processed, key location was changed from N
+ * to M. Later during flush, key K is in the list of candidates to remove, but with path N (this is where it
+ * was originally located in the learner tree). Since the path is different, the leaf will not be actually
+ * removed from disk.
  *
  * @param <K>
  * 		the type of the key
@@ -53,10 +51,6 @@ import org.apache.logging.log4j.Logger;
  * 		the type of the value
  */
 public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> {
-
-    private static final Logger logger = LogManager.getLogger(ReconnectNodeRemover.class);
-
-    private static final int QUEUE_CAPACITY = 100_000;
 
     /**
      * The first leaf path of the new tree being received.
@@ -84,92 +78,29 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     private final long oldLastLeafPath;
 
     /**
-     * Contains keys that have been encountered so far during the reconnect.
+     * Set of keys (actually, keys + paths) collected for removal. This set is empties every
+     * time {@link #getRecordsToDelete()} is called, and a new set is started. The set is
+     * populated in {@link #newLeafNode(long, VirtualKey)} and {@link #newInternalNode(long)}
+     * based on what is received from the teacher (method args) and what was on the learner
+     * ({@link #oldRecords}).
      */
-    private final VirtualKeySet<K> encounteredKeys;
-
-    /**
-     * Keys that need to be removed from the data store.
-     */
-    private Map<K, Long /* path */> keysToBeRemoved = new HashMap<>();
-
-    /**
-     * The path of most recent node handled. Since nodes are handled in path order, this value
-     * will only increase over time.
-     */
-    private final AtomicLong handledPath = new AtomicLong(-1);
-
-    /**
-     * Describes a new node that was received during a reconnect. Key will be null if the node is an internal.
-     *
-     * @param path
-     * 		the path of the node
-     * @param isLeaf
-     * 		true if the node is a leaf node
-     * @param key
-     * 		if the node is a leaf node then this is the node's key, otherwise null
-     * @param <K>
-     * 		the type of the key
-     */
-    private record ReceivedNode<K>(long path, boolean isLeaf, K key) {}
-
-    private final StandardWorkGroup workGroup;
-
-    private final QueueThread<ReceivedNode<K>> workQueue;
-
-    private final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
-
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private Set<VirtualLeafRecord<K, ?>> leavesToDelete = new HashSet<>();
 
     /**
      * Create an object responsible for removing virtual map nodes during a reconnect.
      *
-     * @param threadManager
-     * 		responsible for creating new threads
      * @param oldRecords
      * 		a record accessor for the original map from before the reconnect
-     * @param encounteredKeys
-     * 		records the keys that have been encountered so far during the reconnect
      * @param oldFirstLeafPath
      * 		the original first leaf path from before the reconnect
      * @param oldLastLeafPath
      * 		the original last leaf path from before the reconnect
      */
     public ReconnectNodeRemover(
-            final ThreadManager threadManager,
-            final StandardWorkGroup workGroup,
-            final RecordAccessor<K, ?> oldRecords,
-            final VirtualKeySet<K> encounteredKeys,
-            final long oldFirstLeafPath,
-            final long oldLastLeafPath) {
-
-        this.workGroup = workGroup;
-
+            final RecordAccessor<K, ?> oldRecords, final long oldFirstLeafPath, final long oldLastLeafPath) {
         this.oldRecords = oldRecords;
         this.oldFirstLeafPath = oldFirstLeafPath;
         this.oldLastLeafPath = oldLastLeafPath;
-
-        this.encounteredKeys = Objects.requireNonNull(encounteredKeys);
-
-        final QueueThreadConfiguration<ReceivedNode<K>> config = new QueueThreadConfiguration<>(threadManager);
-        this.workQueue = config.setCapacity(QUEUE_CAPACITY)
-                .setComponent("reconnect")
-                .setThreadName("vm-node-remover")
-                .setHandler(this::handler)
-                .setExceptionHandler(this::exceptionHandler)
-                .setStopBehavior(Stoppable.StopBehavior.INTERRUPTABLE)
-                .build();
-
-        workGroup.execute("node-removal", () -> workQueue.buildSeed().inject());
-    }
-
-    /**
-     * This method is called if there is an exception on the background thread.
-     */
-    private void exceptionHandler(final Thread t, final Throwable cause) {
-        logger.error(EXCEPTION.getMarker(), "exception on VM reconnect node removal thread");
-        workGroup.handleError(cause);
-        exceptionEncountered.set(true);
     }
 
     /**
@@ -194,188 +125,53 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * @param path
      * 		the path of the node
      */
-    public void newInternalNode(final long path) {
-        abortAndLogIfInterrupted(
-                () -> workQueue.put(new ReceivedNode<>(path, false, null)),
-                "reconnect virtual map node removal thread interrupted");
+    public synchronized void newInternalNode(final long path) {
+        if ((path >= oldFirstLeafPath) && (path <= oldLastLeafPath) && (path > 0)) {
+            final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
+            assert oldRecord != null;
+            leavesToDelete.add(oldRecord);
+        }
     }
 
     /**
      * Register the receipt of a new leaf node. If the leaf node is in the position that was formally occupied by
-     * a leaf node then this method will ensure that the old leaf node is properly deleted. If the leaf node is
-     * in the position that was formally occupied by an internal node then this method will ensure all leaves
-     * in the subtree are properly deleted.
+     * a leaf node then this method will ensure that the old leaf node is properly deleted.
      *
      * @param path
      * 		the path to the node
      * @param newKey
      * 		the key of the new leaf node
      */
-    public void newLeafNode(final long path, final K newKey) {
-        abortAndLogIfInterrupted(
-                () -> workQueue.put(new ReceivedNode<>(path, true, newKey)),
-                "reconnect virtual map node removal thread interrupted");
+    public synchronized void newLeafNode(final long path, final K newKey) {
+        final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
+        if ((oldRecord != null) && !newKey.equals(oldRecord.getKey())) {
+            leavesToDelete.add(oldRecord);
+        }
+
+        if ((path == newLastLeafPath) && (newLastLeafPath < oldLastLeafPath)) {
+            for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
+                final VirtualLeafRecord<K, ?> oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
+                assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
+                if (oldExtraLeafRecord != null) {
+                    leavesToDelete.add(oldExtraLeafRecord);
+                }
+            }
+        }
     }
 
     /**
-     * Return a stream of keys that require deletion.
+     * Return a stream of keys collected so far for deletion. The set of collected keys is reset,
+     * so subsequent calls to this method will return different keys collected in {@link
+     * #newInternalNode(long)} and {@link #newLeafNode(long, VirtualKey)}.
      *
-     * @param requiredPath
-     * 		the minimum path that must be processed before the stream is returned
      * @return a stream of keys to be deleted. Only the key and path in these records
      * 		are populated, all other data is uninitialized.
      */
-    public Stream<VirtualLeafRecord<K, V>> getRecordsToDelete(final long requiredPath) {
-        while (handledPath.get() < requiredPath && !exceptionEncountered.get() && !closed.get()) {
-            tryToSleep(Duration.ofMillis(1));
-        }
-
-        if (exceptionEncountered.get()) {
-            throw new RuntimeException("VirtualMap reconnect node removal thread has crashed");
-        }
-
-        if (handledPath.get() < requiredPath) {
-            throw new RuntimeException("VirtualMap reconnect node removal couldn't process all paths");
-        }
-
-        workQueue.pause();
-        final Stream<VirtualLeafRecord<K, V>> stream = keysToBeRemoved.entrySet().stream()
-                .map((final Map.Entry<K, Long> entry) ->
-                        new VirtualLeafRecord<>(entry.getValue(), entry.getKey(), null));
-
-        // We can't just clear the map, as doing so will disrupt the stream constructed above.
-        keysToBeRemoved = new HashMap<>();
-
-        workQueue.resume();
-
+    public synchronized Stream<VirtualLeafRecord<K, V>> getRecordsToDelete() {
+        final Stream<VirtualLeafRecord<K, V>> stream =
+                leavesToDelete.stream().map(r -> new VirtualLeafRecord<>(r.getPath(), r.getKey(), null));
+        // Don't use clear(), as it would affect the returned stream
+        leavesToDelete = new HashSet<>();
         return stream;
-    }
-
-    /**
-     * Handles elements from the work queue.
-     *
-     * @param receivedNode
-     * 		a node that was received during a reconnect
-     */
-    private void handler(final ReceivedNode<K> receivedNode) {
-        final ReplacedNodeType replacedType = getReplacedNodeType(receivedNode.path());
-        if (receivedNode.isLeaf()) {
-            handleLeaf(receivedNode.path, replacedType, receivedNode.key);
-        } else {
-            handleInternal(receivedNode.path, replacedType);
-        }
-
-        handledPath.set(receivedNode.path);
-    }
-
-    /**
-     * Describes the type of node that is being replaced.
-     */
-    private enum ReplacedNodeType {
-        LEAF,
-        INTERNAL,
-        NO_NODE
-    }
-
-    /**
-     * Get the type of the node that is being replaced
-     *
-     * @param path
-     * 		the path to the node
-     * @return the type of node being replaced
-     */
-    private ReplacedNodeType getReplacedNodeType(final long path) {
-        if (path < oldFirstLeafPath) {
-            return ReplacedNodeType.INTERNAL;
-        } else if (path <= oldLastLeafPath) {
-            return ReplacedNodeType.LEAF;
-        } else {
-            return ReplacedNodeType.NO_NODE;
-        }
-    }
-
-    /**
-     * Handles the receipt of a leaf node from the teacher. Executed on the queue thread.
-     *
-     * @param path
-     * 		the path to the node
-     * @param key
-     * 		the leaf node's key
-     */
-    private void handleLeaf(final long path, final ReplacedNodeType replacedType, final K key) {
-        if (path < newFirstLeafPath || path > newLastLeafPath) {
-            throw new IllegalStateException(
-                    "Expected leaf path between " + newFirstLeafPath + " and " + newLastLeafPath + ", got " + path);
-        }
-
-        switch (replacedType) {
-            case LEAF -> removeLeaf(path);
-            case INTERNAL -> removeInternal(path);
-        }
-
-        // If we think we need to remove a key but find out that the leaf has actually just been moved,
-        // then we don't actually need to remove it.
-        keysToBeRemoved.remove(key);
-
-        encounteredKeys.add(key);
-    }
-
-    /**
-     * Handles the receipt of an internal node from the teacher. Executed on the queue thread.
-     *
-     * @param path
-     * 		the path ot the node
-     */
-    private void handleInternal(final long path, final ReplacedNodeType replacedType) {
-        if (path < 0 || (path >= newFirstLeafPath && newFirstLeafPath != -1)) {
-            throw new IllegalStateException(
-                    "Expected internal node path between 0 and " + newFirstLeafPath + ", got " + path);
-        }
-
-        if (replacedType == ReplacedNodeType.LEAF) {
-            removeLeaf(path);
-        }
-    }
-
-    /**
-     * Remove a leaf node at a given position.
-     *
-     * @param path
-     * 		the path of the leaf being removed
-     */
-    private void removeLeaf(final long path) {
-        final K originalKey = oldRecords.findLeafRecord(path, false).getKey();
-
-        if (!encounteredKeys.contains(originalKey)) {
-            keysToBeRemoved.put(originalKey, path);
-        }
-    }
-
-    /**
-     * Remove an internal node at a given position.
-     */
-    private void removeInternal(final long path) {
-        final long leftChildPath = Path.getLeftChildPath(path);
-        final long rightChildPath = Path.getRightChildPath(path);
-
-        if (getReplacedNodeType(leftChildPath) == ReplacedNodeType.LEAF) {
-            removeLeaf(leftChildPath);
-        } else {
-            removeInternal(leftChildPath);
-        }
-
-        if (getReplacedNodeType(rightChildPath) == ReplacedNodeType.LEAF) {
-            removeLeaf(rightChildPath);
-        } else {
-            removeInternal(rightChildPath);
-        }
-    }
-
-    /**
-     * Stop the work thread.
-     */
-    public void close() {
-        closed.set(true);
-        workQueue.stop();
     }
 }

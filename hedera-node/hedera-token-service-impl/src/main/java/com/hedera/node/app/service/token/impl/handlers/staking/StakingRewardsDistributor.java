@@ -76,7 +76,8 @@ public class StakingRewardsDistributor {
             // It is important to know that if the reward is zero because of its zero stake in last period.
             // This is needed to update stakePeriodStart for the account.
             if (reward > 0) {
-                stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
+                stakingRewardHelper.decreasePendingRewardsBy(
+                        stakingInfoStore, stakingRewardsStore, reward, originalAccount.stakedNodeIdOrThrow());
 
                 // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
                 // accounts until we find a non-deleted account to try to reward (it may still decline)

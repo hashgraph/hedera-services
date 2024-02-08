@@ -19,6 +19,7 @@ package contract;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ADDRESS;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ID;
+import static contract.Erc721XTestConstants.ERC721_FULL_CONTRACT_ID;
 import static contract.Erc721XTestConstants.ERC721_FULL_ID;
 import static contract.Erc721XTestConstants.ERC721_FULL_INITCODE_FILE_ID;
 import static contract.Erc721XTestConstants.EXPECTED_STORAGE;
@@ -152,7 +153,7 @@ public class Erc721XTest extends AbstractContractXTest {
     private ContractCallTransactionBody callWithParams(@NonNull final ByteBuffer encoded) {
         return ContractCallTransactionBody.newBuilder()
                 .functionParameters(Bytes.wrap(encoded.array()))
-                .contractID(Erc721XTestConstants.ERC721_FULL_CONTRACT)
+                .contractID(ERC721_FULL_CONTRACT_ID)
                 .gas(AbstractContractXTest.GAS_TO_OFFER)
                 .build();
     }
@@ -163,7 +164,7 @@ public class Erc721XTest extends AbstractContractXTest {
             @NotNull final ReadableKVState<AccountID, Account> accounts) {
         assertEquals(EXPECTED_STORAGE.size(), storage.size());
         EXPECTED_STORAGE.forEach((key, value) -> {
-            final var slot = storage.get(new SlotKey(ERC721_FULL_ID.accountNumOrThrow(), key));
+            final var slot = storage.get(new SlotKey(ERC721_FULL_CONTRACT_ID, key));
             assertNotNull(slot);
             assertEquals(value, slot.value());
         });

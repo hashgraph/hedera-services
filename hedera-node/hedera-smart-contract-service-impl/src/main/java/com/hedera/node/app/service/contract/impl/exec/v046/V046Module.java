@@ -74,7 +74,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
  * Provides the Services 0.46 EVM implementation, which consists of Shanghai operations and
- * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations
+ * Istanbul precompiles plus the Hedera gas calculator, system contracts, and operations
  * as they were configured in the 0.46 release (with treatment of calls to non-existing addresses
  * returning successful results in order to enhance EVM equivalence).
  */
@@ -125,12 +125,14 @@ public interface V046Module {
     @Singleton
     @ServicesV046
     static EVM provideEVM(
-            @ServicesV046 @NonNull final Set<Operation> customOperations, @NonNull final GasCalculator gasCalculator) {
-        // Use Paris EVM with 0.38 custom operations and 0x00 chain id (set at runtime)
+            @ServicesV046 @NonNull final Set<Operation> customOperations,
+            @NonNull final EvmConfiguration evmConfiguration,
+            @NonNull final GasCalculator gasCalculator) {
+        // Use Shanghai EVM with 0.46 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.SHANGHAI);
     }
 
     @Provides
@@ -154,32 +156,40 @@ public interface V046Module {
     @IntoSet
     @ServicesV046
     static Operation provideBalanceOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomBalanceOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomBalanceOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV046
     static Operation provideDelegateCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomDelegateCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomDelegateCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV046
     static Operation provideCallCodeOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomCallCodeOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV046
     static Operation provideStaticCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomStaticCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -259,8 +269,10 @@ public interface V046Module {
     @IntoSet
     @ServicesV046
     static Operation provideExtCodeHashOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeHashOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeHashOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -268,8 +280,10 @@ public interface V046Module {
     @IntoSet
     @ServicesV046
     static Operation provideExtCodeSizeOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -277,8 +291,10 @@ public interface V046Module {
     @IntoSet
     @ServicesV046
     static Operation provideExtCodeCopyOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV046 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV046 @NonNull final AddressChecks addressChecks,
+            @ServicesV046 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides

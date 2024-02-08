@@ -29,8 +29,8 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.types.Profile;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -66,7 +66,7 @@ import javax.inject.Singleton;
 @Singleton
 public class SubmissionManager {
     /** Metric settings for keeping track of rejected transactions */
-    private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
+    private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated_per_sec";
 
     private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";

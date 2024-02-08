@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.consensus;
 
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -33,8 +35,9 @@ public class NonAncientEventWindow {
 
     private final AncientMode ancientMode;
     private final long latestConsensusRound;
-    private final long minRoundNonAncient;
-    private final long minGenNonAncient;
+
+    private final long ancientThreshold;
+    private final long expiredThreshold;
 
     /**
      * Create a new NonAncientEventWindow with the given bounds. The latestConsensusRound must be greater than or equal
@@ -43,29 +46,47 @@ public class NonAncientEventWindow {
      * equal to the first generation for events.
      *
      * @param latestConsensusRound the latest round that has come to consensus
-     * @param minRoundNonAncient   the minimum round that is non-ancient
-     * @param minGenNonAncient     the minimum generation that is non-ancient
+     * @param ancientThreshold     the minimum ancient indicator value for an event to be considered non-ancient
+     * @param expiredThreshold     the minimum ancient indicator value for an event to be considered not expired
      * @param ancientMode          the ancient mode
      * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
      *                                  minGenNonAncient value is less than the first generation for events.
      */
     public NonAncientEventWindow(
             final long latestConsensusRound,
-            final long minRoundNonAncient,
-            final long minGenNonAncient,
+            final long ancientThreshold,
+            final long expiredThreshold,
             @NonNull final AncientMode ancientMode) {
-        if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
+
+        if (latestConsensusRound < ROUND_NEGATIVE_INFINITY) {
             throw new IllegalArgumentException(
-                    "The latest consensus round cannot be less than the first round of consensus.");
+                    "The latest consensus round cannot be less than 0 (ROUND_NEGATIVE_INFINITY).");
         }
-        if (minGenNonAncient < EventConstants.FIRST_GENERATION) {
-            throw new IllegalArgumentException(
-                    "the minimum generation non-ancient cannot be lower than the first generation for events.");
+
+        if (ancientMode == GENERATION_THRESHOLD) {
+            if (ancientThreshold < FIRST_GENERATION) {
+                throw new IllegalArgumentException(
+                        "the minimum generation non-ancient cannot be lower than the first generation for events.");
+            }
+            if (expiredThreshold < FIRST_GENERATION) {
+                throw new IllegalArgumentException(
+                        "the minimum generation non-expired cannot be lower than the first generation for events.");
+            }
+        } else {
+            if (ancientThreshold < ROUND_FIRST) {
+                throw new IllegalArgumentException(
+                        "the minimum round non-ancient cannot be lower than the first round of consensus.");
+            }
+            if (expiredThreshold < ROUND_FIRST) {
+                throw new IllegalArgumentException(
+                        "the minimum round non-expired cannot be lower than the first round of consensus.");
+            }
         }
+
         this.latestConsensusRound = latestConsensusRound;
-        this.minRoundNonAncient = Math.max(minRoundNonAncient, ConsensusConstants.ROUND_FIRST);
-        this.minGenNonAncient = minGenNonAncient;
         this.ancientMode = ancientMode;
+        this.ancientThreshold = ancientThreshold;
+        this.expiredThreshold = expiredThreshold;
     }
 
     /**
@@ -76,20 +97,15 @@ public class NonAncientEventWindow {
      */
     @NonNull
     public static NonAncientEventWindow getGenesisNonAncientEventWindow(@NonNull final AncientMode ancientMode) {
-        return new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST,
-                ConsensusConstants.ROUND_FIRST,
-                EventConstants.FIRST_GENERATION,
-                ancientMode);
+        final long firstIndicator = ancientMode == GENERATION_THRESHOLD ? FIRST_GENERATION : ROUND_FIRST;
+        return new NonAncientEventWindow(ROUND_NEGATIVE_INFINITY, firstIndicator, firstIndicator, ancientMode);
     }
 
     /**
      * @return true if this is a genesis non-ancient event window, false otherwise.
      */
     public boolean isGenesis() {
-        return this.latestConsensusRound == ConsensusConstants.ROUND_FIRST
-                && this.minRoundNonAncient == ConsensusConstants.ROUND_FIRST
-                && this.minGenNonAncient == EventConstants.FIRST_GENERATION;
+        return latestConsensusRound == ROUND_NEGATIVE_INFINITY;
     }
 
     /**
@@ -101,6 +117,8 @@ public class NonAncientEventWindow {
     }
 
     /**
+     * The round that will come to consensus next.
+     *
      * @return the pending round coming to consensus, i.e. 1  + the latestConsensusRound
      */
     public long pendingConsensusRound() {
@@ -108,14 +126,21 @@ public class NonAncientEventWindow {
     }
 
     /**
-     * @return the lower bound of the non-ancient event window.
+     * Get the ancient threshold. All events with an ancient indicator less than this value are considered ancient.
+     *
+     * @return the minimum ancient indicator value for an event to be considered non ancient.
      */
     public long getAncientThreshold() {
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            return minRoundNonAncient;
-        } else {
-            return minGenNonAncient;
-        }
+        return ancientThreshold;
+    }
+
+    /**
+     * Get the expired threshold. All events with an ancient indicator less than this value are considered expired.
+     *
+     * @return the minimum ancient indicator value for an event to be considered not expired.
+     */
+    public long getExpiredThreshold() {
+        return expiredThreshold;
     }
 
     /**
@@ -125,7 +150,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final GossipEvent event) {
-        return event.getAncientIndicator(ancientMode) < getAncientThreshold();
+        return event.getAncientIndicator(ancientMode) < ancientThreshold;
     }
 
     /**
@@ -135,7 +160,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final EventDescriptor event) {
-        return event.getAncientIndicator(ancientMode) < getAncientThreshold();
+        return event.getAncientIndicator(ancientMode) < ancientThreshold;
     }
 
     /**
@@ -145,50 +170,16 @@ public class NonAncientEventWindow {
      * @return true if the value is ancient, false otherwise.
      */
     public boolean isAncient(final long testValue) {
-        return testValue < getAncientThreshold();
-    }
-
-    /**
-     * Create a NonAncientEventWindow by calculating the minRoundNonAncient value from the latestConsensusRound and
-     * roundsNonAncient.
-     *
-     * @param latestConsensusRound the latest round that has come to consensus
-     * @param minGenNonAncient     the minimum generation that is non-ancient
-     * @param roundsNonAncient     the number of rounds that are non-ancient
-     * @return the new NonAncientEventWindow
-     */
-    @NonNull
-    public static NonAncientEventWindow createUsingRoundsNonAncient(
-            final long latestConsensusRound,
-            final long minGenNonAncient,
-            final long roundsNonAncient,
-            @NonNull final AncientMode ancientMode) {
-        return new NonAncientEventWindow(
-                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient, ancientMode);
-    }
-
-    @NonNull
-    public static NonAncientEventWindow createUsingPlatformContext(
-            final long latestConsensusRound,
-            final long minGenNonAncient,
-            @NonNull final PlatformContext platformContext) {
-        final long roundsNonAncient = platformContext
-                .getConfiguration()
-                .getConfigData(ConsensusConfig.class)
-                .roundsNonAncient();
-        final AncientMode ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
-        return createUsingRoundsNonAncient(latestConsensusRound, minGenNonAncient, roundsNonAncient, ancientMode);
+        return testValue < ancientThreshold;
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append("latestConsensusRound", latestConsensusRound)
-                .append("minRoundNonAncient", minRoundNonAncient)
-                .append("minGenNonAncient", minGenNonAncient)
+                .append("ancientMode", ancientMode)
+                .append("ancientThreshold", ancientThreshold)
+                .append("expiredThreshold", expiredThreshold)
                 .toString();
     }
 }

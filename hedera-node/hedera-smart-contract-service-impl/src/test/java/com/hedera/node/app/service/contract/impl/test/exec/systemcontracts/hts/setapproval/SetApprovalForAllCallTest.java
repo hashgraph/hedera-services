@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -105,7 +105,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
 
         // Then
         assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(ResponseCodeEnum.ACCOUNT_DELETED), result.getOutput());
+        assertEquals(readableRevertReason(ResponseCodeEnum.ACCOUNT_DELETED), result.getOutput());
     }
 
     @Test

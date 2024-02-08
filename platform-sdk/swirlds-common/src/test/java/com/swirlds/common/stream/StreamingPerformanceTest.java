@@ -18,9 +18,9 @@ package com.swirlds.common.stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import com.swirlds.common.utility.StopWatch;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

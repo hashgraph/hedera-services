@@ -85,8 +85,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -115,12 +117,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
  */
+@Singleton
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
@@ -147,6 +151,8 @@ public class HandleWorkflow {
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final CacheWarmer cacheWarmer;
 
     @Inject
     public HandleWorkflow(
@@ -169,7 +175,9 @@ public class HandleWorkflow {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final CacheWarmer cacheWarmer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -192,7 +200,11 @@ public class HandleWorkflow {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
+        ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
+        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
     }
 
     /**
@@ -209,6 +221,9 @@ public class HandleWorkflow {
 
         // log start of round to transaction state log
         logStartRound(round);
+
+        // warm the cache
+        cacheWarmer.warm(state, round);
 
         // handle each event in the round
         for (final ConsensusEvent event : round) {
@@ -315,10 +330,11 @@ public class HandleWorkflow {
         TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
+        TransactionInfo transactionInfo = null;
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
-            final var transactionInfo = preHandleResult.txInfo();
+            transactionInfo = preHandleResult.txInfo();
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
@@ -341,13 +357,8 @@ public class HandleWorkflow {
 
             // Log start of user transaction to transaction state log
             logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(
-                    preHandleResult.payer(),
-                    preHandleResult.payerKey(),
-                    preHandleResult.status(),
-                    preHandleResult.responseCode());
-            logStartUserTransactionPreHandleResultP3(
-                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.getVerificationResults());
+            logStartUserTransactionPreHandleResultP2(preHandleResult);
+            logStartUserTransactionPreHandleResultP3(preHandleResult);
 
             // Initialize record builder list
             recordBuilder
@@ -389,7 +400,8 @@ public class HandleWorkflow {
                     consensusNow,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    synchronizedThrottleAccumulator);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -405,7 +417,6 @@ public class HandleWorkflow {
 
             networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
-
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
@@ -427,7 +438,11 @@ public class HandleWorkflow {
                             // the network fee in case of a very low payer balance)
                             feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
                         } else {
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                            final var feesToCharge =
+                                    validationResult.responseCodeEnum().equals(DUPLICATE_TRANSACTION)
+                                            ? fees.withoutServiceComponent()
+                                            : fees;
+                            feeAccumulator.chargeFees(payer, creator.accountId(), feesToCharge);
                         }
                     }
                 } catch (final HandleException ex) {
@@ -528,7 +543,10 @@ public class HandleWorkflow {
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
-                    recordBuilder.status(fileUpdateResult);
+
+                    recordBuilder
+                            .exchangeRate(exchangeRateManager.exchangeRates())
+                            .status(fileUpdateResult);
 
                     // Notify if platform state was updated
                     platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
@@ -543,6 +561,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
@@ -560,7 +579,7 @@ public class HandleWorkflow {
         }
 
         networkUtilizationManager.saveTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
+        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
 
         // Commit all state changes
         stack.commitFullStack();

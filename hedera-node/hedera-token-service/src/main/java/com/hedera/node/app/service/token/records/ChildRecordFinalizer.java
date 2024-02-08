@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,5 +35,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the child record
  */
 public interface ChildRecordFinalizer {
-    void finalizeChildRecord(@NonNull ChildFinalizeContext context);
+    void finalizeChildRecord(@NonNull ChildFinalizeContext context, final HederaFunctionality function);
 }

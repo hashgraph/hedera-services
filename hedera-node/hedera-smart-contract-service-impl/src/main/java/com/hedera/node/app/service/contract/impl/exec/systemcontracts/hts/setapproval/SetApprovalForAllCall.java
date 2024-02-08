@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setap
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants.APPROVAL_FOR_ALL_EVENT;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -96,9 +98,9 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
             if (status.equals(INVALID_TOKEN_ID)) {
                 return completionWith(INVALID_TOKEN_ID, gasRequirement);
             }
-            return reversionWith(status, gasRequirement);
+            return reversionWith(gasRequirement, recordBuilder);
         } else {
-            return completionWith(gasRequirement, recordBuilder);
+            return completionWith(gasRequirement, recordBuilder, encodedRc(standardized(status)));
         }
     }
 
@@ -106,7 +108,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
     public @NonNull PricedResult execute(final MessageFrame frame) {
         final var result = execute();
 
-        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
+        if (result.responseCode().equals(ResponseCodeEnum.SUCCESS)) {
             frame.addLog(getLogForSetApprovalForAll(token));
         }
 

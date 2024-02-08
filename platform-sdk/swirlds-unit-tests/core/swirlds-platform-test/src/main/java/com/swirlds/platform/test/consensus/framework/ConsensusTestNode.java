@@ -18,12 +18,12 @@ package com.swirlds.platform.test.consensus.framework;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;

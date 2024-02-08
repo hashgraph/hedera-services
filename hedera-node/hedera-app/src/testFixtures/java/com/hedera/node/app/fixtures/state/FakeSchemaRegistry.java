@@ -77,6 +77,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             final var previousStates = new EmptyReadableStates();
             final var writableStates = new MapWritableStates(writables);
             schema.migrate(new MigrationContext() {
+                @Override
+                public void copyAndReleaseOnDiskState(String stateKey) {
+                    // No-op
+                }
+
                 @NonNull
                 @Override
                 public ReadableStates previousStates() {

@@ -380,6 +380,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoBefore = writableStakingInfoState.get(node1Id);
         final var node0InfoBefore = writableStakingInfoState.get(node0Id);
 
+        assertThat(node0InfoBefore.pendingRewards()).isEqualTo(1000000L);
+        assertThat(node1InfoBefore.pendingRewards()).isEqualTo(1000000L);
+
         writableAccountStore.put(account.copyBuilder()
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .stakedNodeId(0L)
@@ -416,6 +419,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .isEqualTo(node1InfoBefore.unclaimedStakeRewardStart() + accountBalance);
 
         assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
+
+        assertThat(node0InfoAfter.pendingRewards()).isEqualTo(1000000L);
+        assertThat(node1InfoAfter.pendingRewards()).isEqualTo(994500L);
     }
 
     @Test

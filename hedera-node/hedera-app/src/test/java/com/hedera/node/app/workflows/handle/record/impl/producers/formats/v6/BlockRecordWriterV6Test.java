@@ -30,7 +30,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
-import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.state.SingleTransactionRecord;

@@ -25,8 +25,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -56,7 +58,7 @@ public class StakingRewardsHelper {
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
      *
-     * @param writableAccountStore   The store to write to for updated values and original values
+     * @param writableAccountStore The store to write to for updated values and original values
      * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
@@ -82,6 +84,7 @@ public class StakingRewardsHelper {
      * Returns true if the account is staked to a node and the current transaction modified the stakedToMe field
      * (by changing balance of the current account or the account which is staking to current account) or
      * declineReward or the stakedId field
+     *
      * @param modifiedAccount the account which is modified in the current transaction and is in modifications
      * @param originalAccount the account before the current transaction
      * @return true if the account is staked to a node and the current transaction modified the stakedToMe field
@@ -103,14 +106,40 @@ public class StakingRewardsHelper {
     }
 
     /**
+     * Returns true if there is a non-zero reward paid.
+     *
+     * @param rewardsPaid the rewards paid (possibly empty or all zero)
+     * @return true if there is a non-zero reward paid
+     */
+    public static boolean requiresExternalization(@NonNull final Map<AccountID, Long> rewardsPaid) {
+        if (rewardsPaid.isEmpty()) {
+            return false;
+        }
+        for (final var reward : rewardsPaid.values()) {
+            if (reward != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Decrease pending rewards on the network staking rewards store by the given amount.
      * Once we pay reward to an account, the pending rewards on the network should be
      * reduced by that amount, since they no more need to be paid.
+     * If the node is deleted, we do not decrease the pending rewards on the network, and on the node.
+     *
+     * @param stakingInfoStore
      * @param stakingRewardsStore The store to write to for updated values
-     * @param amount The amount to decrease by
+     * @param amount              The amount to decrease by
+     * @param nodeId              The node id to decrease pending rewards for
      */
     public void decreasePendingRewardsBy(
-            final WritableNetworkStakingRewardsStore stakingRewardsStore, final long amount) {
+            @NonNull final WritableStakingInfoStore stakingInfoStore,
+            @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            final long amount,
+            @NonNull final Long nodeId) {
+        // decrement the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards - amount;
         if (newPendingRewards < 0) {
@@ -123,42 +152,95 @@ public class StakingRewardsHelper {
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+
+        // decrement pendingRewards per node also
+        final var stakingInfo = stakingInfoStore.get(nodeId);
+        final var currentNodePendingRewards = stakingInfo.pendingRewards();
+        var newNodePendingRewards = currentNodePendingRewards - amount;
+        if (newNodePendingRewards < 0) {
+            log.error(
+                    "Pending rewards decreased by {} to a meaningless {} for node {}, fixing to zero hbar",
+                    amount,
+                    newNodePendingRewards,
+                    nodeId);
+            newNodePendingRewards = 0;
+        }
+        final var stakingInfoCopy =
+                stakingInfo.copyBuilder().pendingRewards(newNodePendingRewards).build();
+        stakingInfoStore.put(nodeId, stakingInfoCopy);
     }
 
     /**
      * Increase pending rewards on the network staking rewards store by the given amount.
      * This is called in EndOdStakingPeriod when we calculate the pending rewards on the network
-     * to be paid in next staking period
+     * to be paid in next staking period. Whne the node is deleted, we do not increase the pending rewards
+     * on the network, and on the node.
+     *
      * @param stakingRewardsStore The store to write to for updated values
-     * @param amount The amount to increase by
+     * @param amount              The amount to increase by
+     * @param currStakingInfo    The current staking info
+     * @return The clamped pending rewards
      */
-    public void increasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
+    StakingNodeInfo increasePendingRewardsBy(
+            final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            long amount,
+            final StakingNodeInfo currStakingInfo) {
+        // increment the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
-        var newPendingRewards = currentPendingRewards + amount;
-        if (newPendingRewards > MAX_PENDING_REWARDS) {
+        long nodePendingRewards = currStakingInfo.pendingRewards();
+        long newNetworkPendingRewards;
+        long newNodePendingRewards;
+        // Only increase the pending rewards if the node is not deleted
+        if (!currStakingInfo.deleted()) {
+            newNetworkPendingRewards = currentPendingRewards + amount;
+            newNodePendingRewards = nodePendingRewards + amount;
+        } else {
+            newNetworkPendingRewards = currentPendingRewards;
+            newNodePendingRewards = 0L;
+        }
+        if (newNetworkPendingRewards > MAX_PENDING_REWARDS) {
             log.error(
                     "Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar",
                     amount,
-                    newPendingRewards);
-            newPendingRewards = MAX_PENDING_REWARDS;
+                    newNetworkPendingRewards);
+            newNetworkPendingRewards = MAX_PENDING_REWARDS;
+        }
+        if (newNodePendingRewards > MAX_PENDING_REWARDS) {
+            log.error(
+                    "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
+                    amount,
+                    newNetworkPendingRewards,
+                    nodePendingRewards);
+            newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
-        stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+        stakingRewardsStore.put(copy.pendingRewards(newNetworkPendingRewards).build());
+
+        // Update the individual node pending node rewards. If the node is deleted the pending rewards
+        // should be zero
+        return currStakingInfo
+                .copyBuilder()
+                .pendingRewards(newNodePendingRewards)
+                .build();
     }
 
     /**
-     * Display the rewards paid map values as AccountAmounts
-     * @param rewardsPaid The rewards paid
-     * @return The rewards paid as AccountAmounts
+     * Translates any non-zero balance adjustments in the given map into a list of
+     * {@link AccountAmount}s ordered by account id.
+     *
+     * @param balanceAdjustments the balance adjustments
+     * @return the list of account amounts (excluding zero adjustments)
      */
-    public static List<AccountAmount> asAccountAmounts(@NonNull final Map<AccountID, Long> rewardsPaid) {
+    public static List<AccountAmount> asAccountAmounts(@NonNull final Map<AccountID, Long> balanceAdjustments) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        for (final var entry : rewardsPaid.entrySet()) {
-            accountAmounts.add(AccountAmount.newBuilder()
-                    .accountID(entry.getKey())
-                    .amount(entry.getValue())
-                    .build());
+        for (final var entry : balanceAdjustments.entrySet()) {
+            if (entry.getValue() != 0) {
+                accountAmounts.add(AccountAmount.newBuilder()
+                        .accountID(entry.getKey())
+                        .amount(entry.getValue())
+                        .build());
+            }
         }
         accountAmounts.sort(ACCOUNT_AMOUNT_COMPARATOR);
         return accountAmounts;
