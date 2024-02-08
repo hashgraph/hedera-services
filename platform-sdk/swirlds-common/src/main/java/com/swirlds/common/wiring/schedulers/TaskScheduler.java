@@ -22,8 +22,8 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
-import com.swirlds.common.wiring.schedulers.internal.NoopSquelcher;
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;
+import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
 import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -92,7 +92,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
         if (squelchingEnabled) {
             this.squelcher = new DefaultSquelcher();
         } else {
-            this.squelcher = new NoopSquelcher();
+            this.squelcher = new ThrowingSquelcher();
         }
 
         primaryOutputWire = new StandardOutputWire<>(model, name);

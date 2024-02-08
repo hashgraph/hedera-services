@@ -19,24 +19,24 @@ package com.swirlds.common.wiring.schedulers;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.wiring.schedulers.internal.NoopSquelcher;
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;
+import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the {@link NoopSquelcher} class.
+ * Tests for the {@link ThrowingSquelcher} class.
  */
-class NoopSquelcherTests {
+class ThrowingSquelcherTests {
     @Test
     @DisplayName("Standard operation")
     void standardOperation() {
-        final Squelcher noopSquelcher = new NoopSquelcher();
-        assertFalse(noopSquelcher.shouldSquelch());
+        final Squelcher throwingSquelcher = new ThrowingSquelcher();
+        assertFalse(throwingSquelcher.shouldSquelch());
 
-        assertThrows(UnsupportedOperationException.class, noopSquelcher::startSquelching);
-        assertThrows(UnsupportedOperationException.class, noopSquelcher::stopSquelching);
+        assertThrows(UnsupportedOperationException.class, throwingSquelcher::startSquelching);
+        assertThrows(UnsupportedOperationException.class, throwingSquelcher::stopSquelching);
 
-        assertFalse(noopSquelcher.shouldSquelch());
+        assertFalse(throwingSquelcher.shouldSquelch());
     }
 }

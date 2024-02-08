@@ -19,7 +19,7 @@ package com.swirlds.common.wiring.schedulers.internal;
 /**
  * A squelcher object that does not support squelching.
  */
-public class NoopSquelcher implements Squelcher {
+public class ThrowingSquelcher implements Squelcher {
     /**
      * {@inheritDoc}
      *

@@ -136,7 +136,7 @@ public class TaskSchedulerBuilder<O> {
      * Set whether the task scheduler should enable squelching. Default false. Enabling squelching may add overhead.
      * <p>
      * IMPORTANT: you must not enable squelching if the scheduler handles tasks that require special cleanup. If
-     * squelching is enabled and activated, all existing amd incoming tasks will be unceremoniously dumped into the
+     * squelching is enabled and activated, all existing and incoming tasks will be unceremoniously dumped into the
      * void!
      *
      * @param squelchingEnabled true if the scheduler should enable squelching, false otherwise.
