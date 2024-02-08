@@ -113,7 +113,6 @@ class CustomBalanceOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
             final var actual = subject.execute(frame, evm);
@@ -127,6 +126,7 @@ class CustomBalanceOperationTest {
             setupWarmGasCost();
             given(frame.getRemainingGas()).willReturn(1L);
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);

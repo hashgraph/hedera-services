@@ -99,7 +99,6 @@ class CustomExtCodeHashOperationTest {
     void deletesToParentIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(frame.warmUpAddress(Address.fromHexString("0x123"))).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
