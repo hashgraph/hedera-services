@@ -17,7 +17,6 @@
 package com.swirlds.merkledb;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
@@ -43,7 +42,6 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.collections.OffHeapUser;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
@@ -52,17 +50,13 @@ import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
-import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
-import com.swirlds.merkledb.files.hashmap.VirtualKeySetSerializer;
 import com.swirlds.merkledb.serialize.KeyIndexType;
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -445,22 +439,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     @Override
     public void stopAndDisableBackgroundCompaction() {
         compactionCoordinator.stopAndDisableBackgroundCompaction();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override
-    public VirtualKeySet<K> buildKeySet() {
-        final KeySerializer<K> keySerializer =
-                isLongKeyMode ? (KeySerializer<K>) new VirtualKeySetSerializer() : objectKeyToPath.getKeySerializer();
-        final MerkleDbConfig config = database.getConfig();
-        return new HalfDiskVirtualKeySet<>(
-                database.getConfig(),
-                keySerializer,
-                config.keySetBloomFilterHashCount(),
-                config.keySetBloomFilterSizeInBytes() * BYTES_TO_BITS,
-                config.keySetHalfDiskHashMapSize(),
-                config.keySetHalfDiskHashMapBuffer());
     }
 
     /**
@@ -1205,17 +1183,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             objectKeyToPath.startWriting();
         }
 
-        // iterate over leaf records
+        // Iterate over leaf records
         dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
-            // update objectKeyToPath
+            final long path = leafRecord.getPath();
+            // Update key to path index
             if (isLongKeyMode) {
-                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());
+                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
+                longKeyToPath.put(key, path);
             } else {
-                objectKeyToPath.put(leafRecord.getKey(), leafRecord.getPath());
+                objectKeyToPath.put(leafRecord.getKey(), path);
             }
             statisticsUpdater.countFlushLeafKeysWritten();
 
-            // update pathToKeyValue
+            // Update path to K/V store
             try {
                 pathToKeyValue.put(leafRecord.getPath(), leafRecord);
             } catch (final IOException e) {
@@ -1228,13 +1208,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             invalidateReadCache(leafRecord.getKey());
         });
 
-        // iterate over leaf records to delete
+        // Iterate over leaf records to delete
         deletedLeaves.forEach(leafRecord -> {
-            // update objectKeyToPath
+            final long path = leafRecord.getPath();
+            // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
+            // deletedLeaves stream have been moved to different paths in the tree. This is good
+            // indication that these leaves should not be deleted. This is why putIfEqual() and
+            // deleteIfEqual() are used below rather than unconditional put() and delete() as for
+            // dirtyLeaves stream above
             if (isLongKeyMode) {
-                longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
+                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
+                longKeyToPath.putIfEqual(key, path, INVALID_PATH);
             } else {
-                objectKeyToPath.delete(leafRecord.getKey());
+                objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
             }
             statisticsUpdater.countFlushLeavesDeleted();
 

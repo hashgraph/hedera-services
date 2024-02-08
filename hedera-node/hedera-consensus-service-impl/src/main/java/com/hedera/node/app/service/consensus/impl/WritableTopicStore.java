@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
@@ -59,14 +58,6 @@ public class WritableTopicStore {
      */
     public void put(@NonNull final Topic topic) {
         topicState.put(requireNonNull(topic.topicId()), requireNonNull(topic));
-    }
-
-    /**
-     * Commits the changes to the underlying data storage.
-     */
-    public void commit() {
-        requireNonNull(topicState);
-        ((WritableKVStateBase) topicState).commit();
     }
 
     /**

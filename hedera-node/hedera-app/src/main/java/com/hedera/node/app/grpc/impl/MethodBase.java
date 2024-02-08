@@ -50,9 +50,9 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
     private static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
     private static final String COUNTER_FAILED_NAME_TPL = "%sFail";
     private static final String COUNTER_FAILED_DESC_TPL = "number of %s failed";
-    private static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
+    private static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl_per_sec";
     private static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";
-    private static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
+    private static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv_per_sec";
     private static final String SPEEDOMETER_RECEIVED_DESC_TPL = "number of %s received per second";
 
     /**
@@ -167,7 +167,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName + "/" + methodName;
+        final var baseName = serviceName + ":" + methodName;
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc));
@@ -185,7 +185,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName + "/" + methodName;
+        final var baseName = serviceName + ":" + methodName;
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new SpeedometerMetric.Config("app", name).withDescription(desc));

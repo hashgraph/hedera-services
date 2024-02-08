@@ -626,6 +626,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 .transaction(transaction)
                 .transactionBytes(signedTransactionBytes)
                 .memo(txBody.memo());
+        // If there are any failures in the child transaction, we don't want to set transfer list
+        // to be compatible with mono-service
+        if (childCategory == CHILD) {
+            childRecordBuilder.transferList(null);
+        }
 
         // Set the transactionId if provided
         final var transactionID = txBody.transactionID();
@@ -722,7 +727,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 new ReadableStoreFactory(childStack),
                 new WritableStoreFactory(childStack, TokenService.NAME),
                 childRecordBuilder);
-        childRecordFinalizer.finalizeChildRecord(finalizeContext);
+        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         childStack.commitFullStack();
     }
 

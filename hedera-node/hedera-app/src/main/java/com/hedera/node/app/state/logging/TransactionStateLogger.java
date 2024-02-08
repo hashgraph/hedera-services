@@ -16,20 +16,22 @@
 
 package com.hedera.node.app.state.logging;
 
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandler.THREAD_CONS_NAME;
+import static com.swirlds.platform.eventhandling.ConsensusRoundHandler.TRANSACTION_HANDLING_THREAD_NAME;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.system.Round;
@@ -40,7 +42,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -60,8 +61,6 @@ import org.apache.logging.log4j.Logger;
 public final class TransactionStateLogger {
     /** The logger we are using for Transaction State log */
     private static final Logger logger = LogManager.getLogger(TransactionStateLogger.class);
-    /** The name of the handle transaction thread */
-    private static final String HANDLE_THREAD_NAME = "<" + PLATFORM_THREAD_POOL_NAME + ": " + THREAD_CONS_NAME;
 
     /**
      * Log the start of a round if it contains any non-system transactions.
@@ -120,50 +119,46 @@ public final class TransactionStateLogger {
             @NonNull final ConsensusTransaction transaction,
             @Nullable final TransactionBody txBody,
             @NonNull final AccountID payer) {
-        logger.debug(
-                "    Starting user transaction {} at platform time {} from payer 0.0.{}",
-                txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
-                transaction.getConsensusTimestamp(),
-                payer.accountNum());
+        if (logger.isDebugEnabled()) {
+            logger.debug(
+                    "    Starting user transaction {} at platform time {} from payer 0.0.{}",
+                    txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
+                    transaction.getConsensusTimestamp(),
+                    payer.accountNum());
+        }
     }
 
     /**
      * Log the start of a user transaction pre-handle result.
      *
-     * @param payer The payer
-     * @param payerKey The payer key
-     * @param status The status
-     * @param responseCode The response code
+     * @param preHandleResult The pre-handle result
      */
-    public static void logStartUserTransactionPreHandleResultP2(
-            @Nullable AccountID payer,
-            @Nullable Key payerKey,
-            @NonNull PreHandleResult.Status status,
-            @NonNull ResponseCodeEnum responseCode) {
-        logger.debug(
-                "      with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
-                payer == null ? "null" : payer.accountNum(),
-                payerKey == null ? "null" : payerKey.toString(),
-                status,
-                responseCode);
+    public static void logStartUserTransactionPreHandleResultP2(@NonNull PreHandleResult preHandleResult) {
+        if (logger.isDebugEnabled()) {
+            final var payer = preHandleResult.payer();
+            final var payerKey = preHandleResult.payerKey();
+            logger.debug(
+                    "      with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
+                    payer == null ? "null" : payer.accountNum(),
+                    payerKey == null ? "null" : payerKey.toString(),
+                    preHandleResult.status(),
+                    preHandleResult.responseCode());
+        }
     }
 
     /**
      * Log the start of a user transaction pre-handle result.
      *
-     * @param txInfo The transaction info
-     * @param requiredKeys The required keys
-     * @param verificationResults The verification results
+     * @param preHandleResult The pre-handle result
      */
-    public static void logStartUserTransactionPreHandleResultP3(
-            @Nullable TransactionInfo txInfo,
-            @Nullable Set<Key> requiredKeys,
-            @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
-        logger.trace(
-                "      with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
-                txInfo,
-                requiredKeys,
-                verificationResults);
+    public static void logStartUserTransactionPreHandleResultP3(@NonNull PreHandleResult preHandleResult) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(
+                    "      with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
+                    preHandleResult.txInfo(),
+                    preHandleResult.requiredKeys(),
+                    preHandleResult.verificationResults());
+        }
     }
 
     /**
@@ -235,7 +230,7 @@ public final class TransactionStateLogger {
      * @param <T> The type of the singleton
      */
     public static <T> void logSingletonRead(@NonNull final String label, @Nullable final ValueLeaf<T> value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      READ singleton {} value {}", label, value == null ? "null" : value.getValue());
         }
     }
@@ -247,7 +242,7 @@ public final class TransactionStateLogger {
      * @param value The value of the singleton
      */
     public static void logSingletonWrite(@NonNull final String label, @Nullable final Object value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      WRITTEN singleton {} value {}", label, value == null ? "null" : value.toString());
         }
     }
@@ -261,7 +256,7 @@ public final class TransactionStateLogger {
      * @param value The value added to the queue
      */
     public static void logQueueAdd(@NonNull final String label, @Nullable final Object value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      ADD to queue {} value {}", label, value == null ? "null" : value.toString());
         }
     }
@@ -273,7 +268,7 @@ public final class TransactionStateLogger {
      * @param value The value removed from the queue
      */
     public static void logQueueRemove(@NonNull final String label, @Nullable final Object value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      REMOVE from queue {} value {}", label, value == null ? "null" : value.toString());
         }
     }
@@ -285,7 +280,7 @@ public final class TransactionStateLogger {
      * @param value The value peeked from the queue
      */
     public static void logQueuePeek(@NonNull final String label, @Nullable final Object value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      PEEK on queue {} value {}", label, value == null ? "null" : value.toString());
         }
     }
@@ -298,7 +293,7 @@ public final class TransactionStateLogger {
      * @param <K> The type of the queue values
      */
     public static <K> void logQueueIterate(@NonNull final String label, @NonNull final FCQueue<ValueLeaf<K>> queue) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             if (queue.size() == 0) {
                 logger.debug("      ITERATE queue {} size 0 values:EMPTY", label);
             } else {
@@ -325,7 +320,7 @@ public final class TransactionStateLogger {
      * @param <V> The type of the value
      */
     public static <K, V> void logMapPut(@NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      PUT into map {} key {} value {}",
                     label,
@@ -345,7 +340,7 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapRemove(
             @NonNull final String label, @NonNull final K key, @Nullable final InMemoryValue<K, V> value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
@@ -365,7 +360,7 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapRemove(
             @NonNull final String label, @NonNull final K key, @Nullable final OnDiskValue<V> value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
@@ -381,7 +376,7 @@ public final class TransactionStateLogger {
      * @param size The size of the map
      */
     public static void logMapGetSize(@NonNull final String label, final long size) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      GET_SIZE on map {} size {}", label, size);
         }
     }
@@ -396,7 +391,7 @@ public final class TransactionStateLogger {
      * @param <V> The type of the value
      */
     public static <K, V> void logMapGet(@NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      GET on map {} key {} value {}",
                     label,
@@ -416,7 +411,7 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapGetForModify(
             @NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      GET_FOR_MODIFY on map {} key {} value {}",
                     label,
@@ -433,7 +428,7 @@ public final class TransactionStateLogger {
      * @param <K> The type of the key
      */
     public static <K> void logMapIterate(@NonNull final String label, @NonNull final Set<InMemoryKey<K>> keySet) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             final long size = keySet.size();
             if (size == 0) {
                 logger.debug("      ITERATE map {} size 0 keys:EMPTY", label);
