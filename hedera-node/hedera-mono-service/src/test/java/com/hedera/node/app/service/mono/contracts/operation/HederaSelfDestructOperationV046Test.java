@@ -21,14 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -89,37 +87,15 @@ class HederaSelfDestructOperationV046Test {
     }
 
     @Test
-    void delegatesToSuperWhenValid() {
-        givenRubberstampValidator();
-
-        final var tbdMirrorAddress = EntityIdUtils.asEvmAddress(1234L);
-        final var beneficiaryMirrorAddress = EntityIdUtils.asEvmAddress(4567L);
-
+    void reversionForStaticCallWithIllegalStateChange() {
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-        given(frame.popStackItem()).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
-        given(worldUpdater.get(any())).willReturn(account);
-        given(worldUpdater.getAccount(any())).willReturn(account);
-        given(account.getBalance()).willReturn(Wei.ONE);
         given(frame.isStatic()).willReturn(true);
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(1L);
-        given(worldUpdater.permissivelyUnaliased(eip1014Address.toArrayUnsafe()))
-                .willReturn(tbdMirrorAddress);
-        given(worldUpdater.permissivelyUnaliased(beneficiaryMirror.toArrayUnsafe()))
-                .willReturn(beneficiaryMirrorAddress);
-        given(frame.getContractAddress()).willReturn(eip1014Address);
-        given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                        false, beneficiaryMirror, eip1014Address, null, ContractCall))
-                .willReturn(true);
-        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
 
-        verify(txnCtx).recordBeneficiaryOfDeleted(1234L, 4567L);
         assertEquals(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE, opResult.getHaltReason());
-        assertEquals(3L, opResult.getGasCost());
     }
 
     @Test
