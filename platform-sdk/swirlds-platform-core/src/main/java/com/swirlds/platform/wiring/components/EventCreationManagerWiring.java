@@ -17,7 +17,6 @@
 package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -27,6 +26,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -34,12 +34,13 @@ import java.util.Objects;
 /**
  * Wiring for the {@link EventCreationManager}.
  */
-public class EventCreationManagerWiring implements Clearable {
+public class EventCreationManagerWiring {
 
     private final TaskScheduler<GossipEvent> taskScheduler;
 
     private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
     private final BindableInputWire<NonAncientEventWindow, GossipEvent> nonAncientEventWindowInput;
+    private final BindableInputWire<ClearTrigger, GossipEvent> clearInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
     private EventCreationManager eventCreationManager;
@@ -70,6 +71,7 @@ public class EventCreationManagerWiring implements Clearable {
 
         eventInput = taskScheduler.buildInputWire("possible parents");
         nonAncientEventWindowInput = taskScheduler.buildInputWire("non-ancient event window");
+        clearInput = taskScheduler.buildInputWire("clear");
         newEventOutput = taskScheduler.getOutputWire();
 
         final double frequency = platformContext
@@ -88,6 +90,7 @@ public class EventCreationManagerWiring implements Clearable {
         this.eventCreationManager = Objects.requireNonNull(eventCreationManager);
         eventInput.bind(eventCreationManager::registerEvent);
         nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
+        clearInput.bind(eventCreationManager::clear);
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
@@ -111,6 +114,16 @@ public class EventCreationManagerWiring implements Clearable {
     @NonNull
     public InputWire<NonAncientEventWindow> nonAncientEventWindowInput() {
         return nonAncientEventWindowInput;
+    }
+
+    /**
+     * Get the input wire to clear the internal state of the event creation manager.
+     *
+     * @return the input wire to clear the internal state of the event creation manager
+     */
+    @NonNull
+    public InputWire<ClearTrigger> clearInput() {
+        return clearInput;
     }
 
     /**
@@ -142,16 +155,5 @@ public class EventCreationManagerWiring implements Clearable {
      */
     public void stopSquelching() {
         taskScheduler.stopSquelching();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clear() {
-        if (eventCreationManager == null) {
-            throw new IllegalStateException("Event creation manager not bound");
-        }
-        eventCreationManager.clear();
     }
 }

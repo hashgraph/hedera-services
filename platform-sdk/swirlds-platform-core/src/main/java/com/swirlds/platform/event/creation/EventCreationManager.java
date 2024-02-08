@@ -24,10 +24,10 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMIT
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -37,7 +37,7 @@ import java.util.Objects;
  * based on external rules. Forwards created events to a consumer, and retries forwarding if the consumer is not
  * immediately able to accept the event.
  */
-public class EventCreationManager implements Clearable {
+public class EventCreationManager {
 
     /**
      * Creates events.
@@ -124,10 +124,9 @@ public class EventCreationManager implements Clearable {
     }
 
     /**
-     * {@inheritDoc}
+     * Clear the internal state of the event creation manager.
      */
-    @Override
-    public void clear() {
+    public void clear(@NonNull final ClearTrigger ignored) {
         creator.clear();
         phase.activatePhase(IDLE);
     }

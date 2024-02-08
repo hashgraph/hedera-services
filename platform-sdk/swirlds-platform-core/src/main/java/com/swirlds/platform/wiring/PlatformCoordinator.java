@@ -138,22 +138,18 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
 
-        // Phase 3: clear
-        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
-        eventDeduplicatorWiring.flushRunnable().run();
-        orphanBufferWiring.clearInput().inject(new ClearTrigger());
-        orphanBufferWiring.flushRunnable().run();
-        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        inOrderLinkerWiring.flushRunnable().run();
-        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        stateSignatureCollectorWiring.flush();
-        eventCreationManagerWiring.clear(); // TODO Austin: is this the right pattern?
-
         // Phase 4: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         linkedEventIntakeWiring.stopSquelchingRunnable().run();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+
+        // Phase 3: clear
+        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
+        eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
+        orphanBufferWiring.clearInput().inject(new ClearTrigger());
+        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
+        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
+        eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
     }
 }
