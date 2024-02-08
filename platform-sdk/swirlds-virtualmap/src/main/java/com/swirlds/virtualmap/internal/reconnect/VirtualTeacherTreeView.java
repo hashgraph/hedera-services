@@ -65,6 +65,28 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     private final ConcurrentBitSetQueue expectedResponseQueue = new ConcurrentBitSetQueue();
 
+    /** A lock to monitor the size of the expectedResponseQueue for throttling. */
+    private final Object expectedResponseQueueSizeLock = new Object();
+
+    /**
+     * The maximum size of the expectedResponseQueue. Sending more nodes to the learner is throttled
+     * if the size exceeds this number. The queue size will subsequently become lower as we keep
+     * receiving responses from the learner, and then the teacher will resume sending nodes to the learner.
+     * <p>
+     * The value may need tuning. Too large a value would effectively remove the throttle and produce
+     * virtually no effect on the existing reconnect behavior because the learner would be able to
+     * keep up with the teacher and promptly send responses for every sent node, thus keeping the queue size
+     * below the threshold at all times.
+     * Too small a value will significantly minimize the amount of I/O (and as a side effect, reduce memory usage)
+     * because the teacher would only ever send nodes that the learner has reported it doesn't know them,
+     * but at the same time, the small value would introduce too many delays between sending nodes
+     * to the learner thus potentially not utilizing the available resources (network, disk) efficiently
+     * and hence increasing the overall time the reconnect takes.
+     * <p>
+     * Valid values: >= 1.
+     */
+    private static final long MAX_EXPECTED_RESPONSE_QUEUE_SIZE = 1000;
+
     /**
      * Keeps track of responses from learner about known, unknown, and not known nodes.
      */
@@ -142,7 +164,41 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getNextNodeToHandle() {
+        throttleOnExpectedResponseQueueSize();
         return handleQueue.remove();
+    }
+
+    /** Check if the size of the expectedResponseQueue is reasonably small. */
+    private boolean isExpectedResponseQueueSizeSmall() {
+        return expectedResponseQueue.size() <= MAX_EXPECTED_RESPONSE_QUEUE_SIZE;
+    }
+
+    /**
+     * Check the size of the expectedResponseQueue, and if it isn't small enough,
+     * then wait until it gets lower.
+     * <p>
+     * This helps to:
+     * <li>1. Avoid overwhelming the learner with new nodes while it hasn't responded about the old ones yet.
+     * <li>2. Ensure the teacher gets enough responses about previously sent nodes to avoid sending child nodes
+     *    for which the learner has reported/would report that it knows their parents already.
+     * <p><p>
+     * This should help reduce I/O (both disk and network) and memory pressure on both the teacher
+     * and the learner. In the best case scenario, this should improve the reconnect performance overall.
+     * In the worst case scenario, the reconnect performance should remain not worse than today, but
+     * the teacher would still free up some resources for doing its regular, reconnect-unrelated work.
+     */
+    private void throttleOnExpectedResponseQueueSize() {
+        if (isExpectedResponseQueueSizeSmall()) return;
+        try {
+            synchronized (expectedResponseQueueSizeLock) {
+                while (!isExpectedResponseQueueSizeSmall()) {
+                    expectedResponseQueueSizeLock.wait();
+                }
+            }
+        } catch (InterruptedException ignore) {
+            // It's okay to ignore. We'll just send one more node to the learner.
+            // The next call will block and wait again if the queue size is still large.
+        }
     }
 
     /**
@@ -168,7 +224,13 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getNodeForNextResponse() {
-        return expectedResponseQueue.remove();
+        synchronized (expectedResponseQueueSizeLock) {
+            final Long node = expectedResponseQueue.remove();
+            if (isExpectedResponseQueueSizeSmall()) {
+                expectedResponseQueueSizeLock.notify();
+            }
+            return node;
+        }
     }
 
     /**
