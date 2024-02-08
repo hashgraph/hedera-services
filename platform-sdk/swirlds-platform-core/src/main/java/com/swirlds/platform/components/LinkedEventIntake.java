@@ -67,7 +67,7 @@ public class LinkedEventIntake {
      * @param selfId                            the ID of the node
      * @param consensusSupplier                 provides the current consensus instance
      * @param shadowGraph                       tracks events in the hashgraph
-     * @param intakeEventCounter                tracks the number of events from each peer have been received, but
+     * @param intakeEventCounter                tracks the number of events from each peer that have been received, but
      *                                          aren't yet through the intake pipeline
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
