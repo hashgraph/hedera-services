@@ -29,7 +29,7 @@ public class OperationUtils {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final Function<Boolean, Long> cost) {
         final Address address = Words.toAddress(frame.getStackItem(0));
-        final long totalCost = cost.apply(false);
+        final long totalCost = cost.apply(frame.isAddressWarm(address));
         return frame.getRemainingGas() < totalCost;
     }
 }
