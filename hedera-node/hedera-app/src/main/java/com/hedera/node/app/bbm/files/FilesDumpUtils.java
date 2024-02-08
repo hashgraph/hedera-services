@@ -25,6 +25,8 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.Writer;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.MetadataMapFactory;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -35,11 +37,19 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class FilesDumpUtils {
+
+    private FilesDumpUtils() {
+        // Utility class
+    }
 
     public static void dumpModFiles(
             @NonNull final Path path,
@@ -84,23 +94,82 @@ public class FilesDumpUtils {
         return r;
     }
 
+    /** Collects the information for each data file in the file store, also the summaries of all files of all types. */
+    @SuppressWarnings("java:S108") // "Nested blocks of code should not be left empty" - not for switches on an enum
     @NonNull
-    private static Map<FileId, HederaFile> gatherMonoFiles(VirtualMap<VirtualBlobKey, VirtualBlobValue> source) {
-        final var r = new HashMap<FileId, HederaFile>();
-        final var threadCount = 8;
-        final var files = new ConcurrentLinkedQueue<Pair<FileId, HederaFile>>();
+    private static Map<FileId, HederaFile> gatherMonoFiles(
+            @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> source) {
+        final var foundFiles = new ConcurrentHashMap<Integer, byte[]>();
+        final var foundMetadata = new ConcurrentHashMap<Integer, HFileMeta>();
+
+        final var nType = new ConcurrentHashMap<VirtualBlobKey.Type, Integer>();
+        final var nNullValues = new ConcurrentHashMap<VirtualBlobKey.Type, Integer>();
+        final var nNullMetadataValues = new AtomicInteger();
+
+        Stream.of(nType, nNullValues)
+                .forEach(m -> EnumSet.allOf(VirtualBlobKey.Type.class).forEach(t -> m.put(t, 0)));
+
+        final int THREAD_COUNT = 8;
+        boolean didRunToCompletion = true;
         try {
             VirtualMapLike.from(source)
-                    .extractVirtualMapData(
+                    .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> files.add(
-                                    Pair.of(FileId.fromMono(p.left()), HederaFile.fromMono(p.left(), p.right()))),
-                            threadCount);
+                            entry -> {
+                                final var contractId = entry.key().getEntityNumCode();
+
+                                final var type = entry.key().getType();
+                                nType.merge(type, 1, Integer::sum);
+
+                                final var value = entry.value().getData();
+                                if (null != value) {
+                                    switch (type) {
+                                        case FILE_DATA -> foundFiles.put(contractId, value);
+
+                                        case FILE_METADATA -> {
+                                            final var metadata = MetadataMapFactory.toAttr(value);
+                                            if (null != metadata) {
+                                                foundMetadata.put(contractId, metadata);
+                                            } else {
+                                                nNullMetadataValues.incrementAndGet();
+
+                                                System.err.printf(
+                                                        "*** collectFiles file metadata (HFileMeta) null for contract id %d, type %s%n",
+                                                        contractId, type);
+                                            }
+                                        }
+                                        case CONTRACT_BYTECODE, SYSTEM_DELETED_ENTITY_EXPIRY -> {}
+                                    }
+                                } else {
+                                    nNullValues.merge(type, 1, Integer::sum);
+
+                                    System.err.printf(
+                                            "*** collectFiles file value (bytes) null for contract id %d, type %s%n",
+                                            contractId, type);
+                                }
+                            },
+                            THREAD_COUNT);
         } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of files virtual map interrupted!");
             Thread.currentThread().interrupt();
+            didRunToCompletion = false;
         }
-        files.forEach(filePair -> r.put(filePair.key(), filePair.value()));
+
+        if (!didRunToCompletion) {
+            System.err.printf("*** collectFiles interrupted (did not run to completion)%n");
+        }
+
+        final var r = new HashMap<FileId, HederaFile>();
+        for (@NonNull final var e : foundFiles.entrySet()) {
+            final var contractId = e.getKey();
+            final var contents = e.getValue();
+            final var metadata = foundMetadata.getOrDefault(contractId, null);
+            r.put(
+                    FileId.fromMono(contractId),
+                    null != metadata
+                            ? HederaFile.of(contractId, contents, metadata)
+                            : HederaFile.of(contractId, contents));
+        }
+
         return r;
     }
 

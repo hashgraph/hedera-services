@@ -19,7 +19,6 @@ package com.hedera.node.app.bbm.files;
 import com.google.common.collect.ComparisonChain;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record FileId(long shardNum, long realmNum, long fileNum) implements Comparable<FileId> {
@@ -28,8 +27,8 @@ record FileId(long shardNum, long realmNum, long fileNum) implements Comparable<
         return new FileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
     }
 
-    static FileId fromMono(@NonNull final VirtualBlobKey key) {
-        return new FileId(0, 0, key.getEntityNumCode());
+    static FileId fromMono(@NonNull final Integer fileNum) {
+        return new FileId(0, 0, fileNum);
     }
 
     @Override

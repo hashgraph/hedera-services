@@ -18,8 +18,6 @@ package com.hedera.node.app.bbm.files;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,13 +42,14 @@ record HederaFile(
                 SystemFileType.byId.get((int) value.fileId().fileNum()));
     }
 
-    static HederaFile fromMono(@NonNull final VirtualBlobKey key, @NonNull final VirtualBlobValue file) {
-        return new HederaFile(
-                FileStore.ORDINARY,
-                key.getEntityNumCode(),
-                file.getData(),
-                null,
-                SystemFileType.byId.get(key.getEntityNumCode()));
+    @NonNull
+    static HederaFile of(final int fileId, @NonNull final byte[] contents) {
+        return new HederaFile(FileStore.ORDINARY, fileId, contents, null, SystemFileType.byId.get(fileId));
+    }
+
+    @NonNull
+    static HederaFile of(final int fileId, @NonNull final byte[] contents, @NonNull final HFileMeta metadata) {
+        return new HederaFile(FileStore.ORDINARY, fileId, contents, metadata, SystemFileType.byId.get(fileId));
     }
 
     boolean isActive() {
