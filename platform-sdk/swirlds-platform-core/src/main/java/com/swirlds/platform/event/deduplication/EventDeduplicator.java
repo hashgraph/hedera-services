@@ -17,13 +17,11 @@
 package com.swirlds.platform.event.deduplication;
 
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_14_2;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.metrics.api.LongAccumulator;
@@ -89,11 +87,7 @@ public class EventDeduplicator {
             .withUnit("events");
     private final LongAccumulator disparateSignatureAccumulator;
 
-    private static final SpeedometerMetric.Config DUPLICATE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "dupEv_per_sec")
-            .withDescription("number of events received per second that are already known")
-            .withFormat(FORMAT_14_2);
-    private final SpeedometerMetric duplicateEventsPerSecond;
+    private final CountPerSecond duplicateEventsPerSecond;
 
     private static final RunningAverageMetric.Config AVG_DUPLICATE_PERCENT_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "dupEvPercent")
@@ -115,7 +109,11 @@ public class EventDeduplicator {
         final Metrics metrics = platformContext.getMetrics();
 
         this.disparateSignatureAccumulator = metrics.getOrCreate(DISPARATE_SIGNATURE_CONFIG);
-        this.duplicateEventsPerSecond = metrics.getOrCreate(DUPLICATE_EVENTS_PER_SECOND_CONFIG);
+        this.duplicateEventsPerSecond = new CountPerSecond(
+                metrics,
+                new CountPerSecond.Config(PLATFORM_CATEGORY, "dupEv_per_sec")
+                        .withDescription("number of events received per second that are already known")
+                        .withUnit("hz"));
         this.avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
 
         final AncientMode ancientMode = platformContext
@@ -160,7 +158,7 @@ public class EventDeduplicator {
             return event;
         } else {
             // duplicate descriptor and signature
-            duplicateEventsPerSecond.cycle();
+            duplicateEventsPerSecond.count(1);
             // move toward 100%
             avgDuplicatePercent.update(100);
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
