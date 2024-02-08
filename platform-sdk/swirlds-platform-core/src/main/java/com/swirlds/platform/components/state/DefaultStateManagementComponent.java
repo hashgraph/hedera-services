@@ -81,7 +81,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(fatalErrorConsumer);
-        Objects.requireNonNull(hashLogger);
 
         // Various metrics about signed states
 
@@ -96,7 +95,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private void logHashes(final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
-            hashLogger.accept(signedState.reserve("logging hash state"));
+            try (ReservedSignedState rss = signedState.reserve("logging hash state")) {
+                hashLogger.accept(rss);
+            }
         }
     }
 
