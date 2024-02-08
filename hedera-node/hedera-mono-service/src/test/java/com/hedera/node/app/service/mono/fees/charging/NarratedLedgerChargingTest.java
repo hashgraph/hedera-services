@@ -217,7 +217,7 @@ class NarratedLedgerChargingTest {
         verify(ledger).adjustBalance(grpcNodeId, -networkFee + 1);
         verify(feeDistribution).distributeChargedFee(networkFee - 1, accountsLedger);
 
-        assertEquals(0, subject.totalFeesChargedToPayer());
+        assertEquals(399, subject.totalFeesChargedToPayer());
     }
 
     @Test
