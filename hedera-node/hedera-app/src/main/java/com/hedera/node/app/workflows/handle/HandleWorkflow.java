@@ -48,7 +48,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -300,6 +302,10 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
+        if(consensusNow.equals(Instant.parse("2024-01-11T05:49:18.630392004Z"))) {
+            logger.info("consensusNow: {}", consensusNow);
+        }
+
         final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
         // It's awful that we have to check this every time a transaction is handled, especially since this mostly
         // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
@@ -353,6 +359,10 @@ public class HandleWorkflow {
             } else {
                 // in this case, recorder hash the transaction itself, not its bodyBytes.
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+            }
+
+            if(txBody.transactionID().equals(testTransactionID(1704952148,325482138, 3064793, 1))){
+                logger.info("txBody: {}", txBody);
             }
 
             // Log start of user transaction to transaction state log
@@ -826,5 +836,15 @@ public class HandleWorkflow {
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
                 previousResult);
+    }
+
+    private TransactionID testTransactionID(final long seconds, final int nanos, final long payerAccountNum, final int nonce) {
+        var toTxnValidStart = Timestamp.newBuilder()
+                .seconds(seconds)
+                .nanos(nanos);
+        return TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(payerAccountNum).build())
+                .transactionValidStart(toTxnValidStart)
+                .build();
     }
 }
