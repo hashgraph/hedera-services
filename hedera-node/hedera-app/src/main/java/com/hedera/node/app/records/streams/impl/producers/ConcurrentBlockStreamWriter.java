@@ -48,12 +48,20 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
     }
 
+    public CompletableFuture<Void> writeItemAsync(@NonNull Bytes item) {
+        return updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
+    }
+
     @Override
     public void close(@NonNull HashObject endRunningHash) {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
     }
 
-    private void updateLastFuture(CompletableFuture<Void> updater) {
-        lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
+    public CompletableFuture<Void> closeAsync(@NonNull HashObject endRunningHash) {
+        return updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
+    }
+
+    private CompletableFuture<Void> updateLastFuture(CompletableFuture<Void> updater) {
+        return lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
     }
 }
