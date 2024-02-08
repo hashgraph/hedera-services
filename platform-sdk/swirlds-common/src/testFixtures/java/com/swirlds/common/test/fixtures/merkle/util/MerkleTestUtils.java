@@ -54,6 +54,8 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Utility methods for testing merkle trees.
@@ -1054,8 +1056,13 @@ public final class MerkleTestUtils {
                         reconnectConfig);
             }
 
+            final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
+            final Function<Throwable, Boolean> exceptionListener = t -> {
+                firstReconnectException.compareAndSet(null, t);
+                return false;
+            };
             final StandardWorkGroup workGroup =
-                    new StandardWorkGroup(getStaticThreadManager(), "synchronization-test", null);
+                    new StandardWorkGroup(getStaticThreadManager(), "synchronization-test", null, exceptionListener);
             workGroup.execute("teaching-synchronizer-main", () -> teachingSynchronizerThread(teacher));
             workGroup.execute("learning-synchronizer-main", () -> learningSynchronizerThread(learner));
 
@@ -1067,7 +1074,8 @@ public final class MerkleTestUtils {
             }
 
             if (workGroup.hasExceptions()) {
-                throw new MerkleSynchronizationException("Exception(s) in synchronization test");
+                throw new MerkleSynchronizationException(
+                        "Exception(s) in synchronization test", firstReconnectException.get());
             }
 
             final MerkleNode generatedTree = learner.getRoot();
