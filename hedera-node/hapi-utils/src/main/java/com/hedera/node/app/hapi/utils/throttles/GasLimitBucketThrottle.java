@@ -52,8 +52,6 @@ public class GasLimitBucketThrottle {
      */
     public boolean allow(final long txGasLimit, final long elapsedNanos) {
         leakFor(elapsedNanos);
-        System.out.println(
-                "bucket.capacityFree() = " + bucket.capacityFree() + " after elapsedNanos = " + elapsedNanos);
         if (bucket.capacityFree() >= txGasLimit) {
             bucket.useCapacity(txGasLimit);
             lastAllowedUnits += txGasLimit;
