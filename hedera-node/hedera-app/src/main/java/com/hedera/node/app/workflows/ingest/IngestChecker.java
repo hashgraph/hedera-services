@@ -215,7 +215,15 @@ public final class IngestChecker {
         // 7. Check payer solvency
         final var numSigs = txInfo.signatureMap().sigPairOrElse(emptyList()).size();
         final FeeContext feeContext = new FeeContextImpl(
-                consensusTime, txInfo, payerKey, txInfo.payerID(), feeManager, storeFactory, configuration, authorizer, numSigs);
+                consensusTime,
+                txInfo,
+                payerKey,
+                txInfo.payerID(),
+                feeManager,
+                storeFactory,
+                configuration,
+                authorizer,
+                numSigs);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
 
