@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -39,6 +41,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -72,7 +75,13 @@ public class TokenAttributesValidator {
     public void validateTokenName(@Nullable final String name, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
     }
-
+    /**
+     * Validates the token metadata, if it exists and is not too long.
+     * @param metadata the token metadata to validate
+     */
+    public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
+        tokenByteArrayCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), MISSING_TOKEN_METADATA, METADATA_TOO_LONG);
+    }
     /**
      * Given a token name or token symbol, validates that it is not null, not empty, not too long, and does not contain
      * a zero byte.
@@ -92,7 +101,24 @@ public class TokenAttributesValidator {
         validateTrue(numUtf8Bytes <= maxLen, onTooLong);
         validateTrue(!s.contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
     }
-
+    /**
+     * Given a token byte array, validates that it is not null, not empty, not too long.
+     * @param bytes the byte array to validate
+     * @param maxLen the maximum number of UTF-8 bytes allowed
+     * @param onMissing the response code to use if the bytes array is null or empty
+     * @param onTooLong the response code to use if the bytes array is too long
+     */
+    private void tokenByteArrayCheck(
+            @Nullable final Bytes bytes,
+            final int maxLen,
+            @NonNull final ResponseCodeEnum onMissing,
+            @NonNull final ResponseCodeEnum onTooLong) {
+        validateTrue(bytes != null, onMissing);
+        final long length = bytes.length();
+        validateTrue(length != 0, onMissing);
+        validateTrue(length <= maxLen, onTooLong);
+        validateTrue(!bytes.toString().contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
+    }
     /**
      * Validates the token keys, if it is exists and is not empty or not too long.
      * For token admin key, allows empty {@link KeyList} to be set. It is used for removing keys.

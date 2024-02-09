@@ -301,18 +301,18 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // If these keys did not exist on the token already, they can't be changed on update
         updateKeys(op, token, copyToken);
         updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateNameSymbolMemoAndTreasury(op, copyToken, token);
+        updateNameSymbolMetadataMemoAndTreasury(op, copyToken, token);
         return copyToken;
     }
 
     /**
-     * Updates token name, token symbol, token memo and token treasury if they are present in the
+     * Updates token name, token symbol, token metadata, token memo and token treasury if they are present in the
      * token update transaction body.
      * @param op token update transaction body
      * @param builder token builder
      * @param originalToken original token
      */
-    private void updateNameSymbolMemoAndTreasury(
+    private void updateNameSymbolMetadataMemoAndTreasury(
             final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
         if (op.symbol() != null && op.symbol().length() > 0) {
             builder.symbol(op.symbol());
@@ -325,6 +325,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
+        }
+        if (op.hasMetadata()) {
+            builder.metadata(op.metadata());
         }
     }
 
