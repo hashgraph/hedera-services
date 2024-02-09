@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
@@ -57,6 +59,7 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
         requireNonNull(input);
         requireNonNull(messageFrame);
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             gasRequirement = contractsConfigOf(messageFrame).precompileExchangeRateGasCost();
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);

@@ -31,8 +31,10 @@ import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ConcurrentTaskSchedulerTests {
@@ -122,10 +124,10 @@ class ConcurrentTaskSchedulerTests {
         final CountDownLatch latch1 = new CountDownLatch(1);
         final AtomicBoolean started1 = new AtomicBoolean();
 
-        long expecterdCount = 0;
+        long expectedCount = 0;
         for (int i = 0; i < 100; i++) {
             final int value = random.nextInt();
-            expecterdCount += value;
+            expectedCount += value;
             if (i == 0) {
                 channel.put(new Operation(value, latch0, started0));
             } else if (i == 1) {
@@ -143,8 +145,57 @@ class ConcurrentTaskSchedulerTests {
         latch0.countDown();
         latch1.countDown();
 
-        assertEventuallyEquals(expecterdCount, count::get, Duration.ofSeconds(1), "count did not reach expected value");
+        assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(1), "count did not reach expected value");
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+    }
+
+    @Test
+    @DisplayName("Test squelching")
+    void squelching() {
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        final AtomicInteger handleCount = new AtomicInteger();
+        final Consumer<Integer> handler = x -> {
+            handleCount.incrementAndGet();
+        };
+
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(100)
+                .withFlushingEnabled(true)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
+        inputWire.bind(handler);
+
+        model.start();
+
+        taskScheduler.startSquelching();
+
+        // add tasks, which will all be squelched
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
+        assertEquals(0, handleCount.get(), "No tasks should have been processed");
+
+        // stop squelching, and add some more tasks to be handled
+        taskScheduler.stopSquelching();
+        for (int i = 0; i < 2; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(6, handleCount.get(), "New tasks should be processed after stopping squelching");
+
+        model.stop();
     }
 }
