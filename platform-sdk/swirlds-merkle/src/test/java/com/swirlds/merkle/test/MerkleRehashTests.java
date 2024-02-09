@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.invalidateTree;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.generateRandomTree;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Merkle Rehash Tests")
 class MerkleRehashTests {
 

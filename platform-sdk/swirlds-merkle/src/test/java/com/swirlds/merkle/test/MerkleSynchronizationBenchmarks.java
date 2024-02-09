@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_SECONDS;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+@Tag(TIMING_SENSITIVE)
 public class MerkleSynchronizationBenchmarks {
 
     private static MerkleCryptography cryptography;

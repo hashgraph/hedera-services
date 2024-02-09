@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.map;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 final class MapTest {
 
     VirtualDataSourceBuilder<TestKey, TestValue> createLongBuilder() {

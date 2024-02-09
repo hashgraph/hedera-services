@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.swirlds.virtual.merkle.TestKey;
@@ -31,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Virtual Map MerkleDB Large Reconnect Test")
 class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
 

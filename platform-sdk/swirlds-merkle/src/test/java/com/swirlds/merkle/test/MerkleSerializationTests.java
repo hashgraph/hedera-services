@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.getFile;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
@@ -71,6 +72,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Merkle Serialization Tests")
 class MerkleSerializationTests {
 

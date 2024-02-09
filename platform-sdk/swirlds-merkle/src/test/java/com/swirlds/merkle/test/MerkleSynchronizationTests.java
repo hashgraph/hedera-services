@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.common.merkle.copy.MerkleInitialize.initializeTreeAfterCopy;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Merkle Synchronization Tests")
 public class MerkleSynchronizationTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();

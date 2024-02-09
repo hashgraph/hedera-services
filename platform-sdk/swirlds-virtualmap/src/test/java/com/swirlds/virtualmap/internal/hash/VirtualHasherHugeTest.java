@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.crypto.Hash;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test;
  * Test a *HUGE* billion-leaf tree. This test is separated out from {@link VirtualHasherTest} so we can
  * easily ignore it or include it depending on the build context. It takes several minutes to complete.
  */
+@Tag(TIMING_SENSITIVE)
 class VirtualHasherHugeTest extends VirtualHasherTestBase {
     private static final long NUM_LEAVES = 1_000_000_000;
 

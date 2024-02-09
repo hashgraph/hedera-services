@@ -16,6 +16,7 @@
 
 package com.swirlds.merkle.test.tree;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -62,6 +63,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("MerkleBinaryTree Tests")
+@Tag(TIMING_SENSITIVE)
 class MerkleBinaryTreeTests {
 
     private static final long[] ACCOUNT_ID = {1L, 2L, 3L};

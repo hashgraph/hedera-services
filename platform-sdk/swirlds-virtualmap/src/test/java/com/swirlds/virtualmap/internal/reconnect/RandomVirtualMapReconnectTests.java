@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +48,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Random VirtualMap Tests")
 class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     // used to convert between key as long to key as String

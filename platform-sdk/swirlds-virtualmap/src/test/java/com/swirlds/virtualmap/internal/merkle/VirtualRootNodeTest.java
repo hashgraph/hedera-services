@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,6 +66,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("ALL")
+@Tag(TIMING_SENSITIVE)
 class VirtualRootNodeTest extends VirtualTestBase {
 
     @TempDir

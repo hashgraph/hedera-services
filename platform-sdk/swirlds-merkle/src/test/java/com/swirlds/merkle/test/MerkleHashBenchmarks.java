@@ -16,6 +16,8 @@
 
 package com.swirlds.merkle.test;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
  * Benchmarks for merkle hashing.
  */
 @DisplayName("Merkle Hash Benchmarks")
+@Tag(TIMING_SENSITIVE)
 public class MerkleHashBenchmarks {
 
     private static MerkleCryptography cryptography;

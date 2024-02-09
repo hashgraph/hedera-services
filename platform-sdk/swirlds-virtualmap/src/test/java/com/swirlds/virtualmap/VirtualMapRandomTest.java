@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -24,8 +25,10 @@ import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 class VirtualMapRandomTest {
     private static final int NUM_ROUNDS = 55;
     private static final int NUM_OPS_PER_ROUND = 100;

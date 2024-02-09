@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,8 +35,10 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 public class VirtualMapStatisticsTest {
 
     private static final String LABEL = "VMST";

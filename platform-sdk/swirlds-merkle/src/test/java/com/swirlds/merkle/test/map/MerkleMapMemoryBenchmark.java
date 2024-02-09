@@ -16,6 +16,8 @@
 
 package com.swirlds.merkle.test.map;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -26,6 +28,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
  * The results of these benchmarks are intended to be interpreted using jprofiler.
  */
 @DisplayName("MerkleMap Memory Benchmark")
+@Tag(TIMING_SENSITIVE)
 class MerkleMapMemoryBenchmark {
 
     @BeforeAll

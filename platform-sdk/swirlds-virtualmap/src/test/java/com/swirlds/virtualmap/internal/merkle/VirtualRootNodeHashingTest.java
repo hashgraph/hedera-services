@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("VirtualRootNode Hashing Tests")
 class VirtualRootNodeHashingTest {
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
