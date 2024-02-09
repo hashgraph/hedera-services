@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
@@ -286,6 +287,7 @@ public class LoggingSystem implements LogEventConsumer {
      *
      * @return handler list
      */
+    @VisibleForTesting
     List<LogHandler> getHandlers() {
         return handlers;
     }
