@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDuplicates;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKnow;
@@ -297,6 +298,11 @@ public class ShadowgraphSynchronizer {
 
         if (status != SyncFallenBehindStatus.NONE_FALLEN_BEHIND) {
             logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", connection.getDescription(), status);
+
+            // TODO do not merge
+            logger.info(STARTUP.getMarker(),
+                    "fallen behind status: {}. My event window: {}, their event window: {}", status, self.toString(), other.toString());
+
             return true; // abort the sync
         }
         return false;
