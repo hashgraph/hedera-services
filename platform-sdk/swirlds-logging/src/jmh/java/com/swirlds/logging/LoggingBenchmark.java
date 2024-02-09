@@ -171,7 +171,7 @@ public class LoggingBenchmark {
                     .withValue("logging.handlers.console.level", "trace")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
-            loggingSystem.addHandler(new ConsoleHandler(configuration));
+            loggingSystem.addHandler(new ConsoleHandler("console", configuration));
         } else if (Objects.equals(setup, "NOOP_HANDLER")) {
             final Configuration configuration = ConfigurationBuilder.create()
                     .withConverter(new ConfigLevelConverter())
