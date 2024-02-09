@@ -98,7 +98,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         if (signedState.getState().getHash() != null) {
             ReservedSignedState rss = signedState.reserve("logging hash state");
             boolean offered = hashLogger.test(rss);
-            if(!offered) {
+            if (!offered) {
                 rss.close();
             }
         }
