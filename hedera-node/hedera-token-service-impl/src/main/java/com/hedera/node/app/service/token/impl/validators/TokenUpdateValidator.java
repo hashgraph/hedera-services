@@ -35,7 +35,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import org.bouncycastle.util.Arrays;
 
 public class TokenUpdateValidator {
     private final TokenAttributesValidator validator;
@@ -64,8 +63,8 @@ public class TokenUpdateValidator {
             context.attributeValidator().validateMemo(op.memo());
         }
         // validate metadata
-        if (op.metadata() != null && !Arrays.isNullOrEmpty(op.metadata().toByteArray())) {
-            validator.validateTokenMetadata(op.metadata().toByteArray(), tokensConfig);
+        if (op.hasMetadata()) {
+            validator.validateTokenMetadata(op.metadata(), tokensConfig);
         }
         // validate token symbol, if being changed
         if (op.symbol() != null && !op.symbol().isEmpty()) {

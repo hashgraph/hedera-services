@@ -41,6 +41,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -79,7 +80,7 @@ public class TokenAttributesValidator {
      * Validates the token metadata, if it exists and is not too long.
      * @param metadata the token metadata to validate
      */
-    public void validateTokenMetadata(@Nullable final byte[] metadata, @NonNull final TokensConfig tokensConfig) {
+    public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
         tokenByteArrayCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), MISSING_TOKEN_METADATA, METADATA_TOO_LONG);
     }
 
@@ -111,15 +112,15 @@ public class TokenAttributesValidator {
      * @param onTooLong the response code to use if the bytes array is too long
      */
     private void tokenByteArrayCheck(
-            @Nullable final byte[] bytes,
+            @Nullable final Bytes bytes,
             final int maxLen,
             @NonNull final ResponseCodeEnum onMissing,
             @NonNull final ResponseCodeEnum onTooLong) {
         validateTrue(bytes != null, onMissing);
-        final int length = bytes.length;
+        final long length = bytes.length();
         validateTrue(length != 0, onMissing);
         validateTrue(length <= maxLen, onTooLong);
-        validateTrue(!bytes.toString().contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
+        validateTrue(!containsZeroByte(bytes), INVALID_ZERO_BYTE_IN_STRING);
     }
 
     /**
@@ -193,5 +194,19 @@ public class TokenAttributesValidator {
     public static boolean isKeyRemoval(@NonNull final Key source) {
         requireNonNull(source);
         return IMMUTABILITY_SENTINEL_KEY.equals(source);
+    }
+    /**
+     * Checks if the given Bytes contains a zero
+     * @param bytes the Bytes to check
+     * @return true Bytes contains zero, false otherwise
+     */
+    public boolean containsZeroByte(@NonNull final Bytes bytes) {
+        byte[] byteArray = bytes.toByteArray();
+        for (byte b : byteArray) {
+            if (b == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }
