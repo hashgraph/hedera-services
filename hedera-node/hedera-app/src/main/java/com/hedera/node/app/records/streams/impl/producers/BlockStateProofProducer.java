@@ -14,6 +14,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Produces a proof of the state of the ledger at a given block. This is used by the {@link BlockStreamManagerImpl}.
@@ -44,8 +45,12 @@ public class BlockStateProofProducer {
         this.roundNum = roundNum;
     }
 
-    public CompletableFuture<BlockStateProof> getBlockStateProof() {
+    public CompletableFuture<BlockStateProof> getBlockStateProof(ExecutorService executor) {
         // TODO(nickpoorman): Implement this.
+        // Read from the queue until we have enough signatures.
+        // Then produce the signature and complete the future.
+        // We don't want this to run on the handle thread.
+        // This should run on the writer thread.
         return CompletableFuture.completedFuture(null);
     }
 

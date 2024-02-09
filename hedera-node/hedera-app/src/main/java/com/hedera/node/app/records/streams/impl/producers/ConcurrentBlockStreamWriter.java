@@ -32,6 +32,12 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     private final ExecutorService executorService;
     private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
 
+    /**
+     * ConcurrentBlockStreamWriter ensures that all the methods called on the writer are executed sequentially in the
+     * order in which they are called. This is done by chaining the lastFutureRef to the next write method.
+     * @param executorService the executor service to use for writes
+     * @param writer the writer to wrap
+     */
     public ConcurrentBlockStreamWriter(ExecutorService executorService, BlockStreamWriter writer) {
         this.executorService = executorService;
         this.writer = writer;

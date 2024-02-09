@@ -54,14 +54,14 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
      * The executor service for running the block stream producer. While we are currently using a single thread
      * executor we should ensure state access is properly handled.
      */
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService serialExecutorService = Executors.newSingleThreadExecutor();
     /**
      * Maybe we should use the platform executor here? What we need is a pool of executors to write the files out.
      * We're talking mostly IO and gzip compression. The work stealing pool is really a ForkJoin pool that has async
      * enabled to process as a LIFO execution order which means we'll have lower latency for the last item submitted to
      * the service. We chain our write futures, so we can ensure the order of the writes.
      */
-    private final ExecutorService writerExecutorService = Executors.newWorkStealingPool();
+    private final ExecutorService parallelExecutorService = Executors.newWorkStealingPool();
     /**
      * We must keep track of the last task that was submitted to the running hashes. This is so handle thread can do
      * something like:
@@ -134,9 +134,8 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
 
     /** {@inheritDoc} */
     public void beginBlock() {
-        lastUpdateTaskFuture = submitTask(() -> {
+        lastUpdateTaskFuture = submitSerialTask(() -> {
             final var blockNumber = this.currentBlockNumber.incrementAndGet();
-
             final var lastRunningHash = getRunningHashObject();
 
             logger.debug(
@@ -149,37 +148,53 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
     }
 
     /** {@inheritDoc} */
-    public CompletableFuture<BlockStateProof> endBlock(
-            @NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
-        final CompletableFuture<BlockStateProof> future = blockStateProof
-                .thenCompose(proof -> {
-                    throwIfClosed(); // Ensure this is the first operation in the chain.
-                    final var lastRunningHash = getRunningHashObject();
-                    // Chain the operations, ensuring proper order and handling.
-                    return writeStateProof(proof)
-                            .thenCompose(v -> closeWriter(lastRunningHash, this.currentBlockNumber.get()))
-                            .thenApply(v -> proof); // Return the proof as the last stage.
-                })
-                .exceptionally(
-                        e -> { // Handle exceptions uniformly.
-                            if (e.getCause() instanceof IllegalStateException) {
-                                throw new CompletionException(
-                                        e.getCause()); // Rethrow as CompletionException to keep the type consistent.
-                            }
-                            throw new CompletionException(
-                                    "Error processing endBlock", e); // Wrap and throw as CompletionException.
-                        });
+    public void endBlock(
+            @NonNull final BlockStateProofProducer blockStateProofProducer,
+            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
 
-        lastUpdateTaskFuture = future; // Update the reference to the most recent future.
+        // Submit the task to our single threaded executor service. This ensures this task isn't executed
+        // until all the tasks for building this block happen before it.
+        lastUpdateTaskFuture = submitSerialTask(() -> {
 
-        return future;
+            // Once we have completed the proceeding tasks, and this task is being executed (meaning we are at the end
+            // of the block), we need to construct the block proof. However, we do not want to hold up any other blocks
+            // from being produced on our serial executor. Therefore, we need to submit the task to the
+            // parallelExecutorService.
+
+            // We must get the running hash object at this point before we submit the task to the parallel executor
+            // service. If we were to submit it after, we could potentially process the next block item before
+            // retrieving the running hash object, which would be incorrect.
+            final var lastRunningHash = getRunningHashObject();
+            final var currentBlockNumber = this.currentBlockNumber.get();
+
+            parallelExecutorService.submit(() -> {
+                blockStateProofProducer
+                        .getBlockStateProof(parallelExecutorService)
+                        .thenComposeAsync(
+                                proof -> writeStateProof(proof) // Write the state proof and then close the writer.
+                                        .thenComposeAsync(
+                                                v -> closeWriter(lastRunningHash, currentBlockNumber),
+                                                parallelExecutorService)
+                                        .thenApplyAsync(
+                                                v -> proof,
+                                                parallelExecutorService), // Return the proof as the last stage.
+                                parallelExecutorService)
+                        .thenAcceptAsync(blockPersisted::complete, parallelExecutorService)
+                        .exceptionallyAsync(
+                                ex -> {
+                                    blockPersisted.completeExceptionally(ex);
+                                    return null;
+                                },
+                                parallelExecutorService);
+            });
+        });
     }
 
     /** {@inheritDoc} */
     @Override
     public void close() {
         // Submit the cleanup task
-        Future<?> cleanupFuture = submitTask(() -> {
+        Future<?> cleanupFuture = submitSerialTask(() -> {
             if (!isClosed.compareAndSet(false, true)) {
                 throw new RuntimeException("BlockStreamProducerConcurrent is already closed.");
             }
@@ -200,7 +215,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
         awaitFutureCompletion(cleanupFuture);
 
         // Shutdown and await termination of the executor service
-        shutdownExecutorService(executorService);
+        shutdownExecutorService(serialExecutorService);
     }
 
     private void awaitFutureCompletion(Future<?> future) {
@@ -259,7 +274,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        lastUpdateTaskFuture = submitTask(() -> {
+        lastUpdateTaskFuture = submitSerialTask(() -> {
             final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
             updateRunningHashes(serializedBlockItem);
             writeSerializedBlockItem(serializedBlockItem).join(); // Wait for the completion of the write operation.
@@ -268,7 +283,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
 
     /** {@inheritDoc} */
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
-        lastUpdateTaskFuture = submitTask(() -> {
+        lastUpdateTaskFuture = submitSerialTask(() -> {
             final var serializedBlockItem = format.serializeSystemTransaction(systemTxn);
             updateRunningHashes(serializedBlockItem);
             writeSerializedBlockItem(serializedBlockItem).join(); // Wait for the completion of the write operation.
@@ -277,7 +292,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
 
     /** {@inheritDoc} */
     public void writeUserTransactionItems(@NonNull final ProcessUserTransactionResult result) {
-        lastUpdateTaskFuture = submitTask(() -> {
+        lastUpdateTaskFuture = submitSerialTask(() -> {
             // We reuse this messageDigest to avoid creating a new one for each item.
             final MessageDigest messageDigest = format.getMessageDigest();
 
@@ -299,7 +314,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
 
     /** {@inheritDoc} */
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
-        lastUpdateTaskFuture = submitTask(() -> {
+        lastUpdateTaskFuture = submitSerialTask(() -> {
             final var serializedBlockItem = format.serializeStateChanges(stateChanges);
             updateRunningHashes(serializedBlockItem);
             writeSerializedBlockItem(serializedBlockItem).join(); // Wait for the completion of the write operation.
@@ -324,13 +339,16 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
     }
 
     /**
-     * Submit a task to the executor service and return a Future for the result. When the task is executed, it will
-     * check if the producer has been closed. If it has already been closed, we should throw.
+     * Submit a task to the executor serial service and return a Future for the result. When the task is executed, it
+     * will check if the producer has been closed. If it has already been closed, we throw an exception signaling
+     * that the producer is closed an that no more data can be produced.
      * @param task the task to submit
      * @return a Future for the result of the task
      */
-    private Future<?> submitTask(Runnable task) {
-        return executorService.submit(() -> {
+    private Future<?> submitSerialTask(Runnable task) {
+        return serialExecutorService.submit(() -> {
+            // TODO: I think we should do this out of band from the executor service queue, as well
+            //  as close.
             throwIfClosed();
             task.run();
         });
@@ -374,7 +392,7 @@ public final class BlockStreamProducerConcurrent implements BlockStreamProducer 
      */
     private void openWriter(final long newBlockNumber, @NonNull final HashObject lastRunningHash) {
         try {
-            writer = new ConcurrentBlockStreamWriter(writerExecutorService, writerFactory.create());
+            writer = new ConcurrentBlockStreamWriter(parallelExecutorService, writerFactory.create());
             writer.init(currentBlockNumber.get());
         } catch (final Exception e) {
             // This represents an almost certainly fatal error. In the FUTURE we should look at dealing with this in a

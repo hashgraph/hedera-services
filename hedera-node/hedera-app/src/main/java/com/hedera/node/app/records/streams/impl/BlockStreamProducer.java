@@ -20,6 +20,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -28,6 +29,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * Produces a stream of blocks. This is used by the {@link BlockStreamManagerImpl}.
@@ -82,10 +84,12 @@ public interface BlockStreamProducer extends AutoCloseable {
      *
      * <p>If there is a currently open block stream, it produces the block proof, and closes the block.
      *
-     * @param blockStateProof the block state proof
-     * @return a completable future that is completed when the block is closed and the data has been persisted
+     * @param blockStateProofProducer the block state proof producer
+     * @param blockPersisted the completable future that is completed when the block persisted
      */
-    CompletableFuture<BlockStateProof> endBlock(@NonNull final CompletableFuture<BlockStateProof> blockStateProof);
+    void endBlock(
+            @NonNull final BlockStateProofProducer blockStateProofProducer,
+            @NonNull CompletableFuture<BlockStateProof> blockPersisted);
 
     /**
      * Write ConsensusEvent to the block stream. It must be in exact consensus time order! This must only be called

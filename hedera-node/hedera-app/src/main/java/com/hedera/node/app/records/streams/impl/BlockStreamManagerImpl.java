@@ -365,7 +365,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     public void processRound(
             @NonNull final HederaState state,
             @NonNull final Round round,
-            @NonNull final CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
             @NonNull final Runnable runnable) {
 
         // At the beginning of a round, we create a new StateProofProducer. The StateProofProducer is responsible for
@@ -387,14 +387,10 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             });
         } finally {
             // Regardless of what happens in the try block, attempt to close the block.
-            // The result of `endBlock` is directed to the `persistedBlock`.
-            blockStreamProducer
-                    .endBlock(stateProofProducer.getBlockStateProof())
-                    .thenAccept(persistedBlock::complete)
-                    .exceptionally(ex -> {
-                        persistedBlock.completeExceptionally(ex);
-                        return null;
-                    });
+            // The result of `endBlock` is directed to the `blockPersisted`.
+            // For the concurrent implementation, this needs to happen on the blockStreamProducer thread and not the
+            // handle thread, thus endBlock takes over execution.
+            blockStreamProducer.endBlock(stateProofProducer, blockPersisted);
         }
     }
 
