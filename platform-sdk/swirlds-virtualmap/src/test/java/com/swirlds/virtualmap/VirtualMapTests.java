@@ -91,6 +91,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("ALL")
+@Tag(TIMING_SENSITIVE)
 class VirtualMapTests extends VirtualTestBase {
 
     /**
