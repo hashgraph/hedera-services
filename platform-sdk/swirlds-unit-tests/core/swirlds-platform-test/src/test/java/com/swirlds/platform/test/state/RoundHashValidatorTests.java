@@ -26,11 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
