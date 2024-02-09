@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
@@ -45,8 +49,11 @@ class GenesisRecordsConsensusHookTest {
             AccountID.newBuilder().accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
             AccountID.newBuilder().accountNum(2).build();
-    private static final Account ACCOUNT_1 =
-            Account.newBuilder().accountId(ACCOUNT_ID_1).build();
+    private static final int ACCT_1_BALANCE = 25;
+    private static final Account ACCOUNT_1 = Account.newBuilder()
+            .accountId(ACCOUNT_ID_1)
+            .tinybarBalance(ACCT_1_BALANCE)
+            .build();
     private static final Account ACCOUNT_2 =
             Account.newBuilder().accountId(ACCOUNT_ID_2).build();
     private static final Instant CONSENSUS_NOW = Instant.parse("2023-08-10T00:00:00Z");
@@ -72,6 +79,8 @@ class GenesisRecordsConsensusHookTest {
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
+        given(context.isFirstTransaction()).willReturn(true);
+        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
@@ -86,8 +95,9 @@ class GenesisRecordsConsensusHookTest {
         subject.systemAccounts(accts);
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verify(context).markMigrationRecordsStreamed();
     }
 
     @Test
@@ -99,8 +109,9 @@ class GenesisRecordsConsensusHookTest {
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_STAKING_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_STAKING_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
+        verify(context).markMigrationRecordsStreamed();
     }
 
     @Test
@@ -112,8 +123,9 @@ class GenesisRecordsConsensusHookTest {
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, null);
+        verifyBuilderInvoked(ACCOUNT_ID_1, null, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, null);
+        verify(context).markMigrationRecordsStreamed();
     }
 
     @Test
@@ -125,8 +137,9 @@ class GenesisRecordsConsensusHookTest {
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_TREASURY_CLONE_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_TREASURY_CLONE_MEMO);
+        verify(context).markMigrationRecordsStreamed();
     }
 
     @Test
@@ -138,8 +151,9 @@ class GenesisRecordsConsensusHookTest {
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, null);
+        verifyBuilderInvoked(ACCOUNT_ID_1, null, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, null);
+        verify(context).markMigrationRecordsStreamed();
     }
 
     @Test
@@ -169,11 +183,12 @@ class GenesisRecordsConsensusHookTest {
         // Call the first time to make sure records are generated
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
         verifyBuilderInvoked(acctId3, null);
         verifyBuilderInvoked(acctId4, EXPECTED_TREASURY_CLONE_MEMO);
         verifyBuilderInvoked(acctId5, null);
+        verify(context).markMigrationRecordsStreamed();
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
@@ -185,16 +200,30 @@ class GenesisRecordsConsensusHookTest {
     void processCreatesNoRecordsWhenEmpty() {
         subject.process(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
+        verify(context, never()).markMigrationRecordsStreamed();
     }
 
     @Test
-    void processCreatesNoRecordsAfterRunning() {
+    void processCreatesNoRecordsWhenNotFirstTransaction() {
+        given(context.isFirstTransaction()).willReturn(false);
+
+        // Add a single account, so we know the subject isn't skipping processing because there's no data
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        subject.stakingAccounts(accts);
+
+        subject.process(context);
+
+        verifyNoInteractions(genesisAccountRecordBuilder);
+        verify(context, never()).markMigrationRecordsStreamed();
+    }
+
+    @Test
+    void processCreatesNoRecordsWhenMigrationRecordsStreamed() {
         given(blockStore.getLastBlockInfo())
                 .willReturn(defaultStartupBlockInfo()
                         .copyBuilder()
-                        .consTimeOfLastHandledTxn(Timestamp.newBuilder()
-                                .seconds(CONSENSUS_NOW.getEpochSecond())
-                                .nanos(CONSENSUS_NOW.getNano()))
+                        .migrationRecordsStreamed(true)
                         .build());
         // Add a single account, so we know the subject isn't skipping processing because there's no data
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
@@ -204,6 +233,7 @@ class GenesisRecordsConsensusHookTest {
         subject.process(context);
 
         verifyNoInteractions(genesisAccountRecordBuilder);
+        verify(context, never()).markMigrationRecordsStreamed();
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -237,11 +267,27 @@ class GenesisRecordsConsensusHookTest {
     }
 
     private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo) {
+        verifyBuilderInvoked(acctId, expectedMemo, 0);
+    }
+
+    private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo, final long expectedBalance) {
         verify(genesisAccountRecordBuilder).accountID(acctId);
+
         if (expectedMemo != null)
             verify(genesisAccountRecordBuilder, atLeastOnce()).memo(expectedMemo);
+
         //noinspection DataFlowIssue
         verify(genesisAccountRecordBuilder, Mockito.never()).memo(null);
+
+        if (expectedBalance != 0) {
+            verify(genesisAccountRecordBuilder)
+                    .transferList(eq(TransferList.newBuilder()
+                            .accountAmounts(AccountAmount.newBuilder()
+                                    .accountID(acctId)
+                                    .amount(expectedBalance)
+                                    .build())
+                            .build()));
+        }
     }
 
     private static BlockInfo defaultStartupBlockInfo() {
