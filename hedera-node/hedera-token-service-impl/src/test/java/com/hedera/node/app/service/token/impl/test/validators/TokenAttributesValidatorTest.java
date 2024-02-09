@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidato
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
 import java.io.ByteArrayOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,12 +60,13 @@ class TokenAttributesValidatorTest {
         final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
+                .withValue("tokens.maxMetadataBytes", "100")
                 .getOrCreateConfig();
         tokensConfig = configuration.getConfigData(TokensConfig.class);
     }
 
     @Test
-    void validatesWithRandomBytes() {
+    void validatesMetadataWithRandomBytes() {
         byte[] randomBytes = TxnUtils.randomUtf8Bytes(48);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         for (byte b : randomBytes) {
@@ -73,38 +75,38 @@ class TokenAttributesValidatorTest {
             }
         }
         byte[] randomNonNullBytes = byteArrayOutputStream.toByteArray();
-        assertThatCode(() -> subject.validateTokenMetadata(randomNonNullBytes, tokensConfig))
+        assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(randomNonNullBytes), tokensConfig))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    void validatesWithUtf8TextIncludingEmojis() {
+    void validatesMetadataWithUtf8TextIncludingEmojis() {
         String utfEmojiString = "Hello, World! 😁";
-        assertThatCode(() -> subject.validateTokenMetadata(utfEmojiString.getBytes(), tokensConfig))
+        assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(utfEmojiString.getBytes()), tokensConfig))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    void failsWithNullValue() {
+    void failsMetadataWithEmptyBytes() {
+        byte[] emptyBytes = new byte[0];
+        assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(emptyBytes), tokensConfig))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_METADATA));
+    }
+
+    @Test
+    void failsMetadataWithNullValue() {
         assertThatThrownBy(() -> subject.validateTokenMetadata(null, tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MISSING_TOKEN_METADATA));
     }
 
     @Test
-    void failsForVeryLongMetadata() {
+    void failsMetadataForVeryLongValue() {
         byte[] randomLongBytes = TxnUtils.randomUtf8Bytes(101);
-        assertThatThrownBy(() -> subject.validateTokenMetadata(randomLongBytes, tokensConfig))
+        assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(randomLongBytes), tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(METADATA_TOO_LONG));
-    }
-
-    @Test
-    void failsWithEmptyByteArray() {
-        byte[] emptyBytes = new byte[0];
-        assertThatThrownBy(() -> subject.validateTokenMetadata(emptyBytes, tokensConfig))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(MISSING_TOKEN_METADATA));
     }
 
     @Test
