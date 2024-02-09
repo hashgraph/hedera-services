@@ -324,7 +324,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public int numSigs() {
+    public int numTxnSignatures() {
         return verifier.numSignaturesVerified();
     }
 

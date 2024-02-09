@@ -261,7 +261,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(feeContext.body()).willReturn(txnBody);
         given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
         final var numSigs = 5;
-        given(feeContext.numSigs()).willReturn(numSigs);
+        given(feeContext.numTxnSignatures()).willReturn(numSigs);
 
         // We don't need the result of this call since the fee calculator is a mock
         subject.calculateFees(feeContext);

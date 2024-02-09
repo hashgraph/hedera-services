@@ -79,8 +79,9 @@ public interface FeeContext {
     Authorizer authorizer();
 
     /**
-     * Returns the number of signatures provided for the transaction
+     * Returns the number of signatures provided for the transaction.
+     * <p>NOTE: this property should not be used for queries</p>
      * @return the number of signatures
      */
-    int numSigs();
+    int numTxnSignatures();
 }
