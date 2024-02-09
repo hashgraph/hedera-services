@@ -138,6 +138,7 @@ class RootProxyWorldUpdaterTest {
         final var updatedNonces = new ArrayList<>(List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L)));
         given(hederaOperations.summarizeContractChanges())
                 .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
+        given(context.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         subject.commit();
 
