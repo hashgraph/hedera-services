@@ -57,16 +57,23 @@ public class TestingEventBuilder {
     private Object otherParent;
     /** a fake generation to set for an event */
     private long fakeGeneration;
-
+    /** the event's consensus status */
     private boolean consensus;
 
     private TestingEventBuilder() {
     }
 
+    /**
+     * @return a new instance of the builder with default settings
+     */
     public static TestingEventBuilder builder() {
         return new TestingEventBuilder().setDefaults();
     }
 
+    /**
+     * Set the builder to its default settings.
+     * @return this instance
+     */
     public TestingEventBuilder setDefaults() {
         random = new Random();
         creatorId = new NodeId(0);
@@ -81,16 +88,33 @@ public class TestingEventBuilder {
         return this;
     }
 
+    /**
+     * Set the random number generator to use.
+     * NOTE: this will override any seed set with {@link #setSeed(long)}.
+     * @param random the random number generator
+     * @return this instance
+     */
     public TestingEventBuilder setRandom(final Random random) {
         this.random = random;
         return this;
     }
 
+    /**
+     * Set the seed to use for the random number generator.
+     * NOTE: this will be overridden if a random number generator is set with {@link #setRandom(Random)}.
+     * @param seed the seed
+     * @return this instance
+     */
     public TestingEventBuilder setSeed(final long seed) {
         this.random = new Random(seed);
         return this;
     }
 
+    /**
+     * Set the creator ID to use.
+     * @param creatorId the creator ID
+     * @return this instance
+     */
     public TestingEventBuilder setCreatorId(final long creatorId) {
         this.creatorId = new NodeId(creatorId);
         return this;
