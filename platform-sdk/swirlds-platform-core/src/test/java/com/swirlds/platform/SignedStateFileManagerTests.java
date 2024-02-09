@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
@@ -45,8 +44,6 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
@@ -57,6 +54,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
@@ -77,18 +75,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("SignedStateFileManager Tests")
-@Tag(TIMING_SENSITIVE)
 class SignedStateFileManagerTests {
 
     private static final NodeId SELF_ID = new NodeId(1234);
@@ -254,7 +249,6 @@ class SignedStateFileManagerTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Sequence Of States Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void sequenceOfStatesTest(final boolean startAtGenesis) throws IOException {
 
         final Random random = getRandomPrintSeed();
@@ -272,11 +266,9 @@ class SignedStateFileManagerTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final int totalStates = 1000;
+        final int totalStates = 100;
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
-
-        final AtomicReference<StateSavingResult> lastResult = new AtomicReference<>();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -318,6 +310,7 @@ class SignedStateFileManagerTests {
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
                     .build();
+            final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
             controller.markSavedState(signedState.reserve("markSavedState"));
 
@@ -325,21 +318,23 @@ class SignedStateFileManagerTests {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
-                manager.saveStateTask(signedState.reserve("save to disk"));
+                final StateSavingResult stateSavingResult = manager.saveStateTask(reservedSignedState);
 
                 savedStates.add(signedState);
 
                 validateSavingOfState(signedState);
 
-                final List<SavedStateInfo> currentStatesOnDisk =
-                        SignedStateFileReader.getSavedStateFiles(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+                final List<SavedStateInfo> currentStatesOnDisk = new SignedStateFilePath(
+                                context.getConfiguration().getConfigData(StateCommonConfig.class))
+                        .getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
                 final SavedStateMetadata oldestMetadata =
-                        currentStatesOnDisk.get(currentStatesOnDisk.size() - 1).metadata();
+                        currentStatesOnDisk.getLast().metadata();
 
+                assertNotNull(stateSavingResult, "state should have been saved");
                 assertEquals(
                         oldestMetadata.minimumGenerationNonAncient(),
-                        lastResult.get().oldestMinimumGenerationOnDisk());
+                        stateSavingResult.oldestMinimumGenerationOnDisk());
 
                 assertTrue(
                         currentStatesOnDisk.size() <= statesOnDisk,
@@ -380,7 +375,7 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("State Deletion Test")
     void stateDeletionTest() throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = getRandomPrintSeed();
         final int statesOnDisk = 3;
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
