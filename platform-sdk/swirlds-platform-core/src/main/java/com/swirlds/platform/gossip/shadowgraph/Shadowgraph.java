@@ -173,16 +173,17 @@ public class Shadowgraph implements Clearable {
      *
      * @return the reservation instance, must be closed when the reservation is no longer needed
      */
-    public synchronized ShadowgraphReservation reserve() {
+    @NonNull
+    public synchronized ReservedEventWindow reserve() {
         if (reservationList.isEmpty()) {
-            return newReservation();
+            return new ReservedEventWindow(eventWindow, newReservation());
         }
         final ShadowgraphReservation lastReservation = reservationList.getLast();
-        if (lastReservation.getReservedIndicator() == eventWindow.getExpiredThreshold()) {
+        if (lastReservation.getReservedThreshold() == eventWindow.getExpiredThreshold()) {
             lastReservation.incrementReservations();
-            return lastReservation;
+            return new ReservedEventWindow(eventWindow, lastReservation);
         } else {
-            return newReservation();
+            return new ReservedEventWindow(eventWindow, newReservation());
         }
     }
 
@@ -324,9 +325,6 @@ public class Shadowgraph implements Clearable {
      * @param eventWindow describes the current window of non-expired events
      */
     public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
-        // TODO don't merge this
-        logger.info(STARTUP.getMarker(), "updating event window to {}", eventWindow);
-
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {
@@ -386,11 +384,11 @@ public class Shadowgraph implements Clearable {
         final Iterator<ShadowgraphReservation> iterator = reservationList.iterator();
         while (iterator.hasNext()) {
             final ShadowgraphReservation reservation = iterator.next();
-            final long reservedIndicator = reservation.getReservedIndicator();
+            final long reservedIndicator = reservation.getReservedThreshold();
 
             if (reservation.getReservationCount() > 0) {
                 // As soon as we find a reserved indicator, stop iterating
-                oldestReservedIndicator = reservation.getReservedIndicator();
+                oldestReservedIndicator = reservation.getReservedThreshold();
                 break;
             } else if (reservedIndicator < eventWindow.getExpiredThreshold()) {
                 // If the number of reservations is 0 and the
@@ -533,7 +531,7 @@ public class Shadowgraph implements Clearable {
     }
 
     private ShadowgraphReservation newReservation() {
-        final ShadowgraphReservation reservation = new ShadowgraphReservation(eventWindow);
+        final ShadowgraphReservation reservation = new ShadowgraphReservation(eventWindow.getExpiredThreshold());
         reservationList.addLast(reservation);
         return reservation;
     }
