@@ -324,8 +324,8 @@ class SignedStateFileManagerTests {
 
                 validateSavingOfState(signedState);
 
-                final List<SavedStateInfo> currentStatesOnDisk =
-                new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class))
+                final List<SavedStateInfo> currentStatesOnDisk = new SignedStateFilePath(
+                                context.getConfiguration().getConfigData(StateCommonConfig.class))
                         .getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
                 final SavedStateMetadata oldestMetadata =
