@@ -54,7 +54,7 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
     }
 
-    public CompletableFuture<Void> writeItemAsync(@NonNull Bytes item) {
+    public CompletableFuture<Void> writeItemSequentiallyAsync(@NonNull Bytes item) {
         return updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
     }
 
@@ -63,7 +63,7 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
     }
 
-    public CompletableFuture<Void> closeAsync(@NonNull HashObject endRunningHash) {
+    public CompletableFuture<Void> closeSequentiallyAsync(@NonNull HashObject endRunningHash) {
         return updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
     }
 
