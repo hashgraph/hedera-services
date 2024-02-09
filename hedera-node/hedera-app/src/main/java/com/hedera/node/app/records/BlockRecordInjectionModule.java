@@ -43,6 +43,7 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.concurrent.Executors;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -156,13 +157,15 @@ public abstract class BlockRecordInjectionModule {
     @Singleton
     public static BlockStreamProducer provideBlockStreamFileProducer(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final BlockStreamProducerConcurrent concurrent,
+            //            @NonNull final BlockStreamProducerConcurrentV1 concurrent,
             @NonNull final BlockStreamProducerSingleThreaded serial) {
         System.out.println("Called provideBlockStreamFileProducer");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
-            case "CONCURRENT" -> concurrent;
+                // TODO(nickpoorman): Maybe we grab an executor from dagger and pass it in here?
+                // We want to make sure we are using an async ForkJoinPool, not the common pool (which is not async).
+            case "CONCURRENT" -> new BlockStreamProducerConcurrent(serial, Executors.newWorkStealingPool());
             case "SERIAL" -> serial;
             default -> {
                 logger.fatal("Unknown stream file producer type: {}", producerType);

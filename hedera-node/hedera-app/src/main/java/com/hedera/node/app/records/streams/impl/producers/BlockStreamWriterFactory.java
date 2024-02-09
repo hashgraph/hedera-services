@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * Creates a new {@link BlockStreamWriter} instance on demand, based on configuration. During processing of
  * transactions, when we determine it is time to write a new block to file, then we need to create a new
@@ -28,7 +30,8 @@ public interface BlockStreamWriterFactory {
      * Create a new {@link BlockStreamWriter} instance.
      *
      * @return the new instance
+     * @param executor the executor to use for writes
      * @throws RuntimeException if creation fails
      */
-    BlockStreamWriter create() throws RuntimeException;
+    BlockStreamWriter create(ExecutorService executor) throws RuntimeException;
 }

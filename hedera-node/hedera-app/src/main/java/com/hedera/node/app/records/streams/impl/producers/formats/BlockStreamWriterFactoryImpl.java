@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFactory;
+import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamWriter;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFileWriterV1;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamGrpcWriterV1;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
@@ -27,6 +28,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
+import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -53,7 +55,7 @@ public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
     }
 
     @Override
-    public BlockStreamWriter create() throws RuntimeException {
+    public BlockStreamWriter create(ExecutorService executor) throws RuntimeException {
         // read configuration
         final var config = configProvider.getConfiguration();
         final var recordStreamConfig = config.getConfigData(BlockStreamConfig.class);
@@ -63,15 +65,19 @@ public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
         return switch (recordFileVersion) {
             case 6 -> throw new IllegalArgumentException(
                     "Record file version 6 is not supported by BlockRecordWriterFactoryImpl");
-            case 7 -> createBlockStreamWriter(recordStreamConfig.writer());
+            case 7 -> createBlockStreamWriter(executor, recordStreamConfig.writer());
             default -> throw new IllegalArgumentException("Unknown record file version: " + recordFileVersion);
         };
     }
 
-    private BlockStreamWriter createBlockStreamWriter(String writer) {
+    private BlockStreamWriter createBlockStreamWriter(ExecutorService executor, String writer) {
         return switch (writer) {
-            case "file" -> new BlockStreamFileWriterV1(
-                    configProvider.getConfiguration().getConfigData(BlockStreamConfig.class), nodeInfo, fileSystem);
+            case "file" -> new ConcurrentBlockStreamWriter(
+                    executor,
+                    new BlockStreamFileWriterV1(
+                            configProvider.getConfiguration().getConfigData(BlockStreamConfig.class),
+                            nodeInfo,
+                            fileSystem));
             case "grpc" -> new BlockStreamGrpcWriterV1(
                     configProvider.getConfiguration().getConfigData(BlockStreamConfig.class), nodeInfo);
             default -> throw new IllegalArgumentException("Unknown writer type: " + writer);

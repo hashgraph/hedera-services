@@ -104,10 +104,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             throw new IllegalStateException("initFromLastBlock() must only be called once");
         }
 
-        if (runningHashes.runningHash() == null) {
-            throw new IllegalArgumentException("The initial running hash cannot be null");
-        }
-
         this.runningHash = runningHashes.runningHash();
         this.runningHashNMinus1 = runningHashes.nMinus1RunningHash();
         this.runningHashNMinus2 = runningHashes.nMinus2RunningHash();
