@@ -433,4 +433,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
     }
+
+    @Override
+    public HapiEthereumCall signedBy(String... keys) {
+        if (keys.length == 1) {
+            return super.signedBy(keys);
+        } else {
+            throw new IllegalArgumentException("Only a single key is allowed for signedBy with EthereumCall");
+        }
+    }
 }
