@@ -93,7 +93,7 @@ public class ChildFeeContextImpl implements FeeContext {
     }
 
     @Override
-    public int numSigs() {
-        return context.numSigs();
+    public int numTxnSignatures() {
+        return context.numTxnSignatures();
     }
 }

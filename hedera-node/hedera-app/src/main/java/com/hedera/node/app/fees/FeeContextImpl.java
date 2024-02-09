@@ -130,7 +130,7 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @Override
-    public int numSigs() {
+    public int numTxnSignatures() {
         return numSignatures;
     }
 }
