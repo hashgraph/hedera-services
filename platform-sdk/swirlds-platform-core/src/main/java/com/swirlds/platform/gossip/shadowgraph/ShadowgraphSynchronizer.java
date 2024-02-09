@@ -300,8 +300,12 @@ public class ShadowgraphSynchronizer {
             logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", connection.getDescription(), status);
 
             // TODO do not merge
-            logger.info(STARTUP.getMarker(),
-                    "fallen behind status: {}. My event window: {}, their event window: {}", status, self.toString(), other.toString());
+            logger.info(
+                    STARTUP.getMarker(),
+                    "fallen behind status: {}. My event window: {}, their event window: {}",
+                    status,
+                    self.toString(),
+                    other.toString());
 
             return true; // abort the sync
         }
