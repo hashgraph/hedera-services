@@ -26,7 +26,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -37,6 +37,7 @@ import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.system.PlatformStatNames;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -98,6 +99,12 @@ public class SyncMetrics {
             .withDescription("the average time spent filtering events during a sync")
             .withUnit("nanoseconds");
 
+    private static final CountPerSecond.Config DO_NOT_SYNC_PLATFORM_STATUS = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "doNotSyncPlatformStatus")
+            .withUnit("hz")
+            .withDescription("Number of times per second we do not sync because the platform status doesn't permit it");
+    private final CountPerSecond doNoSyncPlatformStatus;
+
     private static final CountPerSecond.Config DO_NOT_SYNC_COOLDOWN_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "doNotSyncCooldown")
             .withUnit("hz")
@@ -136,7 +143,7 @@ public class SyncMetrics {
 
     private final RunningAverageMetric tipsPerSync;
 
-    private final AverageStat syncGenerationDiff;
+    private final AverageStat syncIndicatorDiff;
     private final AverageStat eventRecRate;
     private final AverageTimeStat avgSyncDuration1;
     private final AverageTimeStat avgSyncDuration2;
@@ -169,6 +176,7 @@ public class SyncMetrics {
         syncsPerSec = new CountPerSecond(metrics, SYNCS_PER_SECOND_CONFIG);
         syncFilterTime = metrics.getOrCreate(SYNC_FILTER_TIME_CONFIG);
 
+        doNoSyncPlatformStatus = new CountPerSecond(metrics, DO_NOT_SYNC_PLATFORM_STATUS);
         doNotSyncCooldown = new CountPerSecond(metrics, DO_NOT_SYNC_COOLDOWN_CONFIG);
         doNotSyncHalted = new CountPerSecond(metrics, DO_NOT_SYNC_HALTED_CONFIG);
         doNotSyncIntakeQueue = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_QUEUE_CONFIG);
@@ -192,11 +200,11 @@ public class SyncMetrics {
                 "number of events received per successful sync",
                 FORMAT_8_1);
 
-        syncGenerationDiff = new AverageStat(
+        syncIndicatorDiff = new AverageStat(
                 metrics,
                 INTERNAL_CATEGORY,
-                "syncGenDiff",
-                "number of generation ahead (positive) or behind (negative) when syncing",
+                "syncIndicatorDiff",
+                "number of ancient indicators ahead (positive) or behind (negative) when syncing",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);
         eventRecRate = new AverageStat(
@@ -257,13 +265,13 @@ public class SyncMetrics {
     }
 
     /**
-     * Supplies the generation numbers of a sync for statistics
+     * Supplies the event window numbers of a sync for statistics
      *
-     * @param self  generations of our graph at the start of the sync
-     * @param other generations of their graph at the start of the sync
+     * @param self  event window of our graph at the start of the sync
+     * @param other event window of their graph at the start of the sync
      */
-    public void generations(final GraphGenerations self, final GraphGenerations other) {
-        syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
+    public void eventWindow(@NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+        syncIndicatorDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
     /**
@@ -396,6 +404,13 @@ public class SyncMetrics {
      */
     public void recordSyncFilterTime(final long nanoseconds) {
         syncFilterTime.update(nanoseconds);
+    }
+
+    /**
+     * Signal that we chose not to sync because of the current platform status
+     */
+    public void doNotSyncPlatformStatus() {
+        doNoSyncPlatformStatus.count();
     }
 
     /**

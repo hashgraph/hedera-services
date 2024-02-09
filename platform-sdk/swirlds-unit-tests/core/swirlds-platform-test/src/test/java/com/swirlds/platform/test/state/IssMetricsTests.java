@@ -24,10 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -124,13 +124,13 @@ class IssMetricsTests {
         }
 
         // Report a catastrophic ISS for a round in the past. Should be ignored.
-        issMetrics.catastrophicIssObserver(round - 1, null);
+        issMetrics.catastrophicIssObserver(round - 1);
         assertEquals(expectedIssCount, issMetrics.getIssCount(), "unexpected ISS count");
         assertEquals(expectedIssweight, issMetrics.getIssWeight(), "unexpected ISS weight");
 
         // Report a catastrophic ISS.
         round++;
-        issMetrics.catastrophicIssObserver(round, null);
+        issMetrics.catastrophicIssObserver(round);
         expectedIssCount = addressBook.getSize();
         expectedIssweight = addressBook.getTotalWeight();
         assertEquals(expectedIssCount, issMetrics.getIssCount(), "unexpected ISS count");

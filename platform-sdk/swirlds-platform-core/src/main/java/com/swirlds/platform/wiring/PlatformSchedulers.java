@@ -17,6 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -26,6 +27,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -51,7 +53,10 @@ import java.util.List;
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
+ * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
+ * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
+ * @param issDetectorScheduler                      the scheduler for the iss detector
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -72,7 +77,11 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler) {
+        @NonNull TaskScheduler<Void> consensusRoundHandlerScheduler,
+        @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
+        @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
+        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
+        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -145,6 +154,7 @@ public record PlatformSchedulers(
                         .withType(config.linkedEventIntakeSchedulerType())
                         .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
                         .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
@@ -152,6 +162,7 @@ public record PlatformSchedulers(
                         .withType(config.eventCreationManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
@@ -210,11 +221,39 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
+                // the literal "consensusRoundHandler" is used by the app to log on the transaction handling thread.
+                // Do not modify, unless you also change the TRANSACTION_HANDLING_THREAD_NAME constant
+                model.schedulerBuilder("consensusRoundHandler")
+                        .withType(config.consensusRoundHandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.consensusRoundHandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder()
+                                .withUnhandledTaskMetricEnabled(true)
+                                .withBusyFractionMetricsEnabled(true))
+                        .withFlushingEnabled(true)
+                        .withSquelchingEnabled(true)
+                        .build()
+                        .cast(),
+                // though the eventStreamManager is of DIRECT_STATELESS type, it isn't actually stateless: it just
+                // is thread safe, and can therefore be treated as if it were stateless by the framework
+                model.schedulerBuilder("eventStreamManager")
+                        .withType(TaskSchedulerType.DIRECT_STATELESS)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("runningHashUpdate")
+                        .withType(TaskSchedulerType.DIRECT_STATELESS)
+                        .build()
+                        .cast(),
                 model.schedulerBuilder("futureEventBuffer")
                         .withType(config.futureEventBufferSchedulerType())
                         .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("issDetector")
+                        .withType(config.issDetectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
     }

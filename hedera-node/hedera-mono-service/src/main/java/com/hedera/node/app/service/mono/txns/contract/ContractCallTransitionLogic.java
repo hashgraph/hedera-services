@@ -158,9 +158,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             result = evmTxProcessor.execute(
                     sender, receiver.canonicalAddress(), op.getGas(), op.getAmount(), callData, txnCtx.consensusTime());
         } else {
-            sender.incrementEthereumNonce();
-            accountStore.commitAccount(sender);
-
             result = evmTxProcessor.executeEth(
                     sender,
                     receiver.canonicalAddress(),
@@ -171,6 +168,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                     offeredGasPrice,
                     accountStore.loadAccount(relayerId),
                     maxGasAllowanceInTinybars);
+            result.setSignerNonce(worldState.get(senderId.asEvmAddress()).getNonce());
         }
 
         /* --- Externalise result --- */
@@ -359,10 +357,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             } else {
                 if (!OK.equals(isUsableContract)) {
                     // call to non-existing contract flow
-                    validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract);
-                    validateTrue(properties.allowCallsToNonContractAccounts(), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || !EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(isTokenAccount || properties.allowCallsToNonContractAccounts(), isUsableContract);
                 }
             }
 
