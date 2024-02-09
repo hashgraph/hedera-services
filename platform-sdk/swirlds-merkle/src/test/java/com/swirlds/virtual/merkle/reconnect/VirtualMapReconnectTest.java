@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -319,6 +320,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
+    @Tag(TIMING_SENSITIVE)
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 

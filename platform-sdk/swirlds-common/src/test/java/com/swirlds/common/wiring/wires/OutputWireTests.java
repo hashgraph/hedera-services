@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.wires;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -30,6 +31,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -37,6 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 /**
  * Tests the functionality of output wires
  */
+@Tag(TIMING_SENSITIVE)
 public class OutputWireTests {
 
     /**
