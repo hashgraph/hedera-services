@@ -209,12 +209,12 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     /** {@inheritDoc} */
     //    @Override
     public void endSystemTransaction(
-            @NonNull HederaState state, @NonNull final NodeInfo creator, @NonNull ConsensusTransaction systemTxn) {
+            @NonNull final HederaState state,
+            @NonNull final NodeInfo creator,
+            @NonNull ConsensusTransaction systemTxn) {
         // When we get a system StateSignatureTransaction, we need to collect all the signatures and write them to the
         // block stream. However, as it relates to keeping the running hash, these platform events will need to be
         // included in the following block, because they are the signatures for the end root hash of the current block.
-        //
-        // I'm not sure I like that as we then have state changes that are lingering and not committed to disk yet.
 
         // If the system transaction is a state signature transaction, we collect the signature.
         if (systemTxn instanceof StateSignatureTransaction txn) {
@@ -373,6 +373,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         // asynchronously produce a state proof, once enough signatures have been collected for the round. The
         // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
 
+        round.getRoundNum();
         final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(state, round.getRoundNum());
 
         try {
@@ -387,7 +388,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             });
         } finally {
             // Regardless of what happens in the try block, attempt to close the block.
-            // The result of `endBlock` is directed to the `completionPromise`.
+            // The result of `endBlock` is directed to the `persistedBlock`.
             blockStreamProducer
                     .endBlock(stateProofProducer.getBlockStateProof())
                     .thenAccept(persistedBlock::complete)
