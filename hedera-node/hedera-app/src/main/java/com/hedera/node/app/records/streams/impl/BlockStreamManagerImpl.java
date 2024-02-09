@@ -373,7 +373,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         // asynchronously produce a state proof, once enough signatures have been collected for the round. The
         // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
 
-        round.getRoundNum();
         final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(state, round.getRoundNum());
 
         try {
