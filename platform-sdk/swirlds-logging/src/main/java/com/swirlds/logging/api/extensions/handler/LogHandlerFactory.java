@@ -34,5 +34,13 @@ public interface LogHandlerFactory {
      * @return the log handler
      */
     @NonNull
-    LogHandler create(@NonNull Configuration configuration);
+    LogHandler create(@NonNull String configKey, @NonNull Configuration configuration);
+
+    /**
+     * Name used for configuration
+     *
+     * @return name
+     */
+    @NonNull
+    String getTypeName();
 }
