@@ -24,12 +24,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.systemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +51,7 @@ public class DelegateCallOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence());
+        return List.of(verifiesExistence(), testCallOperationsForSystemAccounts());
     }
 
     @Override
@@ -71,11 +74,36 @@ public class DelegateCallOperationSuite extends HapiSuite {
                             final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
                             final var contractCall = contractCall(
-                                            contract, "delegateCall", asHeadlongAddress(solidityAddress))
+                                    contract, "delegateCall", asHeadlongAddress(solidityAddress))
                                     .hasKnownStatus(SUCCESS);
 
                             allRunFor(spec, contractCall);
                         }));
+    }
+
+    @HapiTest
+    HapiSpec testCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsChecker";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 4];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "call", mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            opsArray[i + systemAccounts.size()] = contractCall(contract, "callCode",
+                    mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+            opsArray[i + systemAccounts.size() * 2] = contractCall(contract, "delegateCall",
+                    mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            opsArray[i + systemAccounts.size() * 3] = contractCall(contract, "staticcall",
+                    mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+        }
+        return defaultHapiSpec("verifiesCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
     }
 
     @Override
