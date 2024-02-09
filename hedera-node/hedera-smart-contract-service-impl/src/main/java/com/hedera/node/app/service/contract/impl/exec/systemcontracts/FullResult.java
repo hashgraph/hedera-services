@@ -59,13 +59,12 @@ public record FullResult(
     public void recordInsufficientGas() {
         if (recordBuilder != null) {
             recordBuilder.status(INSUFFICIENT_GAS);
-            //match mono - update function result with the INSUFFICIENT_GAS status
-            recordBuilder.contractCallResult(
-                    recordBuilder.contractFunctionResult().copyBuilder().
-                            contractCallResult(
-                                    tuweniToPbjBytes(
-                                            Bytes.wrap(UInt256.valueOf(INSUFFICIENT_GAS.protoOrdinal()))
-                                    )).build());
+            // match mono - update function result with the INSUFFICIENT_GAS status
+            recordBuilder.contractCallResult(recordBuilder
+                    .contractFunctionResult()
+                    .copyBuilder()
+                    .contractCallResult(tuweniToPbjBytes(Bytes.wrap(UInt256.valueOf(INSUFFICIENT_GAS.protoOrdinal()))))
+                    .build());
         }
     }
 
