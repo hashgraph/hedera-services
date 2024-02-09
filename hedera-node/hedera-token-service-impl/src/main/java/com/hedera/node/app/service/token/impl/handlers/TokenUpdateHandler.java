@@ -310,10 +310,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Updates token name, token symbol, token memo and token treasury if they are present in the
-     * token update transaction body.
+     * Updates token name, token symbol, token metadata, token memo
+     * and token treasury if they are present in the token update transaction body.
      * @param op token update transaction body
-     * @param builder token builder
+     * @param builder token builderTC
      * @param originalToken original token
      */
     private void updateNameSymbolMetadataMemoAndTreasury(
