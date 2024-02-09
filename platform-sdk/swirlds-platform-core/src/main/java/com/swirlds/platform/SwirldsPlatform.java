@@ -292,8 +292,6 @@ public class SwirldsPlatform implements Platform {
     /** thread-queue responsible for hashing states */
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
 
-    private final AncientMode ancientMode;
-
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -320,11 +318,6 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
-
-        ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
@@ -416,6 +409,12 @@ public class SwirldsPlatform implements Platform {
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
+            final AncientMode currentFileType = platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .useBirthRoundAncientThreshold()
+                    ? AncientMode.BIRTH_ROUND_THRESHOLD
+                    : AncientMode.GENERATION_THRESHOLD;
 
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
@@ -423,7 +422,7 @@ public class SwirldsPlatform implements Platform {
                     databaseDirectory,
                     initialState.getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
-                    ancientMode);
+                    currentFileType);
 
             preconsensusEventFileManager =
                     new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
@@ -701,6 +700,7 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
+                consensusRef,
                 platformWiring.getGossipEventInput()::put,
                 platformWiring.getIntakeQueueSizeSupplier(),
                 swirldStateManager,
@@ -716,7 +716,10 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
                 getAddressBook(),
-                ancientMode));
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .getAncientMode()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -859,15 +862,7 @@ public class SwirldsPlatform implements Platform {
         Objects.requireNonNull(signedState);
 
         consensusRef.get().loadFromSignedState(signedState);
-
-        // FUTURE WORK: this needs to be updated for birth round compatibility.
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                signedState.getRound(),
-                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
-                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
-                ancientMode);
-
-        shadowGraph.startWithEventWindow(eventWindow);
+        shadowGraph.startWithExpiredThreshold(consensusRef.get().getMinGenerationNonAncient());
 
         gossip.loadFromSignedState(signedState);
     }
@@ -932,7 +927,7 @@ public class SwirldsPlatform implements Platform {
                     signedState.getRound(),
                     signedState.getMinRoundGeneration(),
                     signedState.getMinRoundGeneration(),
-                    ancientMode));
+                    AncientMode.getAncientMode(platformContext)));
 
             platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());

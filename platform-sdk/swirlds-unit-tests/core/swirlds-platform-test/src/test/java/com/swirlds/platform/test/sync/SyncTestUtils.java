@@ -17,11 +17,9 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -43,19 +41,19 @@ public class SyncTestUtils {
         node.getShadowGraph().getTips().forEach(tip -> System.out.println(EventStrings.toMediumString(tip.getEvent())));
     }
 
-    public static long getMaxIndicator(final List<ShadowEvent> tips, @NonNull final AncientMode ancientMode) {
-        long maxIndicator = ancientMode.getGenesisIndicator();
-        for (final ShadowEvent tip : tips) {
-            maxIndicator = Math.max(tip.getEvent().getBaseEvent().getAncientIndicator(ancientMode), maxIndicator);
+    public static long getMaxGen(final List<ShadowEvent> tips) {
+        long maxGen = 0;
+        for (ShadowEvent tip : tips) {
+            maxGen = Math.max(tip.getEvent().getGeneration(), maxGen);
         }
-        return maxIndicator;
+        return maxGen;
     }
 
-    public static long getMinIndicator(final Set<ShadowEvent> events, @NonNull final AncientMode ancientMode) {
-        long minIndicator = Long.MAX_VALUE;
-        for (final ShadowEvent event : events) {
-            minIndicator = Math.min(event.getEvent().getBaseEvent().getAncientIndicator(ancientMode), minIndicator);
+    public static long getMinGen(final Set<ShadowEvent> events) {
+        long minGen = Long.MAX_VALUE;
+        for (ShadowEvent event : events) {
+            minGen = Math.min(event.getEvent().getGeneration(), minGen);
         }
-        return minIndicator == Long.MAX_VALUE ? ancientMode.getGenesisIndicator() : minIndicator;
+        return minGen == Long.MAX_VALUE ? 0 : minGen;
     }
 }
