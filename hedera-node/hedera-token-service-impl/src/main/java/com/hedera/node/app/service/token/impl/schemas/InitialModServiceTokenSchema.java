@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.schemas;
 
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.clampedStakePeriodStart;
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.computeRewardFromDetails;
+import static com.hedera.node.app.service.token.api.StakingRewardsApi.stakePeriodAt;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
@@ -77,9 +80,11 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -272,13 +277,31 @@ public class InitialModServiceTokenSchema extends Schema {
             if (tokenRelsToState.get().isModified()) ((WritableKVStateBase) tokenRelsToState.get()).commit();
             log.info("BBM: finished token rels");
 
+            // ---------- Staking Info
+            log.info("BBM: starting staking info");
+            var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
+                stakingToState.put(
+                        EntityNumber.newBuilder()
+                                .number(merkleStakingInfo.getKey().longValue())
+                                .build(),
+                        toStakingInfo);
+            });
+            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
+            final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
+            final var currentStakingPeriod =
+                    stakePeriodAt(mnc.consensusTimeOfLastHandledTxn(), stakingConfig.periodMins());
+            final var numStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+            log.info("BBM: finished staking info");
+
             // ---------- Accounts
             log.info("BBM: doing accounts");
-
             final var numAccountInsertions = new AtomicLong();
             final var numAliasesInsertions = new AtomicLong();
             final var acctsToState = new AtomicReference<>(ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY));
             final var aliasesState = new AtomicReference<>(ctx.newStates().<ProtoBytes, AccountID>get(ALIASES_KEY));
+            final Map<Long, Long> pendingRewards = new ConcurrentHashMap<>();
             try {
                 VirtualMapLike.from(acctsFs)
                         .extractVirtualMapData(
@@ -294,6 +317,19 @@ public class InitialModServiceTokenSchema extends Schema {
                                                             .accountNum(acctNum)
                                                             .build(),
                                                     toAcct);
+                                    if (!toAcct.deleted() && !toAcct.declineReward() && toAcct.hasStakedNodeId()) {
+                                        final var stakedNodeId = toAcct.stakedNodeIdOrThrow();
+                                        final var stakingInfo = stakingToState.get(new EntityNumber(stakedNodeId));
+                                        final var reward = computeRewardFromDetails(
+                                                toAcct,
+                                                stakingInfo,
+                                                currentStakingPeriod,
+                                                clampedStakePeriodStart(
+                                                        toAcct.stakePeriodStart(),
+                                                        currentStakingPeriod,
+                                                        numStoredPeriods));
+                                        pendingRewards.merge(stakedNodeId, reward, Long::sum);
+                                    }
                                     if (numAccountInsertions.incrementAndGet() % 10_000 == 0) {
                                         // Make sure we are flushing data to disk as we go
                                         ((WritableKVStateBase) acctsToState.get()).commit();
@@ -319,6 +355,17 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
+            // Also persist the per-node pending reward information
+            stakingFs.forEach((entityNum, ignore) -> {
+                final var toKey = new EntityNumber(entityNum.longValue());
+                final var info = requireNonNull(stakingToState.get(toKey));
+                stakingToState.put(
+                        toKey,
+                        info.copyBuilder()
+                                .pendingRewards(pendingRewards.getOrDefault(toKey.number(), 0L))
+                                .build());
+            });
+            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             log.info("BBM: finished accts");
 
             // ---------- Tokens
@@ -331,20 +378,6 @@ public class InitialModServiceTokenSchema extends Schema {
             });
             if (tokensToState.isModified()) ((WritableKVStateBase) tokensToState).commit();
             log.info("BBM: finished tokens (fung and non-fung)");
-
-            // ---------- Staking Info
-            log.info("BBM: starting staking info");
-            var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
-                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
-                stakingToState.put(
-                        EntityNumber.newBuilder()
-                                .number(merkleStakingInfo.getKey().longValue())
-                                .build(),
-                        toStakingInfo);
-            });
-            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
-            log.info("BBM: finished staking info");
 
             // ---------- Staking Rewards
             log.info("BBM: starting staking rewards");
