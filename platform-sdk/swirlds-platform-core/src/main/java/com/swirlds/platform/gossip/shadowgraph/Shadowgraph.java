@@ -324,6 +324,9 @@ public class Shadowgraph implements Clearable {
      * @param eventWindow describes the current window of non-expired events
      */
     public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+        // TODO don't merge this
+        logger.info(STARTUP.getMarker(), "updating event window to {}", eventWindow);
+
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {

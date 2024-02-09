@@ -17,6 +17,7 @@
 package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.CREATING_SIGNED_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.GETTING_STATE_TO_SIGN;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.HANDLING_CONSENSUS_ROUND;
@@ -184,6 +185,14 @@ public class ConsensusRoundHandler {
      * @param consensusRound the consensus round to apply
      */
     public void handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
+
+        // TODO don't merge this
+        logger.info(
+                STARTUP.getMarker(),
+                "handling round {}, event window = {}",
+                consensusRound.getRoundNum(),
+                consensusRound.getNonAncientEventWindow());
+
         // consensus rounds with no events are ignored
         if (consensusRound.isEmpty()) {
             // Future work: the long term goal is for empty rounds to not be ignored here. For now, the way that the
