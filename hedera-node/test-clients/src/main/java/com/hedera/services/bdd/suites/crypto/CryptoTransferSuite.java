@@ -101,6 +101,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreat
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.invalidAliasNonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAYER;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
@@ -250,6 +251,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 okToRepeatSerialNumbersInBurnList(),
                 canUseAliasAndAccountCombinations(),
                 testTransferToNonExistingSystemAccounts(),
+                testTransferToInvalidAliasNonExistingSystemAccounts(),
                 testTransferToExistingSystemAccounts(),
                 testTransferToSystemAccountsAndCheckSenderBalance(),
                 transferInvalidTokenIdWithDecimals());
@@ -2162,6 +2164,43 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec testTransferToInvalidAliasNonExistingSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[invalidAliasNonExistingSystemAccounts.size() * 3];
+
+        for (int i = 0; i < invalidAliasNonExistingSystemAccounts.size(); i++) {
+            opsArray[i] = contractCall(
+                            contract, "sendViaTransfer", mirrorAddrWith(invalidAliasNonExistingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_ALIAS_KEY);
+
+            opsArray[invalidAliasNonExistingSystemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(invalidAliasNonExistingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_ALIAS_KEY);
+
+            opsArray[invalidAliasNonExistingSystemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(invalidAliasNonExistingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_ALIAS_KEY);
+        }
+
+        return defaultHapiSpec("testTransferToInvalidAliasNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
     final HapiSpec testTransferToNonExistingSystemAccounts() {
         final var contract = "CryptoTransfer";
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
@@ -2171,21 +2210,21 @@ public class CryptoTransferSuite extends HapiSuite {
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
             opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
                             contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
             opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
                             contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
         }
 
         return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)

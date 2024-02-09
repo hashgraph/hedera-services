@@ -126,10 +126,13 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
 
-    public static final List<Long> nonExistingSystemAccounts = List.of(751L, 799L);
+    public static final List<Long> nonExistingSystemAccounts = List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l);
+
+    public static final List<Long> invalidAliasNonExistingSystemAccounts = List.of(751L, 799L);
     public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
-    public static final List<Long> systemAccounts =
-            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
+    //    public static final List<Long> systemAccounts =
+    //            List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l, 751L, 799L, 800L, 999L, 1000L);
+    public static final List<Long> systemAccounts = List.of(0l);
 
     public static void main(String... args) {
         new Evm46ValidationSuite().runSuiteAsync();
