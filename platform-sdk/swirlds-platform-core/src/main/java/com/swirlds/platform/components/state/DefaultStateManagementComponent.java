@@ -30,6 +30,7 @@ import com.swirlds.platform.state.signed.SourceOfSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * The default implementation of {@link StateManagementComponent}.
@@ -49,7 +50,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * A logger handler for hash stream data
      */
-    private final Consumer<ReservedSignedState> hashLogger;
+    private final Predicate<ReservedSignedState> hashLogger;
 
     /**
      * Used to track signed state leaks, if enabled
@@ -76,7 +77,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final Consumer<ReservedSignedState> stateSigner,
             @NonNull final Consumer<ReservedSignedState> sigCollector,
             @NonNull final SignedStateMetrics signedStateMetrics,
-            @NonNull final Consumer<ReservedSignedState> hashLogger) {
+            @NonNull final Predicate<ReservedSignedState> hashLogger) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -95,8 +96,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private void logHashes(final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
-            try (ReservedSignedState rss = signedState.reserve("logging hash state")) {
-                hashLogger.accept(rss);
+            ReservedSignedState rss = signedState.reserve("logging hash state");
+            boolean offered = hashLogger.test(rss);
+            if(!offered) {
+                rss.close();
             }
         }
     }

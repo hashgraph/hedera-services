@@ -87,10 +87,12 @@ public class HashLogger {
      * @param signedState the signed state to retrieve hash information from and log.
      */
     public void logHashes(final ReservedSignedState signedState) {
-        if (!isEnabled) {
-            return;
+        try(signedState) {
+            if (!isEnabled) {
+                return;
+            }
+            log(signedState.get());
         }
-        log(signedState.get());
     }
 
     private Message generateLogMessage(@NonNull final SignedState signedState) {
