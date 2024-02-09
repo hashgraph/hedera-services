@@ -29,6 +29,8 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;
@@ -66,15 +68,16 @@ public class TestingEventBuilder {
     /**
      * @return a new instance of the builder with default settings
      */
-    public static TestingEventBuilder builder() {
+    public static @NonNull TestingEventBuilder builder() {
         return new TestingEventBuilder().setDefaults();
     }
 
     /**
      * Set the builder to its default settings.
+     *
      * @return this instance
      */
-    public TestingEventBuilder setDefaults() {
+    public @NonNull TestingEventBuilder setDefaults() {
         random = new Random();
         creatorId = new NodeId(0);
         timeCreated = null;
@@ -89,115 +92,163 @@ public class TestingEventBuilder {
     }
 
     /**
-     * Set the random number generator to use.
-     * NOTE: this will override any seed set with {@link #setSeed(long)}.
+     * Same as {@link #setDefaults()}.
+     */
+    public @NonNull TestingEventBuilder reset() {
+        return setDefaults();
+    }
+
+    /**
+     * Set the random number generator to use. NOTE: this will override any seed set with {@link #setSeed(long)}.
+     *
      * @param random the random number generator
      * @return this instance
      */
-    public TestingEventBuilder setRandom(final Random random) {
+    public @NonNull TestingEventBuilder setRandom(@NonNull final Random random) {
         this.random = random;
         return this;
     }
 
     /**
-     * Set the seed to use for the random number generator.
-     * NOTE: this will be overridden if a random number generator is set with {@link #setRandom(Random)}.
+     * Set the seed to use for the random number generator. NOTE: this will be overridden if a random number generator
+     * is set with {@link #setRandom(Random)}.
+     *
      * @param seed the seed
      * @return this instance
      */
-    public TestingEventBuilder setSeed(final long seed) {
+    public @NonNull TestingEventBuilder setSeed(final long seed) {
         this.random = new Random(seed);
         return this;
     }
 
     /**
      * Set the creator ID to use.
+     *
      * @param creatorId the creator ID
      * @return this instance
      */
-    public TestingEventBuilder setCreatorId(final long creatorId) {
+    public @NonNull TestingEventBuilder setCreatorId(final long creatorId) {
         this.creatorId = new NodeId(creatorId);
         return this;
     }
 
-    public TestingEventBuilder setCreatorId(final NodeId creatorId) {
+    /**
+     * Set the creator ID to use. If set to null, the default creator ID will be used.
+     *
+     * @param creatorId the creator ID
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setCreatorId(@Nullable final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
 
-    public TestingEventBuilder setTimeCreated(final Instant timeCreated) {
+    /**
+     * Set the time created of an event. If set to null, the default time created will be used.
+     *
+     * @param timeCreated the time created
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setTimeCreated(@Nullable final Instant timeCreated) {
         this.timeCreated = timeCreated;
         return this;
     }
 
-    public TestingEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
+    /**
+     * Set the number of transactions an event should contain. If {@link #setTransactions(ConsensusTransactionImpl[])}
+     * is called with a non-null value, this setting will be ignored.
+     *
+     * @param numberOfTransactions the number of transactions
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
         this.numberOfTransactions = numberOfTransactions;
         return this;
     }
 
-    public TestingEventBuilder setTransactionSize(final int transactionSize) {
+    /**
+     * Set the transaction size. If {@link #setTransactions(ConsensusTransactionImpl[])} is called with a non-null
+     * value, this setting will be ignored.
+     *
+     * @param transactionSize the transaction size
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setTransactionSize(final int transactionSize) {
         this.transactionSize = transactionSize;
         return this;
     }
 
-    public TestingEventBuilder setTransactions(final ConsensusTransactionImpl[] transactions) {
+    /**
+     * Set the transactions of an event. If set to null, the default transactions will be used.
+     *
+     * @param transactions the transactions
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setTransactions(@Nullable final ConsensusTransactionImpl[] transactions) {
         this.transactions = transactions;
         return this;
     }
 
-    public TestingEventBuilder setSelfParent(final GossipEvent selfParent) {
+    /**
+     * Set the self-parent of an event. If set to null, no self-parent will be used unless a generation is set, in which
+     * case, a self-parent descriptor will be created with the given generation.
+     *
+     * @param selfParent
+     * @return
+     */
+    public @NonNull TestingEventBuilder setSelfParent(@Nullable final GossipEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public TestingEventBuilder setOtherParent(final GossipEvent otherParent) {
+    public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public TestingEventBuilder setSelfParent(final EventImpl selfParent) {
+    public @NonNull TestingEventBuilder setSelfParent(@Nullable final EventImpl selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public TestingEventBuilder setOtherParent(final EventImpl otherParent) {
+    public @NonNull TestingEventBuilder setOtherParent(@Nullable final EventImpl otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public TestingEventBuilder setGeneration(final long generation) {
+    public @NonNull TestingEventBuilder setGeneration(final long generation) {
         fakeGeneration = generation;
         return this;
     }
 
-    public TestingEventBuilder setConsensus(final boolean consensus) {
+    public @NonNull TestingEventBuilder setConsensus(final boolean consensus) {
         this.consensus = consensus;
         return this;
     }
 
-    private EventImpl getSelfParentImpl() {
+    private @Nullable EventImpl getSelfParentImpl() {
         return selfParent instanceof final EventImpl ei ? ei : null;
     }
 
-    private EventImpl getOtherParentImpl() {
+    private @Nullable EventImpl getOtherParentImpl() {
         return otherParent instanceof final EventImpl ei ? ei : null;
     }
 
-    private GossipEvent getSelfParentGossip() {
+    private @Nullable GossipEvent getSelfParentGossip() {
         if (selfParent instanceof final GossipEvent ge) {
             return ge;
         }
         return selfParent instanceof final EventImpl ei ? ei.getBaseEvent() : null;
     }
 
-    private GossipEvent getOtherParentGossip() {
+    private @Nullable GossipEvent getOtherParentGossip() {
         if (otherParent instanceof final GossipEvent ge) {
             return ge;
         }
         return otherParent instanceof final EventImpl ei ? ei.getBaseEvent() : null;
     }
 
-    private Instant getParentTime() {
+    private @NonNull Instant getParentTime() {
         final Instant sp = getSelfParentGossip() == null
                 ? DEFAULT_TIMESTAMP
                 : getSelfParentGossip().getHashedData().getTimeCreated();
@@ -207,20 +258,20 @@ public class TestingEventBuilder {
         return sp.isAfter(op) ? sp : op;
     }
 
-    public GossipEvent buildEvent() {
+    public @NonNull GossipEvent buildEvent() {
         return buildGossipEvent();
     }
 
-    public GossipEvent buildGossipEvent() {
+    public @NonNull GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr;
-        if(transactions==null){
+        if (transactions == null) {
             tr = new ConsensusTransactionImpl[numberOfTransactions];
             for (int i = 0; i < tr.length; ++i) {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
                 tr[i] = new SwirldTransaction(bytes);
             }
-        }else{
+        } else {
             tr = transactions;
         }
 
@@ -237,29 +288,29 @@ public class TestingEventBuilder {
 
         final EventDescriptor selfParent = getSelfParentGossip() != null
                 ? new EventDescriptor(
-                        getSelfParentGossip().getHashedData().getHash(),
+                getSelfParentGossip().getHashedData().getHash(),
+                creatorId,
+                selfParentGen,
+                EventConstants.BIRTH_ROUND_UNDEFINED)
+                : selfParentGen > EventConstants.GENERATION_UNDEFINED
+                        ? new EventDescriptor(
+                        RandomUtils.randomHash(random),
                         creatorId,
                         selfParentGen,
                         EventConstants.BIRTH_ROUND_UNDEFINED)
-                : selfParentGen > EventConstants.GENERATION_UNDEFINED
-                        ? new EventDescriptor(
-                                RandomUtils.randomHash(random),
-                                creatorId,
-                                selfParentGen,
-                                EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final EventDescriptor otherParent = getOtherParentGossip() != null
                 ? new EventDescriptor(
-                        getOtherParentGossip().getHashedData().getHash(),
-                        getOtherParentGossip().getHashedData().getCreatorId(),
-                        otherParentGen,
-                        EventConstants.BIRTH_ROUND_UNDEFINED)
+                getOtherParentGossip().getHashedData().getHash(),
+                getOtherParentGossip().getHashedData().getCreatorId(),
+                otherParentGen,
+                EventConstants.BIRTH_ROUND_UNDEFINED)
                 : otherParentGen > EventConstants.GENERATION_UNDEFINED
                         ? new EventDescriptor(
-                                RandomUtils.randomHash(random),
-                                creatorId,
-                                otherParentGen,
-                                EventConstants.BIRTH_ROUND_UNDEFINED)
+                        RandomUtils.randomHash(random),
+                        creatorId,
+                        otherParentGen,
+                        EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
@@ -285,13 +336,9 @@ public class TestingEventBuilder {
         return gossipEvent;
     }
 
-    public EventImpl buildEventImpl() {
+    public @NonNull EventImpl buildEventImpl() {
         final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
         event.setConsensus(consensus);
         return event;
-    }
-
-    public TestingEventBuilder reset() {
-        return setDefaults();
     }
 }
