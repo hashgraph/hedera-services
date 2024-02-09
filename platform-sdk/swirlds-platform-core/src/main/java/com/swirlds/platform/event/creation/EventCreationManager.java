@@ -125,6 +125,8 @@ public class EventCreationManager {
 
     /**
      * Clear the internal state of the event creation manager.
+     *
+     * @param ignored the trigger on the wire that causes us to clear, ignored
      */
     public void clear(@NonNull final ClearTrigger ignored) {
         creator.clear();

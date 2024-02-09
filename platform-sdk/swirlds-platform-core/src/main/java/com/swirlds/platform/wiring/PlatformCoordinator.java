@@ -138,13 +138,13 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
 
-        // Phase 4: stop squelching
+        // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         linkedEventIntakeWiring.stopSquelchingRunnable().run();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
 
-        // Phase 3: clear
+        // Phase 4: clear
         // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
