@@ -47,13 +47,13 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     }
 
     /**
-     * Expire events in {@link Shadowgraph} based on the new event window
+     * Expire events in {@link Shadowgraph} based on the new minimum round generation
      *
      * @param consensusRound a new consensus round
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        shadowGraph.updateEventWindow(consensusRound.getNonAncientEventWindow());
+        shadowGraph.updateNonExpiredEventWindow(consensusRound.getNonAncientEventWindow());
     }
 
     /**

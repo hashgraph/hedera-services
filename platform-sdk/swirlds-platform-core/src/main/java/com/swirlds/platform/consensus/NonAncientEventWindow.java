@@ -117,20 +117,11 @@ public class NonAncientEventWindow {
     }
 
     /**
-     * The round that has come to consensus most recently.
-     *
-     * @return the latest round that has come to consensus
-     */
-    public long getLatestConsensusRound() {
-        return latestConsensusRound;
-    }
-
-    /**
      * The round that will come to consensus next.
      *
      * @return the pending round coming to consensus, i.e. 1  + the latestConsensusRound
      */
-    public long getPendingConsensusRound() {
+    public long pendingConsensusRound() {
         return latestConsensusRound + 1;
     }
 
