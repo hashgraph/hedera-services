@@ -20,6 +20,7 @@ import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTr
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -38,14 +39,20 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
+    private final BlockRecordManager blockRecordManager;
+    private final boolean isFirstTransaction;
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder) {
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final BlockRecordManager blockRecordManager,
+            final boolean isFirstTransaction) {
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         requireNonNull(stack, "stack must not be null");
+        this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
+        this.isFirstTransaction = isFirstTransaction;
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
@@ -117,5 +124,15 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
         return recordBuilderClass.cast(recordBuilder);
+    }
+
+    @Override
+    public boolean isFirstTransaction() {
+        return isFirstTransaction;
+    }
+
+    @Override
+    public void markMigrationRecordsStreamed() {
+        blockRecordManager.markMigrationRecordsStreamed();
     }
 }

@@ -31,6 +31,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -243,6 +244,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(event.getCreatorId()).thenReturn(nodeSelfId);
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
         when(platformTxn.getMetadata()).thenReturn(OK_RESULT);
+        lenient().when(blockRecordManager.consTimeOfLastHandledTxn()).thenReturn(CONSENSUS_NOW.minusSeconds(1));
 
         when(serviceLookup.getServiceName(any())).thenReturn(TokenService.NAME);
 
@@ -1446,6 +1448,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, platformState, round);
+        verify(blockRecordManager).consTimeOfLastHandledTxn();
         verify(genesisRecordsTimeHook).process(notNull());
         verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }

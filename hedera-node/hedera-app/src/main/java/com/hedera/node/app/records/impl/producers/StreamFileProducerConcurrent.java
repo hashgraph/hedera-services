@@ -166,8 +166,7 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
 
             if (currentRecordFileWriter == null) {
                 // We are at the start of a new block and there is no old one to close or wait for. So just create a new
-                // one
-                // which creates a new file and writes initializes it in the background
+                // one which creates a new file and writes initializes it in the background
                 currentRecordFileWriter = lastRecordHashingResult.thenApply(lastRunningHash -> createBlockRecordWriter(
                         lastRunningHash, newBlockFirstTransactionConsensusTime, newBlockNumber));
             } else {

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import com.hedera.services.stream.proto.RecordStreamFile;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public interface RecordStreamValidator {
@@ -25,6 +26,11 @@ public interface RecordStreamValidator {
     }
 
     default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
+        // No-op
+    }
+
+    default void validateRecordsAndSidecarsHapi(HapiTestEnv env, List<RecordWithSidecars> records)
+            throws InvocationTargetException, IllegalAccessException {
         // No-op
     }
 }
