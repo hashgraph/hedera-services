@@ -289,6 +289,11 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
+        // user transaction
+        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
+        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
+
         // Setup record builder list
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
@@ -300,7 +305,8 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext =
+                new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
         // It's awful that we have to check this every time a transaction is handled, especially since this mostly
         // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
