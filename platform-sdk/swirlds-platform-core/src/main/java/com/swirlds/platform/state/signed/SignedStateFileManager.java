@@ -208,20 +208,18 @@ public class SignedStateFileManager {
         final long totalWeight2 = reservedState.getAddressBook().getTotalWeight();
         logger.error(
                 EXCEPTION.getMarker(),
-                new InsufficientSignaturesPayload((
-                        "State written to disk for round %d did not have enough signatures. "
+                new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
                                 + "This log adds debug information for #11422."
                                 + "Pre-check wight: %d/%d   Post-check wight: %d/%d"
-                                + "Pre-check threshold: %s   Post-check threshold: %s"
-                ).formatted(
-                        reservedState.getRound(),
-                        signingWeight1,
-                        totalWeight1,
-                        signingWeight2,
-                        totalWeight2,
-                        Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
-                        Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)
-                )));
+                                + "Pre-check threshold: %s   Post-check threshold: %s")
+                        .formatted(
+                                reservedState.getRound(),
+                                signingWeight1,
+                                totalWeight1,
+                                signingWeight2,
+                                totalWeight2,
+                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
+                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2))));
     }
 
     /**
