@@ -528,18 +528,6 @@ public class HandleWorkflow {
                     }
                     recordBuilder.status(SUCCESS);
 
-                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
-                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
-                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-                        if (contractsConfig.throttleThrottleByGas()) {
-                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-                            final var gasLimitForContractTx =
-                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
-                            final var excessAmount = gasLimitForContractTx - gasUsed;
-                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-                        }
-                    }
-
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
@@ -575,6 +563,21 @@ public class HandleWorkflow {
                             e,
                             chargeException);
                 }
+            }
+        }
+
+        // After a contract operation was handled (i.e., not throttled), update the
+        // gas throttle by leaking any unused gas
+        if (isGasThrottled(transactionInfo.functionality())
+                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                && recordBuilder.hasContractResult()) {
+            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+            if (contractsConfig.throttleThrottleByGas()) {
+                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                final var gasLimitForContractTx =
+                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                final var excessAmount = gasLimitForContractTx - gasUsed;
+                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
             }
         }
 
