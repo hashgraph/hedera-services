@@ -225,7 +225,7 @@ class StateManagementComponentTests {
                 signer,
                 ss -> {},
                 new SignedStateMetrics(new NoOpMetrics()),
-                (reservedSignedState -> {}));
+                x -> true);
 
         dispatchBuilder.start();
 
