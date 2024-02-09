@@ -549,6 +549,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
+
+        // Since there is asynchronous access to the shadowgraph, it's important to ensure that
+        // it has fully ingested the new event window before continuing.
+        shadowgraphWiring.flushRunnable().run();
     }
 
     /**
