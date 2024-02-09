@@ -38,7 +38,7 @@ public class ReconnectHalfMillionNodesBench extends VirtualMapReconnectBenchBase
                 new Random(9823452658L),
                 500_000,
                 0.15,
-                .15,
+                0.15,
                 testTeacherMap::put,
                 testLearnerMap::put
         );
