@@ -215,6 +215,7 @@ testing {
                 testTask {
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "8g"
+                    jvmArgs("-XX:ActiveProcessorCount=6")
                 }
             }
         }
