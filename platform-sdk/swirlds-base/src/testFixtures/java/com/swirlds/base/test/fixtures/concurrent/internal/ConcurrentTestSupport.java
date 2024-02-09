@@ -44,14 +44,6 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     private static final String NAME_PREFIX = ConcurrentTestSupport.class.getSimpleName();
     private static final AtomicInteger ID = new AtomicInteger(0);
 
-    /**
-     * It is intended for all tests utilizing {@code ConcurrentTestSupport} to execute sequentially. A potential
-     * drawback is that tests may spend a significant portion of execution time waiting to acquire this lock. In tests
-     * with external configurations tracking elapsed time and timeout values, this waiting time is accounted for as test
-     * time.
-     */
-    private static final Object LOCK = new Object();
-
     private final Duration maxWaitTime;
     private final ExecutorService executorService;
 
@@ -84,15 +76,13 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
      */
     public void executeAndWait(@NonNull final Collection<Runnable> runnables) {
         Objects.requireNonNull(runnables, "runnables must not be null");
-        synchronized (LOCK) {
-            try {
-                CompletableFuture.allOf(runnables.stream()
-                                .map(r -> CompletableFuture.runAsync(r, executorService))
-                                .toArray(CompletableFuture[]::new))
-                        .get(maxWaitTime.toMillis(), MILLISECONDS);
-            } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                throw new RuntimeException(e.getClass().getSimpleName() + " in submitAndWait", e);
-            }
+        try {
+            CompletableFuture.allOf(runnables.stream()
+                            .map(r -> CompletableFuture.runAsync(r, executorService))
+                            .toArray(CompletableFuture[]::new))
+                    .get(maxWaitTime.toMillis(), MILLISECONDS);
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e.getClass().getSimpleName() + " in submitAndWait", e);
         }
     }
 
