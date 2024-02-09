@@ -16,6 +16,7 @@
 
 package com.swirlds.merkle.test.map.benchmark;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @DisplayName("MerkleMap Benchmark")
+@Tag(TIMING_SENSITIVE)
 class MerkleMapBenchmark {
 
     private static final Random random = new Random();
