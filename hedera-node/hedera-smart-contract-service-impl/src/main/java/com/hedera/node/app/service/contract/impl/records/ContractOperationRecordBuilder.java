@@ -81,7 +81,4 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
     @NonNull
     ContractOperationRecordBuilder addContractStateChanges(
             @NonNull ContractStateChanges contractStateChanges, boolean isMigration);
-
-    @NonNull
-    ContractOperationRecordBuilder signerNonce(@NonNull Long nonce);
 }

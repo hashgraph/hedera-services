@@ -161,9 +161,6 @@ public class SingleTransactionRecordBuilderImpl
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
 
-    @Nullable
-    private Long signerNonce = null;
-
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
     private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
@@ -1155,11 +1152,6 @@ public class SingleTransactionRecordBuilderImpl
 
     public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
         transactionRecordBuilder.transactionFee(transactionFee + amount);
-        return this;
-    }
-
-    public SingleTransactionRecordBuilderImpl signerNonce(@NonNull Long nonce) {
-        this.signerNonce = nonce;
         return this;
     }
 }
