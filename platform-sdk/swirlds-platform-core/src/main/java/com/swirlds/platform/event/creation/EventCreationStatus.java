@@ -47,7 +47,7 @@ public enum EventCreationStatus {
      */
     OVERLOADED,
     /**
-     * Event creation has been paused by a controlling workflow (or it has not yet been started).
+     * Event creation has not yet been started.
      */
-    PAUSED
+    IDLE
 }

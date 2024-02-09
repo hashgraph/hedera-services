@@ -22,6 +22,8 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,11 +77,13 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 // https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
+    private static final MerkleDbConfig CONFIG = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
 
     /** Max number of file channels to use for reading */
-    protected static final int MAX_FILE_CHANNELS = 8;
+    protected static final int MAX_FILE_CHANNELS = CONFIG.maxFileChannelsPerFileReader();
     /**
      * When a data file reader is created, a single file channel is open to read data from the
      * file. This channel is used by all threads. Number of threads currently reading data is
@@ -87,7 +91,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
      * channels are already opened.
      */
-    protected static final int THREADS_PER_FILECHANNEL = 8;
+    protected static final int THREADS_PER_FILECHANNEL = CONFIG.maxThreadsPerFileChannel();
     /**
      * A single data file reader may use multiple file channels. Previously, a single file channel
      * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
