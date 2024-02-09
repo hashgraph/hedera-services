@@ -549,7 +549,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals("info-error", event1.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event1.throwable().getClass());
         Assertions.assertTrue(event1.timestamp() > startTime);
-        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event1.timestamp() <= System.currentTimeMillis());
 
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("info-message2 ARG2", event2.message().getMessage());
@@ -562,7 +562,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals("info-error2", event2.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event2.throwable().getClass());
         Assertions.assertTrue(event1.timestamp() > startTime);
-        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event1.timestamp() <= System.currentTimeMillis());
 
         Assertions.assertTrue(event1.timestamp() <= event2.timestamp());
     }
