@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package com.swirlds.demo.merkle.map;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.demo.platform.TestUtil.deleteFirstRecord;
 import static com.swirlds.demo.platform.TestUtil.generateRandomContent;
 import static com.swirlds.demo.platform.TestUtil.generateTxRecord;
 import static com.swirlds.demo.platform.TestUtil.getExpirationTime;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,10 +36,10 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -87,7 +87,7 @@ public class MapValueFCQTests {
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);
         when(platform.getAddressBook()).thenReturn(addressBook);
-        state.init(platform, new DualStateImpl(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
+        state.init(platform, new PlatformState(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
 

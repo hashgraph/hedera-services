@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -35,11 +37,15 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
     private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     public CustomExtCodeSizeOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            @NonNull final FeatureFlags featureFlags) {
         super(Objects.requireNonNull(gasCalculator));
         this.addressChecks = Objects.requireNonNull(addressChecks);
+        this.featureFlags = featureFlags;
     }
 
     @Override
@@ -52,7 +58,7 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }
-            if (!addressChecks.isPresent(address, frame)) {
+            if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                                     .withRecharging()
                                     .rechargeWindow(3)
                                     .key(DEFAULT_PAYER)
-                                    .payingWith(DEFAULT_PAYER)
+                                    .payingWith(GENESIS)
                                     .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
                                     .via("txn")
                                     .ensuringResolvedStatusIsntFromDuplicate();
@@ -120,6 +120,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                         try {
                             var payerAccountInfo = getAccountInfo("payerAccount")
                                     .savingSnapshot("payerAccountInfo")
+                                    .payingWith(GENESIS)
                                     .logged();
                             allRunFor(spec, payerAccountInfo);
                             gotPayerInfo = true;

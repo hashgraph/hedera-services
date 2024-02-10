@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -237,6 +238,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     public String getPrivateKeyRef() {
         return privateKeyRef;
+    }
+
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissibleStatuses() {
+        return permissibleStatuses;
+    }
+
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissiblePrechecks() {
+        return permissiblePrechecks;
     }
 
     public boolean getDeferStatusResolution() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link EventHasher}.
  *
- * @param eventInput    the input wire for events to be hashed
- * @param eventOutput   the output wire for hashed events
- * @param flushRunnable the runnable to flush the hasher
+ * @param eventInput  the input wire for events to be hashed
+ * @param eventOutput the output wire for hashed events
  */
 public record EventHasherWiring(
-        @NonNull InputWire<GossipEvent> eventInput,
-        @NonNull OutputWire<GossipEvent> eventOutput,
-        @NonNull Runnable flushRunnable) {
+        @NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
     /**
      * Create a new instance of this wiring.
      *
@@ -42,8 +39,7 @@ public record EventHasherWiring(
      * @return the new wiring instance
      */
     public static EventHasherWiring create(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
-        return new EventHasherWiring(
-                taskScheduler.buildInputWire("events to hash"), taskScheduler.getOutputWire(), taskScheduler::flush);
+        return new EventHasherWiring(taskScheduler.buildInputWire("events to hash"), taskScheduler.getOutputWire());
     }
 
     /**

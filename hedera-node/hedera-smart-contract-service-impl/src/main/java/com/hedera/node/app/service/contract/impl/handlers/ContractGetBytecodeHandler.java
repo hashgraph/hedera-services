@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.ContractGetBytecodeResponse;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -103,9 +102,8 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
         var contractNumber = contract.accountId().accountNum();
-        var contractEntityNumber =
-                EntityNumber.newBuilder().number(contractNumber).build();
-        final var bytecode = store.getBytecode(contractEntityNumber);
+        var contractId = ContractID.newBuilder().contractNum(contractNumber).build();
+        final var bytecode = store.getBytecode(contractId);
         return bytecode.code();
     }
 

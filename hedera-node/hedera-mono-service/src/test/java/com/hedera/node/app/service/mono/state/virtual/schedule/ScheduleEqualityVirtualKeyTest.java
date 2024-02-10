@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,22 +73,27 @@ class ScheduleEqualityVirtualKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        final ByteBuffer verify = ByteBuffer.allocate(Long.BYTES);
+
+        verify.putLong(longKey);
+        verify.rewind();
 
         subject.serialize(buffer);
+        buffer.rewind();
 
-        verify(buffer).putLong(longKey);
+        assertEquals(buffer, verify);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.getLong()).willReturn(longKey);
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(longKey);
+        buffer.rewind();
 
         ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey();
 
-        key.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -118,7 +123,7 @@ class ScheduleEqualityVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new ScheduleEqualityVirtualKey();
-            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -152,7 +157,7 @@ class ScheduleEqualityVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new ScheduleEqualityVirtualKey();
-            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

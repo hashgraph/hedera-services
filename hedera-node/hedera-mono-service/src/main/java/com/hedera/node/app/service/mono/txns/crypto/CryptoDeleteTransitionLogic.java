@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -57,13 +59,21 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
     private final HederaLedger ledger;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
+    private final AliasManager aliasManager;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
     @Inject
     public CryptoDeleteTransitionLogic(
-            final HederaLedger ledger, final SigImpactHistorian sigImpactHistorian, final TransactionContext txnCtx) {
+            final HederaLedger ledger,
+            final SigImpactHistorian sigImpactHistorian,
+            final TransactionContext txnCtx,
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties globalDynamicProperties) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;
+        this.aliasManager = aliasManager;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -88,6 +98,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
             }
 
             ledger.delete(id, beneficiary);
+            if (globalDynamicProperties.releaseAliasAfterDeletion()) {
+                releaseAliasAfterDeletion(id);
+            }
             sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
             txnCtx.recordBeneficiaryOfDeleted(id.getAccountNum(), beneficiary.getAccountNum());
@@ -99,6 +112,15 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
         } catch (Exception e) {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
+        }
+    }
+
+    private void releaseAliasAfterDeletion(AccountID id) {
+        final var aliasIfAny = ledger.alias(id);
+        if (!aliasIfAny.isEmpty()) {
+            ledger.clearAlias(id);
+            aliasManager.unlink(aliasIfAny);
+            sigImpactHistorian.markAliasChanged(aliasIfAny);
         }
     }
 

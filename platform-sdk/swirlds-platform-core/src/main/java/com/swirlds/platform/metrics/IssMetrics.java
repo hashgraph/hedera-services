@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,11 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
-import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -118,10 +113,10 @@ public class IssMetrics {
         Objects.requireNonNull(metrics, "metrics must not be null");
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
 
-        issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(INTERNAL_CATEGORY, "issCount")
+        issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(Metrics.INTERNAL_CATEGORY, "issCount")
                 .withDescription("the number of nodes that currently disagree with the consensus hash"));
 
-        issWeightGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issWeight")
+        issWeightGage = metrics.getOrCreate(new LongGauge.Config(Metrics.INTERNAL_CATEGORY, "issWeight")
                 .withDescription("the amount of weight tied up by ISS events"));
 
         for (final Address address : addressBook) {
@@ -155,7 +150,6 @@ public class IssMetrics {
      * @param consensusHash
      * 		the consensus hash computed by the network
      */
-    @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
             @NonNull final NodeId nodeId,
@@ -201,12 +195,8 @@ public class IssMetrics {
      *
      * @param round
      * 		the round of the ISS
-     * @param selfStateHash
-     * 		the hash computed by this node
      */
-    @Observer(CatastrophicIssTrigger.class)
-    public void catastrophicIssObserver(final Long round, final Hash selfStateHash) {
-
+    public void catastrophicIssObserver(final long round) {
         if (round <= highestRound) {
             // Don't report old data
             return;

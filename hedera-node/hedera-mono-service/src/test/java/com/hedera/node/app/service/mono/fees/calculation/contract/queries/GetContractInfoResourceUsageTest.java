@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,9 @@ class GetContractInfoResourceUsageTest {
 
         view = mock(StateView.class);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerContractInfo);
-        given(view.infoForContract(target, aliasManager, rewardCalculator)).willReturn(Optional.of(info));
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
+        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator, true))
+                .willReturn(Optional.of(info));
 
         estimator = mock(ContractGetInfoUsage.class);
         mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -142,7 +144,8 @@ class GetContractInfoResourceUsageTest {
     @Test
     void onlySetsContractInfoInQueryCxtIfFound() {
         final var queryCtx = new HashMap<String, Object>();
-        given(view.infoForContract(target, aliasManager, rewardCalculator)).willReturn(Optional.empty());
+        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator, true))
+                .willReturn(Optional.empty());
 
         final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ testModuleInfo {
 jmhModuleInfo {
     annotationProcessor("dagger.compiler")
     requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.service.mono.test.fixtures")
     requires("com.hedera.node.app.spi")
     requires("com.hedera.node.hapi")
     requires("com.github.spotbugs.annotations")
@@ -63,6 +64,7 @@ jmhModuleInfo {
     requires("org.apache.commons.lang3")
     requires("org.hyperledger.besu.datatypes")
     requires("org.hyperledger.besu.evm")
+    requires("org.mockito")
     requires("tuweni.bytes")
     requires("tuweni.units")
 }

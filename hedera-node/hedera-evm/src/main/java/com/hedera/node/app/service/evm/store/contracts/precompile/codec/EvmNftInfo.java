@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,14 @@ public class EvmNftInfo {
     private Address spender;
     private byte[] ledgerId;
 
-    public EvmNftInfo() {}
+    public EvmNftInfo() {
+        this.serialNumber = 0L;
+        this.account = Address.ZERO;
+        this.creationTime = 0;
+        this.metadata = new byte[0];
+        this.spender = Address.ZERO;
+        this.ledgerId = new byte[0];
+    }
 
     public EvmNftInfo(
             long serialNumber,

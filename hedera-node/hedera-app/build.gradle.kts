@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ testModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.google.jimfs")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("io.github.classgraph")
     requires("org.assertj.core")
     requires("org.hamcrest")
@@ -60,6 +60,7 @@ itestModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
+    requires("com.swirlds.metrics.api")
     requires("grpc.netty")
     requires("grpc.stub")
     requires("io.grpc")
@@ -80,6 +81,7 @@ xtestModuleInfo {
     requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.hedera.node.app.service.contract.impl")
+    requires("com.hedera.node.app.service.file")
     requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.mono")
     requires("com.hedera.node.app.service.network.admin.impl")
@@ -96,7 +98,8 @@ xtestModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.metrics.api")
     requires("dagger")
     requires("headlong")
     requires("javax.inject")
@@ -115,6 +118,7 @@ jmhModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.service.mono")
     requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")

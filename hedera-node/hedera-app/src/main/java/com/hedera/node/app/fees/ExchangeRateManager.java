@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.RatesConfig;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.stream.LongStream;
@@ -81,7 +81,7 @@ public final class ExchangeRateManager {
         requireNonNull(bytes, "bytes must not be null");
 
         // First we try to read midnightRates from state
-        midnightRates = state.createReadableStates(FeeService.NAME)
+        midnightRates = state.getReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY)
                 .get();
         if (midnightRates != ExchangeRateSet.DEFAULT) {
@@ -93,10 +93,9 @@ public final class ExchangeRateManager {
         // If midnightRates were not found in state, we initialize them from the file
         try {
             midnightRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (IOException e) {
+        } catch (ParseException e) {
             // an error here is fatal and needs to be handled by the general initialization code
-            throw new UncheckedIOException(
-                    "An exception occurred while parsing the midnightRates during initialization", e);
+            throw new UncheckedParseException(e);
         }
         this.currentExchangeRateInfo = new ExchangeRateInfoImpl(midnightRates);
     }
@@ -123,7 +122,7 @@ public final class ExchangeRateManager {
         final ExchangeRateSet proposedRates;
         try {
             proposedRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (final IOException e) {
+        } catch (final ParseException e) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
 
@@ -170,7 +169,7 @@ public final class ExchangeRateManager {
 
     public void updateMidnightRates(@NonNull final HederaState state) {
         midnightRates = currentExchangeRateInfo.exchangeRates();
-        final var singleton = state.createWritableStates(FeeService.NAME)
+        final var singleton = state.getWritableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY);
         singleton.put(midnightRates);
     }
@@ -221,7 +220,7 @@ public final class ExchangeRateManager {
         final ExchangeRateSet exchangeRates;
         try {
             exchangeRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (IOException e) {
+        } catch (ParseException e) {
             // This should never happen
             throw new IllegalStateException(e);
         }

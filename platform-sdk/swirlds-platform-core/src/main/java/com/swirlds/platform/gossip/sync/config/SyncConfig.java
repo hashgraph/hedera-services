@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,6 @@ import java.time.Duration;
  *                                        {@link #syncProtocolPermitCount()}.
  * @param syncProtocolHeartbeatPeriod     the period at which the heartbeat protocol runs when the sync algorithm is
  *                                        active (milliseconds)
- * @param hashOnGossipThreads             if true, hash events on gossip threads. If false, events are hashed on the
- *                                        event intake thread.
  * @param filterLikelyDuplicates          if true then do not send events that are likely to be duplicates when they are
  *                                        received by the peer
  * @param nonAncestorFilterThreshold      ignored if {@link #filterLikelyDuplicates} is false. For each event that is
@@ -48,11 +46,10 @@ import java.time.Duration;
 public record SyncConfig(
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
-        @ConfigProperty(defaultValue = "false") boolean onePermitPerPeer,
+        @ConfigProperty(defaultValue = "true") boolean onePermitPerPeer,
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
-        @ConfigProperty(defaultValue = "false") boolean filterLikelyDuplicates,
+        @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
         @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}

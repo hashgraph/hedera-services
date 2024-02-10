@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.STAT_C
 
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

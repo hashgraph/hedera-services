@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.MetricConfig;
 
 /**
  * A no-op implementation of an integer accumulator.

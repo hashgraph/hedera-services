@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,24 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.ReconnectMetrics;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
@@ -73,18 +69,13 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.function.LongSupplier;
 
 /**
  * Boilerplate code for gossip.
  */
 public abstract class AbstractGossip implements ConnectionTracker, Gossip {
-
-    private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
-
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     protected final PlatformContext platformContext;
@@ -92,7 +83,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final NodeId selfId;
     protected final NetworkTopology topology;
     protected final NetworkMetrics networkMetrics;
-    protected final SyncMetrics syncMetrics;
     protected final ReconnectHelper reconnectHelper;
     protected final StaticConnectionManagers connectionManagers;
     protected final FallenBehindManagerImpl fallenBehindManager;
@@ -108,11 +98,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
     /**
-     * the number of active connections this node has to other nodes
-     */
-    private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
-
-    /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
@@ -122,10 +107,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param intakeQueue                   the event intake queue
+     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -138,10 +122,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
-            @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
@@ -150,7 +133,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.syncMetrics = Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(time);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
@@ -196,7 +178,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         syncManager = new SyncManagerImpl(
                 platformContext,
-                intakeQueue,
+                intakeQueueSizeSupplier,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
 
@@ -311,8 +293,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     @Override
     public void newConnectionOpened(@NonNull final Connection sc) {
         Objects.requireNonNull(sc);
-
-        activeConnectionNumber.getAndIncrement();
         networkMetrics.connectionEstablished(sc);
     }
 
@@ -322,21 +302,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     @Override
     public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
         Objects.requireNonNull(conn);
-
-        final int connectionNumber = activeConnectionNumber.decrementAndGet();
-        if (connectionNumber < 0) {
-            logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
-        }
-
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int activeConnectionNumber() {
-        return activeConnectionNumber.get();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.creation;
 
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,11 +34,11 @@ public interface EventCreator {
     void registerEvent(@NonNull GossipEvent event);
 
     /**
-     * Update the minimum generation non-ancient.
+     * Update the non-ancient event window.
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the new non-ancient event window
      */
-    void setMinimumGenerationNonAncient(long minimumGenerationNonAncient);
+    void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow);
 
     /**
      * Create a new event if it is legal to do so. The only time this should not create an event is if there are no

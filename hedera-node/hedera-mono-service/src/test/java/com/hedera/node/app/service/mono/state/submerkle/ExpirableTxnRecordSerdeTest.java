@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecor
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0340_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0470_VERSION;
 
 import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
@@ -69,6 +70,14 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
         }
         if (version < RELEASE_0340_VERSION) {
             seeded.clearEvmAddress();
+        }
+        if (version < RELEASE_0470_VERSION) {
+            if (seeded.getContractCallResult() != null) {
+                seeded.getContractCallResult().setSignerNonce(null);
+            }
+            if (seeded.getContractCreateResult() != null) {
+                seeded.getContractCreateResult().setSignerNonce(null);
+            }
         }
         return seeded;
     }

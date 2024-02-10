@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ class Version030FeatureFlagsTest {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertFalse(subject.isImplicitCreationEnabled(frame));
+        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(config, null));
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,17 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Contains configuration values for the platform schedulers.
  *
+ * @param defaultPoolMultiplier                             used when calculating the size of the default platform fork
+ *                                                          join pool. Maximum parallelism in this pool is calculated as
+ *                                                          max(1, (defaultPoolMultipler * [number of processors] +
+ *                                                          defaultPoolConstant)).
+ * @param defaultPoolConstant                               used when calculating the size of the default platform fork
+ *                                                          join pool. Maximum parallelism in this pool is calculated as
+ *                                                          max(1, (defaultPoolMultipler * [number of processors] +
+ *                                                          defaultPoolConstant)). It is legal for this constant to be a
+ *                                                          negative number.
+ * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
+ *                                                          scheduler
  * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
  * @param internalEventValidatorUnhandledCapacity           number of unhandled events allowed in the internal event
  *                                                          validator scheduler
@@ -50,15 +61,37 @@ import com.swirlds.config.api.ConfigProperty;
  * @param stateSignerSchedulerType                          the state signer scheduler type
  * @param stateSignerUnhandledCapacity                      number of unhandled tasks allowed in the state signer
  *                                                          scheduler, default is -1 (unlimited)
+ * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
+ * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
+ *                                                          writer scheduler
+ * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
+ * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
+ *                                                          sequencer scheduler
+ * @param eventDurabilityNexusSchedulerType                 the durability nexus scheduler type
+ * @param eventDurabilityNexusUnhandledTaskCapacity         number of unhandled tasks allowed in the durability nexus
+ *                                                          scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
  *                                                          transaction prehandler
  * @param stateSignatureCollectorSchedulerType              the state signature collector scheduler type
  * @param stateSignatureCollectorUnhandledCapacity          number of unhandled tasks allowed for the state signature
  *                                                          collector
+ * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
+ * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
+ * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
+ * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
+ *                                                          handler
+ * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
+ * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
+ *                                                          buffer
+ * @param issDetectorSchedulerType                          the ISS detector scheduler type
+ * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
+        @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
+        @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
+        @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
@@ -69,7 +102,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int orphanBufferUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType linkedEventIntakeSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType linkedEventIntakeSchedulerType,
         @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
@@ -77,7 +110,21 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
+        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
+        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
+        @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
+        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
+        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
+        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
+        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity) {}

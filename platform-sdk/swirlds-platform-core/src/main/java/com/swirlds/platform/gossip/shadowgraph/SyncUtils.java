@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -29,6 +29,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -38,6 +39,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -385,7 +388,7 @@ public final class SyncUtils {
      */
     @Nullable
     private static ShadowEvent getLatestSelfEventInShadowgraph(
-            @NonNull final ShadowGraph shadowGraph, @NonNull final NodeId selfId) {
+            @NonNull final Shadowgraph shadowGraph, @NonNull final NodeId selfId) {
 
         final List<ShadowEvent> tips = shadowGraph.getTips();
         for (final ShadowEvent tip : tips) {
@@ -407,60 +410,71 @@ public final class SyncUtils {
      * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
      * </ul>
      *
-     * @param shadowGraph          the shadow graph
      * @param selfId               the id of this node
      * @param nonAncestorThreshold for each event that is not a self event and is not an ancestor of a self event, the
      *                             amount of time the event must be known about before it is eligible to be sent
      * @param now                  the current time
-     * @param eventsTheyNeed       the list of events we think they need
+     * @param eventsTheyNeed       the list of events we think they need, expected to be in topological order
      * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
     public static List<EventImpl> filterLikelyDuplicates(
-            @NonNull final ShadowGraph shadowGraph,
             @NonNull final NodeId selfId,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
             @NonNull final List<EventImpl> eventsTheyNeed) {
 
-        final ShadowEvent latestSelfEvent = getLatestSelfEventInShadowgraph(shadowGraph, selfId);
+        final LinkedList<EventImpl> filteredList = new LinkedList<>();
 
-        final Set<ShadowEvent> selfEventAncestors;
-        if (latestSelfEvent == null) {
-            selfEventAncestors = Set.of();
-        } else {
-            final List<ShadowEvent> listOfLatestSelfEvent = List.of(latestSelfEvent);
-            selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
-        }
+        final Set<Hash> parentHashesOfEventsToSend = new HashSet<>();
 
-        // Convert to a list of hashes for easy lookup.
-        final List<Hash> selfEventAncestorHashes =
-                selfEventAncestors.stream().map(ShadowEvent::getEventBaseHash).toList();
+        // Iterate backwards over the events the peer needs, which are in topological order. This allows us to
+        // find all ancestors of events we plan on sending, and to send those as well. Events are added to the
+        // filtered list in reverse order, resulting in a list that is in topological order.
 
-        final List<EventImpl> filteredList = new ArrayList<>();
+        for (int index = eventsTheyNeed.size() - 1; index >= 0; index--) {
+            final EventImpl event = eventsTheyNeed.get(index);
 
-        for (final EventImpl event : eventsTheyNeed) {
-            if (event.getCreatorId().equals(selfId)) {
-                // Always send self events right away.
-                filteredList.add(event);
-                continue;
+            final boolean sendEvent =
+                    // Always send self events
+                    event.getCreatorId().equals(selfId)
+                            ||
+                            // Always send parents of other events we plan to send
+                            parentHashesOfEventsToSend.contains(event.getBaseHash())
+                            ||
+                            // Send all other events if we've known about it for long enough
+                            haveWeKnownAboutEventForALongTime(event, nonAncestorThreshold, now);
+
+            if (sendEvent) {
+                // If we've decided to send an event, we also want to send its parents if those parents are needed
+                // by the peer.
+                filteredList.addFirst(event);
+                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
+                if (selfParentHash != null) {
+                    parentHashesOfEventsToSend.add(selfParentHash);
+                }
+                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+                    parentHashesOfEventsToSend.add(otherParent.getHash());
+                }
             }
-
-            final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
-            final Duration timeKnown = Duration.between(eventReceivedTime, now);
-
-            final boolean isAncestor = selfEventAncestorHashes.contains(event.getBaseHash());
-
-            if (isAncestor || CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
-                // Always send ancestors of self events right away.
-                // For all other events, only send it if we've known about it for long enough.
-                filteredList.add(event);
-            }
-
-            // We won't send this event now, but we might do so at a future time if needed.
         }
 
         return filteredList;
+    }
+
+    /**
+     * Decide if we've known about an event for long enough to make it eligible to be sent.
+     *
+     * @param event                the event to check
+     * @param nonAncestorThreshold the amount of time the event must be known about before it is eligible to be sent
+     * @param now                  the current time
+     * @return true if we've known about the event for long enough, false otherwise
+     */
+    private static boolean haveWeKnownAboutEventForALongTime(
+            @NonNull final EventImpl event, @NonNull final Duration nonAncestorThreshold, @NonNull final Instant now) {
+        final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
+        final Duration timeKnown = Duration.between(eventReceivedTime, now);
+        return isGreaterThan(timeKnown, nonAncestorThreshold);
     }
 
     /**

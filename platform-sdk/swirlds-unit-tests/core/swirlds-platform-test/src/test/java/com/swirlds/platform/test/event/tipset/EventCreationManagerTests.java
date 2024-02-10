@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -174,73 +174,5 @@ class EventCreationManagerTests {
             assertNull(manager.maybeCreateEvent());
             assertEquals(3, eventWasCreatedCount.get());
         }
-    }
-
-    @Test
-    @DisplayName("Paused Halts Creation Test")
-    void pauseHaltsCreationTest() {
-        final EventCreator creator = mock(EventCreator.class);
-        final List<GossipEvent> eventsToCreate =
-                List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
-        when(creator.maybeCreateEvent())
-                .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
-
-        final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final EventCreationRule rule = new EventCreationRule() {
-            @Override
-            public boolean isEventCreationPermitted() {
-                return true;
-            }
-
-            @Override
-            public void eventWasCreated() {
-                eventWasCreatedCount.getAndIncrement();
-            }
-
-            @NonNull
-            @Override
-            public EventCreationStatus getEventCreationStatus() {
-                return RATE_LIMITED;
-            }
-        };
-
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
-
-        assertEquals(0, eventWasCreatedCount.get());
-
-        // We are unpaused, so we can create events.
-        final GossipEvent e0 = manager.maybeCreateEvent();
-        assertEquals(1, eventWasCreatedCount.get());
-        assertSame(eventsToCreate.get(0), e0);
-
-        // While paused we should not be able to create events.
-        manager.setPauseStatus(true);
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(1, eventWasCreatedCount.get());
-        }
-
-        // Once unpaused we should be able to create events again.
-        manager.setPauseStatus(false);
-        final GossipEvent e1 = manager.maybeCreateEvent();
-        assertEquals(2, eventWasCreatedCount.get());
-        assertSame(eventsToCreate.get(1), e1);
-
-        // While paused we should not be able to create events.
-        manager.setPauseStatus(true);
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(2, eventWasCreatedCount.get());
-        }
-
-        // Once unpaused we should be able to create events again.
-        manager.setPauseStatus(false);
-        final GossipEvent e2 = manager.maybeCreateEvent();
-        assertEquals(3, eventWasCreatedCount.get());
-        assertSame(eventsToCreate.get(2), e2);
     }
 }

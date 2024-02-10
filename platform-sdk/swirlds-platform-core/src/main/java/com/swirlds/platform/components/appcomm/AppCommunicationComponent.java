@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,40 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
-import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<ReservedSignedState> asyncLatestCompleteStateQueue;
+    /** The round of the latest state provided to the application */
+    private long latestStateProvidedRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
      * The size of the queue holding tasks for
      * {@link com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer}s
@@ -100,20 +96,17 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
                         stateSavingResult.freezeState()));
     }
 
-    @Override
-    public void newLatestCompleteStateEvent(@NonNull final SignedState signedState) {
-        // the state is reserved now before it is added to the queue
+    public void newLatestCompleteStateEvent(@NonNull final ReservedSignedState reservedSignedState) {
+        // the state is reserved by the caller
         // it will be released by the notification engine after the app consumes it
         // this is done by latestCompleteStateAppNotify()
         // if the state does not make into the queue, it will be released below
-        final ReservedSignedState reservedSignedState =
-                signedState.reserve("AppCommunicationComponent newLatestCompleteStateEvent");
         final boolean success = asyncLatestCompleteStateQueue.offer(reservedSignedState);
         if (!success) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to add new latest complete state task (state round = {}) to {} because it is full",
-                    signedState.getRound(),
+                    reservedSignedState.get().getRound(),
                     asyncLatestCompleteStateQueue.getName());
             reservedSignedState.close();
         }
@@ -123,20 +116,19 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
      * Handler for {@link #asyncLatestCompleteStateQueue}
      */
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
+        if (reservedSignedState.get().getRound() <= latestStateProvidedRound) {
+            // this state is older than the latest state provided to the application, no need to notify
+            reservedSignedState.close();
+            return;
+        }
+        latestStateProvidedRound = reservedSignedState.get().getRound();
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
-                reservedSignedState.get().getState().getSwirldDualState(),
+                reservedSignedState.get().getState().getPlatformState(),
                 reservedSignedState.get().getRound(),
                 reservedSignedState.get().getConsensusTimestamp());
 
         notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
-    }
-
-    @Override
-    public void iss(
-            final long round, @NonNull final IssNotification.IssType issType, @Nullable final NodeId otherNodeId) {
-        final IssNotification notification = new IssNotification(round, issType, otherNodeId);
-        notificationEngine.dispatch(IssListener.class, notification);
     }
 
     /**

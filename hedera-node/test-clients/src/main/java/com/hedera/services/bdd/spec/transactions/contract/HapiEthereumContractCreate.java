@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private EthTxData.EthTransactionType type;
     private long nonce;
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private final BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean invalidateEthData = false;
@@ -170,6 +170,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate gasPrice(long gasPrice) {
         this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        return this;
+    }
+
+    public HapiEthereumContractCreate maxFeePerGas(long maxFeePerGas) {
+        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -39,11 +42,15 @@ public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
     private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     public CustomExtCodeHashOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            @NonNull final FeatureFlags featureFlags) {
         super(Objects.requireNonNull(gasCalculator));
         this.addressChecks = Objects.requireNonNull(addressChecks);
+        this.featureFlags = featureFlags;
     }
 
     @Override
@@ -57,7 +64,7 @@ public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
                 return new OperationResult(cost(true), null);
             }
             // Otherwise the address must be present
-            if (!addressChecks.isPresent(address, frame)) {
+            if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

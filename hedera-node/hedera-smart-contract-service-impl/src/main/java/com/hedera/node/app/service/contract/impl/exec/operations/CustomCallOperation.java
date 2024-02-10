@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
@@ -43,7 +46,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  *
  * <p><b>IMPORTANT:</b> This operation no longer enforces for receiver signature requirements
  * when value is being transferred; that will now happen in the call the {@link MessageCallProcessor}
- * makes to {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+ * makes to {@link HandleHederaNativeOperations#transferWithReceiverSigCheck(long, AccountID, AccountID, VerificationStrategy)}.
  */
 public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
@@ -66,9 +69,14 @@ public class CustomCallOperation extends CallOperation {
         try {
             final var toAddress = to(frame);
             final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return isMissing
-                    ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
-                    : super.execute(frame, evm);
+            if (isMissing) {
+                return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
+            }
+            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
+                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
+            }
+
+            return super.execute(frame, evm);
         } catch (final UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
@@ -79,13 +87,22 @@ public class CustomCallOperation extends CallOperation {
         if (impliesLazyCreation(frame, toAddress) && featureFlags.isImplicitCreationEnabled(frame)) {
             return false;
         }
-        // Let system accounts through so the message call processor can fail in a more legible way
-        return !addressChecks.isSystemAccount(toAddress);
+        // Let system accounts calls or if configured to allow calls to non-existing contract address calls
+        // go through so the message call processor can fail in a more legible way
+        return !addressChecks.isSystemAccount(toAddress) && contractRequired(frame, toAddress, featureFlags);
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
         return !isLongZero(toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isPresent(toAddress, frame);
+    }
+
+    private boolean isLazyCreateButInvalidateAlias(
+            @NonNull final MessageFrame frame, @NonNull final Address toAddress) {
+        return isLongZero(toAddress)
+                && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isSystemAccount(toAddress)
                 && !addressChecks.isPresent(toAddress, frame);
     }
 }

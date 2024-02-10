@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,43 +23,38 @@ group = "com.swirlds"
 
 tasks.checkModuleInfo { moduleNamePrefix = "com.swirlds" }
 
-javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-core") }
-
-configurations.getByName("mainRuntimeClasspath") {
-    extendsFrom(configurations.getByName("internal"))
-}
-
-// !!! Remove the following once 'test' tasks are allowed to run in parallel ===
-val allPlatformSdkProjects =
-    rootProject.subprojects
-        .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
-        .map { it.name }
-        .filter {
-            it !in
-                listOf(
-                    "swirlds",
-                    "swirlds-benchmarks",
-                    "swirlds-platform",
-                    "swirlds-sign-tool"
-                ) // these are application/benchmark projects
-        }
-        .sorted()
-val allHederaNodeCheckTasks =
-    rootProject.subprojects
-        .filter { it.projectDir.absolutePath.contains("/hedera-node/") }
-        .map { "${it.path}:check" }
-val myIndex = allPlatformSdkProjects.indexOf(name)
-
-if (myIndex > 0) {
-    val predecessorProject = allPlatformSdkProjects[myIndex - 1]
-    tasks.test {
-        mustRunAfter(":$predecessorProject:test")
-        mustRunAfter(":$predecessorProject:hammerTest")
-        mustRunAfter(allHederaNodeCheckTasks)
-    }
-    tasks.named("hammerTest") {
-        mustRunAfter(tasks.test)
-        mustRunAfter(":$predecessorProject:hammerTest")
-        mustRunAfter(allHederaNodeCheckTasks)
+// All below configuration should eventually be removed once all 'sdk' tests in 'src/test'
+// are able to run in parallel without restrictions.
+tasks.test {
+    options {
+        this as JUnitPlatformOptions
+        excludeTags("TIMING_SENSITIVE")
     }
 }
+
+val timingSensitive =
+    tasks.register<Test>("timingSensitive") {
+        // Separate target (task) for timingSensitive tests.
+        // Tests should eventually be fixed or moved to 'hammer'.
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+
+        usesService(
+            gradle.sharedServices.registerIfAbsent(
+                "lock",
+                com.hedera.hashgraph.gradlebuild.service.TaskLockService::class
+            ) {
+                maxParallelUsages = 1
+            }
+        )
+        mustRunAfter(
+            rootProject.subprojects
+                .filter { File(it.projectDir, "src/test").exists() }
+                .map { "${it.path}:test" }
+        )
+
+        useJUnitPlatform { includeTags("TIMING_SENSITIVE") }
+        maxHeapSize = "4g"
+    }
+
+tasks.check { dependsOn(timingSensitive) }

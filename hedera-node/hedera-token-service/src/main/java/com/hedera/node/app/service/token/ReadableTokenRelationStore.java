@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,4 +43,13 @@ public interface ReadableTokenRelationStore {
      * @return the number of tokens in the state.
      */
     long sizeOfState();
+
+    /**
+     * Warms the system by preloading a token relationship into memory
+     *
+     * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+     *
+     * @param accountID the account id
+     */
+    default void warm(@NonNull final AccountID accountID, @NonNull final TokenID tokenId) {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,6 +37,17 @@ public class FakeCryptoTransferRecordBuilder {
 
     public CryptoTransferRecordBuilder create() {
         return new CryptoTransferRecordBuilder() {
+            @NotNull
+            @Override
+            public TransactionBody transactionBody() {
+                return TransactionBody.DEFAULT;
+            }
+
+            @Override
+            public long transactionFee() {
+                return 0;
+            }
+
             private TransferList transferList;
             private List<TokenTransferList> tokenTransferLists;
             private List<AssessedCustomFee> assessedCustomFees;

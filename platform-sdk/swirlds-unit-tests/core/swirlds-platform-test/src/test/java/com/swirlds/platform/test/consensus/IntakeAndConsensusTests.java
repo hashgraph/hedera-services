@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConfig_;
 import com.swirlds.platform.system.address.AddressBook;
@@ -32,7 +33,6 @@ import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -76,8 +76,8 @@ class IntakeAndConsensusTests {
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
         final GeneratorWithConsensus generator = new GeneratorWithConsensus(seed, numNodes, consensusConfig);
-        final TestIntake node1 = new TestIntake(generator.getAddressBook());
-        final TestIntake node2 = new TestIntake(generator.getAddressBook());
+        final TestIntake node1 = new TestIntake(generator.getAddressBook(), consensusConfig);
+        final TestIntake node2 = new TestIntake(generator.getAddressBook(), consensusConfig);
 
         // first we generate events regularly, until we have some ancient rounds
         final int firstBatchSize = 5000;
@@ -194,7 +194,7 @@ class IntakeAndConsensusTests {
         @Override
         public IndexedEvent generateEvent() {
             final IndexedEvent event = generator.generateEvent();
-            intake.addEvent(event);
+            intake.addEvent(event.getBaseEvent());
             return event;
         }
 

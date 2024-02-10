@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package token;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import common.BaseScaffoldingComponent;
 import common.BaseScaffoldingModule;
 import dagger.BindsInstance;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,8 +49,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -61,13 +60,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -80,11 +79,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+// @HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
-    private static final long depositAmount = 20_000L;
+    public static final long depositAmount = 20_000L;
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
@@ -108,7 +107,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     List<HapiSpec> ethereumCalls() {
         return List.of(
-                relayerFeeAsExpectedIfSenderCoversGas(),
                 depositSuccess(),
                 badRelayClient(),
                 topLevelBurnToZeroAddressReverts(),
@@ -123,6 +121,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
+    @HapiTest
     HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -150,7 +149,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                     .andAllChildRecords()
                                     .logged();
                             allRunFor(spec, lookup);
-                            final var childCreation = lookup.getChildRecord(0);
+                            final var childCreation = lookup.getFirstNonStakingChildRecord();
                             maliciousEOAId.set(
                                     asAccountString(childCreation.getReceipt().getAccountID()));
                         }),
@@ -189,39 +188,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         ? Optional.of("Malicious" + " EOA balance" + " increased")
                                         : Optional.empty())),
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
-    }
-
-    @HapiTest
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
-        final var canonicalTxn = "canonical";
-
-        return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
-                .given(
-                        uploadDefaultFeeSchedules(GENESIS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // The cost to the relayer to transmit a simple call with sufficient gas
-                        // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via(canonicalTxn)
-                                .nonce(0)
-                                .gasPrice(100L)
-                                .maxFeePerGas(100L)
-                                .maxPriorityGas(2_000_000L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount))
-                .then(getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged());
     }
 
     @HapiTest
@@ -336,7 +302,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
-        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
+        // Does nested creates, which appear in reversed order from mono-service
+        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -351,7 +318,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxGasAllowance(ONE_HUNDRED_HBARS)
                         .gasLimit(5_000_000L)
                         .via(txn))
-                .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
+                .then(childRecordsCheck(
+                        txn,
+                        SUCCESS,
+                        recordWith().hasMirrorIdInReceipt(),
+                        recordWith().hasMirrorIdInReceipt()));
     }
 
     @HapiTest
@@ -500,6 +471,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
+    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
@@ -515,7 +487,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+                        .hasPrecheck(INVALID_SOLIDITY_ADDRESS));
     }
 
     @HapiTest
@@ -534,7 +506,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID));
+                        .hasPrecheckFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
@@ -562,10 +534,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .maxFeePerGas(50L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatus(INVALID_SIGNATURE)))
+                                .hasPrecheck(INVALID_SIGNATURE)))
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
+    @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
+    id("java-test-fixtures")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
@@ -25,14 +26,25 @@ mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 jmhModuleInfo { requires("jmh.core") }
 
 testModuleInfo {
-    requires("com.swirlds.common.testing")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.apache.commons.lang3")
     requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
-    runtimeOnly("org.mockito.inline")
+}
+
+hammerModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.merkledb.test.fixtures")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.virtualmap")
+    requires("org.apache.logging.log4j")
+    requires("org.apache.logging.log4j.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    runtimeOnly("com.swirlds.config.impl")
 }

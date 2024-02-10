@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
+ * A read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
  */
 @QueryScope
 public class QueryHederaOperations implements HederaOperations {
@@ -120,8 +119,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        return Optional.ofNullable(context.blockRecordInfo().getNMinus3RunningHash())
-                .orElse(ZERO_ENTROPY);
+        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
     /**
@@ -178,7 +177,8 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void chargeStorageRent(final long contractNumber, final long amount, final boolean itemizeStoragePayments) {
+    public void chargeStorageRent(
+            final ContractID contractID, final long amount, final boolean itemizeStoragePayments) {
         throw new UnsupportedOperationException("Queries cannot charge storage rent");
     }
 
@@ -189,7 +189,7 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public void updateStorageMetadata(
-            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+            final ContractID contractID, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         throw new UnsupportedOperationException("Queries cannot update storage metadata");
     }
 
@@ -253,7 +253,7 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public long getOriginalSlotsUsed(final long contractNumber) {
+    public long getOriginalSlotsUsed(final ContractID contractID) {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
     }
 
@@ -268,7 +268,8 @@ public class QueryHederaOperations implements HederaOperations {
         return null;
     }
 
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(
+            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 }

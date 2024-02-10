@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,19 @@ public class AbstractCodeCache {
     public Code getIfPresent(final Address address) {
         final var cacheKey = new BytesKey(address.toArray());
 
+        final boolean isToken = entityAccess.isTokenAccount(address);
+        if (!entityAccess.isUsable(address) && !isToken) {
+            cache.invalidate(cacheKey);
+            return null;
+        }
+
         var code = cache.getIfPresent(cacheKey);
 
         if (code != null) {
             return code;
         }
 
-        if (entityAccess.isTokenAccount(address)) {
+        if (isToken) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
             code = CodeFactory.createCode(interpolatedBytecode, 0, false);
             cache.put(cacheKey, code);

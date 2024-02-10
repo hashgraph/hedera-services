@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
@@ -39,9 +40,10 @@ import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -50,6 +52,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -67,6 +70,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -80,7 +84,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final Key HOLLOW_ACCOUNT_KEY =
+    public static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
@@ -98,9 +102,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         this.contractStateStore = requireNonNull(contractStateStore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void setStorageValue(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
-        final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
+    public void setStorageValue(
+            @Nullable final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
+        final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
         // Ensure we don't change any prev/next keys until the base commit
         final var slotValue = new SlotValue(
@@ -117,8 +125,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull UInt256 getStorageValue(final long number, @NonNull final UInt256 key) {
-        final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
+    public @NonNull UInt256 getStorageValue(final ContractID contractID, @NonNull final UInt256 key) {
+        final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         return valueOrZero(contractStateStore.getSlotValue(slotKey));
     }
 
@@ -126,8 +134,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull UInt256 getOriginalStorageValue(final long number, @NonNull final UInt256 key) {
-        final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
+    public @NonNull UInt256 getOriginalStorageValue(final ContractID contractID, @NonNull final UInt256 key) {
+        final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         return valueOrZero(contractStateStore.getOriginalSlotValue(slotKey));
     }
 
@@ -136,9 +144,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @NonNull List<StorageAccesses> getStorageChanges() {
-        final Map<Long, List<StorageAccess>> modifications = new TreeMap<>();
+        final Map<ContractID, List<StorageAccess>> modifications = new TreeMap<>(HapiUtils.CONTRACT_ID_COMPARATOR);
         contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
-                .computeIfAbsent(slotKey.contractNumber(), k -> new ArrayList<>())
+                .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
                 .add(StorageAccess.newWrite(
                         pbjToTuweniUInt256(slotKey.key()),
                         valueOrZero(contractStateStore.getOriginalSlotValue(slotKey)),
@@ -161,8 +169,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull RentFactors getRentFactorsFor(final long number) {
-        final var account = validatedAccount(number);
+    public @NonNull RentFactors getRentFactorsFor(final ContractID contractID) {
+        final var account = validatedAccount(contractID);
         return new RentFactors(account.contractKvPairsNumber(), account.expirationSecond());
     }
 
@@ -170,8 +178,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Bytes getCode(final long number) {
-        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
+    public @NonNull Bytes getCode(final ContractID contractID) {
+        final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
         } else {
@@ -184,8 +192,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Hash getCodeHash(final long number) {
-        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
+    public @NonNull Hash getCodeHash(final ContractID contractID) {
+        final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
             return Hash.EMPTY;
         } else {
@@ -214,40 +222,45 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public long getNonce(final long number) {
-        return validatedAccount(number).ethereumNonce();
+    public long getNonce(final AccountID accountID) {
+        return validatedAccount(accountID).ethereumNonce();
+    }
+
+    @Override
+    public com.hedera.hapi.node.state.token.Account getNativeAccount(final AccountID accountID) {
+        return validatedAccount(accountID);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getNumTreasuryTitles(final long number) {
-        return validatedAccount(number).numberTreasuryTitles();
+    public int getNumTreasuryTitles(final AccountID accountID) {
+        return validatedAccount(accountID).numberTreasuryTitles();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isContract(final long number) {
-        return validatedAccount(number).smartContract();
+    public boolean isContract(final AccountID accountID) {
+        return validatedAccount(accountID).smartContract();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getNumPositiveTokenBalances(final long number) {
-        return validatedAccount(number).numberPositiveBalances();
+    public int getNumPositiveTokenBalances(final AccountID accountID) {
+        return validatedAccount(accountID).numberPositiveBalances();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void setCode(final long number, @NonNull final Bytes code) {
-        contractStateStore.putBytecode(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
+    public void setCode(final ContractID contractID, @NonNull final Bytes code) {
+        contractStateStore.putBytecode(contractID, new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
 
     /**
@@ -262,8 +275,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Wei getBalance(long number) {
-        return Wei.of(validatedAccount(number).tinybarBalance());
+    public Wei getBalance(AccountID accountID) {
+        return Wei.of(validatedAccount(accountID).tinybarBalance());
     }
 
     /**
@@ -283,7 +296,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable Address getAddress(final long number) {
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             final var token = nativeOperations.getToken(number);
             if (token != null) {
@@ -303,13 +317,34 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return evmAddress == null ? asLongZeroAddress(number) : pbjToBesuAddress(evmAddress);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @Nullable Address getAddress(final AccountID accountID) {
+        final var account = nativeOperations.getAccount(accountID);
+        if (account == null) {
+            throw new IllegalArgumentException("No account has id " + accountID);
+        }
+
+        if (account.deleted()) {
+            return null;
+        }
+
+        final var evmAddress = extractEvmAddress(account.alias());
+        return evmAddress == null
+                ? asLongZeroAddress(account.accountIdOrThrow().accountNum())
+                : pbjToBesuAddress(evmAddress);
+    }
+
     @Override
     public boolean isHollowAccount(@NonNull final Address address) {
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return false;
         }
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             return false;
         }
@@ -351,16 +386,19 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         // Note we can still use top-level signatures to meet receiver signature requirements
         final var status = nativeOperations.transferWithReceiverSigCheck(
                 amount,
-                from.number,
-                ((ProxyEvmAccount) to).number,
+                from.hederaId(),
+                ((ProxyEvmAccount) to).hederaId(),
                 new ActiveContractVerificationStrategy(
-                        from.number, tuweniToPbjBytes(from.getAddress()), delegateCall, UseTopLevelSigs.YES));
+                        from.hederaContractId(),
+                        tuweniToPbjBytes(from.getAddress()),
+                        delegateCall,
+                        UseTopLevelSigs.YES));
         if (status != OK) {
             if (status == INVALID_SIGNATURE) {
                 return Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE);
             } else {
-                throw new IllegalStateException("Transfer from 0.0." + from.number
-                        + " to 0.0." + ((ProxyEvmAccount) to).number
+                throw new IllegalStateException("Transfer from 0.0." + from.accountID
+                        + " to 0.0." + ((ProxyEvmAccount) to).accountID
                         + " failed with status " + status + " despite valid preconditions");
             }
         } else {
@@ -374,11 +412,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull final Address address) {
         if (isLongZero(address)) {
-            throw new IllegalArgumentException("Cannot perform lazy creation at long-zero address " + address);
+            return Optional.of(INVALID_CONTRACT_ID);
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
-            final var account = nativeOperations.getAccount(number);
+            AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+            final var account = nativeOperations.getAccount(accountID);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
                     return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
@@ -401,8 +440,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
+    public Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull final Address deleted, @NonNull final Address beneficiary, @NonNull final MessageFrame frame) {
+        requireNonNull(deleted);
+        requireNonNull(beneficiary);
+        requireNonNull(frame);
         if (deleted.equals(beneficiary)) {
             return Optional.of(SELF_DESTRUCT_TO_SELF);
         }
@@ -418,7 +460,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (deletedAccount.numPositiveTokenBalances() > 0) {
             return Optional.of(CONTRACT_STILL_OWNS_NFTS);
         }
-        nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        nativeOperations.trackSelfDestructBeneficiary(
+                deletedAccount.hederaId(), ((ProxyEvmAccount) beneficiaryAccount).hederaId(), frame);
         return Optional.empty();
     }
 
@@ -439,7 +482,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             final var token = nativeOperations.getToken(number);
             if (token != null) {
@@ -452,7 +496,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {
             return null;
         }
-        return new ProxyEvmAccount(number, this);
+        return new ProxyEvmAccount(account.accountId(), this);
     }
 
     private Bytes proxyBytecodeFor(final Address address) {
@@ -468,10 +512,18 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 && !address.equals(pbjToBesuAddress(alias));
     }
 
-    private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {
-        final var account = nativeOperations.getAccount(number);
+    private com.hedera.hapi.node.state.token.Account validatedAccount(final AccountID accountID) {
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
-            throw new IllegalArgumentException("No account has number " + number);
+            throw new IllegalArgumentException("No account has id " + accountID);
+        }
+        return account;
+    }
+
+    private com.hedera.hapi.node.state.token.Account validatedAccount(final ContractID contractID) {
+        final var account = nativeOperations.getAccount(contractID);
+        if (account == null) {
+            throw new IllegalArgumentException("No account found for contract ID " + contractID);
         }
         return account;
     }

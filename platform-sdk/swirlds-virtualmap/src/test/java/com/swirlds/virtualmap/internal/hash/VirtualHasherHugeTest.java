@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Disabled;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
  * Test a *HUGE* billion-leaf tree. This test is separated out from {@link VirtualHasherTest} so we can
  * easily ignore it or include it depending on the build context. It takes several minutes to complete.
  */
+@Tag(TIMING_SENSITIVE)
 class VirtualHasherHugeTest extends VirtualHasherTestBase {
     private static final long NUM_LEAVES = 1_000_000_000;
 
@@ -43,7 +44,6 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
      * Test a huge billion-leaf tree. This test takes a significant amount of time.
      */
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test a massive tree where all leaves are dirty")
     @Disabled

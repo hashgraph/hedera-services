@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -259,7 +260,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                 root == null ? "(unknown)" : root.getClass().getName(),
                 root == null ? "[]" : root.getRoute());
 
-        final StandardWorkGroup workGroup = new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection);
+        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
+        final Function<Throwable, Boolean> reconnectExceptionListener = t -> {
+            firstReconnectException.compareAndSet(null, t);
+            return false;
+        };
+        final StandardWorkGroup workGroup =
+                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
@@ -304,7 +311,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             if (interruptException != null) {
                 throw interruptException;
             }
-            throw new MerkleSynchronizationException("Synchronization failed with exceptions");
+            throw new MerkleSynchronizationException(
+                    "Synchronization failed with exceptions", firstReconnectException.get());
         }
 
         viewsToInitialize.addFirst(view);

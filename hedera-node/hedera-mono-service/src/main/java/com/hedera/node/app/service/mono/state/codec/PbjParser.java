@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 
 /**
  * Defines a parser from a PBJ {@link ReadableSequentialData}; helpful for building {@link com.hedera.pbj.runtime.Codec}
@@ -30,5 +30,5 @@ import java.io.IOException;
 @FunctionalInterface
 public interface PbjParser<T> {
     @NonNull
-    T parse(@NonNull ReadableSequentialData input) throws IOException;
+    T parse(@NonNull ReadableSequentialData input) throws ParseException;
 }

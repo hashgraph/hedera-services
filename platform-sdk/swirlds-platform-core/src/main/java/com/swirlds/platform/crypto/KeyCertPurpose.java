@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ package com.swirlds.platform.crypto;
  */
 public enum KeyCertPurpose {
     SIGNING("s"),
-    AGREEMENT("a"),
-    ENCRYPTION("e");
+    AGREEMENT("a");
 
     /** the prefix used for certificate names */
     private final String prefix;
@@ -38,5 +37,14 @@ public enum KeyCertPurpose {
      */
     public String storeName(final String memberName) {
         return prefix + "-" + memberName;
+    }
+
+    /**
+     * Returns the prefix associated with a key or certificate purpose.
+     *
+     * @return the prefix.
+     */
+    public String prefix() {
+        return prefix;
     }
 }

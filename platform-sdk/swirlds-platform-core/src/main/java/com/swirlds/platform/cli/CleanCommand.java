@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -85,8 +85,8 @@ public final class CleanCommand extends AbstractCommand {
         // saved states, PCES & recycle bin
         // (the latter two are saved in the saved state directory, so deleting the saved state directory will delete
         // them)
-        FileUtils.deleteDirectory(
-                sdkPath.resolve(configuration.getConfigData(StateConfig.class).savedStateDirectory()));
+        FileUtils.deleteDirectory(sdkPath.resolve(
+                configuration.getConfigData(StateCommonConfig.class).savedStateDirectory()));
         // event streams
         FileUtils.deleteDirectory(
                 sdkPath.resolve(configuration.getConfigData(EventConfig.class).eventsLogDir()));

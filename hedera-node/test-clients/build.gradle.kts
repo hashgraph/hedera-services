@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,8 @@ sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
     main { resources { srcDir("src/main/resource") } }
+
+    create("rcdiff")
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -77,7 +79,16 @@ tasks.register<Test>("hapiTestMisc") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { excludeTags("CRYPTO", "TOKEN", "SMART_CONTRACT", "TIME_CONSUMING") }
+    useJUnitPlatform {
+        excludeTags(
+            "CRYPTO",
+            "TOKEN",
+            "SMART_CONTRACT",
+            "TIME_CONSUMING",
+            "RESTART",
+            "ND_RECONNECT"
+        )
+    }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -92,7 +103,7 @@ tasks.register<Test>("hapiTestCrypto") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("CRYPTO") }
+    useJUnitPlatform { includeTags("CRYPTO", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -107,7 +118,7 @@ tasks.register<Test>("hapiTestToken") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TOKEN") }
+    useJUnitPlatform { includeTags("TOKEN", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -122,7 +133,7 @@ tasks.register<Test>("hapiTestSmartContract") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("SMART_CONTRACT") }
+    useJUnitPlatform { includeTags("SMART_CONTRACT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -137,7 +148,36 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TIME_CONSUMING") }
+    useJUnitPlatform { includeTags("TIME_CONSUMING", "RECORD_STREAM_VALIDATION") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs a handful of test-suites that are extremely time-consuming (10+ minutes)
+tasks.register<Test>("hapiTestRestart") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("RESTART", "RECORD_STREAM_VALIDATION") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+tasks.register<Test>("hapiTestNDReconnect") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("ND_RECONNECT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -187,6 +227,22 @@ val yahCliJar =
         manifest {
             attributes(
                 "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+                "Multi-Release" to "true"
+            )
+        }
+    }
+
+val rcdiffJar =
+    tasks.register<ShadowJar>("rcdiffJar") {
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["rcdiff"].output)
+        destinationDirectory.set(project.file("rcdiff"))
+        archiveFileName.set("rcdiff.jar")
+        configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
+
+        manifest {
+            attributes(
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
                 "Multi-Release" to "true"
             )
         }

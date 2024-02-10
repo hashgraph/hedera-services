@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_IS_TOKEN;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -40,7 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
-import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -54,7 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class TokenAndTypeCheckSuite extends HapiSuite {
 
@@ -169,12 +169,19 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(ParsingConstants.FunctionType.HAPI_IS_TOKEN)
+                                                        .forFunction(HAPI_IS_TOKEN)
                                                         .withStatus(SUCCESS)
                                                         .withIsToken(false)))),
                         childRecordsCheck(
                                 "FakeAddressTokenTypeCheckTx",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                                recordWith().status(INVALID_TOKEN_ID)
+                                //                                        .contractCallResult(resultWith()
+                                //
+                                // .contractCallResult(htsPrecompileResult()
+                                //                                                        .forFunction(HAPI_IS_TOKEN)
+                                //                                                        .withStatus(INVALID_TOKEN_ID)
+                                //                                                        .withIsToken(false)))
+                                ));
     }
 }

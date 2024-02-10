@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,9 @@ class CreateEvmTxProcessorTest {
     @Mock
     private AliasManager aliasManager;
 
+    @Mock
+    EvmConfiguration evmConfiguration;
+
     private CreateEvmTxProcessor createEvmTxProcessor;
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -124,7 +127,9 @@ class CreateEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(EVM_VERSION_0_30, () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
         Map<String, Provider<ContractCreationProcessor>> ccps =

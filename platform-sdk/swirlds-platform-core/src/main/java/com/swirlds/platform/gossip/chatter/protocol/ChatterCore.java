@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package com.swirlds.platform.gossip.chatter.protocol;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.Shiftable;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
@@ -115,12 +115,12 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                 metrics,
                 new CountPerSecond.Config(METRICS_CATEGORY, "msgsPerSecRead")
                         .withDescription("number of chatter messages read per second")
-                        .withUnit("messages/second"));
+                        .withUnit("messages_per_second"));
         this.msgsPerSecWrit = new CountPerSecond(
                 metrics,
                 new CountPerSecond.Config(METRICS_CATEGORY, "msgsPerSecWrit")
                         .withDescription("number of chatter messages written per second")
-                        .withUnit("messages/second"));
+                        .withUnit("messages_per_second"));
         selfProcessingTime =
                 metrics.getOrCreate(new DurationGauge.Config(METRICS_CATEGORY, "eventProcTime", ChronoUnit.MILLIS)
                         .withDescription("the time it takes to process and validate an event"));

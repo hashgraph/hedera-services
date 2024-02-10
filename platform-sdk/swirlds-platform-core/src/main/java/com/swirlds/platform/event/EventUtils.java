@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,24 +128,6 @@ public abstract class EventUtils {
 
             prev = event;
         }
-    }
-
-    /**
-     * Creates an event comparator using consensus time. If the event does not have a consensus time, the estimated time
-     * is used instead.
-     *
-     * @return the comparator
-     */
-    public static int consensusPriorityComparator(final EventImpl x, final EventImpl y) {
-        if (x == null || y == null) {
-            return 0;
-        }
-        final Instant xTime = x.getConsensusTimestamp() == null ? x.getEstimatedTime() : x.getConsensusTimestamp();
-        final Instant yTime = y.getConsensusTimestamp() == null ? y.getEstimatedTime() : y.getConsensusTimestamp();
-        if (xTime == null || yTime == null) {
-            return 0;
-        }
-        return xTime.compareTo(yTime);
     }
 
     /**

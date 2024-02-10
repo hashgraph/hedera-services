@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,30 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_MIGRATION;
+import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.bbm.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
+import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
+import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -30,8 +50,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -49,6 +71,24 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
@@ -60,6 +100,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -83,17 +124,20 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -204,6 +248,15 @@ public final class Hedera implements SwirldMain {
 
     private static final IntSupplier SUPPLY_ONE = () -> 1;
 
+    private static EntityIdService ENTITY_SERVICE;
+    private static ConsensusServiceImpl CONSENSUS_SERVICE;
+    private static FileServiceImpl FILE_SERVICE;
+    private static ScheduleServiceImpl SCHEDULE_SERVICE;
+    private static TokenServiceImpl TOKEN_SERVICE;
+    private static RecordCacheService RECORD_SERVICE;
+    private static BlockRecordService BLOCK_SERVICE;
+    private static FeeService FEE_SERVICE;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -253,27 +306,36 @@ public final class Hedera implements SwirldMain {
         // Create all the service implementations
         logger.info("Registering services");
 
+        ENTITY_SERVICE = new EntityIdService();
+        CONSENSUS_SERVICE = new ConsensusServiceImpl();
+        FILE_SERVICE = new FileServiceImpl(bootstrapConfigProvider);
+        SCHEDULE_SERVICE = new ScheduleServiceImpl();
+        TOKEN_SERVICE = new TokenServiceImpl(
+                recordsGenerator::sysAcctRecords,
+                recordsGenerator::stakingAcctRecords,
+                recordsGenerator::treasuryAcctRecords,
+                recordsGenerator::multiUseAcctRecords,
+                recordsGenerator::blocklistAcctRecords);
+        RECORD_SERVICE = new RecordCacheService();
+        BLOCK_SERVICE = new BlockRecordService();
+        FEE_SERVICE = new FeeService();
+
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
         Set.of(
-                        new EntityIdService(),
-                        new ConsensusServiceImpl(),
+                        ENTITY_SERVICE,
+                        CONSENSUS_SERVICE,
                         CONTRACT_SERVICE,
-                        new FileServiceImpl(bootstrapConfigProvider),
+                        FILE_SERVICE,
                         new FreezeServiceImpl(),
-                        new NetworkServiceImpl(),
-                        new ScheduleServiceImpl(),
-                        new TokenServiceImpl(
-                                recordsGenerator::sysAcctRecords,
-                                recordsGenerator::stakingAcctRecords,
-                                recordsGenerator::treasuryAcctRecords,
-                                recordsGenerator::multiUseAcctRecords,
-                                recordsGenerator::blocklistAcctRecords),
+                        SCHEDULE_SERVICE,
+                        TOKEN_SERVICE,
                         new UtilServiceImpl(),
-                        new RecordCacheService(),
-                        new BlockRecordService(),
-                        new FeeService(),
-                        new CongestionThrottleService())
+                        RECORD_SERVICE,
+                        BLOCK_SERVICE,
+                        FEE_SERVICE,
+                        new CongestionThrottleService(),
+                        new NetworkServiceImpl())
                 .forEach(service -> servicesRegistry.register(service, version));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
@@ -352,7 +414,7 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
+        return new MerkleHederaState(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -367,10 +429,10 @@ public final class Hedera implements SwirldMain {
      * {@link #init(Platform, NodeId)} and after {@link #newState()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    private void onStateInitialized(
+    public void onStateInitialized(
             @NonNull final MerkleHederaState state,
             @NonNull final Platform platform,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
         // Initialize the configuration from disk. We must do this BEFORE we run migration, because the various
@@ -383,13 +445,13 @@ public final class Hedera implements SwirldMain {
         logConfiguration();
 
         // Determine if we need to create synthetic records for system entities
-        final var blockRecordState = state.createReadableStates(BlockRecordService.NAME);
+        final var blockRecordState = state.getReadableStates(BlockRecordService.NAME);
         boolean createSynthRecords = false;
         if (!blockRecordState.isEmpty()) {
             final var blockInfo = blockRecordState
                     .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
                     .get();
-            if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+            if (isDefaultConsTimeOfLastHandledTxn(blockInfo)) {
                 createSynthRecords = true;
             }
         } else {
@@ -399,28 +461,125 @@ public final class Hedera implements SwirldMain {
             recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
         }
 
-        // We do nothing else for EVENT_STREAM_RECOVERY, which for now is broken. This is a special case that is handled
-        // by the platform, and we need to figure out how to make it work with the modular app.
-        if (trigger == EVENT_STREAM_RECOVERY) {
-            logger.debug("Skipping state initialization for trigger {}", trigger);
-            return;
-        }
+        final Object test = state.getChild(0);
+        boolean doBbmMigration = test instanceof VirtualMap;
+        if (doBbmMigration) {
+            if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
+                dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+            }
 
-        //noinspection ConstantValue
-        assert dualState != null : "Platform should never pass a null dual state";
-        logger.info(
-                "Initializing Hedera state with trigger {} and previous version {}",
-                () -> trigger,
-                () -> previousVersion == null ? "<NONE>" : previousVersion);
+            // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
+            logger.info("BBM: migration beginning 😅...");
 
-        // We do not support downgrading from one version to an older version.
-        final var deserializedVersion = (HederaSoftwareVersion) previousVersion;
-        if (isDowngrade(version, deserializedVersion)) {
-            logger.fatal(
-                    "Fatal error, state source version {} is higher than node software version {}",
-                    deserializedVersion,
-                    version);
-            System.exit(1);
+            // --------------------- UNIQUE_TOKENS (0)
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
+            if (uniqTokensFromState != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = uniqTokensFromState.copy();
+                TOKEN_SERVICE.setNftsFromState(copy);
+            }
+
+            // --------------------- TOKEN_ASSOCIATIONS (1)
+            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState =
+                    state.getChild(TOKEN_ASSOCIATIONS);
+            if (tokenRelsFromState != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = tokenRelsFromState.copy();
+                TOKEN_SERVICE.setTokenRelsFromState(copy);
+            }
+
+            // --------------------- TOPICS (2)
+            final MerkleMap<EntityNum, MerkleTopic> topicsFromState = state.getChild(TOPICS);
+            if (topicsFromState != null) {
+                CONSENSUS_SERVICE.setFromState(topicsFromState);
+            }
+
+            // --------------------- STORAGE (3)     // only "non-special" files
+            final VirtualMap<VirtualBlobKey, VirtualBlobValue> filesFromState = state.getChild(STORAGE);
+            if (filesFromState != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = filesFromState.copy();
+                FILE_SERVICE.setFs(() -> VirtualMapLike.from(copy));
+
+                // We also need to make this available to the contract service, so it can extract contract bytecode
+                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(copy));
+            }
+            // Note: some files have no metadata, e.g. contract bytecode files
+
+            // --------------------- ACCOUNTS (4)
+            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
+            if (acctsFromState != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = acctsFromState.copy();
+                TOKEN_SERVICE.setAcctsFromState(copy);
+            }
+
+            // --------------------- TOKENS (5)
+            final MerkleMap<EntityNum, MerkleToken> tokensFromState = state.getChild(TOKENS);
+            if (tokensFromState != null) {
+                TOKEN_SERVICE.setTokensFromState(tokensFromState);
+            }
+
+            // --------------------- NETWORK_CTX (6)
+            // Here we assign the network context, but don't migrate it by itself. These properties have been split out
+            // to various services in the modular code, and will each be migrated in its appropriate service.
+            final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
+            // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
+            // firstConsTimeOfCurrentBlock – needed in blockInfo
+
+            // --------------------- SPECIAL_FILES (7)
+            // No longer useful; don't migrate
+
+            // --------------------- SCHEDULE_TXS (8)
+            final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
+            if (scheduleFromState != null) {
+                SCHEDULE_SERVICE.setFs(scheduleFromState);
+            }
+
+            // --------------------- RECORD_STREAM_RUNNING_HASH (9)
+            // From MerkleNetworkContext: blockNo, blockHashes
+            final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
+            if (blockInfoFromState != null) {
+                BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
+            }
+
+            // --------------------- LEGACY_ADDRESS_BOOK (10)
+            // Not using anywhere; won't be migrated
+
+            // --------------------- CONTRACT_STORAGE (11)
+            final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
+            if (contractFromStorage != null) {
+                // Copy this virtual map, so it doesn't get released before the migration is done
+                final var copy = contractFromStorage.copy();
+                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(copy));
+            }
+
+            // --------------------- STAKING_INFO (12)
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(STAKING_INFO);
+            if (stakingInfoFromState != null) {
+                TOKEN_SERVICE.setStakingFs(stakingInfoFromState, fromNetworkContext);
+            }
+
+            // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
+            final FCQueue<ExpirableTxnRecord> fcqFromState = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
+            if (fcqFromState != null) {
+                RECORD_SERVICE.setFromState(new ArrayList<>(fcqFromState));
+            }
+
+            // --------------------- Midnight Rates (separate service in modular code - fee service)
+            if (fromNetworkContext != null) {
+                FEE_SERVICE.setFs(fromNetworkContext.getMidnightRates());
+            }
+
+            // --------------------- Sequence Number (separate service in modular code - entity ID service)
+            if (fromNetworkContext != null) {
+                ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
+            }
+
+            // Here we release all mono children so that we don't have a bunch of null routes in state
+            state.addDeserializedChildren(List.of(), 0);
+
+            // --------------------- END OF MONO -> MODULAR MIGRATION ---------------------
         }
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
@@ -428,16 +587,40 @@ public final class Hedera implements SwirldMain {
         assert this.platform == null || this.platform == platform : "Platform should never change once set";
         this.platform = platform;
 
+        //noinspection ConstantValue
+        assert platformState != null : "Platform should never pass a null platform state";
+        logger.info(
+                "Initializing Hedera state with trigger {} and previous version {} instance of {}",
+                () -> trigger,
+                () -> previousVersion == null ? "<NONE>" : previousVersion,
+                () -> previousVersion == null
+                        ? "<NONE>"
+                        : previousVersion.getClass().getName());
+
+        // We do not support downgrading from one version to an older version.
+        final HederaSoftwareVersion deserializedVersion;
+        if (previousVersion instanceof HederaSoftwareVersion) {
+            deserializedVersion = (HederaSoftwareVersion) previousVersion;
+            if (isDowngrade(version, deserializedVersion)) {
+                logger.fatal(
+                        "Fatal error, state source version {} is higher than node software version {}",
+                        deserializedVersion,
+                        version);
+                System.exit(1);
+            }
+        } else {
+            deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
+        }
+        logger.info("Deserialized version is {}, version {}", deserializedVersion, version);
+
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state);
-                case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect(state, deserializedVersion);
-                    // We exited from this method early if we were recovering from an event stream.
-                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
@@ -449,11 +632,11 @@ public final class Hedera implements SwirldMain {
         // assertion will hold true.
         assert configProvider != null : "Config Provider *must* have been set by now!";
 
-        // Some logging on what we found about freeze in the dual state
+        // Some logging on what we found about freeze in the platform state
         logger.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
+                "Platform state includes freeze time={} and last frozen={}",
+                platformState.getFreezeTime(),
+                platformState.getLastFrozenTime());
     }
     /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
@@ -485,7 +668,11 @@ public final class Hedera implements SwirldMain {
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
+        logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+        if (shouldDump(trigger, MOD_POST_MIGRATION)) {
+            dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+        }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
@@ -508,7 +695,7 @@ public final class Hedera implements SwirldMain {
      * to publish any necessary records from the node's startup migration.
      */
     private void unmarkMigrationRecordsStreamed(HederaState state) {
-        final var blockServiceState = state.createWritableStates(BlockRecordService.NAME);
+        final var blockServiceState = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = blockServiceState.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         final var currentBlockInfo = requireNonNull(blockInfoState.get());
         final var nextBlockInfo =
@@ -580,7 +767,6 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
-                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
                 switch (platformStatus) {
                     case ACTIVE -> {
@@ -596,9 +782,14 @@ public final class Hedera implements SwirldMain {
                             FREEZING,
                             BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
 
-                    case CATASTROPHIC_FAILURE, FREEZE_COMPLETE -> {
+                    case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
-                        if (wasActive) shutdownGrpcServer();
+                        shutdownGrpcServer();
+                    }
+                    case FREEZE_COMPLETE -> {
+                        logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+                        closeRecordStreams();
+                        shutdownGrpcServer();
                     }
                 }
             });
@@ -630,6 +821,13 @@ public final class Hedera implements SwirldMain {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
         }
+    }
+
+    /**
+     * Called to perform orderly close record streams.
+     */
+    private void closeRecordStreams() {
+        daggerApp.blockRecordManager().close();
     }
 
     /**
@@ -699,7 +897,7 @@ public final class Hedera implements SwirldMain {
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+    public void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
@@ -715,14 +913,23 @@ public final class Hedera implements SwirldMain {
         daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
     }
 
+    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
+        // (FUTURE) - dump the semantic contents of the recovered state for
+        // comparison with the mirroring mono-service state
+        if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
+            dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+        }
+        daggerApp.blockRecordManager().close();
+    }
+
     /**
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    private void onHandleConsensusRound(
-            @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
+    public void onHandleConsensusRound(
+            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, dualState, round);
+        daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
 
     /*==================================================================================================================
@@ -830,8 +1037,10 @@ public final class Hedera implements SwirldMain {
      * Initialize flow for when a node has been restarted. This means it was started from a saved state.
      */
     private void restart(
-            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
-        initializeForTrigger(state, deserializedVersion, RESTART);
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final InitTrigger trigger) {
+        initializeForTrigger(state, deserializedVersion, trigger);
     }
 
     /*==================================================================================================================
@@ -855,7 +1064,7 @@ public final class Hedera implements SwirldMain {
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger) {
-        logger.debug(trigger + " Initialization");
+        logger.info(trigger + " Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
         if (deserializedVersion == null) {
@@ -867,7 +1076,6 @@ public final class Hedera implements SwirldMain {
         // the various migration methods may depend on configuration to do their work
         logger.info("Initializing Reconnect configuration");
         this.configProvider = new ConfigProviderImpl(false);
-        logConfiguration();
 
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
@@ -887,6 +1095,9 @@ public final class Hedera implements SwirldMain {
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
         onMigrate(state, deserializedVersion, trigger);
+        if (trigger == EVENT_STREAM_RECOVERY) {
+            // (FUTURE) Dump post-migration mod-service state
+        }
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, trigger);
@@ -897,7 +1108,8 @@ public final class Hedera implements SwirldMain {
         initializeExchangeRateManager(state);
         initializeFeeManager(state);
         initializeThrottles(state);
-        // TODO We may need to update the config with the latest version in file 121
+        observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+        logConfiguration();
     }
 
     /*==================================================================================================================
@@ -1011,5 +1223,9 @@ public final class Hedera implements SwirldMain {
                 .realmNum(hederaConfig.realm())
                 .build();
         return readableFileStore.getFileLeaf(fileId);
+    }
+
+    private static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
+        return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 }

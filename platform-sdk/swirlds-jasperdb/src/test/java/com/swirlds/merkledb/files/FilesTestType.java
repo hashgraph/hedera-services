@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package com.swirlds.merkledb.files;
 
-import com.swirlds.merkledb.ExampleLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongKeyVariableSize;
-import com.swirlds.merkledb.ExampleLongLongKeyFixedSize;
-import com.swirlds.merkledb.ExampleLongLongKeyVariableSize;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 
 /**
@@ -64,23 +65,6 @@ public enum FilesTestType {
                 return new ExampleLongKeyVariableSize(i);
             case variableComplexKey:
                 return new ExampleLongLongKeyVariableSize(i);
-        }
-    }
-
-    /**
-     * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are
-     * measured values from a known good test run.
-     */
-    public long getDataFileLowLevelTestFileSize() {
-        switch (this) {
-            case fixed:
-            default:
-            case fixedComplexKey:
-                return 20480L;
-            case variable:
-                return 98304L;
-            case variableComplexKey:
-                return 28672L;
         }
     }
 }

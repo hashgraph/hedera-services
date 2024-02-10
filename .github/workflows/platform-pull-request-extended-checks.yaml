@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ on:
       description: "Java JDK Version:"
       type: string
       required: false
-      default: "17"
+      default: "21.0.1"
     java-distribution:
       description: "Java JDK Distribution:"
       type: string
@@ -61,7 +61,7 @@ jobs:
       branch-name: ${{ github.ref_name }}
       slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
       slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
-      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
       use-branch-for-slack-channel: false
@@ -75,6 +75,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   restart:
     name: Restart
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -84,7 +86,7 @@ jobs:
       branch-name: ${{ github.ref_name }}
       slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
       slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
-      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
       use-branch-for-slack-channel: false
@@ -98,6 +100,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   dynamic-freeze:
     name: DynamicFreeze
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -107,7 +111,7 @@ jobs:
       branch-name: ${{ github.ref_name }}
       slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
       slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
-      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
       use-branch-for-slack-channel: false
@@ -121,6 +125,8 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   NewNodesSimilarStake:
     name: NewNodesSimilarStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -130,7 +136,7 @@ jobs:
       branch-name: ${{ github.ref_name }}
       slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
       slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
-      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
       use-branch-for-slack-channel: false
@@ -144,3 +150,5 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}

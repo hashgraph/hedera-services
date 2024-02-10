@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,5 +51,12 @@ class HederaEvmTransactionTest {
     void computesOfferedGasCostWithOverflow() {
         final var subject = TestHelpers.wellKnownRelayedHapiCallWithGasLimit(Long.MAX_VALUE);
         assertEquals(Long.MAX_VALUE, subject.offeredGasCost());
+    }
+
+    @Test
+    void validateContractCallState() {
+        final var subject = TestHelpers.wellKnownHapiCall();
+        assertTrue(subject.isContractCall());
+        assertFalse(subject.isException());
     }
 }

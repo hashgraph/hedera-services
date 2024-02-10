@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -32,12 +30,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
- * {@link ConsensusRoundHandler} and {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
- * <p>
- * This class differs from {@link EventIntake} in that it accepts events that have already been linked with their
- * parents. This version of event intake was written to be compatible with the new intake pipeline, whereas
- * {@link EventIntake} works with the legacy intake monolith.
+ * This class is responsible for adding events to {@link Consensus} and notifying event observers.
  */
 public class LinkedEventIntake {
     /**
@@ -53,10 +46,7 @@ public class LinkedEventIntake {
     /**
      * Stores events, expires them, provides event lookup methods
      */
-    private final ShadowGraph shadowGraph;
-
-    private final EventIntakeMetrics metrics;
-    private final Time time;
+    private final Shadowgraph shadowGraph;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -64,38 +54,30 @@ public class LinkedEventIntake {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
-     * Whether or not the linked event intake is paused.
-     * <p>
-     * When paused, all received events will be tossed into the void
+     * The secondary wire that outputs the keystone event sequence number
      */
-    private boolean paused;
+    private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
 
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param time               provides the wall clock time
-     * @param consensusSupplier  provides the current consensus instance
-     * @param dispatcher         invokes event related callbacks
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
+     * @param consensusSupplier provides the current consensus instance
+     * @param dispatcher        invokes event related callbacks
+     * @param shadowGraph       tracks events in the hashgraph
+     * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
-            @NonNull final ShadowGraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final Shadowgraph shadowGraph,
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
 
-        this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-
-        this.paused = false;
-        metrics = new EventIntakeMetrics(platformContext, () -> -1);
+        this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
     }
 
     /**
@@ -108,22 +90,14 @@ public class LinkedEventIntake {
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         Objects.requireNonNull(event);
 
-        if (paused) {
-            // If paused, throw everything into the void
-            event.clear();
-            return List.of();
-        }
-
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                event.clear();
                 return List.of();
             }
 
-            dispatcher.preConsensusEvent(event);
-
-            final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
+            final long minimumGenerationNonAncientBeforeAdding =
+                    consensusSupplier.get().getMinGenerationNonAncient();
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
@@ -131,13 +105,25 @@ public class LinkedEventIntake {
             dispatcher.eventAdded(event);
 
             if (consensusRounds != null) {
-                consensusRounds.forEach(this::handleConsensus);
+                consensusRounds.forEach(round -> {
+                    // it is important that a flush request for the keystone event is submitted before starting
+                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
+                    // where the transaction handler is waiting for a given event to become durable, but the
+                    // PCES writer hasn't been notified yet that the event should be flushed.
+                    keystoneEventSequenceNumberOutput.forward(
+                            round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
+                    // Future work: this dispatcher now only handles metrics. Remove this and put the metrics where
+                    // they belong
+                    dispatcher.consensusRound(round);
+                });
             }
 
-            if (consensusSupplier.get().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minGenNonAncientBeforeAdding);
+                handleStale(minimumGenerationNonAncientBeforeAdding);
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);
@@ -147,22 +133,13 @@ public class LinkedEventIntake {
     }
 
     /**
-     * Pause or unpause this object.
-     *
-     * @param paused whether or not this object should be paused
-     */
-    public void setPaused(final boolean paused) {
-        this.paused = paused;
-    }
-
-    /**
      * Notify observer of stale events, of all event in the consensus stale event queue.
      *
      * @param previousGenerationNonAncient the previous minimum generation of non-ancient events
      */
     private void handleStale(final long previousGenerationNonAncient) {
         // find all events that just became ancient and did not reach consensus, these events will be considered stale
-        final Collection<EventImpl> staleEvents = shadowGraph.findByGeneration(
+        final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
                 previousGenerationNonAncient,
                 consensusSupplier.get().getMinGenerationNonAncient(),
                 LinkedEventIntake::isNotConsensus);
@@ -181,22 +158,5 @@ public class LinkedEventIntake {
      */
     private static boolean isNotConsensus(@NonNull final EventImpl event) {
         return !event.isConsensus();
-    }
-
-    /**
-     * Notify observers that an event has reach consensus.
-     *
-     * @param consensusRound the new consensus round
-     */
-    private void handleConsensus(final @NonNull ConsensusRound consensusRound) {
-        // We need to wait for prehandles to finish before proceeding.
-        // It is critically important that prehandle is always called prior to handleConsensusRound().
-
-        final long start = time.nanoTime();
-        consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
-        final long end = time.nanoTime();
-        metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
-
-        dispatcher.consensusRound(consensusRound);
     }
 }

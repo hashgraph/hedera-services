@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.gui;
 
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
@@ -45,7 +47,9 @@ public class TestGuiSource {
         graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
         graphGenerator.reset();
 
-        intake = new TestIntake(graphGenerator.getAddressBook());
+        intake = new TestIntake(
+                graphGenerator.getAddressBook(),
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
 
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }

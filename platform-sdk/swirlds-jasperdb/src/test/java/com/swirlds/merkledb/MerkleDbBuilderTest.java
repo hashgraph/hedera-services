@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -156,13 +159,13 @@ class MerkleDbBuilderTest {
     @DisplayName("Test key serializer in table config cannot be null")
     public void testNullKeySerializer() {
         ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer = new ExampleFixedSizeVirtualValueSerializer();
-        assertThrows(IllegalArgumentException.class, () -> createTableConfig(null, valueSerializer));
+        assertThrows(NullPointerException.class, () -> createTableConfig(null, valueSerializer));
     }
 
     @Test
     @DisplayName("Test value serializer in table config cannot be null")
     public void testNullValueSerializer() {
         KeySerializer<ExampleLongKeyFixedSize> keySerializer = new ExampleLongKeyFixedSize.Serializer();
-        assertThrows(IllegalArgumentException.class, () -> createTableConfig(keySerializer, null));
+        assertThrows(NullPointerException.class, () -> createTableConfig(keySerializer, null));
     }
 }

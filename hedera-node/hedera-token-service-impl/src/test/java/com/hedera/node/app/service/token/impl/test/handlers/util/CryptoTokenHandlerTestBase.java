@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -702,6 +702,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .weight(200)
                 .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
+                .pendingRewards(1000000)
                 .build();
         node1Info = StakingNodeInfo.newBuilder()
                 .nodeNumber(1)
@@ -714,6 +715,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .weight(300)
                 .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
+                .pendingRewards(1000000)
                 .build();
     }
 

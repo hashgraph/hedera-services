@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValueSerializer;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -44,10 +45,10 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -161,8 +162,8 @@ class VirtualMapLikeAdapterTest {
     private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
         final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+        final var valueSerdes = MonoMapCodecAdapter.codecForVirtualValue(
+                UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new, new UniqueTokenValueSerializer());
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, 1_024);
     }
 }

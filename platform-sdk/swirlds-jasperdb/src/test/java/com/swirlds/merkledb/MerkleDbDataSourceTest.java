@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,29 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
-import static com.swirlds.merkledb.MerkleDbTestUtils.shuffle;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.shuffle;
 import static com.swirlds.virtualmap.datasource.VirtualDataSource.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -45,6 +51,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -74,7 +81,7 @@ class MerkleDbDataSourceTest {
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above
+     * Keep track of initial direct memory used already, so we can check if we leak over and above
      * what we started with
      */
     private long directMemoryUsedAtStart;
@@ -100,6 +107,7 @@ class MerkleDbDataSourceTest {
     // Tests
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @MethodSource("provideParameters")
     void createAndCheckInternalNodeHashes(final TestType testType, final int hashesRamToDiskThreshold)
             throws IOException, InterruptedException {
@@ -161,6 +169,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void testRandomHashUpdates(final TestType testType) throws IOException {
         final int testSize = 1000;
@@ -212,6 +221,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void createAndCheckLeaves(final TestType testType) throws IOException {
         final int count = 10_000;
@@ -279,7 +289,7 @@ class MerkleDbDataSourceTest {
                 "same call to createVirtualLeafRecord returns different results");
         // check all the leaf data
         IntStream.range(incFirstLeafPath, exclLastLeafPath)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         // delete a couple leaves
         dataSource.saveRecords(
                 incFirstLeafPath,
@@ -295,9 +305,9 @@ class MerkleDbDataSourceTest {
         }
         // check all remaining leaf data
         IntStream.range(incFirstLeafPath, incFirstLeafPath + 10)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         IntStream.range(incFirstLeafPath + 21, exclLastLeafPath)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         // close data source
         dataSource.close();
 
@@ -307,6 +317,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void moveLeaf(final TestType testType) throws IOException {
         final int incFirstLeafPath = 1;
@@ -349,6 +360,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void preservesInterruptStatusWhenInterruptedSavingRecords() throws IOException, InterruptedException {
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 createDataSource(testDirectory, "test6", TestType.fixed_fixed, 1000);
@@ -378,6 +390,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void createCloseSnapshotCheckDelete(final TestType testType) throws IOException {
         final int count = 10_000;
@@ -422,6 +435,64 @@ class MerkleDbDataSourceTest {
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
     }
 
+    boolean directMemoryUsageByDataFileIteratorWorkaroundApplied = false;
+
+    // When the first DataFileIterator is initialized, it allocates 16Mb direct byte buffer internally.
+    // Since we have direct memory usage checks after each test case, it's reported as a memory leak.
+    // A workaround is to reset memory usage value right after the first usage of iterator. No need to
+    // do it before each test run, it's enough to do just once
+    void reinitializeDirectMemoryUsage() {
+        if (!directMemoryUsageByDataFileIteratorWorkaroundApplied) {
+            initializeDirectMemoryAtStart();
+            directMemoryUsageByDataFileIteratorWorkaroundApplied = true;
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void snapshotRestoreIndex(final TestType testType) throws IOException {
+        final int count = 1000;
+        final String tableName = "vm";
+        final Path originalDbPath = testDirectory.resolve("merkledb-snapshotRestoreIndex-" + testType);
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+                createDataSource(originalDbPath, tableName, testType, count, 0);
+        final int tableId = dataSource.getTableId();
+        // create some leaves
+        dataSource.saveRecords(
+                count,
+                count * 2,
+                IntStream.range(0, count * 2).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
+                IntStream.range(count, count * 2)
+                        .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
+                Stream.empty());
+        // create a snapshot
+        final Path snapshotDbPath = testDirectory.resolve("merkledb-snapshotRestoreIndex-" + testType + "_SNAPSHOT");
+        dataSource.getDatabase().snapshot(snapshotDbPath, dataSource);
+        // close data source
+        dataSource.close();
+
+        final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
+        final MerkleDbPaths snapshotPaths = new MerkleDbPaths(snapshotDb.getTableDir(tableName, tableId));
+        // Delete all indices
+        Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);
+        Files.delete(snapshotPaths.pathToDiskLocationInternalNodesFile);
+        Files.deleteIfExists(snapshotPaths.longKeyToPathFile);
+        // There is no way to use MerkleDbPaths to get bucket index file path
+        Files.deleteIfExists(snapshotPaths.objectKeyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
+
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
+                snapshotDb.getDataSource(tableName, false);
+        reinitializeDirectMemoryUsage();
+        IntStream.range(0, count * 2).forEach(i -> assertHash(snapshotDataSource, i, i + 1));
+        IntStream.range(count, count * 2).forEach(i -> assertLeaf(testType, snapshotDataSource, i, i, i + 1, i));
+        // close data source
+        snapshotDataSource.close();
+
+        // check db count
+        assertEventuallyEquals(
+                0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
+    }
+
     @Test
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void preservesInterruptStatusWhenInterruptedClosing() throws IOException, InterruptedException {
@@ -457,6 +528,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructWithOnDiskInternalHashStore() throws InterruptedException {
         final long finiteInMemHashThreshold = 1_000_000;
         assertDoesNotThrow(
@@ -470,6 +542,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructWithNoRamInternalHashStore() {
         assertDoesNotThrow(
                 () -> createDataSource(testDirectory, "test10", TestType.fixed_fixed, 1000, 0)
@@ -481,6 +554,7 @@ class MerkleDbDataSourceTest {
     }
 
     @Test
+    @Tag(TIMING_SENSITIVE)
     void canConstructStandardStoreWithMergingDisabled() {
         assertDoesNotThrow(
                 () -> TestType.fixed_fixed
@@ -494,6 +568,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void testKeyIndexTypes(final TestType testType) throws Exception {
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
@@ -508,6 +583,97 @@ class MerkleDbDataSourceTest {
             // close data source
             dataSource.close();
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void dirtyDeletedLeavesBetweenFlushes(final TestType testType) throws IOException {
+        final String tableName = "vm";
+        final Path originalDbPath = testDirectory.resolve("merkledb-dirtyDeletedLeavesBetweenFlushes-" + testType);
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+                createDataSource(originalDbPath, tableName, testType, 100, 0);
+
+        final List<VirtualLongKey> keys = new ArrayList<>(31);
+        for (int i = 0; i < 31; i++) {
+            keys.add(testType.dataType().createVirtualLongKey(i));
+        }
+        final List<ExampleByteArrayVirtualValue> values = new ArrayList<>(31);
+        for (int i = 0; i < 31; i++) {
+            values.add(testType.dataType().createVirtualValue(i + 1));
+        }
+
+        // Initial DB state: 11 leaves, paths 10 to 20
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
+                IntStream.range(10, 21).mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i), values.get(i))),
+                Stream.empty());
+
+        // Load all leaves back from DB
+        final List<VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue>> oldLeaves = new ArrayList<>(11);
+        for (int i = 10; i < 21; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf = dataSource.loadLeafRecord(i);
+            assertNotNull(leaf);
+            assertEquals(i, leaf.getPath());
+            oldLeaves.add(leaf);
+        }
+
+        // First flush: move leaves 10 to 15 to paths 15 to 20, delete leaves 16 to 20
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 2)),
+                IntStream.range(10, 21).mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i - 5), values.get(i - 5))),
+                oldLeaves.subList(6, 11).stream());
+
+        // Check data after the first flush
+        for (int i = 0; i < 21; i++) {
+            final Hash hash = dataSource.loadHash(i);
+            assertNotNull(hash);
+            assertEquals(hash(i + 2), hash, "Wrong hash at path " + i);
+        }
+        for (int i = 5; i < 16; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNotNull(leaf, "Leaf with key " + i + " not found");
+            // // key 10 is moved to path 15, key 11 is moved to path 16, etc.
+            assertEquals(i + 5, leaf.getPath(), "Leaf path mismatch at path " + i);
+            assertEquals(keys.get(i), leaf.getKey(), "Wrong key at path " + i);
+            assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
+        }
+        for (int i = 16; i < 21; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNull(leaf); // no more leafs for keys 16 to 20
+        }
+
+        // Second flush: don't update leaves, delete leaves 10 to 15 (they must not be deleted
+        // as they were updated during the first flush)
+        dataSource.saveRecords(
+                10,
+                20,
+                IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 3)),
+                Stream.empty(),
+                oldLeaves.subList(0, 6).stream());
+
+        // Check data after the second flush
+        for (int i = 0; i < 21; i++) {
+            final Hash hash = dataSource.loadHash(i);
+            assertNotNull(hash);
+            assertEquals(hash(i + 3), hash, "Wrong hash at path " + i);
+        }
+        for (int i = 5; i < 16; i++) {
+            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                    dataSource.loadLeafRecord(keys.get(i));
+            assertNotNull(leaf, "Leaf with key " + i + " not found");
+            // // key 10 was moved to path 15, key 11 is moved to path 16, etc.
+            assertEquals(i + 5, leaf.getPath(), "Leaf path mismatch at path " + i);
+            assertEquals(keys.get(i), leaf.getKey(), "Wrong key at path " + i);
+            assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
+        }
+
+        dataSource.close();
     }
 
     // =================================================================================================================
@@ -529,7 +695,23 @@ class MerkleDbDataSourceTest {
     }
 
     public static VirtualHashRecord createVirtualInternalRecord(final int i) {
-        return new VirtualHashRecord(i, hash(i));
+        return createVirtualInternalRecord(i, i);
+    }
+
+    public static VirtualHashRecord createVirtualInternalRecord(final long path, final int i) {
+        return new VirtualHashRecord(path, hash(i));
+    }
+
+    public static void assertHash(
+            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
+            final long path,
+            final int i) {
+        try {
+            assertEqualsAndPrint(hash(i), dataSource.loadHash(path));
+        } catch (final Exception e) {
+            e.printStackTrace();
+            fail("Exception should not have been thrown here!");
+        }
     }
 
     public static void assertLeaf(
@@ -537,7 +719,7 @@ class MerkleDbDataSourceTest {
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i) {
-        assertLeaf(testType, dataSource, path, i, i);
+        assertLeaf(testType, dataSource, path, i, i, i);
     }
 
     public static void assertLeaf(
@@ -545,6 +727,7 @@ class MerkleDbDataSourceTest {
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i,
+            final int hashIndex,
             final int valueIndex) {
         try {
             final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> expectedRecord =
@@ -553,15 +736,14 @@ class MerkleDbDataSourceTest {
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
-            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value for path " + path);
+            assertEquals(hash(hashIndex), dataSource.loadHash(path), "unexpected Hash value for path " + path);
         } catch (final Exception e) {
             e.printStackTrace();
             fail("Exception should not have been thrown here!");
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static void assertEqualsAndPrint(final VirtualLeafRecord recordA, final VirtualLeafRecord recordB) {
+    public static void assertEqualsAndPrint(final Object recordA, final Object recordB) {
         assertEquals(
                 recordA == null ? null : recordA.toString(),
                 recordB == null ? null : recordB.toString(),

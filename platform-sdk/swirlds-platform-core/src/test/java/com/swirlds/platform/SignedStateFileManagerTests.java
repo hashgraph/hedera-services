@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,22 +35,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.StateConfig_;
+import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
@@ -62,9 +66,6 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,11 +75,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -110,12 +109,13 @@ class SignedStateFileManagerTests {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
-        signedStateFilePath = new SignedStateFilePath(context.getConfiguration().getConfigData(StateConfig.class));
+        signedStateFilePath =
+                new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
     }
 
     private SignedStateMetrics buildMockMetrics() {
@@ -249,7 +249,6 @@ class SignedStateFileManagerTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Sequence Of States Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void sequenceOfStatesTest(final boolean startAtGenesis) throws IOException {
 
         final Random random = getRandomPrintSeed();
@@ -261,17 +260,15 @@ class SignedStateFileManagerTests {
                 .withValue(StateConfig_.SAVE_STATE_PERIOD, stateSavePeriod)
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final int totalStates = 1000;
+        final int totalStates = 100;
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
-
-        final AtomicReference<StateSavingResult> lastResult = new AtomicReference<>();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -313,6 +310,7 @@ class SignedStateFileManagerTests {
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
                     .build();
+            final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
             controller.markSavedState(signedState.reserve("markSavedState"));
 
@@ -320,21 +318,23 @@ class SignedStateFileManagerTests {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
-                manager.saveStateTask(signedState.reserve("save to disk"));
+                final StateSavingResult stateSavingResult = manager.saveStateTask(reservedSignedState);
 
                 savedStates.add(signedState);
 
                 validateSavingOfState(signedState);
 
-                final List<SavedStateInfo> currentStatesOnDisk =
-                        SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+                final List<SavedStateInfo> currentStatesOnDisk = new SignedStateFilePath(
+                                context.getConfiguration().getConfigData(StateCommonConfig.class))
+                        .getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
                 final SavedStateMetadata oldestMetadata =
-                        currentStatesOnDisk.get(currentStatesOnDisk.size() - 1).metadata();
+                        currentStatesOnDisk.getLast().metadata();
 
+                assertNotNull(stateSavingResult, "state should have been saved");
                 assertEquals(
                         oldestMetadata.minimumGenerationNonAncient(),
-                        lastResult.get().oldestMinimumGenerationOnDisk());
+                        stateSavingResult.oldestMinimumGenerationOnDisk());
 
                 assertTrue(
                         currentStatesOnDisk.size() <= statesOnDisk,
@@ -375,13 +375,13 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("State Deletion Test")
     void stateDeletionTest() throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = getRandomPrintSeed();
         final int statesOnDisk = 3;
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())

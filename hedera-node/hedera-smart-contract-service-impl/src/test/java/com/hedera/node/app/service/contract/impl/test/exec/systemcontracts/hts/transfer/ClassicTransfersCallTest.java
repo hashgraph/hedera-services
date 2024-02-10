@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
 
         givenRetryingSubject();
@@ -118,7 +118,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
 
         givenRetryingSubject();
@@ -144,7 +144,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
-                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
         given(callStatusStandardizer.codeForFailure(
                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, frame, CryptoTransferTransactionBody.DEFAULT))

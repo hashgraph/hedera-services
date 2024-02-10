@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class ActionsHelper {
         var ok = true;
         ok &= null != action.callType() && NO_ACTION != action.callType();
         ok &= 1 == countNonNulls(action.callingAccount(), action.callingContract());
-        ok &= null != action.input();
+        ok &= action.input().length() > 0;
         ok &= 1 >= countNonNulls(action.recipientAccount(), action.recipientContract(), action.targetedAddress());
         ok &= 1 == countNonNulls(action.output(), action.revertReason(), action.error());
         ok &= null != action.callOperationType() && OP_UNKNOWN != action.callOperationType();

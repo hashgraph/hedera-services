@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,6 +178,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
+        recordBuilder.tokenType(token.tokenType());
     }
 
     /**
@@ -273,8 +274,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
-        // TODO : Need to build record transfer list for this case. Not needed for this PR.
-        // Need to do in finalize
     }
 
     /**

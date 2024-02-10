@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHARGING_RESULT;
@@ -32,6 +31,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NO_ALLOWANCE_CHARGING_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RECEIVER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -44,6 +44,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCreate;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -59,13 +61,14 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -74,7 +77,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -140,20 +142,14 @@ class TransactionProcessorTest {
     private CustomGasCharging gasCharging;
 
     @Mock
-    private HederaWorldUpdater.Enhancement enhancement;
-
-    @Mock
-    private HederaNativeOperations nativeOperations;
-
-    @Mock
-    private ReadableAccountStore readableAccountStore;
+    private FeatureFlags featureFlags;
 
     private TransactionProcessor subject;
 
     @BeforeEach
     void setUp() {
         subject = new TransactionProcessor(
-                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor, featureFlags);
     }
 
     @Test
@@ -184,6 +180,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
@@ -204,6 +201,7 @@ class TransactionProcessorTest {
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
                 MAX_GAS_ALLOWANCE,
+                null,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
@@ -216,11 +214,12 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
                         SENDER_ID,
@@ -235,6 +234,136 @@ class TransactionProcessorTest {
 
         assertSame(SUCCESS_RESULT, result);
         verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
+    }
+
+    @Test
+    void lazyCreationAttemptCanCallNotExistingFeatureFlagOn() {
+        givenSenderAccount();
+        givenRelayerAccount();
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                RELAYER_ID,
+                VALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                VALUE,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null,
+                null);
+        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
+                .willReturn(CHARGING_RESULT);
+        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        final var expectedToAddress = ConversionUtils.pbjToBesuAddress(VALID_CONTRACT_ADDRESS.evmAddressOrThrow());
+        given(frameBuilder.buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        context,
+                        config,
+                        featureFlags,
+                        EIP_1014_ADDRESS,
+                        expectedToAddress,
+                        CHARGING_RESULT.intrinsicGas()))
+                .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(frameRunner.runToCompletion(
+                        transaction.gasLimit(),
+                        SENDER_ID,
+                        initialFrame,
+                        tracer,
+                        messageCallProcessor,
+                        contractCreationProcessor))
+                .willReturn(SUCCESS_RESULT);
+        given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
+                .willReturn(true);
+        given(senderAccount.getNonce()).willReturn(NONCE);
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+
+        assertSame(SUCCESS_RESULT, result);
+        verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
+    }
+
+    @Test
+    void callWithNoValueAndCanCallNotExistingFeatureFlagOn() {
+        givenSenderAccount();
+        givenRelayerAccount();
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                RELAYER_ID,
+                VALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                0L,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null,
+                null);
+        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
+                .willReturn(CHARGING_RESULT);
+        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        final var expectedToAddress = ConversionUtils.pbjToBesuAddress(VALID_CONTRACT_ADDRESS.evmAddressOrThrow());
+        given(frameBuilder.buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        context,
+                        config,
+                        featureFlags,
+                        EIP_1014_ADDRESS,
+                        expectedToAddress,
+                        CHARGING_RESULT.intrinsicGas()))
+                .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(frameRunner.runToCompletion(
+                        transaction.gasLimit(),
+                        SENDER_ID,
+                        initialFrame,
+                        tracer,
+                        messageCallProcessor,
+                        contractCreationProcessor))
+                .willReturn(SUCCESS_RESULT);
+        given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
+                .willReturn(true);
+        given(senderAccount.getNonce()).willReturn(NONCE);
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+
+        assertSame(SUCCESS_RESULT, result);
+    }
+
+    @Test
+    void callWhenComputePartiesThrowsException() {
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                null,
+                VALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                0L,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null,
+                null);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(null);
+
+        final var abortException = catchThrowableOfType(
+                () -> subject.processTransaction(
+                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
+                AbortException.class);
+        assertThat(abortException.isChargeable()).isFalse();
     }
 
     @Test
@@ -271,11 +400,12 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
                         SENDER_ID,
@@ -284,12 +414,9 @@ class TransactionProcessorTest {
                         messageCallProcessor,
                         contractCreationProcessor))
                 .willReturn(SUCCESS_RESULT);
-        given(worldUpdater.enhancement()).willReturn(enhancement);
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
         final var parsedAccount =
                 Account.newBuilder().accountId(senderAccount.hederaId()).build();
-        given(readableAccountStore.getAccountById(SENDER_ID)).willReturn(parsedAccount);
+        given(senderAccount.toNativeAccount()).willReturn(parsedAccount);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
         final var result =
@@ -305,6 +432,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas());
@@ -349,11 +477,11 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
                         SENDER_ID,
@@ -375,6 +503,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
@@ -410,17 +539,18 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        given(senderAccount.getNonce()).willReturn(NONCE);
         given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
                         transaction,
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()),
                         eq(SENDER_ID),
@@ -442,6 +572,84 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
+                        EIP_1014_ADDRESS,
+                        NON_SYSTEM_LONG_ZERO_ADDRESS,
+                        CHARGING_RESULT.intrinsicGas());
+        inOrder.verify(frameRunner)
+                .runToCompletion(
+                        transaction.gasLimit(),
+                        SENDER_ID,
+                        initialFrame,
+                        tracer,
+                        messageCallProcessor,
+                        contractCreationProcessor);
+        inOrder.verify(gasCharging)
+                .maybeRefundGiven(
+                        GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
+                        CHARGING_RESULT.relayerAllowanceUsed(),
+                        senderAccount,
+                        relayerAccount,
+                        context,
+                        worldUpdater);
+        inOrder.verify(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        inOrder.verify(worldUpdater).commit();
+        assertSame(SUCCESS_RESULT, result);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void ethCallHappyPathAsExpectedAndCanCallNotExistingFeatureFlagOn() {
+        final var inOrder =
+                inOrder(worldUpdater, frameBuilder, frameRunner, gasCharging, messageCallProcessor, senderAccount);
+
+        givenSenderAccount();
+        givenRelayerAccount();
+        givenReceiverAccount();
+
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        final var transaction = wellKnownRelayedHapiCall(0);
+
+        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
+                .willReturn(CHARGING_RESULT);
+        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frameBuilder.buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        context,
+                        config,
+                        featureFlags,
+                        EIP_1014_ADDRESS,
+                        NON_SYSTEM_LONG_ZERO_ADDRESS,
+                        CHARGING_RESULT.intrinsicGas()))
+                .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(frameRunner.runToCompletion(
+                        eq(transaction.gasLimit()),
+                        eq(SENDER_ID),
+                        eq(initialFrame),
+                        eq(tracer),
+                        any(),
+                        eq(contractCreationProcessor)))
+                .willReturn(SUCCESS_RESULT);
+        given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
+        given(featureFlags.isAllowCallsToNonContractAccountsEnabled(any(), any()))
+                .willReturn(true);
+        given(senderAccount.getNonce()).willReturn(NONCE);
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+
+        inOrder.verify(senderAccount).incrementNonce();
+        inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
+        inOrder.verify(frameBuilder)
+                .buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        context,
+                        config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
@@ -480,13 +688,14 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(senderAccount.getNonce()).willReturn(NONCE);
         given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
                         transaction,
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
@@ -500,6 +709,7 @@ class TransactionProcessorTest {
                         eq(contractCreationProcessor)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
+
         willThrow(new ResourceExhaustedException(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES))
                 .given(worldUpdater)
                 .commit();
@@ -511,47 +721,6 @@ class TransactionProcessorTest {
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
         verify(worldUpdater).revert();
         verify(feesOnlyUpdater).commit();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void resourceExhaustionResultAsExpected() {
-        givenSenderAccount();
-        givenRelayerAccount();
-        givenReceiverAccount();
-        givenFeeOnlyParties();
-
-        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
-        final var transaction = wellKnownRelayedHapiCall(0);
-
-        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
-                .willReturn(CHARGING_RESULT);
-        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(frameBuilder.buildInitialFrameWith(
-                        transaction,
-                        worldUpdater,
-                        context,
-                        config,
-                        EIP_1014_ADDRESS,
-                        NON_SYSTEM_LONG_ZERO_ADDRESS,
-                        CHARGING_RESULT.intrinsicGas()))
-                .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
-        willThrow(new ResourceExhaustedException(MAX_CHILD_RECORDS_EXCEEDED))
-                .given(frameRunner)
-                .runToCompletion(
-                        eq(transaction.gasLimit()),
-                        eq(SENDER_ID),
-                        eq(initialFrame),
-                        eq(tracer),
-                        any(),
-                        eq(contractCreationProcessor));
-
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
-
-        assertResourceExhaustion(MAX_CHILD_RECORDS_EXCEEDED, result);
     }
 
     private void assertResourceExhaustion(
@@ -588,6 +757,7 @@ class TransactionProcessorTest {
 
     private void givenSenderAccount() {
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
     }
 
     private void givenRelayerAccount() {
@@ -596,5 +766,6 @@ class TransactionProcessorTest {
 
     private void givenReceiverAccount() {
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(receiverAccount);
+        given(receiverAccount.hederaId()).willReturn(RECEIVER_ID);
     }
 }

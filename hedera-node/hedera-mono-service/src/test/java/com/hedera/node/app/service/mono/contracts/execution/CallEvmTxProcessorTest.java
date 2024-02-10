@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,9 @@ class CallEvmTxProcessorTest {
     @Mock
     private InHandleBlockMetaSource blockMetaSource;
 
+    @Mock
+    private EvmConfiguration evmConfiguration;
+
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Account relayer = new Account(new Id(0, 0, 1007));
@@ -159,7 +162,9 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {
@@ -299,6 +304,32 @@ class CallEvmTxProcessorTest {
 
     @Test
     void nonCodeTxRequiresValue() {
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void nonCodeAndAllowCallsToNonContractAccountsDisabled() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(false);
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void nonCodeAndEvmVersion030() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_30);
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void nonCodeAndEvmVersion034() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
         assertFailsWith(
                 () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
                 INVALID_ETHEREUM_TRANSACTION);
@@ -611,7 +642,9 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        when(evmConfiguration.getJumpDestCacheWeightBytes())
+                .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
+        var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
         final MessageCallProcessor messageCallProcessor = mock(MessageCallProcessor.class);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(EVM_VERSION_0_30, () -> messageCallProcessor, EVM_VERSION_0_34, () -> messageCallProcessor);

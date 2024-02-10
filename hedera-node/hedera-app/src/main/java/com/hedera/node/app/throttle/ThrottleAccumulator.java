@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -807,9 +807,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                     sb.append("  ")
                             .append(function)
                             .append(": ")
-                            .append(manager.currentUsage()) // use current usage instead of the package private
-                            // asReadableRequirements(), otherwise we need to make it public as
-                            // well
+                            .append(manager.asReadableRequirements())
                             .append("\n");
                 });
         log.info("{}", () -> sb.toString().trim());

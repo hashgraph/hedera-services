@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,8 +59,20 @@ class ApprovalSwitchHelperTest {
         given(signatureTest.test(AN_ED25519_KEY)).willReturn(true);
         given(signatureTest.test(B_SECP256K1_KEY)).willReturn(false);
 
-        final var output =
-                APPROVAL_SWITCH_HELPER.switchToApprovalsAsNeededIn(inputTransfer(), signatureTest, nativeOperations);
+        final var output = APPROVAL_SWITCH_HELPER.switchToApprovalsAsNeededIn(
+                inputTransfer(), signatureTest, nativeOperations, AccountID.DEFAULT);
+
+        assertEquals(revisedTransfer(), output);
+    }
+
+    @Test
+    void doesNotSwitchSenderDebitsToApprovals() {
+        given(nativeOperations.getAccountKey(APPROVED_ID.accountNumOrThrow())).willReturn(B_SECP256K1_KEY);
+
+        given(signatureTest.test(B_SECP256K1_KEY)).willReturn(false);
+
+        final var output = APPROVAL_SWITCH_HELPER.switchToApprovalsAsNeededIn(
+                inputTransfer(), signatureTest, nativeOperations, OWNER_ID);
 
         assertEquals(revisedTransfer(), output);
     }
@@ -68,7 +80,7 @@ class ApprovalSwitchHelperTest {
     @Test
     void okToHaveEmptyTransfers() {
         final var output = APPROVAL_SWITCH_HELPER.switchToApprovalsAsNeededIn(
-                CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations);
+                CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, AccountID.DEFAULT);
         assertEquals(CryptoTransferTransactionBody.DEFAULT, output);
     }
 

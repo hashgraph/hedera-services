@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
@@ -42,6 +43,7 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,9 +72,9 @@ public class TeachingSynchronizer {
      * </p>
      *
      * <p>
-     * Although multiple threads may modify this queue, it is still thread safe. This is because only one thread
-     * will attempt to read/write this data structure at any time, and when the thread touching the queue changes
-     * there is a synchronization point that establishes a happens before relationship.
+     * Although multiple threads may modify this queue, it is still thread safe. This is because only one thread will
+     * attempt to read/write this data structure at any time, and when the thread touching the queue changes there is a
+     * synchronization point that establishes a happens before relationship.
      * </p>
      */
     private final Queue<TeacherSubtree> subtrees;
@@ -91,24 +93,18 @@ public class TeachingSynchronizer {
     /**
      * Create a new teaching synchronizer.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param in
-     * 		the input stream
-     * @param out
-     * 		the output stream
-     * @param root
-     * 		the root of the tree
-     * @param breakConnection
-     * 		a method that breaks the connection. Used iff
-     * 		an exception is encountered. Prevents deadlock
-     * 		if there is a thread stuck on a blocking IO
-     * 		operation that will never finish due to a
-     * 		failure.
-     * @param reconnectConfig
-     *      reconnect configuration from platform
+     * @param configuration   the configuration
+     * @param threadManager   responsible for managing thread lifecycles
+     * @param in              the input stream
+     * @param out             the output stream
+     * @param root            the root of the tree
+     * @param breakConnection a method that breaks the connection. Used iff an exception is encountered. Prevents
+     *                        deadlock if there is a thread stuck on a blocking IO operation that will never finish due
+     *                        to a failure.
+     * @param reconnectConfig reconnect configuration from platform
      */
     public TeachingSynchronizer(
+            @NonNull final Configuration configuration,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
@@ -123,7 +119,7 @@ public class TeachingSynchronizer {
         outputStream = Objects.requireNonNull(out, "out must not be null");
 
         subtrees = new LinkedList<>();
-        subtrees.add(new TeacherSubtree(root));
+        subtrees.add(new TeacherSubtree(configuration, root));
 
         this.breakConnection = breakConnection;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
@@ -158,6 +154,7 @@ public class TeachingSynchronizer {
                 root == null ? null : root.getClass().getName(),
                 root == null ? "[]" : root.getRoute());
 
+        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         // A future improvement might be to reuse threads between subtrees.
         final StandardWorkGroup workGroup =
                 new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
@@ -177,6 +174,7 @@ public class TeachingSynchronizer {
                         }
                         cause = cause.getCause();
                     }
+                    firstReconnectException.compareAndSet(null, ex);
                     // Let StandardWorkGroup log it as an error using the EXCEPTION marker
                     return false;
                 });
@@ -197,7 +195,8 @@ public class TeachingSynchronizer {
         workGroup.waitForTermination();
 
         if (workGroup.hasExceptions()) {
-            throw new MerkleSynchronizationException("Synchronization failed with exceptions");
+            throw new MerkleSynchronizationException(
+                    "Synchronization failed with exceptions", firstReconnectException.get());
         }
 
         logger.info(RECONNECT.getMarker(), "finished sending tree");

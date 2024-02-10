@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ public abstract class VirtualMapBench extends BaseBench {
         final AtomicInteger countBad = new AtomicInteger(0);
         final AtomicInteger countMissing = new AtomicInteger(0);
 
-        IntStream.range(0, ForkJoinPool.getCommonPoolParallelism()).parallel().forEach(thread -> {
+        IntStream.range(0, 64).parallel().forEach(thread -> {
             int idx;
             while ((idx = index.getAndIncrement()) < map.length) {
                 BenchmarkValue dataItem = virtualMap.get(new BenchmarkKey(idx));

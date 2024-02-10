@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl.test.serdes;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.networkadmin.impl.serdes.EntityNumCodec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.io.IOException;
@@ -49,7 +50,7 @@ class EntityNumSerdesTest {
     }
 
     @Test
-    void canDeserializeFromAppropriateStream() throws IOException {
+    void canDeserializeFromAppropriateStream() throws ParseException {
         BDDMockito.given(input.readInt()).willReturn(SOME_NUM.intValue());
 
         final var parsed = subject.parse(input);

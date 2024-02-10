@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,6 +316,16 @@ public class HapiSpecSetup {
      */
     public boolean autoSnapshotManagement() {
         return props.getBoolean("recordStream.autoSnapshotManagement");
+    }
+
+    /**
+     * Returns whether a {@link HapiSpec} doing automatic snapshot management should
+     * override an existing snapshot.
+     *
+     * @return whether an auto-snapshot managing {@link HapiSpec} should override an existing snapshot
+     */
+    public boolean overrideExistingSnapshot() {
+        return props.getBoolean("recordStream.overrideExistingSnapshot");
     }
 
     /**

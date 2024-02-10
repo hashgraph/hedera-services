@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -93,7 +94,19 @@ public class TransferContextImpl implements TransferContext {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
+        AccountID createdAccount;
+        try {
+            createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
+        } catch (HandleException e) {
+            if (getHandleContext().isSelfSubmitted()) {
+                final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
+                getHandleContext().reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
+            }
+            // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
+            // if there is a failed auto-creation triggered from CryptoTransfer
+            // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
+            throw e;
+        }
         resolutions.put(alias, createdAccount);
     }
 

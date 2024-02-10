@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+import org.gradle.kotlin.dsl.support.serviceOf
+
 plugins {
     id("java")
     id("com.hedera.hashgraph.maven-publish")
 }
 
 @Suppress("UnstableApiUsage")
-if (!gradle.startParameter.isConfigurationCacheRequested) {
+if (!serviceOf<BuildFeatures>().configurationCache.active.get()) {
     // plugin to support 'artifactregistry' repositories that currently only works without
     // configuration cache
     // https://github.com/GoogleCloudPlatform/artifact-registry-maven-tools/issues/85

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -39,7 +40,7 @@ public final class CodecFactory {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
+            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
                 if (input instanceof ReadableStreamingData in) {
                     return parser.parse(in);
                 } else {

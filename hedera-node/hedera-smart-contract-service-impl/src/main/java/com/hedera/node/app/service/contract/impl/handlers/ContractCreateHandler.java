@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,10 +64,8 @@ public class ContractCreateHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        context.recordBuilder(ContractCreateRecordBuilder.class)
-                .contractCreateResult(outcome.result())
-                .contractID(outcome.recipientIdIfCreated())
-                .withTinybarGasFee(outcome.tinybarGasCost());
+        outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class));
+
         throwIfUnsuccessful(outcome.status());
     }
 

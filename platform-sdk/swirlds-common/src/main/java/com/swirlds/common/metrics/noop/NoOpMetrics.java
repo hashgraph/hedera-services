@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package com.swirlds.common.metrics.noop;
 
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

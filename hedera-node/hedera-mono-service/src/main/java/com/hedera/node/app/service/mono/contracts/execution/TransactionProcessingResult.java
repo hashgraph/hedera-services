@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
 
     private List<ContractID> createdContracts = Collections.emptyList();
     private Map<ContractID, Long> contractNonces = new TreeMap<>();
+    private Long signerNonce;
 
     public static TransactionProcessingResult failed(
             final long gasUsed,
@@ -141,6 +142,14 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
 
     public void setActions(final List<SolidityAction> actions) {
         this.actions = actions;
+    }
+
+    public Long getSignerNonce() {
+        return signerNonce;
+    }
+
+    public void setSignerNonce(Long signerNonce) {
+        this.signerNonce = signerNonce;
     }
 
     /**

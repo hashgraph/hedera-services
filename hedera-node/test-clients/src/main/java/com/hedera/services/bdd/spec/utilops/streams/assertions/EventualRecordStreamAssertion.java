@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import com.hedera.services.bdd.junit.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
@@ -73,20 +73,18 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
-    public EventualRecordStreamAssertion(
-            final Function<HapiSpec, RecordStreamAssertion> assertionFactory, final Duration timeout) {
-        super(timeout);
-        this.assertionFactory = assertionFactory;
+    public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
+        Objects.requireNonNull(spec);
+        return switch (spec.targetNetworkType()) {
+            case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
+            case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
+            case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
+        };
     }
 
     @Override
     protected boolean submitOp(final HapiSpec spec) throws Throwable {
-        final var locToUse =
-                switch (spec.targetNetworkType()) {
-                    case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
-                    case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
-                    case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
-                };
+        final var locToUse = recordStreamLocFor(spec);
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));
         unsubscribe = validatingListener.subscribe(new StreamDataListener() {

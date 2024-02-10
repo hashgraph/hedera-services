@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingChildRecordCausesMaxChildRecordsExceeded;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -164,6 +165,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
+    private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -715,7 +717,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
                             final var payer = spec.registry().getAccountID(CIVILIAN);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            final var child = lookup.getFirstNonStakingChildRecord();
                             assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, approxTransferFee);
                         }))
                 .then(
@@ -1322,18 +1324,18 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         newKeyNamed(ALIAS_2),
                         newKeyNamed("alias3"),
                         newKeyNamed("alias4"),
-                        newKeyNamed("alias5"),
+                        newKeyNamed("alias5"))
+                .then(assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
                         cryptoTransfer(
-                                        tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS))
-                                .via("multipleAutoAccountCreates"),
+                                tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS)),
+                        "multipleAutoAccountCreates",
                         getTxnRecord("multipleAutoAccountCreates")
                                 .hasNonStakingChildRecordCount(3)
                                 .logged(),
                         getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)))
-                .then(
+                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)),
                         cryptoTransfer(
                                         tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, "alias5", 100))
@@ -1343,7 +1345,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasNonStakingChildRecordCount(0)
                                 .logged(),
                         getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
+                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS))));
     }
 
     @HapiTest
@@ -1641,7 +1643,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             getHollowAccountInfoAfterTransfers);
                 }))
                 .then(getTxnRecord(NFT_XFER)
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -43,4 +44,14 @@ public interface GenesisAccountRecordBuilder {
      */
     @NonNull
     GenesisAccountRecordBuilder memo(@NonNull final String memo);
+
+    /**
+     * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
+     * (accounts are specified in the {@code TransferList} input param)
+     *
+     * @param hbarTransfers the net list of adjustments to make to account balances
+     * @return this builder
+     */
+    @NonNull
+    CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public abstract class Schema implements Comparable<Schema> {
      *
      * @param version The version of this schema
      */
-    protected Schema(@NonNull SemanticVersion version) {
+    protected Schema(@NonNull final SemanticVersion version) {
         this.version = Objects.requireNonNull(version);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.hedera.node.app.records;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +59,7 @@ final class BlockRecordServiceTest {
             Object[] args = invocation.getArguments();
             assertEquals(1, args.length);
             Schema schema = (Schema) args[0];
-            assertEquals(RELEASE_045_VERSION, schema.getVersion());
+            assertEquals(CURRENT_VERSION, schema.getVersion());
             Set<StateDefinition> states = schema.statesToCreate();
             assertEquals(2, states.size());
             assertTrue(states.contains(StateDefinition.singleton("RUNNING_HASHES", RunningHashes.PROTOBUF)));
@@ -83,6 +83,6 @@ final class BlockRecordServiceTest {
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();
-        blockRecordService.registerSchemas(schemaRegistry, RELEASE_045_VERSION);
+        blockRecordService.registerSchemas(schemaRegistry, CURRENT_VERSION);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,9 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
         if (version < EvmFnResult.RELEASE_0400_VERSION) {
             // Always empty before 0.40
             seeded.setContractNonces(Collections.emptyList());
+        }
+        if (version < EvmFnResult.RELEASE_0470_VERSION) {
+            seeded.setSignerNonce(null);
         }
         return seeded;
     }

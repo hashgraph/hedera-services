@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,7 +185,7 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         final var newAddress = worldState.newContractAddress(sponsor);
         numAllocatedIds++;
         final var sponsorId = accountIdFromEvmAddress(sponsor);
-        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
+        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts(), newAddress);
         if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
             pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
         }
@@ -201,6 +201,11 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         return (pendingCreationCustomizer != null)
                 ? pendingCreationCustomizer
                 : wrappedWorldView().customizerForPendingCreation();
+    }
+
+    @Override
+    public boolean hasPendingCreationCustomizer() {
+        return pendingCreationCustomizer != null || wrappedWorldView().hasPendingCreationCustomizer();
     }
 
     @Override
@@ -279,7 +284,8 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
 
     @FunctionalInterface
     interface CustomizerFactory {
-        ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger);
+        ContractCustomizer apply(
+                AccountID id, TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger, Address address);
     }
 
     // --- Only used by unit tests

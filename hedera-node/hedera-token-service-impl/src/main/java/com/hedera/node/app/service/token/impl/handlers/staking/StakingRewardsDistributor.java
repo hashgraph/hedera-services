@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,13 +70,14 @@ public class StakingRewardsDistributor {
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
 
             var receiverId = receiver;
-            var beneficiary = modifiedAccount;
+            var beneficiary = originalAccount;
             // Only if reward is greater than zero do all operations below.
             // But, even if reward is zero add it to the rewardsPaid map, if the account is not declining reward.
             // It is important to know that if the reward is zero because of its zero stake in last period.
             // This is needed to update stakePeriodStart for the account.
             if (reward > 0) {
-                stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
+                stakingRewardHelper.decreasePendingRewardsBy(
+                        stakingInfoStore, stakingRewardsStore, reward, originalAccount.stakedNodeIdOrThrow());
 
                 // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
                 // accounts until we find a non-deleted account to try to reward (it may still decline)
@@ -97,12 +98,18 @@ public class StakingRewardsDistributor {
                     } while (beneficiary.deleted());
                 }
             }
-
-            if (!beneficiary.declineReward() && reward > 0) {
-                // even if reward is zero it will be added to rewardsPaid
-                applyReward(reward, beneficiary, writableStore);
-                rewardsPaid.merge(receiverId, reward, Long::sum);
+            // Even if the account has declineReward set or if reward is 0, it should still
+            // be added to the rewardsPaid map because ONLY this map's keys have their
+            // stakeAtStartOfLastRewardedPeriod value updated; and for some reward=0
+            // situations it is critical to update stakeAtStartOfLastRewardedPeriod
+            final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
+            // If the beneficiary has declineReward set, then the reward is zero
+            final var finalReward = beneficiary.declineReward() ? 0 : reward;
+            // even if reward is zero it will be added to rewardsPaid
+            if (finalReward > 0) {
+                applyReward(finalReward, mutableBeneficiary, writableStore);
             }
+            rewardsPaid.merge(receiverId, finalReward, Long::sum);
         }
         return rewardsPaid;
     }

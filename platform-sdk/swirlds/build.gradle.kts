@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ plugins { id("com.hedera.hashgraph.application") }
 mainModuleInfo {
     runtimeOnly("com.swirlds.platform.core")
     runtimeOnly("com.swirlds.merkle")
-    runtimeOnly("com.swirlds.merkle.test")
+    runtimeOnly("com.swirlds.merkle.test.fixtures")
 }
 
 application.mainClass.set("com.swirlds.platform.Browser")

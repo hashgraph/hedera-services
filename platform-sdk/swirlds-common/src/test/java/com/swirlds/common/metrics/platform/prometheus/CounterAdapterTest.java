@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.DefaultCounter;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;

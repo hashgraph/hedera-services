@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import com.hedera.hapi.node.transaction.ThrottleBucket;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -71,7 +71,7 @@ public class ThrottleManager {
         final ThrottleDefinitions tempThrottleDefinitions;
         try {
             tempThrottleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (IOException e) {
+        } catch (ParseException e) {
             throw new HandleException(UNPARSEABLE_THROTTLE_DEFINITIONS);
         }
         validate(tempThrottleDefinitions);

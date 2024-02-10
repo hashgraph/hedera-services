@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -141,34 +140,30 @@ public class SolvencyPreCheck {
         if (authorizer.hasWaivedFees(payerID, functionality, txBody)) {
             return;
         }
-
         final var totalFee = ingestCheck ? fees.totalWithoutServiceFee() : fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
-        final ResponseCodeEnum insufficientFeeResponseCode;
-        if (ingestCheck) { // throw different exception for ingest
-            insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
-        } else {
-            insufficientFeeResponseCode = INSUFFICIENT_ACCOUNT_BALANCE;
-        }
+
         if (offeredFee < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
         if (availableBalance < fees.networkFee()) {
-            throw new InsufficientNetworkFeeException(insufficientFeeResponseCode, totalFee);
+            throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
         if (offeredFee < totalFee) {
             throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
 
         if (availableBalance < totalFee) {
-            throw new InsufficientServiceFeeException(insufficientFeeResponseCode, totalFee);
+            throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
 
-        final long additionalCosts;
+        long additionalCosts = 0L;
         try {
             final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
-            additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
+            if (ingestCheck) {
+                additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
+            }
         } catch (final NullPointerException ex) {
             // One of the required fields was not present
             throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
@@ -177,7 +172,7 @@ public class SolvencyPreCheck {
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
-            throw new InsufficientNonFeeDebitsException(insufficientFeeResponseCode, totalFee);
+            throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
     }
 

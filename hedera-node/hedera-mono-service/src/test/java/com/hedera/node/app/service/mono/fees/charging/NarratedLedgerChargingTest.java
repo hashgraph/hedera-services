@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ class NarratedLedgerChargingTest {
         verify(ledger).adjustBalance(grpcNodeId, -networkFee + 1);
         verify(feeDistribution).distributeChargedFee(networkFee - 1, accountsLedger);
 
-        assertEquals(0, subject.totalFeesChargedToPayer());
+        assertEquals(399, subject.totalFeesChargedToPayer());
     }
 
     @Test

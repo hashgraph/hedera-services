@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,15 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,8 +53,7 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                mock(PreconsensusSystemTransactionManager.class),
-                mock(ConsensusSystemTransactionManager.class),
+                (a, b) -> {},
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
                 initialState,
@@ -118,9 +115,6 @@ class SwirldStateManagerTests {
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
         when(platformState.copy()).thenReturn(platformState);
-
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
 
         state.setPlatformState(platformState);
 

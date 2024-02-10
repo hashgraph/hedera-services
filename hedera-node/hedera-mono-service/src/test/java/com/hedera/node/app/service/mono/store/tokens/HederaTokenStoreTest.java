@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,8 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
@@ -105,8 +101,6 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -115,13 +109,10 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -132,18 +123,12 @@ import org.mockito.Mockito;
 class HederaTokenStoreTest {
     private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
     private static final JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
-    private static final Key adminKey = TOKEN_ADMIN_KT.asKey();
-    private static final Key kycKey = TOKEN_KYC_KT.asKey();
-    private static final Key freezeKey = TOKEN_FREEZE_KT.asKey();
-    private static final Key wipeKey = MISC_ACCOUNT_KT.asKey();
-    private static final Key supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
     private static final Key feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
     private static final Key pauseKey = TOKEN_PAUSE_KT.asKey();
 
     private static final String symbol = "NOTHBAR";
     private static final String newSymbol = "REALLYSOM";
     private static final String newMemo = "NEWMEMO";
-    private static final String memo = "TOKENMEMO";
     private static final String name = "TOKENNAME";
     private static final String newName = "NEWNAME";
     private static final int maxCustomFees = 5;
@@ -151,15 +136,12 @@ class HederaTokenStoreTest {
     private static final int numPositiveBalances = 1;
     private static final long expiry = CONSENSUS_NOW + 1_234_567L;
     private static final long newExpiry = CONSENSUS_NOW + 1_432_765L;
-    private static final long totalSupply = 1_000_000L;
-    private static final int decimals = 10;
     private static final long treasuryBalance = 50_000L;
     private static final long sponsorBalance = 1_000L;
     private static final TokenID misc = IdUtils.asToken("0.0.1");
     private static final TokenID nonfungible = IdUtils.asToken("0.0.2");
     private static final int maxAutoAssociations = 1234;
     private static final int alreadyUsedAutoAssocitaions = 123;
-    private static final boolean freezeDefault = true;
     private static final long newAutoRenewPeriod = 2_000_000L;
     private static final AccountID payer = IdUtils.asAccount("0.0.12345");
     private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
@@ -682,12 +664,6 @@ class HederaTokenStoreTest {
         final long startSponsorANfts = 4;
         final long startCounterpartyANfts = 1;
         final var receiver = EntityId.fromGrpcAccountId(counterparty);
-        final var nftNumPair1 = NftNumPair.fromLongs(1111, 111);
-        final var nftId1 = nftNumPair1.nftId();
-        final var nftNumPair2 = NftNumPair.fromLongs(1112, 112);
-        final var nftId2 = nftNumPair2.nftId();
-        final var nftNumPair3 = NftNumPair.fromLongs(1113, 113);
-        final var nftId3 = nftNumPair3.nftId();
         given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
@@ -716,9 +692,7 @@ class HederaTokenStoreTest {
         final long startCounterpartyNfts = 8;
         final long startTreasuryTNfts = 4;
         final long startCounterpartyTNfts = 1;
-        final var sender = EntityId.fromGrpcAccountId(counterparty);
         final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
-        final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
         given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(receiver);
         given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
@@ -751,8 +725,6 @@ class HederaTokenStoreTest {
         final long startCounterpartyTNfts = 1;
         final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
         final var receiver = EntityId.fromGrpcAccountId(counterparty);
-        final var nftNumPair3 = NftNumPair.fromLongs(1113, 113);
-        final var nftId3 = nftNumPair3.nftId();
         given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
@@ -986,8 +958,6 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsZeroTokenBalanceKey() {
-        final Set<TokenID> tokenSet = new HashSet<>();
-        tokenSet.add(nonfungible);
         givenUpdateTarget(ALL_KEYS, nonfungibleToken);
         final var op = updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
@@ -1000,8 +970,6 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathIgnoresZeroExpiry() {
-        final Set<TokenID> tokenSet = new HashSet<>();
-        tokenSet.add(misc);
         givenUpdateTarget(ALL_KEYS, token);
         final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
@@ -1448,6 +1416,23 @@ class HederaTokenStoreTest {
     }
 
     @Test
+    void invalidTokenTakesPriorityOverDecimalCheck() {
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+        assertFalse(fungibleChange.hasExpectedDecimals());
+
+        // Here we set the expected decimals in the change, but also simulate the token not existing
+        fungibleChange.setExpectedDecimals(4);
+        given(backingTokens.contains(misc)).willReturn(false);
+
+        final var result = subject.tryTokenChange(fungibleChange);
+        // Even though the expected decimals don't match, the invalid token status takes priority (i.e. is returned
+        // instead of a decimal error status)
+        Assertions.assertEquals(INVALID_TOKEN_ID, result);
+    }
+
+    @Test
     void decimalMatchingWorks() {
         assertEquals(2, subject.get(misc).decimals());
         assertTrue(subject.matchesTokenDecimals(misc, 2));
@@ -1509,27 +1494,9 @@ class HederaTokenStoreTest {
         assertEquals(INVALID_TOKEN_ID, outcome);
     }
 
-    TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
-        return TokenCreateTransactionBody.newBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
-                .setMemo(memo)
-                .setAdminKey(adminKey)
-                .setKycKey(kycKey)
-                .setFreezeKey(freezeKey)
-                .setWipeKey(wipeKey)
-                .setSupplyKey(supplyKey)
-                .setFeeScheduleKey(feeScheduleKey)
-                .setSymbol(symbol)
-                .setName(name)
-                .setInitialSupply(totalSupply)
-                .setTreasury(treasury)
-                .setDecimals(decimals)
-                .setFreezeDefault(freezeDefault);
-    }
-
     private void assertSoleTokenChangesAreForNftTransfer(final NftId nft, final AccountID from, final AccountID to) {
         final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
-        final var ownershipChange = tokenChanges.get(0);
+        final var ownershipChange = tokenChanges.getFirst();
         assertEquals(nft.tokenId(), ownershipChange.getToken());
         final var nftTransfer = ownershipChange.getNftTransfers(0);
         assertEquals(nft.serialNo(), nftTransfer.getSerialNumber());

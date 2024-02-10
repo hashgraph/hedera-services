@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,18 +49,18 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.prehandle.DueDiligenceException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -207,19 +207,15 @@ public class TransactionChecker {
      */
     @NonNull
     public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
-
-        // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
-        // bytes. This is a safe assumption because the code that receives the transaction bytes and parses
-        // the transaction also verifies that the transaction is not too large.
-
-        // 1. Validate that either the transaction is using deprecated fields, or not, but not both
+        // NOTE: Since we've already parsed the transaction, we assume that the
+        // transaction was not too many bytes. This is a safe assumption because
+        // the code that receives the transaction bytes and parses/ the transaction
+        // also verifies that the transaction is not too large.
         checkTransactionDeprecation(tx);
 
-        // 2. Get the transaction body and the signature map
         final Bytes bodyBytes;
         final SignatureMap signatureMap;
         if (tx.signedTransactionBytes().length() > 0) {
-            // 2a. Parse and validate the signed transaction (if available). Throws PreCheckException if not parsable.
             final var signedTransaction = parseStrict(
                     tx.signedTransactionBytes().toReadableSequentialData(),
                     SignedTransaction.PROTOBUF,
@@ -227,30 +223,33 @@ public class TransactionChecker {
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {
-            // 2b. Use the deprecated fields instead
             bodyBytes = tx.bodyBytes();
             signatureMap = tx.sigMap();
         }
-
-        // 2b. There has to be a signature map. Every transaction has at least one signature for the payer.
         if (signatureMap == null) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
-
-        // 2c. Check that the signature map does not have any entries that could apply to the same key
-        checkPrefixMismatch(signatureMap.sigPairOrElse(emptyList()));
-
-        // 3. Parse and validate TransactionBody
         final var txBody =
                 parseStrict(bodyBytes.toReadableSequentialData(), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
-        checkTransactionBody(txBody);
-
-        // 4. Return TransactionInfo
+        final HederaFunctionality functionality;
         try {
-            final var functionality = HapiUtils.functionOf(txBody);
-            return new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality);
+            functionality = HapiUtils.functionOf(txBody);
         } catch (UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
+        }
+        if (!txBody.hasTransactionID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
+        return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality));
+    }
+
+    public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) throws PreCheckException {
+        try {
+            checkPrefixMismatch(txInfo.signatureMap().sigPairOrElse(emptyList()));
+            checkTransactionBody(txInfo.txBody());
+            return txInfo;
+        } catch (PreCheckException e) {
+            throw new DueDiligenceException(e.responseCode(), txInfo);
         }
     }
 
@@ -309,7 +308,7 @@ public class TransactionChecker {
      */
     public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
-        checkTransactionID(txBody.transactionID());
+        checkTransactionID(txBody.transactionIDOrThrow());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());
 
         // You cannot have a negative transaction fee!! We're not paying you, buddy.
@@ -369,11 +368,7 @@ public class TransactionChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    private void checkTransactionID(@Nullable final TransactionID txnId) throws PreCheckException {
-        if (txnId == null) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
-        }
-
+    private void checkTransactionID(@NonNull final TransactionID txnId) throws PreCheckException {
         // Determines whether the given {@link AccountID} can possibly be valid. This method does not refer to state,
         // it simply looks at the {@code accountID} itself to determine whether it might be valid. An ID is valid if
         // the shard and realm match the shard and realm of this node, AND if the account number is positive or if
@@ -469,19 +464,14 @@ public class TransactionChecker {
             throws PreCheckException {
         try {
             return codec.parseStrict(data);
-        } catch (MalformedProtobufException e) {
-            // We could not parseStrict the protobuf because it was not valid protobuf
-            throw new PreCheckException(parseErrorCode);
-        } catch (UnknownFieldException e) {
-            // We do not allow newer clients to send transactions to older networks.
-            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        } catch (IOException e) {
-            // This should technically not be possible. The data buffer supplied
-            // is either based on a byte[] or a byte buffer, in both cases all data
-            // is available and a generic IO exception shouldn't happen. If it does,
-            // it indicates the data could not be parsed, but for a reason other than
-            // those causing an MalformedProtobufException or UnknownFieldException.
-            logger.warn("Unexpected IO exception while parsing protobuf", e);
+        } catch (ParseException e) {
+            if (e.getCause() instanceof UnknownFieldException) {
+                // We do not allow newer clients to send transactions to older networks.
+                throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
+            }
+
+            // Either the protobuf was malformed, or something else failed during parsing
+            logger.warn("ParseException while parsing protobuf", e);
             throw new PreCheckException(parseErrorCode);
         }
     }

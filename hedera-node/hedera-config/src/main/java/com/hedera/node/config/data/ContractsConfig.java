@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "0til100M,2000til450M") @NetworkProperty String storageSlotPriceTiers,
         @ConfigProperty(defaultValue = "7890000") @NetworkProperty long defaultLifetime,
         // @ConfigProperty(defaultValue = "") KnownBlockValues knownBlockHash,
-        // @ConfigProperty(value = "keys.legacyActivations", defaultValue="1058134by[1062784]")
-        // LegacyContractIdActivations keysLegacyActivations,
+        @ConfigProperty(value = "keys.legacyActivations", defaultValue = "1058134by[1062784]")
+                String keysLegacyActivations,
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "32") @NetworkProperty int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,
@@ -76,4 +76,10 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.38") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
+                boolean evmAllowCallsToNonContractAccounts,
+        @ConfigProperty(value = "evm.chargeGasOnPreEvmException", defaultValue = "true") @NetworkProperty
+                boolean chargeGasOnPreEvmException,
+        @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
+                Set<Long> evmNonExtantContractsFail,
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.46") @NetworkProperty String evmVersion) {}

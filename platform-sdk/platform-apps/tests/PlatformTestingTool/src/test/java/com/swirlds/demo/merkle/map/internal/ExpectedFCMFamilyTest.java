@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,18 @@
 package com.swirlds.demo.merkle.map.internal;
 
 import static com.swirlds.demo.platform.TestUtil.signTransaction;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLE_FAILED;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLE_REJECTED;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionState.INITIALIZED;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Expire;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
-import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState.HANDLED;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState.HANDLE_FAILED;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState.HANDLE_REJECTED;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState.INITIALIZED;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Expire;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Transfer;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -41,6 +41,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -58,16 +59,14 @@ import com.swirlds.demo.platform.fs.stresstest.proto.UpdateAccount;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
-import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
-import com.swirlds.merkle.map.test.lifecycle.TransactionState;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.LifecycleStatus;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.security.Security;
 import java.time.Duration;
@@ -281,7 +280,6 @@ class ExpectedFCMFamilyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1_000})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.EXPECTED_MAP)
     @DisplayName("Add Entities during Reconnect test")
     public void addEntitiesFromActualFCMsReconnectTest(int size) {

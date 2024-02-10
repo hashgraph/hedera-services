@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,20 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,9 +39,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link SignedStateManager#handlePostconsensusSignatureTransaction}
+ * Tests for {@link StateSignatureCollector#handlePostConsensusSignatures(List)}
  */
-class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
+class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
@@ -73,7 +74,7 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
 
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(stateConfig)
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -95,7 +96,7 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
             for (int node = 0; node < addressBook.getSize(); node++) {
                 manager.handlePostconsensusSignatureTransaction(
@@ -106,10 +107,8 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
                                 states.get(round).getState().getHash()));
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+                assertNotNull(lastCompletedState, "latest complete state should not be null");
                 assertSame(signedStates.get((long) round), lastCompletedState.get(), "unexpected last completed state");
             }
 

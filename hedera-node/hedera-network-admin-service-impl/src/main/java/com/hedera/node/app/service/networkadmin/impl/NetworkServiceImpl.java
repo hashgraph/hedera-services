@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,10 @@ package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
-import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceNetworkSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
@@ -31,20 +29,11 @@ import java.util.Set;
 public final class NetworkServiceImpl implements NetworkService {
 
     @Override
-    public void registerSchemas(final @NonNull SchemaRegistry registry, final SemanticVersion version) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         registry.register(networkSchema(version));
     }
 
-    private Schema networkSchema(final SemanticVersion version) {
-        return new Schema(version) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of();
-            }
-
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {}
-        };
+    private Schema networkSchema(@NonNull final SemanticVersion version) {
+        return new InitialModServiceNetworkSchema(version);
     }
 }

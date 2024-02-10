@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.state;
 
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Listener invoked for each consensus round that occurs. */
 @FunctionalInterface
 public interface HandleConsensusRoundListener {
-    void onConsensusRound(@NonNull Round round, @NonNull SwirldDualState dualState, @NonNull HederaState state);
+    void onConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull HederaState state);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,9 +107,8 @@ public enum StakeIdChangeType {
 
     public static StakeIdChangeType forCase(
             @Nullable final Account currentAccount, @NonNull final Account modifiedAccount) {
-        final var curStakedIdCase =
-                currentAccount == null ? UNSET : currentAccount.stakedId().kind();
-        final var newStakedIdCase = modifiedAccount.stakedId().kind();
+        final var curStakedIdCase = currentAccount == null ? UNSET : getCurrentStakedIdCase(currentAccount);
+        final var newStakedIdCase = getCurrentStakedIdCase(modifiedAccount);
 
         // Ends with staking to a node
         if (newStakedIdCase.equals(STAKED_NODE_ID)) {
@@ -139,6 +138,26 @@ public enum StakeIdChangeType {
             } else {
                 return FROM_NODE_TO_ABSENT;
             }
+        }
+    }
+
+    /**
+     * Returns the current stakedId case for the given account.
+     * A temporary measure until PBJ supports setting UNSET values for OneOfTypes.
+     * When we use sentinel value to reset the stakedAccountId or stakedNodeId,
+     * we currently don't get UnSET for stakedId().kind() and this causes issues when determining the case.
+     * This method will be removed once PBJ supports setting UNSET values for OneOfTypes(https://github.com/hashgraph/pbj/issues/160).
+     * @param account the account to check
+     * @return the current stakedId case for the given account
+     */
+    private static Account.StakedIdOneOfType getCurrentStakedIdCase(final Account account) {
+        final var kind = account.stakedId().kind();
+        if (kind.equals(STAKED_NODE_ID)) {
+            return account.stakedNodeIdOrElse(-1L) == -1L ? UNSET : STAKED_NODE_ID;
+        } else if (kind.equals(STAKED_ACCOUNT_ID)) {
+            return account.stakedAccountId() == null ? UNSET : STAKED_ACCOUNT_ID;
+        } else {
+            return UNSET;
         }
     }
 

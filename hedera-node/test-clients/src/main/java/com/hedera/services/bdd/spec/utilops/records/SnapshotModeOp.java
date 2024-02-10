@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,16 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_DETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
@@ -37,7 +41,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEngine;
@@ -50,6 +53,7 @@ import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -126,20 +130,25 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Keys are also regenerated every test execution
             "ed25519",
             "ECDSA_secp256k1",
+            // Ethereum data depends on ECDSA keys
+            "ethereum_data",
+            "ethereum_hash",
             // Plus some other fields that we might prefer to make deterministic
             "symbol",
             // Bloom field in ContractCall result
             "bloom",
             // runningHash in SubmitMessageHandler
             "topicRunningHash",
-            "prng_bytes");
+            "prng_bytes",
+            "tokenNum");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
-    private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
+    private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
     private static final String PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC = "hedera-node/test-clients/record-snapshots";
+    public static final long UNADJUSTED_NUM_CUTOFF = 666_666_666L;
 
     private final SnapshotMode mode;
     private final Set<SnapshotMatchMode> matchModes;
@@ -176,8 +185,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta(
-                "ContractKeysHTS", "DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla");
+        final var snapshotFileMeta = new SnapshotFileMeta("ERCPrecompile", "getErc721TokenURIFromErc20TokenFails");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -198,9 +206,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = specialMatchModes.length > 0
-                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
-                : EnumSet.noneOf(SnapshotMatchMode.class);
+        this.matchModes = computeMatchModesIncluding(specialMatchModes);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -250,8 +256,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     @Override
     public boolean hasWorkToDo() {
-        // We leave the spec name null in submitOp() if we are running against a target network that
-        // doesn't match the SnapshotMode of this operation; or if the HapiSpec is non-deterministic
+        // We leave the snapshot file metadata null in submitOp() if we are running against a
+        // target network that doesn't match the SnapshotMode of this operation; or if the
+        // HapiSpec is non-deterministic
         return snapshotFileMeta != null;
     }
 
@@ -284,21 +291,24 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     .toList();
             // We only want to snapshot or fuzzy-match the records that come after the placeholder creation
             boolean placeholderFound = false;
+            // For statuses that only mono-service rejects at ingest, we need to skip fuzzy-matching;
+            // unless there is some special case in the spec where mono-service will still use them
+            // (primarily because they appear in a contract operation's child records)
+            final Set<ResponseCodeEnum> statusesToIgnore = !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)
+                    ? spec.setup().streamlinedIngestChecks()
+                    : EnumSet.noneOf(ResponseCodeEnum.class);
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
+                if (parsedItem.isPropertyOverride()) {
+                    // Property overrides vary with the previous contents of 0.0.121
+                    continue;
+                }
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
                     continue;
                 }
-                if (spec.setup()
-                                .streamlinedIngestChecks()
-                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
-                        && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
-                    // There are no records written in mono-service when a transaction fails in ingest.
-                    // But in modular service we write them. While validating fuzzy records, we always skip the records
-                    // with status in spec.streamlinedIngestChecks. But for some error codes like INVALID_ACCOUNT_ID,
-                    // which are thrown in both ingest and handle, we need to validate the records.
+                if (statusesToIgnore.contains(parsedItem.status())) {
                     continue;
                 }
                 if (!placeholderFound) {
@@ -359,20 +369,43 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     fromStream.itemBody(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
-                            + fromStream.itemBody() + ")");
+                            + fromStream.itemBody() + ")",
+                    matchModes);
             fuzzyMatch(
                     fromSnapshot.itemRecord(),
                     snapshotPlaceholderNum,
                     fromStream.itemRecord(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
+                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")",
+                    matchModes);
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
             Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
                     + (postPlaceholderItems.size())
                     + " were generated");
         }
+    }
+
+    /**
+     * Given an expected and actual message, recursively asserts that they are exactly equal.
+     *
+     * @param expectedMessage the expected message
+     * @param actualMessage the actual message
+     * @param mismatchContext a supplier of a string that describes the context of the mismatch
+     */
+    public static void exactMatch(
+            @NonNull GeneratedMessageV3 expectedMessage,
+            @NonNull GeneratedMessageV3 actualMessage,
+            @NonNull final Supplier<String> mismatchContext) {
+        // Long.MAX_VALUE placeholder nums to make normalization a no-op
+        fuzzyMatch(
+                expectedMessage,
+                Long.MAX_VALUE,
+                actualMessage,
+                Long.MAX_VALUE,
+                mismatchContext,
+                EnumSet.of(FULLY_DETERMINISTIC));
     }
 
     /**
@@ -390,12 +423,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param actualPlaceholderNum the placeholder number for the actual message
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private void fuzzyMatch(
+    private static void fuzzyMatch(
             @NonNull GeneratedMessageV3 expectedMessage,
             final long expectedPlaceholderNum,
             @NonNull GeneratedMessageV3 actualMessage,
             final long actualPlaceholderNum,
-            @NonNull final Supplier<String> mismatchContext) {
+            @NonNull final Supplier<String> mismatchContext,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expectedMessage);
         requireNonNull(actualMessage);
         requireNonNull(mismatchContext);
@@ -426,24 +460,24 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
-            if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
-                //                System.out.println("YES");
+
+            if (shouldSkip(expectedName, expectedField.getValue().getClass(), matchModes)) {
                 continue;
             }
-            //            System.out.println("NO");
             matchValues(
                     expectedName,
                     expectedField.getValue(),
                     expectedPlaceholderNum,
                     actualField.getValue(),
                     actualPlaceholderNum,
-                    mismatchContext);
+                    mismatchContext,
+                    matchModes);
         }
     }
 
     // inline initializers
     @SuppressWarnings({"java:S3599", "java:S1171"})
-    private String describeFieldCountMismatch(
+    private static String describeFieldCountMismatch(
             @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> expectedFields,
             @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> actualFields) {
         final Set<String> expectedNames = fieldNamesOf(expectedFields);
@@ -472,7 +506,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return description.toString();
     }
 
-    private Set<String> fieldNamesOf(@NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> fields) {
+    private static Set<String> fieldNamesOf(
+            @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> fields) {
         return fields.stream()
                 .map(Map.Entry::getKey)
                 .map(Descriptors.FieldDescriptor::getName)
@@ -491,13 +526,14 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param actualPlaceholderNum the placeholder number for the actual value
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private void matchValues(
+    private static void matchValues(
             @NonNull final String fieldName,
             @NonNull final Object expectedValue,
             final long expectedPlaceholderNum,
             @NonNull final Object actualValue,
             final long actualPlaceholderNum,
-            @NonNull final Supplier<String> mismatchContext) {
+            @NonNull final Supplier<String> mismatchContext,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(fieldName);
         requireNonNull(expectedValue);
         requireNonNull(actualValue);
@@ -518,7 +554,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                             actualElement,
                             actualPlaceholderNum,
                             mismatchContext,
-                            fieldName);
+                            fieldName,
+                            matchModes);
                 }
             } else {
                 Assertions.fail("Mismatched types between expected list '" + expectedList + "' and "
@@ -532,7 +569,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     actualValue,
                     actualPlaceholderNum,
                     () -> "Matching field '" + fieldName + "' " + mismatchContext.get(),
-                    fieldName);
+                    fieldName,
+                    matchModes);
         }
     }
 
@@ -547,20 +585,26 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      * @param fieldName the name of the field being fuzzy-matched
      */
-    private void matchSingleValues(
+    private static void matchSingleValues(
             @NonNull final Object expected,
             final long expectedPlaceholderNum,
             @NonNull final Object actual,
             final long actualPlaceholderNum,
             @NonNull final Supplier<String> mismatchContext,
-            @NonNull final String fieldName) {
+            @NonNull final String fieldName,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expected);
         requireNonNull(actual);
         requireNonNull(mismatchContext);
         if (expected instanceof GeneratedMessageV3 expectedMessage) {
             if (actual instanceof GeneratedMessageV3 actualMessage) {
                 fuzzyMatch(
-                        expectedMessage, expectedPlaceholderNum, actualMessage, actualPlaceholderNum, mismatchContext);
+                        expectedMessage,
+                        expectedPlaceholderNum,
+                        actualMessage,
+                        actualPlaceholderNum,
+                        mismatchContext,
+                        matchModes);
             } else {
                 Assertions.fail("Mismatched types between expected message '" + expectedMessage + "' and "
                         + actual.getClass().getSimpleName() + " '" + actual + "' - " + mismatchContext.get());
@@ -580,10 +624,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Amount '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if ("accountNum".equals(fieldName) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
+            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName))
+                    && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
+            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+                Assertions.assertTrue(expected != null && actual != null, "Token name is null");
             } else {
                 Assertions.assertEquals(
                         expected,
@@ -594,7 +641,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         }
     }
 
-    private long feeVariation(Set<SnapshotMatchMode> matchModes) {
+    private static long feeVariation(@NonNull final Set<SnapshotMatchMode> matchModes) {
         if (matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)) {
             return CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR;
         } else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
@@ -614,37 +661,48 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         requireNonNull(message);
         if (message instanceof AccountID accountID) {
-            final var normalizedNum = placeholderNum < accountID.getAccountNum()
-                    ? accountID.getAccountNum() - placeholderNum
-                    : accountID.getAccountNum();
-            return accountID.toBuilder().setAccountNum(normalizedNum).build();
+            return accountID.toBuilder()
+                    .setAccountNum(numOrOffsetBetween(accountID.getAccountNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ContractID contractID) {
-            final var normalizedNum = placeholderNum < contractID.getContractNum()
-                    ? contractID.getContractNum() - placeholderNum
-                    : contractID.getContractNum();
-            return contractID.toBuilder().setContractNum(normalizedNum).build();
+            return contractID.toBuilder()
+                    .setContractNum(numOrOffsetBetween(contractID.getContractNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TopicID topicID) {
-            final var normalizedNum = placeholderNum < topicID.getTopicNum()
-                    ? topicID.getTopicNum() - placeholderNum
-                    : topicID.getTopicNum();
-            return topicID.toBuilder().setTopicNum(normalizedNum).build();
+            return topicID.toBuilder()
+                    .setTopicNum(numOrOffsetBetween(topicID.getTopicNum(), placeholderNum))
+                    .build();
         } else if (message instanceof TokenID tokenID) {
-            final var normalizedNum = placeholderNum < tokenID.getTokenNum()
-                    ? tokenID.getTokenNum() - placeholderNum
-                    : tokenID.getTokenNum();
-            return tokenID.toBuilder().setTokenNum(normalizedNum).build();
+            return tokenID.toBuilder()
+                    .setTokenNum(numOrOffsetBetween(tokenID.getTokenNum(), placeholderNum))
+                    .build();
         } else if (message instanceof FileID fileID) {
-            final var normalizedNum =
-                    placeholderNum < fileID.getFileNum() ? fileID.getFileNum() - placeholderNum : fileID.getFileNum();
-            return fileID.toBuilder().setFileNum(normalizedNum).build();
+            return fileID.toBuilder()
+                    .setFileNum(numOrOffsetBetween(fileID.getFileNum(), placeholderNum))
+                    .build();
         } else if (message instanceof ScheduleID scheduleID) {
-            final var normalizedNum = placeholderNum < scheduleID.getScheduleNum()
-                    ? scheduleID.getScheduleNum() - placeholderNum
-                    : scheduleID.getScheduleNum();
-            return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
+            return scheduleID.toBuilder()
+                    .setScheduleNum(numOrOffsetBetween(scheduleID.getScheduleNum(), placeholderNum))
+                    .build();
         } else {
             return message;
         }
+    }
+
+    /**
+     * For numbers smaller than a cutoff used to create intentionally missing entity
+     * ids; but greater than the placeholder num, returns the number minus the placeholder
+     * num.
+     *
+     * @param num the number to maybe offset
+     * @param placeholderNum the placeholder number to use in normalization
+     * @return the number or the number minus the placeholder number
+     */
+    private static long numOrOffsetBetween(final long num, final long placeholderNum) {
+        if (num >= UNADJUSTED_NUM_CUTOFF) {
+            return num;
+        }
+        return placeholderNum < num ? num - placeholderNum : num;
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {
@@ -730,10 +788,17 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return locs;
     }
 
-    private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
+    private static boolean shouldSkip(
+            @NonNull final String expectedName,
+            @NonNull final Class<?> expectedType,
+            @NonNull final Set<SnapshotMatchMode> matchModes) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
-        if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
+        requireNonNull(matchModes);
+        if (matchModes.contains(FULLY_DETERMINISTIC)) {
+            return false;
+        }
+        if ("contractCallResult".equals(expectedName) /* && ByteString.class.isAssignableFrom(expectedType)*/) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
@@ -747,6 +812,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_NONCE);
         } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
+        } else if ("logInfo".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_LOG_DATA);
+        } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }
@@ -765,5 +834,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             log.error("Could not write readable items to txt", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
+        final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
+        if (System.getenv("CI") != null) {
+            // In CI the presence of end-of-staking-period records makes all
+            // nonces non-deterministic (as any transaction may or may not
+            // trigger an end-of-period record, which consumes a nonce)
+            modes.add(NONDETERMINISTIC_NONCE);
+        }
+        return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -28,6 +29,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A read-only {@link HederaNativeOperations} based on a {@link QueryContext}.
@@ -116,16 +118,16 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      * Refuses to transfer value.
      *
      * @param amount           the amount to transfer
-     * @param fromNumber the number of the account to transfer from
-     * @param toNumber   the number of the account to transfer to
+     * @param fromEntityId the id of the account to transfer from
+     * @param toEntityId   the id of the account to transfer to
      * @param strategy         the {@link VerificationStrategy} to use
      * @throws UnsupportedOperationException always
      */
     @Override
     public ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
-            final long fromNumber,
-            final long toNumber,
+            final AccountID fromEntityId,
+            final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot transfer value in query context");
     }
@@ -133,11 +135,13 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     /**
      * Refuses to track a deletion.
      *
-     * @param deletedNumber the number of the deleted contract
-     * @param beneficiaryNumber the number of the beneficiary
+     * @param deletedId the number of the deleted contract
+     * @param beneficiaryId the number of the beneficiary
+     * @param frame the frame in which to track the beneficiary
      */
     @Override
-    public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
+    public void trackSelfDestructBeneficiary(
+            final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
         throw new UnsupportedOperationException("Cannot track deletion in query context");
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class StorageSizeValidator {
         final var maxIndividualSlots = contractsConfig.maxKvPairsIndividual();
         storageSizeChanges.forEach(change -> {
             final var contractSlotsUsed =
-                    change.numAdded() + hederaOperations.getOriginalSlotsUsed(change.contractNumber());
+                    change.numAdded() + hederaOperations.getOriginalSlotsUsed(change.contractID());
             validateResource(maxIndividualSlots >= contractSlotsUsed, MAX_CONTRACT_STORAGE_EXCEEDED);
         });
     }

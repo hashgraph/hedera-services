@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import java.io.IOException;
+import com.hedera.pbj.runtime.ParseException;
 import org.junit.jupiter.api.Test;
 
 final class BlockRecordFormatV6Test {
     @Test
-    void serialization() throws IOException {
+    void serialization() throws ParseException {
         for (var testBlocks : TEST_BLOCKS) {
             for (var rec : testBlocks) {
                 // Serialize the record, and then parse the object back in from the protobuf just to make sure we can

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,20 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
+import static com.hedera.node.app.service.contract.impl.exec.failure.AbortException.validateTrueOrAbort;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.contractIDToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.sponsorCustomizedCreation;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -39,7 +41,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,25 +61,28 @@ public class TransactionProcessor {
     private final CustomGasCharging gasCharging;
     private final CustomMessageCallProcessor messageCall;
     private final ContractCreationProcessor contractCreation;
+    private final FeatureFlags featureFlags;
 
     public TransactionProcessor(
             @NonNull final FrameBuilder frameBuilder,
             @NonNull final FrameRunner frameRunner,
             @NonNull final CustomGasCharging gasCharging,
             @NonNull final CustomMessageCallProcessor messageCall,
-            @NonNull final ContractCreationProcessor contractCreation) {
+            @NonNull final ContractCreationProcessor contractCreation,
+            @NonNull final FeatureFlags featureFlags) {
         this.frameBuilder = requireNonNull(frameBuilder);
         this.frameRunner = requireNonNull(frameRunner);
         this.gasCharging = requireNonNull(gasCharging);
         this.messageCall = requireNonNull(messageCall);
         this.contractCreation = requireNonNull(contractCreation);
+        this.featureFlags = requireNonNull(featureFlags);
     }
 
     /**
      * Records the two or three parties involved in a transaction.
      *
-     * @param sender          the externally-operated account that signed the transaction (AKA the "origin")
-     * @param relayer         if non-null, the account relayed an Ethereum transaction on behalf of the sender
+     * @param sender the externally-operated account that signed the transaction (AKA the "origin")
+     * @param relayer if non-null, the account relayed an Ethereum transaction on behalf of the sender
      * @param receiverAddress the address of the account receiving the top-level call
      */
     private record InvolvedParties(
@@ -92,13 +97,14 @@ public class TransactionProcessor {
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
      *
-     * @param transaction     the transaction to process
-     * @param updater         the world updater to commit to
+     * @param transaction the transaction to process
+     * @param updater the world updater to commit to
      * @param feesOnlyUpdater if base commit fails, a fees-only updater
-     * @param context         the context to use
-     * @param tracer          the tracer to use
-     * @param config          the node configuration
+     * @param context the context to use
+     * @param tracer the tracer to use
+     * @param config the node configuration
      * @return the result of running the transaction to completion
+     * @throws AbortException if processing failed before initiating the EVM transaction
      */
     public HederaEvmTransactionResult processTransaction(
             @NonNull final HederaEvmTransaction transaction,
@@ -107,8 +113,25 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        // Setup for the EVM transaction; thrown HandleException's will propagate back to the workflow
-        final var parties = computeInvolvedParties(transaction, updater, config);
+
+        final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
+
+        try {
+            return processTransactionWithParties(
+                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
+        } catch (HandleException e) {
+            throw new AbortException(e.getStatus(), parties.senderId());
+        }
+    }
+
+    private HederaEvmTransactionResult processTransactionWithParties(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
+            @NonNull final HederaEvmContext context,
+            @NonNull final ActionSidecarContentTracer tracer,
+            @NonNull final Configuration config,
+            @NonNull final InvolvedParties parties) {
         final var gasCharges =
                 gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         final var initialFrame = frameBuilder.buildInitialFrameWith(
@@ -116,18 +139,14 @@ public class TransactionProcessor {
                 updater,
                 context,
                 config,
+                featureFlags,
                 parties.sender().getAddress(),
                 parties.receiverAddress(),
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
-        final HederaEvmTransactionResult result;
-        try {
-            result = frameRunner.runToCompletion(
-                    transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
-        } catch (ResourceExhaustedException e) {
-            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
-        }
+        final var result = frameRunner.runToCompletion(
+                transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -141,6 +160,20 @@ public class TransactionProcessor {
 
         // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
+    }
+
+    private InvolvedParties safeComputeInvolvedParties(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Configuration config,
+            @NonNull final HederaEvmContext context) {
+        try {
+            return computeInvolvedParties(transaction, updater, config);
+        } catch (AbortException e) {
+            throw e;
+        } catch (HandleException e) {
+            throw new AbortException(e.getStatus(), transaction.senderId(), null, true);
+        }
     }
 
     private HederaEvmTransactionResult safeCommit(
@@ -168,9 +201,12 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ResponseCodeEnum reason,
             @NonNull final Configuration config) {
-        // Note these calls cannot fail, or processTransaction() above would have aborted right away
+        // Note that computing involved parties and charging for gas are guaranteed to succeed here,
+        // or processTransaction() would have aborted right away
         final var parties = computeInvolvedParties(transaction, updater, config);
         gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
+        // (FUTURE) Once fee charging is more consumable in the HandleContext, we will also want
+        // to re-charge top-level HAPI fees in this edge case (not only gas); not urgent though
         updater.commit();
         return resourceExhaustionFrom(parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason);
     }
@@ -189,8 +225,8 @@ public class TransactionProcessor {
      * {@link HederaWorldUpdater#setupAliasedTopLevelCreate(ContractCreateTransactionBody, Address)}
      *
      * @param transaction the transaction to set up
-     * @param updater     the updater for the transaction
-     * @param config      the current node configuration
+     * @param updater the updater for the transaction
+     * @param config the current node configuration
      * @return the involved parties determined while setting up the transaction
      */
     private InvolvedParties computeInvolvedParties(
@@ -198,68 +234,96 @@ public class TransactionProcessor {
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
         final var sender = updater.getHederaAccount(transaction.senderId());
-        validateTrue(sender != null, INVALID_ACCOUNT_ID);
+        validateTrueOrAbort(sender != null, INVALID_ACCOUNT_ID, transaction.senderId());
+        final var senderId = sender.hederaId();
         HederaEvmAccount relayer = null;
         if (transaction.isEthereumTransaction()) {
             relayer = updater.getHederaAccount(requireNonNull(transaction.relayerId()));
-            validateTrue(relayer != null, INVALID_ACCOUNT_ID);
+            validateTrueOrAbort(relayer != null, INVALID_ACCOUNT_ID, senderId);
         }
         final InvolvedParties parties;
         if (transaction.isCreate()) {
             final Address to;
+            final var op = requireNonNull(transaction.hapiCreation());
             if (transaction.isEthereumTransaction()) {
-                final ReadableAccountStore accountStore =
-                        updater.enhancement().nativeOperations().readableAccountStore();
-                var createBody = requireNonNull(transaction.hapiCreation());
-                final var modifiedBodyBuilder = createBody.copyBuilder();
-
-                final Account sponsor = requireNonNull(accountStore.getAccountById(transaction.senderId()));
-                if (sponsor.memo() != null) {
-                    modifiedBodyBuilder.memo(sponsor.memo());
-                }
-                if (sponsor.autoRenewAccountId() != null) {
-                    modifiedBodyBuilder.autoRenewAccountId(sponsor.autoRenewAccountId());
-                }
-                if (sponsor.stakedAccountId() != null) {
-                    modifiedBodyBuilder.stakedAccountId(sponsor.stakedAccountId());
-                }
-                if (sponsor.autoRenewSeconds() > 0) {
-                    modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder()
-                            .seconds(sponsor.autoRenewSeconds())
-                            .build());
-                }
-                modifiedBodyBuilder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations());
-                modifiedBodyBuilder.declineReward(sponsor.declineReward());
-
-                final var modifiedBody = modifiedBodyBuilder.build();
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                updater.setupAliasedTopLevelCreate(modifiedBody, to);
+                updater.setupAliasedTopLevelCreate(sponsorCustomizedCreation(op, sender.toNativeAccount()), to);
             } else {
-                to = updater.setupTopLevelCreate(transaction.hapiCreation());
+                to = updater.setupTopLevelCreate(op);
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
-            if (maybeLazyCreate(transaction, to, config)) {
-                // Presumably these checks _could_ be done later as part of the message
-                // call, but historically we have failed fast when they do not pass
-                validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
-                final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
-                validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
-
-                // do not attempt to lazy create account with alias that is a long zero address
-                validateTrue(!isLongZeroAddress(alias.toByteArray()), INVALID_CONTRACT_ID);
-
-                parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
-                updater.setupTopLevelLazyCreate(parties.receiverAddress);
+            if (contractNotRequired(to, config)) {
+                parties = partiesWhenContractNotRequired(to, sender, relayer, transaction, updater, config);
             } else {
-                validateTrue(to != null, INVALID_CONTRACT_ID);
-                parties =
-                        new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
+                parties = partiesWhenContractRequired(to, sender, relayer, transaction, updater, config);
             }
         }
         if (transaction.isEthereumTransaction()) {
+            validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
             parties.sender().incrementNonce();
+        }
+        return parties;
+    }
+
+    private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
+        final var maybeGrandfatheredNumber =
+                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
+
+        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
+    }
+
+    private InvolvedParties partiesWhenContractRequired(
+            @Nullable final HederaEvmAccount to,
+            @NonNull final HederaEvmAccount sender,
+            @Nullable final HederaEvmAccount relayer,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Configuration config) {
+        final InvolvedParties parties;
+        if (maybeLazyCreate(transaction, to, config)) {
+            // Presumably these checks _could_ be done later as part of the message
+            // call, but historically we have failed fast when they do not pass
+            validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
+            final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
+            validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
+            parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+            updater.setupTopLevelLazyCreate(requireNonNull(parties.receiverAddress));
+        } else {
+            validateTrue(to != null, INVALID_CONTRACT_ID);
+            parties = new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
+        }
+        return parties;
+    }
+
+    private InvolvedParties partiesWhenContractNotRequired(
+            @Nullable final HederaEvmAccount to,
+            @NonNull final HederaEvmAccount sender,
+            @Nullable final HederaEvmAccount relayer,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Configuration config) {
+        final InvolvedParties parties;
+        if (maybeLazyCreate(transaction, to, config)) {
+            // Only set up the lazy creation if the transaction has a value and a valid alias
+            final var alias = transaction.contractIdOrThrow().evmAddress();
+            if (transaction.hasValue() && alias != null) {
+                parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+                updater.setupTopLevelLazyCreate(requireNonNull(parties.receiverAddress));
+            } else {
+                updater.setContractNotRequired();
+                parties =
+                        new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
+            }
+        } else {
+            // In order to be EVM equivalent, we need to gracefully handle calls to potentially non-existent contracts
+            // and thus create a receiver address even if it may not exist in the ledger
+            updater.setContractNotRequired();
+            parties = new InvolvedParties(
+                    sender,
+                    relayer,
+                    to != null ? to.getAddress() : contractIDToBesuAddress(transaction.contractIdOrThrow()));
         }
         return parties;
     }

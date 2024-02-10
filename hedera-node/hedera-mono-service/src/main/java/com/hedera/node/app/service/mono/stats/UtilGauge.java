@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.metrics.api.DoubleGauge;
 import java.util.function.DoubleSupplier;
 
 public record UtilGauge(DoubleSupplier valueSource, DoubleGauge.Config config, NonAtomicReference<DoubleGauge> gauge) {}

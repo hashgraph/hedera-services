@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
     }
 
     @Test
@@ -121,7 +122,7 @@ class EvmFnResultTest {
         assertEquals(createdContractIds, subject.getCreatedContractIds());
         assertEquals(createdContractNonces, subject.getContractNonces());
         assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-        assertEquals(EvmFnResult.RELEASE_0400_VERSION, subject.getVersion());
+        assertEquals(EvmFnResult.RELEASE_0470_VERSION, subject.getVersion());
         assertEquals(gas, subject.getGas());
         assertEquals(amount, subject.getAmount());
         assertEquals(functionParameters, subject.getFunctionParameters());
@@ -143,6 +144,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.failed(
@@ -174,6 +176,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.successful(
@@ -216,6 +219,7 @@ class EvmFnResultTest {
                 0L,
                 0L,
                 new byte[0],
+                null,
                 null);
 
         final var input = TransactionProcessingResult.successful(
@@ -251,7 +255,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var three = new EvmFnResult(
                 contractId,
                 result,
@@ -265,7 +270,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var four = new EvmFnResult(
                 contractId,
                 result,
@@ -279,7 +285,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var five = new EvmFnResult(
                 contractId,
                 result,
@@ -293,7 +300,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var six = new EvmFnResult(
                 contractId,
                 result,
@@ -307,7 +315,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var seven = new EvmFnResult(
                 contractId,
                 result,
@@ -321,7 +330,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
         final var nine = new EvmFnResult(
                 contractId,
                 result,
@@ -335,7 +345,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 "randomParameters".getBytes(),
-                senderId);
+                senderId,
+                null);
         final var ten = new EvmFnResult(
                 contractId,
                 result,
@@ -349,6 +360,7 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 "randomParameters".getBytes(),
+                null,
                 null);
 
         assertNotEquals(null, one);
@@ -382,7 +394,8 @@ class EvmFnResultTest {
                         subject.getGas(),
                         subject.getAmount(),
                         subject.getFunctionParameters(),
-                        subject.getSenderId()),
+                        subject.getSenderId(),
+                        subject.getSignerNonce()),
                 subject);
     }
 
@@ -423,7 +436,7 @@ class EvmFnResultTest {
                         + "functionParameters="
                         + CommonUtils.hex(functionParameters)
                         + ", senderId=EntityId{shard=0, realm=0, num=42}"
-                        + "}",
+                        + ", signerNonce=null}",
                 subject.toString());
     }
 
@@ -449,7 +462,8 @@ class EvmFnResultTest {
                 gas,
                 amount,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
 
         final var grpc = ContractFunctionResult.newBuilder()
                 .setGasUsed(gasUsed)
@@ -489,7 +503,8 @@ class EvmFnResultTest {
                 gas,
                 0L,
                 functionParameters,
-                senderId);
+                senderId,
+                null);
 
         final var grpc = ContractFunctionResult.newBuilder()
                 .setGasUsed(gasUsed)
@@ -531,7 +546,7 @@ class EvmFnResultTest {
 
     @Test
     void serializableDetWorks() {
-        assertEquals(EvmFnResult.RELEASE_0400_VERSION, subject.getVersion());
+        assertEquals(EvmFnResult.RELEASE_0470_VERSION, subject.getVersion());
         assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
     }
 

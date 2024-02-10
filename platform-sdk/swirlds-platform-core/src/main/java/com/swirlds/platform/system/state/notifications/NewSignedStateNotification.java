@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.DualState;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.SwirldState;
 import java.time.Instant;
 
@@ -29,7 +29,7 @@ import java.time.Instant;
 public class NewSignedStateNotification extends AbstractNotification {
 
     private final SwirldState swirldState;
-    private final DualState dualState;
+    private final PlatformState platformState;
     private final long round;
     private final Instant consensusTimestamp;
 
@@ -37,18 +37,18 @@ public class NewSignedStateNotification extends AbstractNotification {
      * Create a notification for a newly signed state.
      *
      * @param swirldState        the swirld state from the round that is now fully signed
-     * @param dualState          the dual state from the round that is now fully signed
+     * @param platformState      the platform state from the round that is now fully signed
      * @param round              the round that is now fully signed
      * @param consensusTimestamp the consensus timestamp of the round that is now fully signed
      */
     public NewSignedStateNotification(
             final SwirldState swirldState,
-            final DualState dualState,
+            final PlatformState platformState,
             final long round,
             final Instant consensusTimestamp) {
 
         this.swirldState = swirldState;
-        this.dualState = dualState;
+        this.platformState = platformState;
         this.round = round;
         this.consensusTimestamp = consensusTimestamp;
     }
@@ -63,10 +63,10 @@ public class NewSignedStateNotification extends AbstractNotification {
     }
 
     /**
-     * Get the dual state from the round that is now fully signed.
+     * Get the platform state from the round that is now fully signed.
      */
-    public DualState getDualState() {
-        return dualState;
+    public PlatformState getPlatformState() {
+        return platformState;
     }
 
     /**

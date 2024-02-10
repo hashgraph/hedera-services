@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.config;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
@@ -26,6 +27,8 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
+import com.hedera.node.config.types.LongPair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -57,9 +60,9 @@ public class BootstrapConfigProviderImpl extends ConfigProviderBase {
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(VersionConfig.class)
                 .withConfigDataType(LedgerConfig.class)
-                .withConverter(new BytesConverter())
-                .withConverter(new SemanticVersionConverter())
-                .withConverter(new LongPairConverter());
+                .withConverter(Bytes.class, new BytesConverter())
+                .withConverter(SemanticVersion.class, new SemanticVersionConverter())
+                .withConverter(LongPair.class, new LongPairConverter());
 
         try {
             addFileSource(builder, APPLICATION_PROPERTIES_PATH_ENV, APPLICATION_PROPERTIES_DEFAULT_PATH, 100);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -132,6 +134,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -167,6 +170,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GlobalDynamicPropertiesTest {
+    private final String EVM_VERSION_0_38 = "v0.38";
+    private final String EVM_VERSION_0_46 = "v0.46";
 
     private static final String[] balanceExportPaths =
             new String[] {"/opt/hgcapp/accountBalances", "data/saved/accountBalances"};
@@ -235,6 +240,9 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.releaseAliasAfterDeletion());
+        assertFalse(subject.validateSidecarsEnabled());
+        assertFalse(subject.areTokenBalancesEnabledInQueries());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isContractsNoncesExternalizationEnabled());
         assertFalse(subject.isEip2930Enabled());
@@ -405,6 +413,9 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
         assertTrue(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.releaseAliasAfterDeletion());
+        assertFalse(subject.validateSidecarsEnabled());
+        assertTrue(subject.areTokenBalancesEnabledInQueries());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -538,6 +549,31 @@ class GlobalDynamicPropertiesTest {
         assertEquals(66L, subject.exchangeRateGasReq());
         assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
         assertEquals(evmVersions[0], subject.evmVersion());
+    }
+
+    @Test
+    void callsToNonExistingEntitiesEnabledForEvm38() {
+        givenPropsWithSeed(1);
+        given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(EVM_VERSION_0_38);
+
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        assertFalse(subject.callsToNonExistingEntitiesEnabled(Address.ZERO));
+    }
+
+    @Test
+    void callsToNonExistingEntitiesEnabledForGrandfatheredContract() {
+        final Address addr = Address.ZERO;
+
+        givenPropsWithSeed(1);
+        given(properties.getEvmAddresses(CONTRACTS_GRANDFATHER_CONTRACTS)).willReturn(Set.of(addr));
+        given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(EVM_VERSION_0_46);
+        given(properties.getBooleanProperty(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS))
+                .willReturn(true);
+
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        assertFalse(subject.callsToNonExistingEntitiesEnabled(addr));
     }
 
     private void givenPropsWithSeed(final int i) {
@@ -698,6 +734,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty(STAKING_MAX_STAKE_REWARDED)).willReturn(i + 100L);
         given(properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD)).willReturn(i + 101L);
         given(properties.getBooleanProperty(HEDERA_TXN_EIP2930_ENABLED)).willReturn(i % 2 == 0);
+        given(properties.getBooleanProperty(TOKEN_BALANCES_ENABLED_IN_QUERIES)).willReturn((i + 102) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

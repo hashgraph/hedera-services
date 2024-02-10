@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -40,8 +43,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnown
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownNonFungibleToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -64,6 +69,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -78,6 +84,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
@@ -106,7 +115,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_AC
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
@@ -118,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -152,13 +161,16 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -181,11 +193,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
     public static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
     public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
+    public static final String ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION_PROP = "accounts.releaseAliasAfterDeletion";
     public static final String AUTO_ACCOUNT = "autoAccount";
     public static final String LAZY_ACCOUNT_RECIPIENT = "lazyAccountRecipient";
     public static final String PAY_TXN = "payTxn";
     public static final String CREATE_TX = "createTX";
     public static final String V_0_34 = "v0.34";
+    private static final String ERC20_ABI = "ERC20ABI";
+    private static final String SENDER_TXN = "senderTxn";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -213,7 +228,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 autoAssociationPropertiesWorkAsExpected(),
                 autoAssociationWorksForContracts(),
                 // Interactions between HIP-18 and HIP-542
-                customFeesHaveExpectedAutoCreateInteractions());
+                customFeesHaveExpectedAutoCreateInteractions(),
+                callToExpiredContractResultsInSuccess(),
+                accountDeletionDoesNotReleaseAliasWithDisabledFF());
     }
 
     @HapiTest
@@ -311,7 +328,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
-    // Cannot be enabled as HapiTest because long term schedule transactions is not implemented in mod service
+    @BddMethodIsNotATest
     final HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(
@@ -439,7 +456,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then();
     }
 
-    // Cannot be enabled as HapiTest because tokens.maxPerAccount is not being used in mod service
+    @BddMethodIsNotATest
     final HapiSpec maxAutoAssociationSpec() {
         final int MONOGAMOUS_NETWORK = 1;
         final int maxAutoAssociations = 100;
@@ -463,7 +480,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
-    // Cannot be enabled as HapiTest because expiration is not implemented in mod service
+    @BddMethodIsNotATest
     public HapiSpec canDissociateFromMultipleExpiredTokens() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
@@ -760,8 +777,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, op2, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(overriding(LAZY_CREATION_ENABLED, FALSE), withOpContext((spec, opLog) -> {
@@ -871,8 +890,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
 
                     final var op2 = ethereumContractCreate(CONTRACT)
@@ -1101,8 +1122,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
                     allRunFor(spec, op, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
@@ -1257,6 +1280,131 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                 .between(CIVILIAN, finalReceiverKey))
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
                                 .via(finalTxn));
+    }
+
+    private HapiSpec callToExpiredContractResultsInSuccess() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
+        final String RECEIVER = "receiver";
+        final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
+        final String INNER_TXN = "innerTx";
+
+        return propertyPreservingHapiSpec("callToExpiredContractResultsInSuccess")
+                .preserving(minAutoRenewPeriodPropertyName)
+                .given(
+                        overriding(minAutoRenewPeriodPropertyName, "1"),
+                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).autoRenewSecs(1L))
+                .when(
+                        sleepFor(2_000L),
+                        withOpContext((spec, op) -> allRunFor(
+                                spec,
+                                balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
+                                contractCall(
+                                                INTERNAL_CALLER_CONTRACT,
+                                                "callWithValueTo",
+                                                mirrorAddrWith(receiverId.get().getAccountNum()))
+                                        .gas(100_000L)
+                                        .via(INNER_TXN))))
+                .then(
+                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    @HapiTest
+    final HapiSpec accountDeletionDoesNotReleaseAliasWithDisabledFF() {
+
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+        final AtomicReference<AccountID> aliasedAccountId = new AtomicReference<>();
+        final AtomicReference<String> tokenNum = new AtomicReference<>();
+        final var totalSupply = 50;
+        final var ercUser = "ercUser";
+        final var HBAR_XFER = "hbarXfer";
+
+        return propertyPreservingHapiSpec("accountDeletionDoesNotReleaseAliasWithDisabledFF")
+                .preserving(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION_PROP)
+                .given(
+                        overriding(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION_PROP, "false"),
+                        cryptoCreate(AUTO_ACCOUNT).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(TOKEN_TREASURY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            partyId.set(registry.getAccountID(AUTO_ACCOUNT));
+                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                            counterAlias.set(evmAddressBytes);
+                        }),
+                        tokenCreate("token")
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(totalSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                .supplyKey(SECP_256K1_SOURCE_KEY)
+                                .exposingCreatedIdTo(tokenNum::set))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .signedBy(DEFAULT_PAYER, AUTO_ACCOUNT)
+                                    .via(HBAR_XFER);
+
+                            var op2 = getAliasedAccountInfo(counterAlias.get())
+                                    .logged()
+                                    .exposingIdTo(aliasedAccountId::set)
+                                    .has(accountWith()
+                                            .hasEmptyKey()
+                                            .noAlias()
+                                            .nonce(0)
+                                            .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                            .receiverSigReq(false)
+                                            .memo(LAZY_MEMO));
+
+                            // send eth transaction signed by the ecdsa key
+                            var op3 = ethereumCallWithFunctionAbi(
+                                            true,
+                                            "token",
+                                            getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(GENESIS)
+                                    .nonce(0)
+                                    .gasPrice(50L)
+                                    .maxGasAllowance(FIVE_HBARS)
+                                    .maxPriorityGas(2L)
+                                    .gasLimit(1_000_000L)
+                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+
+                            // assert account nonce is increased to 1
+                            var op4 = getAliasedAccountInfo(counterAlias.get())
+                                    .logged()
+                                    .has(accountWith().nonce(1));
+
+                            allRunFor(spec, op1, op2, op3, op4);
+
+                            spec.registry().saveAccountId(ercUser, aliasedAccountId.get());
+                            spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
+                        }),
+                        // delete the account currently holding the alias
+                        cryptoDelete(ercUser))
+                .then(
+                        // try to create a new account with the same alias
+                        withOpContext((spec, opLog) -> {
+                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .signedBy(DEFAULT_PAYER, AUTO_ACCOUNT)
+                                    .hasKnownStatus(ACCOUNT_DELETED);
+
+                            allRunFor(spec, op1);
+                        }));
     }
 
     private long tinybarCostOfGas(final HapiSpec spec, final HederaFunctionality function, final long gasAmount) {

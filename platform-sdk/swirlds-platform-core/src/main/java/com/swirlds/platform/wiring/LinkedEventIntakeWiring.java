@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,18 +31,22 @@ import java.util.List;
  * Wiring for the {@link LinkedEventIntake}.
  *
  * @param eventInput                        the input wire for events to be added to the hashgraph
- * @param pauseInput                        the input wire for pausing the linked event intake
  * @param consensusRoundOutput              the output wire for consensus rounds
- * @param minimumGenerationNonAncientOutput the output wire for the minimum generation non-ancient. This output is
- *                                          transformed from the consensus round output
+ * @param consensusEventsOutput             the output wire for consensus events, transformed from the consensus round
+ *                                          output
+ * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
  * @param flushRunnable                     the runnable to flush the intake
+ * @param startSquelchingRunnable           the runnable to start squelching
+ * @param stopSquelchingRunnable            the runnable to stop squelching
  */
 public record LinkedEventIntakeWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
-        @NonNull OutputWire<Long> minimumGenerationNonAncientOutput,
-        @NonNull Runnable flushRunnable) {
+        @NonNull OutputWire<List<EventImpl>> consensusEventsOutput,
+        @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
+        @NonNull Runnable flushRunnable,
+        @NonNull Runnable startSquelchingRunnable,
+        @NonNull Runnable stopSquelchingRunnable) {
 
     /**
      * Create a new instance of this wiring.
@@ -56,13 +60,12 @@ public record LinkedEventIntakeWiring(
 
         return new LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
-                taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
-                consensusRoundOutput.buildTransformer(
-                        "getMinimumGenerationNonAncient",
-                        "rounds",
-                        consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
-                taskScheduler::flush);
+                consensusRoundOutput.buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents),
+                taskScheduler.buildSecondaryOutputWire(),
+                taskScheduler::flush,
+                taskScheduler::startSquelching,
+                taskScheduler::stopSquelching);
     }
 
     /**
@@ -72,6 +75,5 @@ public record LinkedEventIntakeWiring(
      */
     public void bind(@NonNull final LinkedEventIntake linkedEventIntake) {
         ((BindableInputWire<EventImpl, List<ConsensusRound>>) eventInput).bind(linkedEventIntake::addEvent);
-        ((BindableInputWire<Boolean, List<GossipEvent>>) pauseInput).bind(linkedEventIntake::setPaused);
     }
 }

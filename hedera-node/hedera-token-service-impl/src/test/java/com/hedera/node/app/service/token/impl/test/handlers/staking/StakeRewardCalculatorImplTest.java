@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,13 @@ class StakeRewardCalculatorImplTest {
     @Test
     void zeroRewardsForMissingNodeStakeInfo() {
         final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), null, 321, 123);
+        assertEquals(0, reward);
+    }
+
+    @Test
+    void zeroRewardsForDeletedNodeStakeInfo() {
+        final var stakingInfo = StakingNodeInfo.newBuilder().deleted(true).build();
+        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), stakingInfo, 321, 123);
         assertEquals(0, reward);
     }
 

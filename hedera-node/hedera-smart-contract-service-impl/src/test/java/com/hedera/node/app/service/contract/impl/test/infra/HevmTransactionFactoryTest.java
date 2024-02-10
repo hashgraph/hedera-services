@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,6 +192,22 @@ class HevmTransactionFactoryTest {
         assertNull(transaction.chainId());
         assertEquals(123L, transaction.value());
         assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCallGenerateExceptionTransaction() {
+        final var transaction = getManufacturedCallException(
+                b -> b.contractID(CALLED_CONTRACT_ID).gas(30_000L));
+        assertEquals(AccountID.DEFAULT, transaction.senderId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(Bytes.EMPTY, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(0L, transaction.value());
+        assertEquals(30_000L, transaction.gasLimit());
         assertFalse(transaction.hasOfferedGasPrice());
         assertFalse(transaction.hasMaxGasAllowance());
         assertNull(transaction.hapiCreation());
@@ -619,6 +635,16 @@ class HevmTransactionFactoryTest {
                 .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
                 .contractCall(callWith(spec))
                 .build());
+    }
+
+    private HederaEvmTransaction getManufacturedCallException(
+            @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
+        return subject.fromContractTxException(
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder())
+                        .contractCall(callWith(spec))
+                        .build(),
+                new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     private ContractCreateTransactionBody createWith(final Consumer<ContractCreateTransactionBody.Builder> spec) {

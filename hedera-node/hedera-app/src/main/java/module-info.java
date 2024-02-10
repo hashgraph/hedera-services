@@ -18,6 +18,7 @@ module com.hedera.node.app {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.merkledb;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
@@ -58,7 +59,8 @@ module com.hedera.node.app {
             com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.services.cli;
     exports com.hedera.node.app.state.merkle.memory to
             com.hedera.node.services.cli,
             com.swirlds.common;
@@ -95,6 +97,7 @@ module com.hedera.node.app {
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.version to
+            com.hedera.node.app.test.fixtures,
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.validation;

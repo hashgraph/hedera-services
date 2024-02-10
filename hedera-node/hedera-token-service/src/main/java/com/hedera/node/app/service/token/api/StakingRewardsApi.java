@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,14 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Methods for computing an account's pending staking rewards.
  */
 public interface StakingRewardsApi {
+    Logger log = LogManager.getLogger(StakingRewardsApi.class);
     int MINUTES_TO_SECONDS = 60;
     long MINUTES_TO_MILLISECONDS = 60_000L;
     long DAILY_STAKING_PERIOD_MINS = 1440L;
@@ -56,7 +59,7 @@ public interface StakingRewardsApi {
             final long currentStakePeriod,
             final long stakePeriodStart) {
         requireNonNull(account);
-        if (nodeStakingInfo == null) {
+        if (nodeStakingInfo == null || nodeStakingInfo.deleted()) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.rewardSumHistory();
@@ -88,7 +91,7 @@ public interface StakingRewardsApi {
                         account,
                         readableStakingInfoStore.get(account.stakedNodeIdOrThrow()),
                         currentStakePeriod,
-                        account.stakePeriodStart());
+                        clampedStakePeriodStart);
             }
         }
         return 0;
@@ -123,7 +126,7 @@ public interface StakingRewardsApi {
      *
      * @param then the instant
      * @param stakePeriodMins the length of a stake period in minutes
-     * @return
+     * @return the stake period at the given instant
      */
     static long stakePeriodAt(@NonNull final Instant then, final long stakePeriodMins) {
         if (stakePeriodMins == DAILY_STAKING_PERIOD_MINS) {

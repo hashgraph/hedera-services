@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import com.hedera.services.stream.proto.RecordStreamFile;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public interface RecordStreamValidator {
@@ -25,6 +26,11 @@ public interface RecordStreamValidator {
     }
 
     default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
+        // No-op
+    }
+
+    default void validateRecordsAndSidecarsHapi(HapiTestEnv env, List<RecordWithSidecars> records)
+            throws InvocationTargetException, IllegalAccessException {
         // No-op
     }
 }

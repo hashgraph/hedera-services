@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,14 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
@@ -85,9 +80,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                         //				cryptoGetAccountInfoPaths(),
                         //				cryptoGetAccountRecordsPaths(),
                         //				transactionGetRecordPaths(),
-                        miscContractCreatesAndCalls()
-                        //				canonicalScheduleOpsHaveExpectedUsdFees()
-                        )
+                        miscContractCreatesAndCalls())
                 .map(Stream::of)
                 .reduce(Stream.empty(), Stream::concat)
                 .collect(toList());
@@ -99,47 +92,11 @@ public class CostOfEverythingSuite extends HapiSuite {
         };
     }
 
-    HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-        return customHapiSpec("CanonicalScheduleOps")
-                .withProperties(Map.of(
-                        "nodes", "35.231.208.148",
-                        "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-                        "default.payer.pemKeyPassphrase", "<secret>"))
-                .given(
-                        cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(
-                        scheduleCreate(
-                                        CANONICAL,
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .blankMemo()
-                                                .fee(ONE_HBAR))
-                                .via("canonicalCreation")
-                                .payingWith(PAYING_SENDER)
-                                .adminKey(PAYING_SENDER),
-                        getScheduleInfo(CANONICAL).payingWith(PAYING_SENDER),
-                        scheduleSign(CANONICAL)
-                                .via("canonicalSigning")
-                                .payingWith(PAYING_SENDER)
-                                .alsoSigningWith(RECEIVER),
-                        scheduleCreate(
-                                        "tbd",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .memo("")
-                                                .fee(ONE_HBAR)
-                                                .blankMemo()
-                                                .signedBy(PAYING_SENDER))
-                                .payingWith(PAYING_SENDER)
-                                .adminKey(PAYING_SENDER),
-                        scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER))
-                .then(
-                        validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-                        validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0));
-    }
-
+    @HapiTest
     HapiSpec miscContractCreatesAndCalls() {
-        Object[] donationArgs = new Object[] {2, "Hey, Ma!"};
+        // Note that contracts are prohibited to sending value to system
+        // accounts below 0.0.750
+        Object[] donationArgs = new Object[] {800L, "Hey, Ma!"};
         final var multipurposeContract = "Multipurpose";
         final var lookupContract = "BalanceLookup";
 
@@ -154,18 +111,20 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .balance(652),
                         contractCreate(lookupContract).payingWith(CIVILIAN).balance(256))
                 .then(
-                        contractCall(multipurposeContract, "believeIn", 256).payingWith(CIVILIAN),
+                        contractCall(multipurposeContract, "believeIn", 256L).payingWith(CIVILIAN),
                         contractCallLocal(multipurposeContract, "pick")
                                 .payingWith(CIVILIAN)
                                 .logged()
                                 .has(resultWith()
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, "pick", multipurposeContract),
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(256)}))),
+                                                isLiteralResult(new Object[] {256L}))),
                         contractCall(multipurposeContract, "donate", donationArgs)
                                 .payingWith(CIVILIAN),
                         contractCallLocal(lookupContract, "lookup", spec -> new Object[] {
-                                    spec.registry().getAccountID(CIVILIAN).getAccountNum()
+                                    BigInteger.valueOf(spec.registry()
+                                            .getAccountID(CIVILIAN)
+                                            .getAccountNum())
                                 })
                                 .payingWith(CIVILIAN)
                                 .logged());

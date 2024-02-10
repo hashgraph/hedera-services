@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,17 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.datasource.InMemoryBuilder;
-import com.swirlds.virtualmap.datasource.InMemoryDataSource;
-import com.swirlds.virtualmap.datasource.InMemoryKeySet;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
+import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
+import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -369,14 +368,6 @@ public class RecordAccessorImplTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return new InMemoryKeySet<>();
         }
 
         /**

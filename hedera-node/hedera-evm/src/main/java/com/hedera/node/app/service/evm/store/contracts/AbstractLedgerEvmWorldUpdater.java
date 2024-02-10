@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,19 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     @Override
     public MutableAccount createAccount(Address address, long nonce, Wei balance) {
+        return null;
+    }
+
+    /**
+     * Calling a non-existing account makes transferValue() with zero amount
+     * which executes getOrCreate(). To handle this besu specific behavior,
+     * returning null prevents hedera from continuing with the lazy-create flow.
+     *
+     * @param address the address of interest
+     * @return null
+     */
+    @Override
+    public MutableAccount getOrCreate(final Address address) {
         return null;
     }
 

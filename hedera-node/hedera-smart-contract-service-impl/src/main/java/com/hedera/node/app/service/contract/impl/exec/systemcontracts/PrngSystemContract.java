@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
@@ -81,6 +82,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         final ContractID contractID = asEvmContractId(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
 
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             // compute the pseudorandom number
             final var randomNum = generatePseudoRandomData(input, frame);
             requireNonNull(randomNum);
@@ -117,7 +119,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
 
-            var data = contractFunctionResultSuccessFor(
+            var data = successResultOfZeroValueTraceable(
                     gasRequirement, randomNum, frame.getRemainingGas(), frame.getInputData(), senderId);
 
             updater.enhancement()
@@ -172,9 +174,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
     Bytes random256BitGenerator(final MessageFrame frame) {
         final var entropy = ((ProxyWorldUpdater) frame.getWorldUpdater()).entropy();
-        if (entropy.equals(Bytes.wrap(ZERO_ENTROPY.toByteArray()))) {
-            return null;
-        }
         return entropy.slice(0, 32);
     }
 
