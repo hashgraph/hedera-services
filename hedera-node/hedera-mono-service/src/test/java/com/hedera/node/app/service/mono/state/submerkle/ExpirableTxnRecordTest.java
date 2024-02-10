@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -465,7 +465,7 @@ class ExpirableTxnRecordTest {
                 + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
                 + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
                 + " topics=[]}], contractNonces=[], evmAddress=, gas=1000000, amount=0,"
-                + " functionParameters=53656e7369626c6521, senderId=null},"
+                + " functionParameters=53656e7369626c6521, senderId=null, signerNonce=null},"
                 + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
                 + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
                 + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
@@ -500,7 +500,7 @@ class ExpirableTxnRecordTest {
                 + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
                 + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
                 + " topics=[]}], contractNonces=[], evmAddress=, gas=1000000, amount=0,"
-                + " functionParameters=53656e7369626c6521, senderId=null},"
+                + " functionParameters=53656e7369626c6521, senderId=null, signerNonce=null},"
                 + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
                 + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
                 + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"

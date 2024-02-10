@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,5 +55,15 @@ public class CryptoBenchMerkleDb extends CryptoBench {
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
         return new VirtualMap<>(LABEL, dataSourceBuilder);
+    }
+
+    public static void main(String[] args) throws Exception {
+        CryptoBenchMerkleDb.setupMerkleDb();
+        final CryptoBenchMerkleDb bench = new CryptoBenchMerkleDb();
+        bench.setup();
+        bench.beforeTest();
+        bench.transferPrefetch();
+        bench.afterTest();
+        bench.destroy();
     }
 }

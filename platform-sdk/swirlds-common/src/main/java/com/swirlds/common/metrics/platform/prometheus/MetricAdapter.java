@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.CollectorRegistry;
 
 /**
- * Common interface of all adapters, which synchronize a {@link Metric}
+ * Common interface of all adapters, which synchronize a {@link com.swirlds.metrics.api.Metric}
  * with a corresponding Prometheus {@link io.prometheus.client.Collector}.
  */
 public interface MetricAdapter {

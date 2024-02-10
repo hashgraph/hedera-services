@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.state.editor;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.CommandBuilder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -64,7 +65,8 @@ public class StateEditor {
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
 
-        platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+        platformContext = new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

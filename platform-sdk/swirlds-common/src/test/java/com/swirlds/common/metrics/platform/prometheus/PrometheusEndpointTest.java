@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,17 +27,9 @@ import static org.mockito.Mockito.verify;
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
@@ -59,7 +51,15 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.DoubleAccumulator;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;

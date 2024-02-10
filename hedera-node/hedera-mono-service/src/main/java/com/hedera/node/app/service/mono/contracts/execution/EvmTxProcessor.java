@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
         super.setupFields(payload, contractCreation);
 
-        final var chargingResult = chargeForGas(
+        final var chargingResult = chargeForGasAndIncrementEthereumNonce(
                 gasCost,
                 upfrontCost,
                 value,
@@ -247,7 +247,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         mutableCoinbase.incrementBalance(Wei.of(amount * gasPrice));
     }
 
-    private ChargingResult chargeForGas(
+    private ChargingResult chargeForGasAndIncrementEthereumNonce(
             final Wei gasCost,
             final Wei upfrontCost,
             final long value,
@@ -308,7 +308,14 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 final var senderCanAffordValue = senderAccount.getBalance().compareTo(Wei.of(value)) >= 0;
                 validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
+
+            // increment sender's ethereum nonce right after all checks
+            // and before entering the evm for non-static calls
+            if (relayer != null) {
+                senderAccount.incrementNonce();
+            }
         }
+
         return new ChargingResult(senderAccount, mutableRelayer, allowanceCharged);
     }
 
@@ -325,7 +332,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final Wei upfrontCost) {
         // Consume all gas on resource exhaustion, using a clean updater
         final var feesOnlyUpdater = (HederaWorldState.Updater) worldState.updater();
-        chargeForGas(
+        chargeForGasAndIncrementEthereumNonce(
                 gasCost,
                 upfrontCost,
                 value,

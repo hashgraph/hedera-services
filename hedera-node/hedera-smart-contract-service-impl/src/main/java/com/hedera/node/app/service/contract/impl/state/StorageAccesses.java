@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.ContractID;
 import java.util.List;
 
-public record StorageAccesses(long contractNumber, List<StorageAccess> accesses) {
+public record StorageAccesses(ContractID contractID, List<StorageAccess> accesses) {
     public StorageSizeChange summarizeSizeEffects() {
         var numRemovals = 0;
         var numInsertions = 0;
@@ -29,6 +30,6 @@ public record StorageAccesses(long contractNumber, List<StorageAccess> accesses)
                 numInsertions++;
             }
         }
-        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
+        return new StorageSizeChange(contractID, numRemovals, numInsertions);
     }
 }

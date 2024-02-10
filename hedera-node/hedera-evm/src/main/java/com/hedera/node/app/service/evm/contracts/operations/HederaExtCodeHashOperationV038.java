@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -40,42 +41,47 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+    private final EvmProperties evmProperties;
 
     public HederaExtCodeHashOperationV038(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> systemAccountDetector) {
+            Predicate<Address> systemAccountDetector,
+            EvmProperties evmProperties) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
+        this.evmProperties = evmProperties;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         try {
             final Address address = Words.toAddress(frame.popStackItem());
-            if (systemAccountDetector.test(address)) {
-                frame.pushStackItem(UInt256.ZERO);
-                return new OperationResult(cost(true), null);
-            }
-            if (!addressValidator.test(address, frame)) {
-                return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
-            }
-            final var account = frame.getWorldUpdater().get(address);
             boolean accountIsWarm =
                     frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
             long localCost = cost(accountIsWarm);
             if (frame.getRemainingGas() < localCost) {
                 return new OperationResult(localCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
-            } else {
-                if (!account.isEmpty()) {
-                    frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
-                } else {
-                    frame.pushStackItem(UInt256.ZERO);
-                }
-
-                return new OperationResult(localCost, null);
             }
+
+            if (systemAccountDetector.test(address)) {
+                frame.pushStackItem(UInt256.ZERO);
+                return new OperationResult(cost(true), null);
+            }
+            if (!evmProperties.callsToNonExistingEntitiesEnabled(frame.getContractAddress())) {
+                if (!addressValidator.test(address, frame)) {
+                    return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                }
+            }
+            final var account = frame.getWorldUpdater().get(address);
+            if (account != null && !account.isEmpty()) {
+                frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
+            } else {
+                frame.pushStackItem(UInt256.ZERO);
+            }
+
+            return new OperationResult(localCost, null);
         } catch (final UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         } catch (final OverflowException ofe) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
+    id("java-test-fixtures")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
@@ -29,10 +30,19 @@ jmhModuleInfo {
 
 testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.common.testing")
     requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.virtualmap.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
+}
+
+hammerModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.virtualmap")
+    requires("com.swirlds.virtualmap.test.fixtures")
+    requires("org.junit.jupiter.api")
+    runtimeOnly("com.swirlds.config.impl")
 }

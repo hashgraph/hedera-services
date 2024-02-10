@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_CREATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
@@ -42,8 +44,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -138,6 +142,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -207,6 +212,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private byte[] chainIdBytes;
     private Bytes32 chainIdBytes32;
     private long defaultContractLifetime;
+    private boolean allowCallsToNonContractAccounts;
     private String evmVersion;
     private boolean dynamicEvmVersion;
     private int feesTokenTransferUsageMultiplier;
@@ -293,8 +299,10 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
+    private boolean releaseAliasAfterDeletion;
     private boolean enforceContractCreationThrottle;
     private Set<Address> permittedDelegateCallers;
+    private Set<Address> grandfatherContracts;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
     private int maxAutoAssociations;
@@ -303,6 +311,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private int sumOfConsensusWeights;
     private int cacheWarmThreads;
     private int configVersion;
+    private boolean tokenBalancesEnabledInQueries;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -350,6 +359,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         chainIdBytes = Integers.toBytes(chainId);
         chainIdBytes32 = Bytes32.leftPad(Bytes.of(chainIdBytes));
         defaultContractLifetime = properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME);
+        allowCallsToNonContractAccounts =
+                properties.getBooleanProperty(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS);
         dynamicEvmVersion = properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION);
         evmVersion = properties.getStringProperty(CONTRACTS_EVM_VERSION);
         feesTokenTransferUsageMultiplier = properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER);
@@ -448,15 +459,18 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
+        releaseAliasAfterDeletion = properties.getBooleanProperty(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
+        grandfatherContracts = properties.getEvmAddresses(CONTRACTS_GRANDFATHER_CONTRACTS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
         contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
         maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
         cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+        tokenBalancesEnabledInQueries = properties.getBooleanProperty(TOKEN_BALANCES_ENABLED_IN_QUERIES);
     }
 
     public int sumOfConsensusWeights() {
@@ -593,6 +607,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public long defaultContractLifetime() {
         return defaultContractLifetime;
+    }
+
+    public boolean allowCallsToNonContractAccounts() {
+        return allowCallsToNonContractAccounts;
     }
 
     public String evmVersion() {
@@ -927,6 +945,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return cryptoCreateWithAliasEnabled;
     }
 
+    public boolean releaseAliasAfterDeletion() {
+        return releaseAliasAfterDeletion;
+    }
+
     public EntityScaleFactors entityScaleFactors() {
         return entityScaleFactors;
     }
@@ -945,6 +967,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> permittedDelegateCallers() {
         return permittedDelegateCallers;
+    }
+
+    public Set<Address> grandfatherContracts() {
+        return grandfatherContracts;
     }
 
     public Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess() {
@@ -991,5 +1017,15 @@ public class GlobalDynamicProperties implements EvmProperties {
      */
     public long stakingRewardBalanceThreshold() {
         return stakingRewardBalanceThreshold;
+    }
+
+    public boolean areTokenBalancesEnabledInQueries() {
+        return tokenBalancesEnabledInQueries;
+    }
+
+    public boolean callsToNonExistingEntitiesEnabled(Address target) {
+        return !(!evmVersion.equals(EVM_VERSION_0_46)
+                || !allowCallsToNonContractAccounts
+                || grandfatherContracts.contains(target));
     }
 }

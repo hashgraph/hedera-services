@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -36,8 +37,7 @@ public class EventCreationManagerWiring {
     private final TaskScheduler<GossipEvent> taskScheduler;
 
     private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
-    private final BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
-    private final BindableInputWire<Boolean, GossipEvent> pauseInput;
+    private final BindableInputWire<NonAncientEventWindow, GossipEvent> nonAncientEventWindowInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
 
@@ -66,8 +66,7 @@ public class EventCreationManagerWiring {
         this.taskScheduler = taskScheduler;
 
         eventInput = taskScheduler.buildInputWire("possible parents");
-        minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
-        pauseInput = taskScheduler.buildInputWire("pause");
+        nonAncientEventWindowInput = taskScheduler.buildInputWire("non-ancient event window");
         newEventOutput = taskScheduler.getOutputWire();
 
         final double frequency = platformContext
@@ -84,8 +83,7 @@ public class EventCreationManagerWiring {
      */
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
         eventInput.bind(eventCreationManager::registerEvent);
-        minimumGenerationNonAncientInput.bind(eventCreationManager::setMinimumGenerationNonAncient);
-        pauseInput.bind(eventCreationManager::setPauseStatus);
+        nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
@@ -102,23 +100,13 @@ public class EventCreationManagerWiring {
     }
 
     /**
-     * Get the input wire for the minimum generation non-ancient.
+     * Get the input wire for the non-ancient event window.
      *
-     * @return the input wire for the minimum generation non-ancient
+     * @return the input wire for the non-ancient event window
      */
     @NonNull
-    public InputWire<Long> minimumGenerationNonAncientInput() {
-        return minimumGenerationNonAncientInput;
-    }
-
-    /**
-     * Get the input wire for pause operations.
-     *
-     * @return the input wire for pause operations
-     */
-    @NonNull
-    public InputWire<Boolean> pauseInput() {
-        return pauseInput;
+    public InputWire<NonAncientEventWindow> nonAncientEventWindowInput() {
+        return nonAncientEventWindowInput;
     }
 
     /**
@@ -136,5 +124,19 @@ public class EventCreationManagerWiring {
      */
     public void flush() {
         taskScheduler.flush();
+    }
+
+    /**
+     * Start squelching the task scheduler.
+     */
+    public void startSquelching() {
+        taskScheduler.startSquelching();
+    }
+
+    /**
+     * Stop squelching the task scheduler.
+     */
+    public void stopSquelching() {
+        taskScheduler.stopSquelching();
     }
 }

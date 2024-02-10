@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Encapsulates various signed state metrics.
@@ -41,13 +41,6 @@ public class SignedStateMetrics {
             .withUnit("count")
             .withFormat(FORMAT_10_2);
     private final RunningAverageMetric unsignedStates;
-
-    private static final RunningAverageMetric.Config SIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "signedStates")
-            .withDescription("Average Number Of Signed States In the Signed State Manager")
-            .withUnit("count")
-            .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric signedStates;
 
     private static final RunningAverageMetric.Config AVERAGE_TIME_TO_FULLY_SIGN_STATE = new RunningAverageMetric.Config(
                     CATEGORY, "averageTimeToFullySignState")
@@ -70,14 +63,14 @@ public class SignedStateMetrics {
     private final Counter totalNeverSignedDiskStates;
 
     private static final SpeedometerMetric.Config STATES_SIGNED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "statesSigned/sec")
+                    CATEGORY, "sstatesSigned_per_sec")
             .withDescription("the number of states completely signed per second")
             .withFormat(FORMAT_16_2)
             .withUnit("hz");
     private final SpeedometerMetric statesSignedPerSecond;
 
     private static final SpeedometerMetric.Config STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(CATEGORY, "stateSignaturesGathered/sec")
+            new SpeedometerMetric.Config(CATEGORY, "stateSignaturesGathered_per_sec")
                     .withDescription("the number of state signatures gathered from other nodes per second")
                     .withFormat(FORMAT_16_2)
                     .withUnit("hz");
@@ -142,13 +135,6 @@ public class SignedStateMetrics {
      */
     public RunningAverageMetric getUnsignedStatesMetric() {
         return unsignedStates;
-    }
-
-    /**
-     * Get a metric tracking signed states.
-     */
-    public RunningAverageMetric geSignedStatesMetric() {
-        return signedStates;
     }
 
     /**
@@ -257,6 +243,5 @@ public class SignedStateMetrics {
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);
-        signedStates = metrics.getOrCreate(SIGNED_STATES_CONFIG);
     }
 }

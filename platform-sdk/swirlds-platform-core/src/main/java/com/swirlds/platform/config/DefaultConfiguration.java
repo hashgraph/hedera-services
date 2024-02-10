@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
-import com.swirlds.config.extensions.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,11 +86,9 @@ public class DefaultConfiguration {
             @NonNull final Path settingsPath, @NonNull final List<Path> configurationPaths) throws IOException {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSource(mappedSettingsConfigSource)
-                .withSource(threadCountPropertyConfigSource);
+        final ConfigurationBuilder configurationBuilder =
+                ConfigurationBuilder.create().withSource(mappedSettingsConfigSource);
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {

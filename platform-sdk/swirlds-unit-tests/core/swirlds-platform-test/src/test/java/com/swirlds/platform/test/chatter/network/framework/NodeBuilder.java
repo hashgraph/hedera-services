@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig_;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 
 /**
  * Builds a node for a simulated chatter test.

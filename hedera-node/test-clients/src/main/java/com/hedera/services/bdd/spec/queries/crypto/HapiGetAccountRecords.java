@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
@@ -94,11 +93,9 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expectation.isPresent()) {
-            List<TransactionRecord> actualRecords =
-                    response.getCryptoGetAccountRecords().getRecordsList();
-            if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
-                actualRecords = actualRecords.subList(1, actualRecords.size());
-            }
+            List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList().stream()
+                    .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                    .toList();
             List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
             rethrowSummaryError(log, "Bad account records!", errors);
         }
@@ -131,7 +128,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
             File countFile = new File(expectationsDir + "/n.txt");
             CharSource charSource = Files.asCharSource(countFile, Charset.forName("UTF-8"));
             int n = Integer.parseInt(charSource.readFirstLine());
-            Assertions.assertEquals(n, records.size(), "Bad number of records!");
+            Assertions.assertEquals(n, records.size(), "Bad number of records - got " + records);
             for (int i = 0; i < n; i++) {
                 File recordFile = new File(expectationsDir + "/record" + i + ".bin");
                 ByteSource byteSource = Files.asByteSource(recordFile);

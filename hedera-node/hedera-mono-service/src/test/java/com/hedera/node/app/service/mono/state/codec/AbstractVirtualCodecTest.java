@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -114,8 +116,8 @@ abstract class AbstractVirtualCodecTest<T> {
         in.limit(serialized.length);
         try {
             instance = subject.parse(in);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (ParseException e) {
+            throw new UncheckedParseException(e);
         }
         assertFalse(in.hasRemaining(), "No bytes should be left in the stream");
         return instance;
@@ -127,8 +129,8 @@ abstract class AbstractVirtualCodecTest<T> {
         final var bb = BufferedData.wrap(buffer);
         try {
             instance = subject.parse(bb);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (ParseException e) {
+            throw new UncheckedParseException(e);
         }
         try {
             buffer.get();

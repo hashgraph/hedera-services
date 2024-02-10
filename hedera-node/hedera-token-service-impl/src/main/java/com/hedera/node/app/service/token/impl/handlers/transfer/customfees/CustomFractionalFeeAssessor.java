@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class CustomFractionalFeeAssessor {
         final var denom = feeMeta.tokenId();
 
         final var nonMutableInputTokenTransfers = result.getImmutableInputTokenAdjustments();
-        final var mutableInputTokenTransfers = result.getMutableInputTokenAdjustments();
+        final var mutableInputTokenTransfers = result.getMutableInputBalanceAdjustments();
 
         // get the initial units for this token change from given input.
         // This is needed to see the fraction of the adjustment to be charged as custom fee
@@ -127,9 +127,9 @@ public class CustomFractionalFeeAssessor {
 
                 // make credit to the collector
                 final var map =
-                        result.getMutableInputTokenAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
+                        result.getMutableInputBalanceAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
                 map.merge(collector, assessedAmount, Long::sum);
-                result.getMutableInputTokenAdjustments().put(denom, map);
+                result.getMutableInputBalanceAdjustments().put(denom, map);
 
                 final var finalEffPayerNums =
                         (filteredCredits == creditsForToken) ? effectivePayerAccounts : filteredCredits.keySet();

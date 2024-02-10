@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,4 +95,14 @@ public interface TokenContext {
      */
     @NonNull
     <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Indicate whether this is the first transaction since node startup
+     */
+    boolean isFirstTransaction();
+
+    /**
+     * Signal that any records created during startup migrations have been streamed.
+     */
+    void markMigrationRecordsStreamed();
 }

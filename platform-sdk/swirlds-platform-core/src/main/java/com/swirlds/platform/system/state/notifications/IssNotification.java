@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,27 +46,25 @@ public class IssNotification extends AbstractNotification {
     }
 
     private final IssType issType;
-    private final NodeId otherNodeId;
 
     /**
      * Create a new ISS notification.
      *
      * @param round       the round when the ISS occurred
      * @param issType     the type of the ISS
-     * @param otherNodeId the node with an ISS. If this is a {@link IssType#CATASTROPHIC_ISS} then this is null.
      */
-    public IssNotification(final long round, @NonNull final IssType issType, @Nullable final NodeId otherNodeId) {
-        this.otherNodeId = otherNodeId;
+    public IssNotification(final long round, @NonNull final IssType issType) {
         this.issType = Objects.requireNonNull(issType, "issType must not be null");
         this.round = round;
     }
 
     /**
-     * Get the ID of the node that has an ISS. Null if {@link #getIssType()} does not return {@link IssType#OTHER_ISS}.
+     * @deprecated this method always returns null and will be removed in a future release
      */
     @Nullable
+    @Deprecated(forRemoval = true)
     public NodeId getOtherNodeId() {
-        return otherNodeId;
+        return null;
     }
 
     /**

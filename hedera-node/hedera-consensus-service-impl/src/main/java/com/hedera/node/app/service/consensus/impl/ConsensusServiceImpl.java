@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
@@ -34,18 +34,15 @@ public final class ConsensusServiceImpl implements ConsensusService {
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
 
+    private InitialModServiceConsensusSchema modConsensusSchema;
+
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(consensusSchema(version));
+    public void registerSchemas(@NonNull SchemaRegistry registry, @NonNull final SemanticVersion version) {
+        modConsensusSchema = new InitialModServiceConsensusSchema(version);
+        registry.register(modConsensusSchema);
     }
 
-    private Schema consensusSchema(final SemanticVersion version) {
-        return new Schema(version) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
-            }
-        };
+    public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
+        modConsensusSchema.setFromState(fs);
     }
 }

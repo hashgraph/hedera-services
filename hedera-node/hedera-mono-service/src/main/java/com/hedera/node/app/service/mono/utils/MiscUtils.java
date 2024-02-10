@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -512,10 +512,6 @@ public final class MiscUtils {
                 .setSeconds(when.getSeconds())
                 .setNanos(when.getNanos())
                 .build();
-    }
-
-    public static Instant timestampToInstant(final Timestamp timestamp) {
-        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
     public static Optional<QueryHeader> activeHeaderFrom(final Query query) {

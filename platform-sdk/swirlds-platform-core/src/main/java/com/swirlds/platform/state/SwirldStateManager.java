@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -32,7 +30,6 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -41,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -73,14 +71,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final UptimeTracker uptimeTracker;
 
     /**
-     * Handles system transactions pre-consensus
-     */
-    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
-
-    /**
      * Handles system transactions post-consensus
      */
-    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
+    private final BiConsumer<State, ConsensusRound> roundAndStateConsumer;
 
     /**
      * The current software version.
@@ -90,22 +83,21 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext                      the platform context
-     * @param addressBook                          the address book
-     * @param selfId                               this node's id
-     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
-     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
-     * @param swirldStateMetrics                   metrics related to SwirldState
-     * @param statusActionSubmitter                enables submitting platform status actions
-     * @param state                                the genesis state
-     * @param softwareVersion                      the current software version
+     * @param platformContext       the platform context
+     * @param addressBook           the address book
+     * @param selfId                this node's id
+     * @param roundAndStateConsumer consumes a consensus round and the state that results from applying the consensus
+     *                              transactions
+     * @param swirldStateMetrics    metrics related to SwirldState
+     * @param statusActionSubmitter enables submitting platform status actions
+     * @param state                 the genesis state
+     * @param softwareVersion       the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
-            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
+            @NonNull final BiConsumer<State, ConsensusRound> roundAndStateConsumer,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final State state,
@@ -114,8 +106,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
-        this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
+        this.roundAndStateConsumer = Objects.requireNonNull(roundAndStateConsumer);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(state);
@@ -152,29 +143,19 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, immutableState.getSwirldState());
-        event.getBaseEvent().signalPrehandleCompletion();
-        immutableState.release();
+        try {
+            transactionHandler.preHandle(event, immutableState.getSwirldState());
+        } finally {
+            event.getBaseEvent().signalPrehandleCompletion();
+            immutableState.release();
 
-        stats.preHandleTime(startTime, System.nanoTime());
-    }
-
-    /**
-     * Prehandles system transactions.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleSystemTransactions(final EventImpl event) {
-        final long startTime = System.nanoTime();
-
-        preconsensusSystemTransactionManager.handleEvent(event);
-
-        stats.preConsensusHandleTime(startTime, System.nanoTime());
+            stats.preHandleTime(startTime, System.nanoTime());
+        }
     }
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformState)}.
      *
      * @param round the round to handle
      */
@@ -183,10 +164,10 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
         uptimeTracker.handleRound(
                 round,
-                state.getPlatformDualState().getMutableUptimeData(),
+                state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        consensusSystemTransactionManager.handleRound(state, round);
+        roundAndStateConsumer.accept(state, round);
         updateEpoch();
     }
 
@@ -207,7 +188,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateRef.get().getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
+        stateRef.get()
+                .getPlatformState()
+                .setLastFrozenTime(stateRef.get().getPlatformState().getFreezeTime());
     }
 
     /**
@@ -272,7 +255,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private void updateEpoch() {
         final PlatformState platformState = stateRef.get().getPlatformState();
         if (platformState != null) {
-            platformState.getPlatformData().updateEpochHash();
+            platformState.updateEpochHash();
         }
     }
 
@@ -281,7 +264,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        return SwirldStateManagerUtils.isInFreezePeriod(timestamp, getConsensusState());
+        final PlatformState platformState = getConsensusState().getPlatformState();
+        return SwirldStateManagerUtils.isInFreezePeriod(
+                timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }
 
     /**

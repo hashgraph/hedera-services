@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.nio.file.Path;
  */
 public class MerkleDbPaths {
     public final Path storageDir;
+    public final Path metadataFileOld;
     public final Path metadataFile;
     public final Path pathToDiskLocationInternalNodesFile;
     public final Path pathToDiskLocationLeafNodesFile;
@@ -40,7 +41,8 @@ public class MerkleDbPaths {
      */
     public MerkleDbPaths(final Path storageDir) {
         this.storageDir = storageDir;
-        metadataFile = storageDir.resolve("metadata.jdbm");
+        metadataFileOld = storageDir.resolve("metadata.jdbm");
+        metadataFile = storageDir.resolve("table_metadata.pbj");
         pathToDiskLocationInternalNodesFile = storageDir.resolve("pathToDiskLocationInternalNodes.ll");
         pathToDiskLocationLeafNodesFile = storageDir.resolve("pathToDiskLocationLeafNodes.ll");
         hashStoreRamFile = storageDir.resolve("internalHashStoreRam.hl");

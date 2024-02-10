@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,12 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,9 +69,7 @@ class SignedStateTests {
         final State state = spy(new State());
         final SwirldState swirldState = mock(SwirldState.class);
 
-        final PlatformData platformData = new PlatformData();
         final PlatformState platformState = new PlatformState();
-        platformState.setPlatformData(platformData);
         platformState.setAddressBook(mock(AddressBook.class));
         when(state.getPlatformState()).thenReturn(platformState);
 
@@ -279,9 +277,7 @@ class SignedStateTests {
         final State state = spy(new State());
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-        when(platformData.getRound()).thenReturn(0L);
+        when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState =
                 new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,7 +237,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         if (!relationships.isEmpty()
                 || alreadyUsedAutomaticAssociations.isPresent()
                 || !absentRelationships.isEmpty()
-                || expectations.isPresent()
+                || (expectations.isPresent() && expectations.get().hasTokenAssociationExpectation())
                 || registryEntry.isPresent()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
                             "0.0." + actualInfo.getAccountID().getAccountNum())

@@ -1,0 +1,473 @@
+##
+# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "ZXC: Verify Docker Build Determinism"
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "The branch, tag, or commit to checkout:"
+        type: string
+        required: false
+        default: ""
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "21.0.1"
+
+    secrets:
+      gradle-cache-username:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      gradle-cache-password:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+  DOCKER_MANIFEST_GENERATOR: .github/workflows/support/scripts/generate-docker-artifact-baseline.sh
+  DOCKER_MANIFEST_PATH: ${{ github.workspace }}/.manifests/docker
+  DOCKER_REGISTRY: localhost:5000
+  DOCKER_IMAGE_NAME: main-network-node
+  DOCKER_CONTEXT_PATH: hedera-node/infrastructure/docker/containers/production-next/main-network-node
+  SKOPEO_VERSION: v1.14.0
+
+jobs:
+  generate-baseline:
+    name: Generate Baseline
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      sha-abbrev: ${{ steps.commit.outputs.sha-abbrev }}
+      source-date: ${{ steps.commit.outputs.source-date }}
+      path: ${{ steps.baseline.outputs.path }}
+      file: ${{ steps.baseline.outputs.file }}
+      name: ${{ steps.baseline.outputs.name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2.1.0
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+
+      - name: Retrieve Commit Hash
+        id: commit
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "sha-abbrev=$(git rev-parse HEAD | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
+          echo "source-date=$(git log -1 --pretty=%ct)" >> "${GITHUB_OUTPUT}"
+
+      - name: Baseline Existence Check
+        id: baseline
+        run: |
+          BASELINE_NAME="${{ steps.commit.outputs.sha }}.tar.gz"
+          BASELINE_PATH="gs://hedera-ci-ephemeral-artifacts/${{ github.repository }}/docker/baselines"
+          BASELINE_FILE="${BASELINE_PATH}/${BASELINE_NAME}"
+          BASELINE_EXISTS="false"
+
+          if gsutil ls "${BASELINE_FILE}" >/dev/null 2>&1; then
+             BASELINE_EXISTS="true"
+          fi
+
+          echo "exists=${BASELINE_EXISTS}" >> "${GITHUB_OUTPUT}"
+          echo "path=${BASELINE_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "name=${BASELINE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "file=${BASELINE_FILE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Java
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        with:
+          cache-disabled: true
+
+      - name: Install Skopeo and JQ
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends skopeo jq
+
+      - name: Install KillAll
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: sudo apt-get install --yes --no-install-recommends psmisc
+
+      - name: Create Docker Working Directory
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: |
+          USER="$(id -un)"
+          GROUP="$(id -gn)"
+          sudo mkdir -p /x
+          sudo chown -vR ${USER}:${GROUP} /x
+          sudo ls -lah /x
+
+      - name: Remove Docker from Self Hosted Runners
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: |
+          set -x
+          sudo killall dockerd || true
+          sudo killall containerd || true
+          sudo rm -rvf /usr/bin/*containerd* || true
+          sudo rm -rvf /usr/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/*lima* || true
+
+      - name: Setup Containerd Support
+        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        with:
+          containerd-version: v1.7.2
+
+      - name: Setup Docker Support
+        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        env:
+          HOME: /x
+        with:
+          version: v24.0.7
+
+      - name: Configure Default Docker Context
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: |
+          set -x
+          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+            docker context rm -f setup-docker-action
+          fi
+
+          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
+          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+          docker context use setup-docker-action
+
+      - name: Setup QEmu Support
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+
+      - name: Setup Docker Buildx Support
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        with:
+          version: v0.12.0
+          driver-opts: network=host
+
+      - name: Setup Local Docker Registry
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
+
+      - name: Show Docker Version
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: docker version
+
+      - name: Show Docker Info
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: docker info
+
+      - name: Build Gradle Artifacts
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: ./gradlew assemble --scan
+
+      - name: Prepare for Docker Build
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: |
+          mkdir -p "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data"
+
+          echo "::group::Copying Library Artifacts"
+            cp -Rvf "${{ github.workspace }}/hedera-node/data/lib" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
+          echo "::endgroup::"
+
+          echo "::group::Copying Application Artifacts"
+            cp -Rvf "${{ github.workspace }}/hedera-node/data/apps" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
+          echo "::endgroup::"
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        with:
+          push: true
+          no-cache: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            SOURCE_DATE_EPOCH=${{ steps.commit.outputs.source-date }}
+          context: ${{ env.DOCKER_CONTEXT_PATH }}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.commit.outputs.sha-abbrev }}
+
+      - name: Generate Manifest
+        id: manifest
+        env:
+          MANIFEST_PATH: ${{ env.DOCKER_MANIFEST_PATH }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: GITHUB_SHA="${{ needs.generate-baseline.outputs.sha-abbrev }}" ${{ env.DOCKER_MANIFEST_GENERATOR }}
+
+      - name: Amend Manifest with Gradle Artifacts
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        working-directory: ${{ env.DOCKER_MANIFEST_PATH }}
+        run: |
+          EXTRACTED_FILE_NAME="${{ steps.commit.outputs.sha }}.tar"
+          gunzip "${{ steps.manifest.outputs.name }}"
+          tar -rvf "${EXTRACTED_FILE_NAME}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
+          gzip "${EXTRACTED_FILE_NAME}"
+
+      - name: Upload Baseline
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: gsutil cp "${{ steps.manifest.outputs.file }}" "${{ steps.baseline.outputs.file }}"
+
+  verify-artifacts:
+    name: "Verify Artifacts (${{ join(matrix.os, ', ') }})"
+    runs-on: ${{ matrix.os }}
+    needs:
+      - generate-baseline
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is not supported due to GitHub not supporting Docker Desktop/Podman Desktop and Docker CE on Windows
+        # not supporting BuildKit and the Buildx plugin.
+        # GitHub hosted MacOS and Ubuntu runners are temporarily disabled.
+        os:
+          #- ubuntu-22.04
+          #- ubuntu-20.04
+          #- macos-12
+          #- macos-11
+          - [self-hosted, Linux, medium, ephemeral]
+          - [self-hosted, Linux, large, ephemeral]
+    steps:
+      - name: Standardize Git Line Endings
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: 3.9
+
+      - name: Install JQ (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends jq
+
+      - name: Install Skopeo (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          source /etc/os-release
+          if [[ "${VERSION_ID}" != "20.04" ]]; then
+            sudo apt-get install --yes --no-install-recommends skopeo
+          fi
+
+      - name: Install KillAll (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        run: sudo apt-get install --yes --no-install-recommends psmisc
+
+      - name: Install Skopeo and JQ (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: brew install skopeo jq
+
+      - name: Setup CoreUtils (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: brew install coreutils
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2.1.0
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        env:
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
+
+      - name: Download Baseline
+        env:
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
+        run: |
+          mkdir -p "${DOCKER_MANIFEST_PATH}"
+          cd "${DOCKER_MANIFEST_PATH}"
+          gsutil cp "${{ needs.generate-baseline.outputs.file }}" .
+          tar -xzf "${{ needs.generate-baseline.outputs.name }}"
+          mv "sdk" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/"
+
+      - name: Create Docker Working Directory
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          USER="$(id -un)"
+          GROUP="$(id -gn)"
+          sudo mkdir -p /x
+          sudo chown -vR ${USER}:${GROUP} /x
+          sudo ls -lah /x
+
+      - name: Remove Preinstalled Docker
+        if: ${{ contains(matrix.os, 'self-hosted') || runner.os == 'macOS' }}
+        run: |
+          set -x
+          sudo killall dockerd || true
+          sudo killall containerd || true
+          sudo rm -rvf /usr/bin/*containerd* || true
+          sudo rm -rvf /usr/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/*lima* || true
+
+      - name: Install Lima (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: |
+          VERSION="v0.20.0"
+          curl -fsSL "https://github.com/lima-vm/lima/releases/download/${VERSION}/lima-${VERSION:1}-$(uname -s)-$(uname -m).tar.gz" | sudo tar Cxzvm /usr/local
+
+      - name: Determine Home Directory
+        id: home
+        run: echo "directory=$(tr -d '[:space:]' < <(cd ~ && pwd))" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Containerd Support
+        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+        if: ${{ runner.os == 'Linux' }}
+        with:
+          containerd-version: v1.7.2
+
+      - name: Setup Docker Support
+        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        env:
+          HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+        with:
+          version: v24.0.7
+
+      - name: Configure Default Docker Context
+        env:
+          SEARCH_PATH: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+        run: |
+          set -x
+          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+            docker context rm -f setup-docker-action
+          fi
+
+          DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
+          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+          docker context use setup-docker-action
+
+      - name: Setup QEmu Support
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Setup Docker Buildx Support
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        with:
+          version: v0.12.0
+          driver-opts: network=host
+
+      - name: Setup Local Docker Registry
+        run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
+
+      - name: Show Docker Version
+        run: docker version
+
+      - name: Show Docker Info
+        run: docker info
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        env:
+          SOURCE_DATE_EPOCH: ${{ needs.generate-baseline.outputs.source-date }}
+        with:
+          push: true
+          no-cache: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            SOURCE_DATE_EPOCH=${{ needs.generate-baseline.outputs.source-date }}
+          context: ${{ env.DOCKER_CONTEXT_PATH }}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.generate-baseline.outputs.sha-abbrev }}
+
+      - name: Regenerate Manifest
+        id: regen-manifest
+        env:
+          MANIFEST_PATH: ${{ env.DOCKER_MANIFEST_PATH }}/regenerated
+        run: GITHUB_SHA="${{ needs.generate-baseline.outputs.sha-abbrev }}" ${{ env.DOCKER_MANIFEST_GENERATOR }}
+
+      - name: Validate Layers (linux/amd64)
+        run: |
+          if ! diff -u "${DOCKER_MANIFEST_PATH}/linux-amd64.layers.json" "${{ steps.regen-manifest.outputs.path }}/linux-amd64.layers.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${DOCKER_MANIFEST_PATH}/linux-amd64.layers.json" "${{ steps.regen-manifest.outputs.path }}/linux-amd64.layers.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Layers (linux/arm64)
+        run: |
+          if ! diff -u "${DOCKER_MANIFEST_PATH}/linux-arm64.layers.json" "${{ steps.regen-manifest.outputs.path }}/linux-arm64.layers.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${DOCKER_MANIFEST_PATH}/linux-arm64.layers.json" "${{ steps.regen-manifest.outputs.path }}/linux-arm64.layers.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Full Manifest (linux/amd64)
+        run: |
+          if ! diff -u "${DOCKER_MANIFEST_PATH}/linux-amd64.comparable.json" "${{ steps.regen-manifest.outputs.path }}/linux-amd64.comparable.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${DOCKER_MANIFEST_PATH}/linux-amd64.comparable.json" "${{ steps.regen-manifest.outputs.path }}/linux-amd64.comparable.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Full Manifest (linux/arm64)
+        run: |
+          if ! diff -u "${DOCKER_MANIFEST_PATH}/linux-arm64.comparable.json" "${{ steps.regen-manifest.outputs.path }}/linux-arm64.comparable.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${DOCKER_MANIFEST_PATH}/linux-arm64.comparable.json" "${{ steps.regen-manifest.outputs.path }}/linux-arm64.comparable.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Publish Manifests
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+        if: ${{ steps.regen-manifest.conclusion == 'success' && failure() && !cancelled() }}
+        with:
+          name: Docker Manifests [${{ join(matrix.os, ', ') }}]
+          path: ${{ env.DOCKER_MANIFEST_PATH }}/**

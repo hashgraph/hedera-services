@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -47,12 +49,12 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
-
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
-    private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-    private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
+
+    public static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
     public static final String HTS_EVM_ADDRESS = "0x167";
-    private static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+    public static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+
     private final HtsCallFactory callFactory;
 
     @Inject
@@ -71,6 +73,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall call;
         final HtsCallAttempt attempt;
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
@@ -78,11 +81,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 // without setting a halt reason to simulate mono-service for differential testing
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
-        } catch (final RuntimeException e) {
-            log.debug("Failed to create HTS call from input {}", input, e);
+        } catch (final Exception e) {
+            log.warn("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
-
         return resultOfExecuting(attempt, call, input, frame);
     }
 
@@ -106,20 +108,21 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
                 final var enhancement = proxyWorldUpdater.enhancement();
-                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+                final var responseCode = pricedResult.responseCode();
 
                 if (responseCode == SUCCESS) {
-                    final var output = pricedResult.fullResult().result().getOutput();
                     enhancement
                             .systemOperations()
                             .externalizeResult(
-                                    contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(),
-                                            output,
-                                            frame.getRemainingGas(),
-                                            frame.getInputData(),
-                                            attempt.senderId()),
-                                    responseCode);
+                                    successResultOf(
+                                            attempt.senderId(),
+                                            pricedResult.fullResult(),
+                                            frame,
+                                            !call.allowsStaticFrame()),
+                                    responseCode,
+                                    enhancement
+                                            .systemOperations()
+                                            .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 } else {
                     enhancement
                             .systemOperations()
@@ -128,7 +131,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                             pricedResult.fullResult().gasRequirement(),
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
-                                    responseCode);
+                                    responseCode,
+                                    enhancement
+                                            .systemOperations()
+                                            .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 }
             }
         } catch (final HandleException handleException) {
@@ -136,9 +142,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
-        }
-        if (pricedResult.nonGasCost() > 0) {
-            throw new AssertionError("Not implemented");
         }
         return pricedResult.fullResult();
     }

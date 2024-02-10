@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -80,6 +81,7 @@ class HtsSystemContractTest {
     private MockedStatic<FrameUtils> frameUtils;
 
     private HtsSystemContract subject;
+    private final Bytes validInput = Bytes.fromHexString("91548228");
 
     @BeforeEach
     void setUp() {
@@ -99,16 +101,17 @@ class HtsSystemContractTest {
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
+        given(attempt.senderId()).willReturn(SENDER_ID);
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
-        assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
+        assertSame(pricedResult.fullResult(), subject.computeFully(validInput, frame));
     }
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
         given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
-
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
-        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
     }
 
@@ -118,20 +121,15 @@ class HtsSystemContractTest {
         given(call.execute(frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
-        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
     }
 
     @Test
-    void callWithNonGasCostNotImplemented() {
-        commonMocks();
-
-        givenValidCallAttempt();
-        final var pricedResult =
-                new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS, true);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
+    void testComputeFullyWithEmptyBytes() {
+        final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
+        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
     }
 
     private void givenValidCallAttempt() {
@@ -139,7 +137,7 @@ class HtsSystemContractTest {
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         lenient().when(updater.enhancement()).thenReturn(enhancement);
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
-        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willReturn(attempt);
+        given(attemptFactory.createCallAttemptFrom(validInput, frame)).willReturn(attempt);
         given(attempt.asExecutableCall()).willReturn(call);
     }
 

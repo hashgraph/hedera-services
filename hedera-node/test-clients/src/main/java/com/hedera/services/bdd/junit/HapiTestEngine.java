@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,34 @@ package com.hedera.services.bdd.junit;
 
 import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
 import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.OUT_OF_PROCESS_ALICE;
+import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.suites.records.ClosingTime;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,8 +103,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     private static final Predicate<Method> IS_HAPI_TEST =
             methodCandidate -> isAnnotated(methodCandidate, HapiTest.class)
-                    || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
+                    || (!isAnnotated(methodCandidate, BddMethodIsNotATest.class)
+                            && methodCandidate.getParameterCount() == 0
+                            && methodCandidate.getReturnType() == HapiSpec.class);
 
+    private static final Comparator<ClassTestDescriptor> SUITE_DESCRIPTOR_COMPARATOR =
+            Comparator.comparingInt(ClassTestDescriptor::order);
     private static final Comparator<Method> noSorting = (m1, m2) -> 0;
     private static final Comparator<Method> sortMethodsAscByOrderNumber = (m1, m2) -> {
         final var m1Order = m1.getAnnotation(Order.class);
@@ -120,43 +133,58 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new HapiEngineDescriptor(uniqueId);
+        final List<ClassTestDescriptor> suites = new ArrayList<>();
 
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
-            appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
+            appendSuitesInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest, suites);
         });
+
+        suites.sort(SUITE_DESCRIPTOR_COMPARATOR);
+        suites.forEach(engineDescriptor::addChild);
+
+        // if hapi test suites are being run, add record stream validation to the engineDescriptor as well
+        if (!suites.isEmpty()) {
+            engineDescriptor.addChild(new RecordStreamValidationTestDescriptor(engineDescriptor));
+        }
 
         return engineDescriptor;
     }
 
-    private static void addChildToEngineDescriptor(
-            Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
+    private static void addChildToSuites(
+            @NonNull final Class<?> javaClass,
+            @NonNull final EngineDiscoveryRequest discoveryRequest,
+            @NonNull final EngineDescriptor engineDescriptor,
+            @NonNull final List<ClassTestDescriptor> orderedSuites) {
         if (IS_HAPI_TEST_SUITE.test(javaClass)) {
             final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
             if (!classDescriptor.skip) {
-                engineDescriptor.addChild(classDescriptor);
+                orderedSuites.add(classDescriptor);
             }
         }
     }
 
-    private void appendTestsInClasspathRoot(
-            URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+    private void appendSuitesInClasspathRoot(
+            @NonNull final URI uri,
+            @NonNull final TestDescriptor engineDescriptor,
+            @NonNull final EngineDiscoveryRequest discoveryRequest,
+            List<ClassTestDescriptor> orderedSuites) {
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
                 .filter(aClass -> discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
                         .map(Filter::toPredicate)
                         .allMatch(predicate -> predicate.test(aClass.getPackageName())))
                 .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
                 .filter(classTestDescriptor -> !classTestDescriptor.skip)
-                .forEach(engineDescriptor::addChild);
+                .forEach(orderedSuites::add);
     }
 
     /**
@@ -236,6 +264,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         private final boolean isolated;
 
         private final boolean fuzzyMatch;
+        private final int order;
 
         private final Set<TestTag> testTags;
 
@@ -280,6 +309,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     findAnnotation(testClass, HapiTestSuite.class).orElseThrow();
             this.isolated = annotation.isolated();
             this.fuzzyMatch = annotation.fuzzyMatch();
+            this.order = annotation.order();
+        }
+
+        public int order() {
+            return order;
         }
 
         @Override
@@ -389,7 +423,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             if (testMethod.getParameterCount() == 0) {
                 final var spec = (HapiSpec) testMethod.invoke(suite);
                 spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
-                if (parent.fuzzyMatch) {
+                // Disabling fuzzy matching in CI until we can make them stable
+                if (parent.fuzzyMatch && System.getenv("CI") == null) {
                     spec.addOverrideProperties(Map.of("recordStream.autoSnapshotManagement", "true"));
                 }
                 final var env = context.getEnv();
@@ -409,6 +444,112 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         @Override
         public Set<TestTag> getTags() {
             return this.testTags;
+        }
+    }
+
+    private static final class RecordStreamValidationTestDescriptor extends AbstractTestDescriptor
+            implements Node<HapiTestEngineExecutionContext> {
+
+        private final Logger classLogger = LogManager.getLogger(getClass());
+
+        private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
+
+        private static final String HAPI_TEST_STREAMS_LOC_TPL =
+                "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
+
+        private static final List<RecordStreamValidator> validators = List.of(
+                new BlockNoValidator(),
+                new TransactionBodyValidator(),
+                new ExpiryRecordsValidator(),
+                new BalanceReconciliationValidator(),
+                new TokenReconciliationValidator());
+
+        public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
+            super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");
+            setParent(parent);
+        }
+
+        @Override
+        public Set<TestTag> getTags() {
+            return Set.of(TestTag.create("RECORD_STREAM_VALIDATION"));
+        }
+
+        @Override
+        public Type getType() {
+            return Type.TEST;
+        }
+
+        @Override
+        public HapiTestEngineExecutionContext execute(
+                HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
+            final var env = context.getEnv();
+            // run closing time specs
+            runSpec(env, new ClosingTime(), "closeLastStreamFileWithNoBalanceImpact");
+
+            // read record stream data
+            var recordLocs = hapiTestStreamLocs();
+            RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
+            for (final var recordLoc : recordLocs) {
+                try {
+                    classLogger.info("Trying to read record files from {}", recordLoc);
+                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(
+                            recordLoc, "sidecar", f -> new File(f).length() > MIN_GZIP_SIZE_IN_BYTES);
+                    classLogger.info(
+                            "Read {} record files from {}", data.records().size(), recordLoc);
+                } catch (Exception ignore) {
+                    // We will try the next location, if any
+                }
+                if (!data.records().isEmpty()) {
+                    break;
+                }
+            }
+
+            // assert validators pass
+            final var streamData = data;
+            final var errorsIfAny = validators.stream()
+                    .flatMap(v -> {
+                        try {
+                            // The validator will complete silently if no errors are
+                            // found
+                            v.validateFiles(streamData.files());
+                            v.validateRecordsAndSidecarsHapi(env, streamData.records());
+                            return Stream.empty();
+                        } catch (final Throwable t) {
+                            return Stream.of(t);
+                        }
+                    })
+                    .map(Throwable::getMessage)
+                    .toList();
+            if (!errorsIfAny.isEmpty()) {
+                throw new AssertionError("Record stream validation failed with the following errors:\n  - "
+                        + String.join("\n  - ", errorsIfAny));
+            }
+
+            return Node.super.execute(context, dynamicTestExecutor);
+        }
+
+        private List<String> hapiTestStreamLocs() {
+            final List<String> locs = new ArrayList<>(HapiTestEngine.NODE_COUNT);
+            for (int i = 0; i < HapiTestEngine.NODE_COUNT; i++) {
+                locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
+            }
+            return locs;
+        }
+    }
+
+    public static void runSpec(HapiTestEnv env, HapiSuite suite, String specName)
+            throws InvocationTargetException, IllegalAccessException {
+        // Get the method
+        final var testMethod =
+                ReflectionSupport.findMethod(suite.getClass(), specName).get();
+        // Call the method to get the HapiSpec
+        testMethod.setAccessible(true);
+        final var spec = (HapiSpec) testMethod.invoke(suite);
+        spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+        final var result = suite.runSpecSync(spec, env.getNodes());
+        // Report the result. YAY!!
+        if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
+            throw new AssertionError(spec.getName() + ": " + spec.getCause());
         }
     }
 

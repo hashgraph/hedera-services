@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static org.apache.logging.log4j.core.util.Loader.getClassLoader;
 
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.platform.fs.stresstest.proto.AppTransactionSignatureType;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

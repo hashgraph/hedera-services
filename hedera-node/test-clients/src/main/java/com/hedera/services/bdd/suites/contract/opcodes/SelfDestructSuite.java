@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -29,28 +30,37 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class SelfDestructSuite extends HapiSuite {
 
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
+    private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
 
     public static void main(String... args) {
@@ -67,7 +77,9 @@ public class SelfDestructSuite extends HapiSuite {
         return List.of(
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn());
+                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(),
+                testSelfDestructForSystemAccounts());
     }
 
     @Override
@@ -79,7 +91,7 @@ public class SelfDestructSuite extends HapiSuite {
     final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
+        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks", NONDETERMINISTIC_LOG_DATA)
                 .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
@@ -102,7 +114,7 @@ public class SelfDestructSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
+        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
@@ -137,5 +149,54 @@ public class SelfDestructSuite extends HapiSuite {
                         getAccountInfo(BENEFICIARY).has(accountWith().balance(ONE_HUNDRED_HBARS)),
                         getContractInfo(SELF_DESTRUCT_CALLABLE_CONTRACT)
                                 .has(contractWith().balance(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
+        return defaultHapiSpec("selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed")
+                .given(
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
+                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
+                .when(contractCallLocal(
+                                SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
+                        .hasAnswerOnlyPrecheck(LOCAL_CALL_MODIFICATION_EXCEPTION))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec testSelfDestructForSystemAccounts() {
+        final AtomicLong deployer = new AtomicLong();
+        final var nonExistingAccountsOps = createOpsArray(
+                nonExistingSystemAccounts,
+                SELF_DESTRUCT_CALLABLE_CONTRACT,
+                DESTROY_EXPLICIT_BENEFICIARY,
+                INVALID_SOLIDITY_ADDRESS);
+        final var existingAccountsOps = createOpsArray(
+                existingSystemAccounts, SELF_DESTRUCT_CALLABLE_CONTRACT, DESTROY_EXPLICIT_BENEFICIARY, SUCCESS);
+        final var opsArray = new HapiSpecOperation[nonExistingAccountsOps.length + existingAccountsOps.length];
+
+        System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
+        System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
+
+        return defaultHapiSpec("testSelfDestructForSystemAccounts")
+                .given(
+                        cryptoCreate(BENEFICIARY)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(false)
+                                .exposingCreatedIdTo(id -> deployer.set(id.getAccountNum())),
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
+                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
+                .when()
+                .then(nonExistingAccountsOps);
+    }
+
+    private HapiSpecOperation[] createOpsArray(
+            List<Long> accounts, String contract, String methodName, ResponseCodeEnum status) {
+        HapiSpecOperation[] opsArray = new HapiSpecOperation[accounts.size()];
+        for (int i = 0; i < accounts.size(); i++) {
+            opsArray[i] = contractCall(contract, methodName, mirrorAddrWith(accounts.get(i)))
+                    .hasKnownStatus(status);
+        }
+        return opsArray;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import com.hedera.node.app.utils.TestUtils;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import io.grpc.stub.StreamObserver;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -160,7 +160,7 @@ final class QueryMethodTest {
     }
 
     private Counter counter(String suffix) {
-        return (Counter) metrics.getMetric("app", SERVICE_NAME + "/" + METHOD_NAME + suffix);
+        return (Counter) metrics.getMetric("app", SERVICE_NAME + ":" + METHOD_NAME + suffix);
     }
 
     @Test

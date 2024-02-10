@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,6 @@ public class BasicThrottleTest {
     private static final int ONE_SECOND_SLEEP = 1_000;
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify Accessor Behavior")
     public void testVerifyAccessorBehavior() {
         final Throttle throttle = new Throttle(10);
@@ -63,7 +61,6 @@ public class BasicThrottleTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Validate Throttling")
     public void testValidateThrottling() throws InterruptedException {

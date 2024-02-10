@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -197,6 +198,9 @@ class ContractCreateTransitionLogicTest {
 
     @Mock
     private AliasManager aliasManager;
+
+    @Mock
+    private WorldStateAccount worldSenderAccount;
 
     private ContractCreateTransitionLogic subject;
     private TransactionBody contractCreateTxn;
@@ -656,9 +660,10 @@ class ContractCreateTransitionLogicTest {
 
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(worldState.get(senderAccount.getId().asEvmAddress())).willReturn(worldSenderAccount);
+        given(worldSenderAccount.getNonce()).willReturn(5644L);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
-
         given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -977,6 +982,8 @@ class ContractCreateTransitionLogicTest {
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+        given(worldState.get(senderAccount.getId().asEvmAddress())).willReturn(worldSenderAccount);
+        given(worldSenderAccount.getNonce()).willReturn(5644L);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
@@ -1031,6 +1038,8 @@ class ContractCreateTransitionLogicTest {
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+        given(worldState.get(senderAccount.getId().asEvmAddress())).willReturn(worldSenderAccount);
+        given(worldSenderAccount.getNonce()).willReturn(5644L);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);

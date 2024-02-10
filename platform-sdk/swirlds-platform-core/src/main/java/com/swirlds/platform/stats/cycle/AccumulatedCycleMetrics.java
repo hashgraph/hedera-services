@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
 
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.simple.AccumulatedAverageTime;
 import java.util.Arrays;

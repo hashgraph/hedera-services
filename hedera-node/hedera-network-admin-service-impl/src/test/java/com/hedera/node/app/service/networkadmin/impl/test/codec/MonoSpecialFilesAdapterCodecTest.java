@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.networkadmin.impl.codec.MonoSpecialFilesAdapterCodec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -60,7 +61,8 @@ class MonoSpecialFilesAdapterCodecTest {
     }
 
     @Test
-    void canSerializeAndDeserializeFromAppropriateStream() throws IOException, ConstructableRegistryException {
+    void canSerializeAndDeserializeFromAppropriateStream()
+            throws IOException, ParseException, ConstructableRegistryException {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
         ConstructableRegistry.getInstance()

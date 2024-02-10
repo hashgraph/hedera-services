@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,16 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -44,7 +44,7 @@ import org.mockito.Mockito;
 class ChatterSyncTest {
     private static final NodeId PEER_ID = new NodeId(1L);
     final CommunicationState state = new CommunicationState();
-    final ShadowGraphSynchronizer synchronizer = Mockito.mock(ShadowGraphSynchronizer.class);
+    final ShadowgraphSynchronizer synchronizer = Mockito.mock(ShadowgraphSynchronizer.class);
     final Connection connection = Mockito.mock(Connection.class);
     final MessageProvider messageProvider = Mockito.mock(MessageProvider.class);
     final FallenBehindManager fallenBehindManager = Mockito.mock(FallenBehindManager.class);

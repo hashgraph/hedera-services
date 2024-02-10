@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -30,6 +31,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -257,6 +259,14 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return nftTypes;
     }
 
+    /** Get all topics */
+    @NonNull
+    public MerkleMapLike<EntityNum, MerkleTopic> getTopics() {
+        final var topics = servicesState.topics();
+        assertSignedStateComponentExists(topics, "topics");
+        return topics;
+    }
+
     /** Get all token associations (tokenrels) */
     @NonNull
     public TokenRelStorageAdapter getTokenAssociations() {
@@ -303,7 +313,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         registerConstructables();
 
         final var platformContext = new DefaultPlatformContext(
-                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get());
+                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         ReservedSignedState rss;
         try {

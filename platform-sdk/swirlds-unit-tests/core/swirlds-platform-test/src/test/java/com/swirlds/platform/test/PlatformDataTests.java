@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -59,7 +59,7 @@ class PlatformDataTests {
         final int randomBound = 10_000;
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
-        final int minGenInfoSize = random.nextInt(100) + 1;
+        final int minGenInfoSize = random.nextInt(1, MinGenInfo.MAX_MINGEN_INFO_SIZE);
         for (int i = 0; i < minGenInfoSize; i++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(randomBound), random.nextLong(randomBound)));
         }

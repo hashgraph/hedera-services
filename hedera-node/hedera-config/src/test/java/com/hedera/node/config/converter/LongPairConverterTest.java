@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ class LongPairConverterTest {
     void testIncludedInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2"))
                 .build();
 
@@ -93,7 +93,7 @@ class LongPairConverterTest {
     void testIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2"))
                 .build();
 
@@ -110,7 +110,7 @@ class LongPairConverterTest {
     void testMultipleIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2,3-4,5-6"))
                 .build();
 

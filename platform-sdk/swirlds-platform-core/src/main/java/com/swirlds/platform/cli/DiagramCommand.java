@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -47,6 +48,7 @@ public final class DiagramCommand extends AbstractCommand {
     private List<String> groupStrings = List.of();
     private Set<String> collapsedGroups = Set.of();
     private List<String> substitutionStrings = List.of();
+    private List<String> manualLinks = List.of();
 
     private DiagramCommand() {}
 
@@ -72,19 +74,28 @@ public final class DiagramCommand extends AbstractCommand {
         this.substitutionStrings = substitutionStrings;
     }
 
+    @CommandLine.Option(
+            names = {"-l", "--link"},
+            description = "Manually link two components in the diagram. "
+                    + "Format: SOURCE_COMPONENT:EDGE_LABEL:TARGET_COMPONENT")
+    private void setManualLinks(@NonNull final List<String> manualLinks) {
+        this.manualLinks = manualLinks;
+    }
+
     /**
      * Entry point.
      */
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
 
-        final String diagramString =
-                platformWiring.getModel().generateWiringDiagram(parseGroups(), parseSubstitutions());
+        final String diagramString = platformWiring
+                .getModel()
+                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks());
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";
@@ -137,5 +148,27 @@ public final class DiagramCommand extends AbstractCommand {
         }
 
         return substitutions;
+    }
+
+    /**
+     * Parse manual links from the command line arguments.
+     *
+     * @return a list of zero or more manual links
+     */
+    @NonNull
+    private List<ModelManualLink> parseManualLinks() {
+        final List<ModelManualLink> links = new ArrayList<>();
+        for (final String linkString : manualLinks) {
+            final String[] parts = linkString.split(":");
+            if (parts.length != 3) {
+                throw new IllegalArgumentException("Invalid link string: " + linkString);
+            }
+            final String sourceComponent = parts[0];
+            final String edgeLabel = parts[1];
+            final String targetComponent = parts[2];
+            links.add(new ModelManualLink(sourceComponent, edgeLabel, targetComponent));
+        }
+
+        return links;
     }
 }

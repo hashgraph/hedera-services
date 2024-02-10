@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -331,6 +331,27 @@ public class DumpStateCommand extends AbstractCommand {
         System.out.println("=== token associations ===");
         DumpTokenAssociationsSubcommand.doit(
                 parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "topics", description = "Dump topics")
+    void topics(
+            @Option(
+                            names = {"--topic"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for topics dump")
+                    @NonNull
+                    final Path topicsPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(topicsPath);
+        init();
+        System.out.println("=== Topics ===");
+        DumpTopicsSubcommand.doit(
+                parent.signedState, topicsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 

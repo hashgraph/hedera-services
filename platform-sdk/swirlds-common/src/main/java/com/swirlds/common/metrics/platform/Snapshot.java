@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metric.ValueType;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,7 +46,7 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      */
     public Object getValue() {
         for (final SnapshotEntry entry : entries) {
-            if (entry.valueType == VALUE) {
+            if (entry.valueType == ValueType.VALUE) {
                 return entry.value;
             }
         }

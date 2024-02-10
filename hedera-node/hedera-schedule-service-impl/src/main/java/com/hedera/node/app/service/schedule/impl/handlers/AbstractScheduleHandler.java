@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
+    private final Logger log = LogManager.getLogger(AbstractScheduleHandler.class);
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -228,7 +231,13 @@ abstract class AbstractScheduleHandler {
                                 (expiration != Schedule.DEFAULT.calculatedExpirationSecond()
                                         ? Instant.ofEpochSecond(expiration)
                                         : Instant.MAX);
-                        if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
+                        log.info(
+                                "Evaluating schedule id {} for execution with calculatedExpiration {}, "
+                                        + "consensus time {}",
+                                scheduleToValidate.scheduleId(),
+                                calculatedExpiration,
+                                effectiveConsensusTime);
+                        if (calculatedExpiration.getEpochSecond() >= effectiveConsensusTime.getEpochSecond()) {
                             result = ResponseCodeEnum.OK;
                         } else {
                             // We are past expiration time
@@ -281,7 +290,14 @@ abstract class AbstractScheduleHandler {
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
+            final AccountID originalPayer = scheduleToExecute
+                    .originalCreateTransaction()
+                    .transactionID()
+                    .accountID();
+            final Set<Key> acceptedSignatories = new HashSet<>();
+            acceptedSignatories.addAll(validSignatories);
+            acceptedSignatories.add(getKeyForAccount(context, originalPayer));
+            final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,26 @@
 package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.TestWiringModelBuilder;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 class DirectTaskSchedulerTests {
 
     @ParameterizedTest
@@ -164,5 +167,50 @@ class DirectTaskSchedulerTests {
             expectedCount = hash32(expectedCount, i);
             assertEquals(expectedCount, count.get());
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void squelching(final boolean stateless) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final Thread mainThread = Thread.currentThread();
+        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+
+        final TaskScheduler<Integer> scheduler = model.schedulerBuilder("A")
+                .withType(type)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Integer> inputWire = scheduler.buildInputWire("input");
+
+        final AtomicInteger handleCount = new AtomicInteger(0);
+        inputWire.bind(x -> {
+            assertEquals(Thread.currentThread(), mainThread);
+            handleCount.incrementAndGet();
+            return -x;
+        });
+
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(15, handleCount.get(), "Tasks added before squelching should be handled");
+
+        scheduler.startSquelching();
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(15, handleCount.get(), "Tasks added after starting to squelch should not be handled");
+
+        scheduler.stopSquelching();
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(30, handleCount.get(), "Tasks added after stopping squelching should be handled");
     }
 }

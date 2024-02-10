@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public record AccountsConfig(
         @ConfigProperty(defaultValue = "60") @NetworkProperty long systemUndeleteAdmin,
         @ConfigProperty(defaultValue = "2") @NetworkProperty long treasury,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeOnDisk,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean releaseAliasAfterDeletion,
         @ConfigProperty(defaultValue = "20000000") @NetworkProperty long maxNumber,
         @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") @NetworkProperty boolean blocklistEnabled,
         @ConfigProperty(value = "blocklist.path", defaultValue = "") @NetworkProperty String blocklistResource) {}

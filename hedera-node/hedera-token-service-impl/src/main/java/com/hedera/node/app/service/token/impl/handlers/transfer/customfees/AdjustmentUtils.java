@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public class AdjustmentUtils {
             final long amount,
             final TokenID denominatingToken) {
         final var newHtsAdjustments = result.getHtsAdjustments();
-        final var inputHtsAdjustments = result.getMutableInputTokenAdjustments();
+        final var inputHtsAdjustments = result.getMutableInputBalanceAdjustments();
 
         // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
@@ -168,18 +168,18 @@ public class AdjustmentUtils {
         // get all the fungible changes that are credited to the sender of nft in the same transaction.
         // this includes hbar and fungible token balances
         final var credits = new ArrayList<ExchangedValue>();
+        for (final var entry : result.getImmutableInputHbarAdjustments().entrySet()) {
+            final var account = entry.getKey();
+            final var amount = entry.getValue();
+            if (amount > 0 && account.equals(sender)) {
+                credits.add(new ExchangedValue(sender, null, amount));
+            }
+        }
         for (final var entry : tokenChanges.entrySet()) {
             final var token = entry.getKey();
             final var map = entry.getValue();
             if (map.containsKey(sender) && map.get(sender) > 0) {
                 credits.add(new ExchangedValue(sender, token, map.get(sender)));
-            }
-        }
-        for (final var entry : result.getInputHbarAdjustments().entrySet()) {
-            final var account = entry.getKey();
-            final var amount = entry.getValue();
-            if (amount > 0 && account.equals(sender)) {
-                credits.add(new ExchangedValue(sender, null, amount));
             }
         }
         return credits;

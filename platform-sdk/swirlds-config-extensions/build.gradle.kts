@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
 }
 
 testModuleInfo {
-    requires("com.swirlds.common")
-    requires("com.swirlds.test.framework")
+    runtimeOnly("com.swirlds.config.impl")
     requires("org.junit.jupiter.api")
+    requires("org.assertj.core")
 }

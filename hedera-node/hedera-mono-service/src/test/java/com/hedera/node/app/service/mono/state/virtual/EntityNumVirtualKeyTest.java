@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,22 +75,29 @@ class EntityNumVirtualKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(8);
+        final ByteBuffer verify = ByteBuffer.allocate(8);
+
+        verify.putLong(longKey);
+        verify.limit(verify.position());
+        verify.rewind();
 
         subject.serialize(buffer);
+        buffer.rewind();
 
-        verify(buffer).putLong(longKey);
+        assertEquals(buffer, verify);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.getLong()).willReturn(longKey);
+        final ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.putLong(longKey);
+        buffer.limit(buffer.position());
+        buffer.rewind();
 
         EntityNumVirtualKey key = new EntityNumVirtualKey();
 
-        key.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -120,7 +127,7 @@ class EntityNumVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -154,7 +161,7 @@ class EntityNumVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.units.UnitConstants;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -105,12 +107,8 @@ public interface DurationGauge extends Metric {
          * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name, final ChronoUnit timeUnit) {
-            super(category, fixName(name, timeUnit), getFormat(timeUnit));
+            super(category, name, name, getUnit(timeUnit), getFormat(timeUnit));
             this.timeUnit = timeUnit;
-        }
-
-        private static String fixName(@NonNull final String name, final ChronoUnit timeUnit) {
-            return ArgumentUtils.throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
         }
 
         private Config(
@@ -184,18 +182,6 @@ public interface DurationGauge extends Metric {
                 case MICROS -> UnitConstants.MICROSECOND_UNIT;
                 case MILLIS -> UnitConstants.MILLISECOND_UNIT;
                 case SECONDS -> UnitConstants.SECOND_UNIT;
-                default -> throw new IllegalArgumentException(UNSUPPORTED_TIME_UNIT + timeUnit);
-            };
-        }
-
-        @NonNull
-        private static String getAppendix(final ChronoUnit timeUnit) {
-            Objects.requireNonNull(timeUnit, TIME_UNIT);
-            return switch (timeUnit) {
-                case NANOS -> "(nanos)";
-                case MICROS -> "(micros)";
-                case MILLIS -> "(millis)";
-                case SECONDS -> "(sec)";
                 default -> throw new IllegalArgumentException(UNSUPPORTED_TIME_UNIT + timeUnit);
             };
         }

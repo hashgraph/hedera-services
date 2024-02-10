@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +82,9 @@ class TokenServiceApiImplTest {
             AccountID.newBuilder().accountNum(888).build();
     public static final AccountID CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow())
+            .build();
+    public static final ContractID CONTRACT_ID = ContractID.newBuilder()
+            .contractNum(CONTRACT_ID_BY_NUM.contractNumOrThrow())
             .build();
     public static final AccountID OTHER_CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(OTHER_CONTRACT_ID_BY_NUM.contractNumOrThrow())
@@ -135,7 +138,7 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, 7);
+        subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, 7);
 
         final var postIncrementAccount = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
         assertEquals(SOME_STORE_KEY, postIncrementAccount.firstContractStorageKey());
@@ -144,7 +147,7 @@ class TokenServiceApiImplTest {
 
     @Test
     void missingAccountHasZeroOriginalKvUsage() {
-        assertEquals(0, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
+        assertEquals(0, subject.originalKvUsageFor(CONTRACT_ID));
     }
 
     @Test
@@ -156,7 +159,7 @@ class TokenServiceApiImplTest {
                 .build());
         ((WritableKVStateBase<?, ?>) accountState).commit();
 
-        assertEquals(3, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
+        assertEquals(3, subject.originalKvUsageFor(CONTRACT_ID));
     }
 
     @Test
@@ -168,8 +171,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -4));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -4));
     }
 
     @Test
@@ -180,8 +182,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -3));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -3));
     }
 
     @Test

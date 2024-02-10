@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,16 @@
  */
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
+import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakySecurityModelV1Suite;
+import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import java.util.function.Supplier;
@@ -47,6 +50,9 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
+            CannotDeleteSystemEntitiesSuite::new,
+            Evm38ValidationSuite::new,
+            StakingSuite::new
         };
     }
 }

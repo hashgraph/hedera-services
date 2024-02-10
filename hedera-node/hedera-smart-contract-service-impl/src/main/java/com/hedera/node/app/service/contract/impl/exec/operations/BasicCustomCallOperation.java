@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -43,6 +45,13 @@ public interface BasicCustomCallOperation {
      * @return the {@link AddressChecks} instance used to determine whether a call is to a missing address
      */
     AddressChecks addressChecks();
+
+    /**
+     * Returns the {@link FeatureFlags} instance.
+     *
+     * @return the {@link FeatureFlags} instance.
+     */
+    FeatureFlags featureFlags();
 
     /**
      * Returns the address to which the {@link org.hyperledger.besu.evm.operation.AbstractCallOperation} being
@@ -83,8 +92,8 @@ public interface BasicCustomCallOperation {
         requireNonNull(frame);
         try {
             final var address = to(frame);
-
-            if (addressChecks().isNeitherSystemNorPresent(address, frame)) {
+            if (contractRequired(frame, address, featureFlags())
+                    && addressChecks().isNeitherSystemNorPresent(address, frame)) {
                 return new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
             }
             return executeUnchecked(frame, evm);

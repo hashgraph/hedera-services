@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -333,6 +333,29 @@ class AbstractLedgerWorldUpdaterTest {
         assertNull(subject.getAccount(aAddress));
         verify(trackingAliases).unlink(aAddress);
         assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
+    }
+
+    @Test
+    void getOrCreateReturnsExistingAccount() {
+        final var trackingAccounts = ledgers.accounts();
+        trackingAccounts.create(aAccount);
+        trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+
+        given(worldState.get(aAddress))
+                .willReturn(new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+        final var account = subject.getOrCreate(aAddress);
+        assertNotNull(account);
+        assertEquals(aAddress, account.getAddress());
+    }
+
+    @Test
+    void getOrCreateReturnsGhostAccount() {
+        final byte[] alias = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+        final var aliasAddress = Address.wrap(Bytes.wrap(alias));
+        given(aliases.resolveForEvm(aliasAddress)).willReturn(aliasAddress);
+        final var account = subject.getOrCreate(aliasAddress);
+        assertNotNull(account);
+        assertEquals(aliasAddress, account.getAddress());
     }
 
     @Test

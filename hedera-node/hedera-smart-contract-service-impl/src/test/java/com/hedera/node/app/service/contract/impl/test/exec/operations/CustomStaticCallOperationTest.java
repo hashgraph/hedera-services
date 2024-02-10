@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomStaticCallOperation;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,6 +43,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,11 +65,17 @@ class CustomStaticCallOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
+    private ProxyWorldUpdater updater;
+
     private CustomStaticCallOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomStaticCallOperation(gasCalculator, addressChecks);
+        subject = new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Test
@@ -76,20 +87,27 @@ class CustomStaticCallOperationTest {
 
     @Test
     void rejectsMissingNonSystemAddress() {
-        doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
-        givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
-        assertSameResult(expected, subject.execute(frame, evm));
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
+            givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            frameUtils
+                    .when(() -> FrameUtils.contractRequired(frame, NON_SYSTEM_LONG_ZERO_ADDRESS, featureFlags))
+                    .thenReturn(true);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
     }
 
     @Test
     void permitsSystemAddress() {
-        doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
-        given(addressChecks.isSystemAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
-        givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-        given(frame.stackSize()).willReturn(6);
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
-        assertSameResult(expected, subject.execute(frame, evm));
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+            given(frame.stackSize()).willReturn(6);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
     }
 
     private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {

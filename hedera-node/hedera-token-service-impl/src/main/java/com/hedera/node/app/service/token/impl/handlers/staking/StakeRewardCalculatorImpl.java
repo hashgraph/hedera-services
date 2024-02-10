@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
+    private static final Logger logger = LogManager.getLogger(StakeRewardCalculatorImpl.class);
     private final StakePeriodManager stakePeriodManager;
 
     @Inject
@@ -53,6 +56,10 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         // staked to a node
         final var nodeId = account.stakedNodeIdOrThrow();
         final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
+        if (stakingInfo != null && stakingInfo.deleted()) {
+            logger.info("Node {} is deleted. Paying zero rewards", nodeId);
+            return 0;
+        }
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
@@ -65,7 +72,8 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             @Nullable final StakingNodeInfo nodeStakingInfo,
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
-        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart, rewardsStore)) {
+        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart, rewardsStore)
+                || (nodeStakingInfo != null && nodeStakingInfo.deleted())) {
             return 0;
         }
         final var rewardOffered = computeRewardFromDetails(

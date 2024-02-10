@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,23 +28,19 @@ import com.swirlds.config.api.ConfigProperty;
  * @param cpuDigestThreadRatio
  * 		the ratio of simultaneous CPU threads to utilize for hashing. A value between {@code 0.0} and {@code 1.0}
  * 		inclusive representing the percentage of cores that should be used for hash computations.
- * @param cpuVerifierQueueSize
- * 		the fixed size of the CPU verifier queue. A value greater than zero representing the upper bound of the CPU
- * 		signature verification queue.
- * @param cpuDigestQueueSize
- * 		the fixed size of the CPU hashing queue. A value greater than zero representing the upper bound of the CPU
- * 		hashing queue.
  * @param keystorePassword
  * 		the password used to protect the PKCS12 key stores containing the nodes RSA keys. The password used to protect
  * 		the PKCS12 key stores containing the node RSA public/private key pairs.
+ * @param enableNewKeyStoreModel
+ *   whether to enable the new key store model which uses separate PKCS #8 key stores for each node. This model is
+ *   compatible with most industry standard tools and libraries including OpenSSL, Java Keytool, and many others.
  */
 @ConfigData("crypto")
 public record CryptoConfig(
         @ConfigProperty(defaultValue = "0.5") double cpuVerifierThreadRatio,
         @ConfigProperty(defaultValue = "0.5") double cpuDigestThreadRatio,
-        @ConfigProperty(defaultValue = "100") int cpuVerifierQueueSize,
-        @ConfigProperty(defaultValue = "100") int cpuDigestQueueSize,
-        @ConfigProperty(defaultValue = "password") String keystorePassword) {
+        @ConfigProperty(defaultValue = "password") String keystorePassword,
+        @ConfigProperty(defaultValue = "false") boolean enableNewKeyStoreModel) {
 
     /**
      * Calculates the number of threads needed to achieve the CPU core ratio given by {@link

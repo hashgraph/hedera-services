@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(long maxPath) {
-        return nodeRemover.getRecordsToDelete(maxPath);
+    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove() {
+        return nodeRemover.getRecordsToDelete();
     }
 }

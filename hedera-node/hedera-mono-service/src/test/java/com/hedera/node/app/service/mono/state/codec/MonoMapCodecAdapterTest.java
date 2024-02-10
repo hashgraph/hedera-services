@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -35,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoMapCodecAdapterTest {
+
     private static final VirtualBlobKeySerializer SERIALIZER = new VirtualBlobKeySerializer();
 
     @Mock
@@ -44,7 +46,7 @@ class MonoMapCodecAdapterTest {
     private DataOutput output;
 
     @Test
-    void canGetACodec() throws IOException {
+    void canGetACodec() throws IOException, ParseException {
         final var longCodec = MonoMapCodecAdapter.codecForSelfSerializable(1, MerkleLong::new);
 
         final var baos = new ByteArrayOutputStream();

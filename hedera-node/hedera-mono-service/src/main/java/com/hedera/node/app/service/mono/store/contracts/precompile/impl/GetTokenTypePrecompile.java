@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,11 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile implemen
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenType = token.tokenType().ordinal();
         return evmEncoder.encodeGetTokenType(tokenType);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeGetTokenType(status, 0);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetTokenType(final Bytes input) {

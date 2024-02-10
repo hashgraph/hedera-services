@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
@@ -97,6 +98,11 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile implements E
         return tokenId == null
                 ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
                 : evmEncoder.encodeAllowance(value);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return tokenId == null ? encoder.encodeAllowance(status.getNumber(), 0) : evmEncoder.encodeAllowance(0);
     }
 
     public static TokenAllowanceWrapper<TokenID, AccountID, AccountID> decodeTokenAllowance(

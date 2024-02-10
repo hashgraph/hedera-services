@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,19 +31,19 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractHtsCallTranslator {
 
     public static final Function CREATE_FUNGIBLE_TOKEN_V1 =
-            new Function("createFungibleToken(" + HEDERA_TOKEN_V1 + ",uint,uint)", ReturnTypes.INT);
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V1 + ",uint,uint)", "(int64,address)");
     public static final Function CREATE_FUNGIBLE_TOKEN_V2 =
-            new Function("createFungibleToken(" + HEDERA_TOKEN_V2 + ",uint64,uint32)", ReturnTypes.INT);
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V2 + ",uint64,uint32)", "(int64,address)");
     public static final Function CREATE_FUNGIBLE_TOKEN_V3 =
-            new Function("createFungibleToken(" + HEDERA_TOKEN_V3 + ",int64,int32)", ReturnTypes.INT);
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V3 + ",int64,int32)", "(int64,address)");
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V1
@@ -54,7 +54,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + FRACTIONAL_FEE
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V2
@@ -65,7 +65,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + FRACTIONAL_FEE
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V3
@@ -76,14 +76,14 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + FRACTIONAL_FEE_V2
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
 
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V1 =
-            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V1 + ")", ReturnTypes.INT);
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V1 + ")", "(int64,address)");
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V2 =
-            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V2 + ")", ReturnTypes.INT);
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V2 + ")", "(int64,address)");
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V3 =
-            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V3 + ")", ReturnTypes.INT);
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V3 + ")", "(int64,address)");
 
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1 = new Function(
             "createNonFungibleTokenWithCustomFees("
@@ -95,7 +95,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + ROYALTY_FEE
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2 = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V2
@@ -106,7 +106,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + ROYALTY_FEE
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3 = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V3
@@ -117,7 +117,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + ROYALTY_FEE_V2
                     + ARRAY_BRACKETS
                     + ")",
-            ReturnTypes.INT);
+            "(int64,address)");
 
     private final CreateDecoder decoder;
 
@@ -157,7 +157,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                 attempt.addressIdConverter());
     }
 
-    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+    private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         final var inputBytes = attempt.inputBytes();
         final var senderId = attempt.senderId();
         final var nativeOperations = attempt.nativeOperations();

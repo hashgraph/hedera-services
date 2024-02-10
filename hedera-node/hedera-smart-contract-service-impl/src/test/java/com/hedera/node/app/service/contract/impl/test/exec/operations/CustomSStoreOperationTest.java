@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,9 +137,7 @@ class CustomSStoreOperationTest {
         assertSame(successResult, result);
         verify(accessTracker)
                 .trackIfFirstRead(
-                        CALLED_CONTRACT_ID.contractNumOrThrow(),
-                        UInt256.fromBytes(A_STORAGE_KEY),
-                        UInt256.fromBytes(A_STORAGE_VALUE));
+                        CALLED_CONTRACT_ID, UInt256.fromBytes(A_STORAGE_KEY), UInt256.fromBytes(A_STORAGE_VALUE));
     }
 
     @Test

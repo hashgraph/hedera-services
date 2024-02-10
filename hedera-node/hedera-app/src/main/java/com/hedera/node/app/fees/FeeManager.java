@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
@@ -98,7 +98,7 @@ public final class FeeManager {
         final CurrentAndNextFeeSchedule schedules;
         try {
             schedules = CurrentAndNextFeeSchedule.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (final BufferUnderflowException | IOException ex) {
+        } catch (final BufferUnderflowException | ParseException ex) {
             return ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
         }
 
@@ -191,6 +191,14 @@ public final class FeeManager {
                 isInternalDispatch,
                 congestionMultipliers,
                 storeFactory);
+    }
+
+    public long congestionMultiplierFor(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final ReadableStoreFactory storeFactory) {
+
+        return congestionMultipliers.maxCurrentMultiplier(body, functionality, storeFactory);
     }
 
     @NonNull

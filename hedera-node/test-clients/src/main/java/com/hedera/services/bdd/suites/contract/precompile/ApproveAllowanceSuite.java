@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,6 +248,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     final HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("htsTokenAllowance")
                 .given(
@@ -286,7 +287,20 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 asAddress(spec.registry().getAccountID(theSpender))))
                                 .payingWith(OWNER)
                                 .via(allowanceTxn)
-                                .hasKnownStatus(SUCCESS))))
+                                .hasKnownStatus(SUCCESS)
+                        //                        ,contractCall(
+                        //                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                        //                                "htsAllowance",
+                        //                                asHeadlongAddress(
+                        //
+                        // asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                        asHeadlongAddress(
+                        //
+                        // asAddress(spec.registry().getAccountID(theSpender))))
+                        //                                        .payingWith(OWNER)
+                        //                                        .via("fakeAddressAllowance")
+                        )))
                 .then(
                         getTxnRecord(allowanceTxn).andAllChildRecords(),
                         childRecordsCheck(
@@ -298,7 +312,20 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_ALLOWANCE)
                                                         .withStatus(SUCCESS)
-                                                        .withAllowance(2)))));
+                                                        .withAllowance(2))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressAllowance",
+                        //                                SUCCESS,
+                        //                                recordWith()
+                        //                                        .status(INVALID_ALLOWANCE_OWNER_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_ALLOWANCE)
+                        //
+                        // .withStatus(INVALID_ALLOWANCE_OWNER_ID)
+                        //                                                        .withAllowance(0))))
+                        );
     }
 
     @HapiTest
@@ -366,6 +393,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     final HapiSpec hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("hapiNftIsApprovedForAll")
                 .given(
@@ -428,7 +456,22 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(OWNER)
                                 .via(notApprovedTxn)
                                 .hasKnownStatus(SUCCESS)
-                                .gas(GAS_TO_OFFER))))
+                                .gas(GAS_TO_OFFER)
+                        //                        ,contractCall(
+                        //                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                        //                                "htsIsApprovedForAll",
+                        //                                asHeadlongAddress(
+                        //
+                        // asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                asHeadlongAddress(
+                        //                                        asAddress(spec.registry().getAccountID(ACCOUNT))))
+                        //                                .payingWith(OWNER)
+                        //                                .via("fakeAddressIsApprovedForAll")
+                        //                                .hasKnownStatus(SUCCESS)
+                        //                                .gas(GAS_TO_OFFER)
+
+                        )))
                 .then(
                         childRecordsCheck(
                                 approvedForAllTxn,
@@ -447,7 +490,19 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_IS_APPROVED_FOR_ALL)
-                                                        .withIsApprovedForAll(SUCCESS, false)))));
+                                                        .withIsApprovedForAll(SUCCESS, false))))
+                        //                ,childRecordsCheck(
+                        //                                "fakeAddressIsApprovedForAll",
+                        //                                SUCCESS,
+                        //                                recordWith()
+                        //                                        .status(SUCCESS)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_IS_APPROVED_FOR_ALL)
+                        //                                                        .withIsApprovedForAll(SUCCESS,
+                        // false))))
+                        );
     }
 
     @HapiTest
@@ -455,6 +510,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("hapiNftGetApproved")
                 .given(
@@ -492,7 +548,15 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(allowanceTxn)
-                                .hasKnownStatus(SUCCESS))))
+                                .hasKnownStatus(SUCCESS)
+                        //                        ,contractCall(
+                        //                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                        //                                "htsGetApproved",
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                BigInteger.ONE)
+                        //                                .via("fakeAddressGetApproved")
+                        //                                .payingWith(OWNER)
+                        )))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
@@ -507,7 +571,23 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                 SUCCESS,
                                                                 asAddress(
                                                                         spec.registry()
-                                                                                .getAccountID(theSpender)))))))));
+                                                                                .getAccountID(theSpender))))))
+                        //                        ,childRecordsCheck(
+                        //                                "fakeAddressGetApproved",
+                        //                                SUCCESS,
+                        //                                recordWith()
+                        //                                        .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_GET_APPROVED)
+                        //                                                        .withApproved(
+                        //
+                        // INVALID_TOKEN_NFT_SERIAL_NUMBER,
+                        //
+                        // asAddress(AccountID.getDefaultInstance())
+                        //                                                        ))))
+                        )));
     }
 
     @HapiTest

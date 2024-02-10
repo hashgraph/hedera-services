@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
@@ -101,7 +102,7 @@ public class UpdateDecoder {
      * @param attempt the attempt
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTokenUpdateV1(@NonNull final HtsCallAttempt attempt) {
+    public @Nullable TransactionBody decodeTokenUpdateV1(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.decodeCall(
                 attempt.input().toArrayUnsafe());
         return decodeTokenUpdate(call, attempt.addressIdConverter());
@@ -113,7 +114,7 @@ public class UpdateDecoder {
      * @param attempt the attempt
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTokenUpdateV2(@NonNull final HtsCallAttempt attempt) {
+    public @Nullable TransactionBody decodeTokenUpdateV2(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
                 attempt.input().toArrayUnsafe());
         return decodeTokenUpdate(call, attempt.addressIdConverter());
@@ -125,7 +126,7 @@ public class UpdateDecoder {
      * @param attempt the attempt
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTokenUpdateV3(@NonNull final HtsCallAttempt attempt) {
+    public @Nullable TransactionBody decodeTokenUpdateV3(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
                 attempt.input().toArrayUnsafe());
         return decodeTokenUpdate(call, attempt.addressIdConverter());
@@ -155,7 +156,7 @@ public class UpdateDecoder {
         return decodeTokenUpdateExpiry(call, attempt.addressIdConverter());
     }
 
-    private TransactionBody decodeTokenUpdate(
+    private @Nullable TransactionBody decodeTokenUpdate(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
@@ -195,9 +196,14 @@ public class UpdateDecoder {
             txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
         }
 
-        return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
+        try {
+            return bodyWith(tokenKeys, txnBodyBuilder);
+        } catch (IllegalArgumentException ignore) {
+            return null;
+        }
     }
 
+    @Nullable
     public TransactionBody decodeTokenUpdateKeys(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.decodeCall(
                 attempt.input().toArrayUnsafe());
@@ -209,13 +215,20 @@ public class UpdateDecoder {
         final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
         txnBodyBuilder.token(tokenId);
 
-        return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
+        try {
+            return bodyWith(tokenKeys, txnBodyBuilder);
+        } catch (IllegalArgumentException ignore) {
+            return null;
+        }
     }
 
-    private TransactionBody checkTokenKeysTypeAndBuild(
+    private TransactionBody bodyWith(
             final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
         tokenKeys.forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
+            if (key == Key.DEFAULT) {
+                throw new IllegalArgumentException();
+            }
             if (tokenKeyWrapper.isUsedForAdminKey()) {
                 builder.adminKey(key);
             }
@@ -238,7 +251,6 @@ public class UpdateDecoder {
                 builder.pauseKey(key);
             }
         });
-
         return TransactionBody.newBuilder().tokenUpdate(builder).build();
     }
 
@@ -273,9 +285,9 @@ public class UpdateDecoder {
             final var keyType = ((BigInteger) tokenKeyTuple.get(KEY_TYPE)).intValue();
             final Tuple keyValueTuple = tokenKeyTuple.get(KEY_VALUE);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(INHERIT_ACCOUNT_KEY);
+            final byte[] ed25519 = keyValueTuple.get(ED25519);
+            final byte[] ecdsaSecp256K1 = keyValueTuple.get(ECDSA_SECP_256K1);
             final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(CONTRACT_ID)));
-            final var ed25519 = (byte[]) keyValueTuple.get(ED25519);
-            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(ECDSA_SECP_256K1);
             final var delegatableContractId =
                     asNumericContractId(addressIdConverter.convert(keyValueTuple.get(DELEGATABLE_CONTRACT_ID)));
 
@@ -283,10 +295,10 @@ public class UpdateDecoder {
                     keyType,
                     new KeyValueWrapper(
                             inheritAccountKey,
-                            contractId.contractNum() != 0 ? contractId : null,
+                            contractId.contractNumOrThrow() != 0 ? contractId : null,
                             ed25519,
                             ecdsaSecp256K1,
-                            delegatableContractId.contractNum() != 0 ? delegatableContractId : null)));
+                            delegatableContractId.contractNumOrThrow() != 0 ? delegatableContractId : null)));
         }
 
         return tokenKeys;

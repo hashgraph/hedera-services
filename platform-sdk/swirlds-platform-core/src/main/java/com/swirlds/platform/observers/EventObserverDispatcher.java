@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,8 @@ import java.util.List;
 /**
  * A type which accretes observers of several different types. This type facilitates the implied observer DAG.
  */
-public class EventObserverDispatcher
-        implements PreConsensusEventObserver, EventAddedObserver, ConsensusRoundObserver, StaleEventObserver {
+public class EventObserverDispatcher implements EventAddedObserver, ConsensusRoundObserver, StaleEventObserver {
 
-    /** A list of implementors of the {@link PreConsensusEventObserver} interface */
-    private final List<PreConsensusEventObserver> preConsensusEventObservers;
     /** A list of implementors of the {@link EventAddedObserver} interface */
     private final List<EventAddedObserver> eventAddedObservers;
     /** A list of implementors of the {@link ConsensusRoundObserver} interface */
@@ -43,7 +40,6 @@ public class EventObserverDispatcher
      * @param observers a list of {@link EventObserver} implementors
      */
     public EventObserverDispatcher(@NonNull final List<EventObserver> observers) {
-        preConsensusEventObservers = new ArrayList<>();
         eventAddedObservers = new ArrayList<>();
         consensusRoundObservers = new ArrayList<>();
         staleEventObservers = new ArrayList<>();
@@ -68,9 +64,6 @@ public class EventObserverDispatcher
      * @param observer the observer to add
      */
     public void addObserver(@NonNull final EventObserver observer) {
-        if (observer instanceof PreConsensusEventObserver o) {
-            preConsensusEventObservers.add(o);
-        }
         if (observer instanceof EventAddedObserver o) {
             eventAddedObservers.add(o);
         }
@@ -79,16 +72,6 @@ public class EventObserverDispatcher
         }
         if (observer instanceof StaleEventObserver o) {
             staleEventObservers.add(o);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preConsensusEvent(final EventImpl event) {
-        for (final PreConsensusEventObserver observer : preConsensusEventObservers) {
-            observer.preConsensusEvent(event);
         }
     }
 

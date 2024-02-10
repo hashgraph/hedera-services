@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.PrintStream;
@@ -73,7 +74,27 @@ class GrpcStarterTest {
     @BeforeEach
     void setUp() {
         subject = new GrpcStarter(
-                nodeId, grpcServerManager, nodeLocalProperties, () -> addressBook, Optional.of(console));
+                nodeId,
+                InitTrigger.GENESIS,
+                grpcServerManager,
+                nodeLocalProperties,
+                () -> addressBook,
+                Optional.of(console));
+    }
+
+    @Test
+    void doesNothingDuringEventStreamRecovery() {
+        subject = new GrpcStarter(
+                nodeId,
+                InitTrigger.EVENT_STREAM_RECOVERY,
+                grpcServerManager,
+                nodeLocalProperties,
+                () -> addressBook,
+                Optional.of(console));
+
+        subject.startIfAppropriate();
+
+        verifyNoInteractions(grpcServerManager, nodeLocalProperties, addressBook, console);
     }
 
     @Test

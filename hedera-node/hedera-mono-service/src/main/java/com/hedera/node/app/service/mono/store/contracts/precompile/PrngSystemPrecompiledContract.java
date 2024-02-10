@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -135,6 +136,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
             final long gasNeeded, final Bytes input, final MessageFrame frame) {
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
             return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);

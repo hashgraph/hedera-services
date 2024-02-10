@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public final class BlockInfoTranslator {
                 .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
                 .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
         if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
-            blockInfoBuilder.firstConsTimeOfLastBlock(Timestamp.newBuilder()
+            blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
                     .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
                     .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
                     .build());

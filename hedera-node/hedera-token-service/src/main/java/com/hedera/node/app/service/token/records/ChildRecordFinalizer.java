@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,5 +35,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the child record
  */
 public interface ChildRecordFinalizer {
-    void finalizeChildRecord(@NonNull ChildFinalizeContext context);
+    void finalizeChildRecord(@NonNull ChildFinalizeContext context, final HederaFunctionality function);
 }

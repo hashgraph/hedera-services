@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -371,6 +371,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
     @Override
     public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
+        // Note: this method assumes that the token for tId exists! Otherwise get(tId) will throw an exception
         return get(tId).decimals() == expectedDecimals;
     }
 

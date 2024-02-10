@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -55,7 +56,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
 
@@ -93,7 +94,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        return defaultHapiSpec("noTokenIdReverts")
+        return defaultHapiSpec("noTokenIdReverts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
@@ -145,8 +146,9 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";
+        final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall")
+        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(accountAlias).shape(SECP_256K1_SHAPE),
@@ -162,13 +164,40 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallLocal(
-                                FREEZE_CONTRACT,
-                                IS_FROZEN_FUNC,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get())))))
-                .then();
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallLocal(
+                                        FREEZE_CONTRACT,
+                                        IS_FROZEN_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get()))))
+                        //                ,contractCall(
+                        //                        FREEZE_CONTRACT,
+                        //                                IS_FROZEN_FUNC,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(GENESIS)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .via("fakeAddressIsFrozen")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+
+                        )
+                .then(
+                        //                        withOpContext(((spec, assertLog) -> allRunFor(
+                        //                                spec,
+                        //                                childRecordsCheck(
+                        //                                        "fakeAddressIsFrozen",
+                        //                                        CONTRACT_REVERT_EXECUTED,
+                        //                                        recordWith()
+                        //                                                .status(INVALID_TOKEN_ID)
+                        //                                                .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_IS_FROZEN)
+                        //                                                                .withStatus(INVALID_TOKEN_ID)
+                        //                                                                .withIsFrozen(false)))))))
+                        );
     }
 }

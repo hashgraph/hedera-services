@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -53,9 +53,12 @@ public final class SignedStateFileReader {
     @Deprecated(forRemoval = true)
     @NonNull
     public static List<SavedStateInfo> getSavedStateFiles(
-            final String mainClassName, final NodeId platformId, final String swirldName) {
+            @NonNull final PlatformContext platformContext,
+            final String mainClassName,
+            final NodeId platformId,
+            final String swirldName) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+        return new SignedStateFilePath(platformContext.getConfiguration().getConfigData(StateCommonConfig.class))
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 

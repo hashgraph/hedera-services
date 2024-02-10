@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -58,7 +59,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class GrantRevokeKycSuite extends HapiSuite {
 
@@ -110,7 +111,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
         final AtomicReference<TokenID> tokenWithoutKeyID = new AtomicReference<>();
         final var invalidTokenID = TokenID.newBuilder().build();
 
-        return defaultHapiSpec("GrantRevokeKycFail")
+        return defaultHapiSpec("GrantRevokeKycFail", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(KYC_KEY),
                         newKeyNamed(NON_KYC_KEY),
@@ -276,6 +277,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("grantRevokeKycSpecWithAliasLocalCall")
                 .given(
@@ -293,13 +295,40 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallLocal(
-                                GRANT_REVOKE_KYC_CONTRACT,
-                                IS_KYC_GRANTED,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get())))))
-                .then();
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallLocal(
+                                        GRANT_REVOKE_KYC_CONTRACT,
+                                        IS_KYC_GRANTED,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get()))))
+                        //                        ,contractCall(
+                        //                                GRANT_REVOKE_KYC_CONTRACT,
+                        //                                IS_KYC_GRANTED,
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress),
+                        //                                HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .payingWith(GENESIS)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .via("fakeAddressIsKyc")
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+
+                        )
+                .then(
+                        //                        withOpContext(((spec, assertLog) -> allRunFor(
+                        //                                spec,
+                        //                                childRecordsCheck(
+                        //                                        "fakeAddressIsKyc",
+                        //                                        CONTRACT_REVERT_EXECUTED,
+                        //                                        recordWith()
+                        //                                                .status(INVALID_TOKEN_ID)
+                        //                                                .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //
+                        // .forFunction(FunctionType.HAPI_IS_KYC)
+                        //                                                                .withStatus(INVALID_TOKEN_ID)
+                        //                                                                .withIsFrozen(false)))))))
+                        );
     }
 }

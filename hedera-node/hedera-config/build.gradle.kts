@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ description = "Hedera Configuration"
 
 testModuleInfo {
     requires("com.hedera.node.config")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("org.hyperledger.besu.datatypes")
     requires("org.junit.jupiter.api")

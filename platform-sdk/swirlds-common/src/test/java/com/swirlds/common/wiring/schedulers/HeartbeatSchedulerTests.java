@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,24 @@
 
 package com.swirlds.common.wiring.schedulers;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.Bindable;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 class HeartbeatSchedulerTests {
 
     @Test
@@ -37,7 +41,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -64,7 +68,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -92,7 +96,7 @@ class HeartbeatSchedulerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime);
+        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();

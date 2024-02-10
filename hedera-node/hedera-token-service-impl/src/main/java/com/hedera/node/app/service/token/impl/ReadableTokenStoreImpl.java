@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,13 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * Returns the number of tokens in the state.
      * @return the number of tokens in the state.
      */
+    @Override
     public long sizeOfState() {
         return tokenState.size();
+    }
+
+    @Override
+    public void warm(@NonNull final TokenID tokenId) {
+        tokenState.warm(tokenId);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -37,28 +37,28 @@ import org.apache.logging.log4j.Logger;
 public class ReadableContractStateStore implements ContractStateStore {
     private static final Logger logger = LogManager.getLogger(ReadableContractStateStore.class);
     private final ReadableKVState<SlotKey, SlotValue> storage;
-    private final ReadableKVState<EntityNumber, Bytecode> bytecode;
+    private final ReadableKVState<ContractID, Bytecode> bytecode;
 
     public ReadableContractStateStore(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.storage = states.get(ContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(ContractSchema.BYTECODE_KEY);
+        this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
+        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
     }
 
     @Override
-    public Bytecode getBytecode(@NonNull EntityNumber contractNumber) {
-        return bytecode.get(contractNumber);
+    public Bytecode getBytecode(@NonNull ContractID contractId) {
+        return bytecode.get(contractId);
     }
 
     /**
      * Refuses to put bytecode.
      *
-     * @param contractNumber the contract number to put the {@link Bytecode} for
+     * @param contractId the contract id to put the {@link Bytecode} for
      * @param code the {@link Bytecode} to put
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void putBytecode(@NonNull final EntityNumber contractNumber, @NonNull final Bytecode code) {
+    public void putBytecode(@NonNull final ContractID contractId, @NonNull final Bytecode code) {
         throw new UnsupportedOperationException("Cannot put bytecode in a read-only store");
     }
 

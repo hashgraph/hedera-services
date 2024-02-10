@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -55,13 +54,13 @@ class TransactionHandlerTest {
 
     private final State state = mock(State.class);
     private final SwirldState swirldState = mock(SwirldState.class);
-    private final SwirldDualState dualState = mock(SwirldDualState.class);
+    private final PlatformState platformState = mock(PlatformState.class);
 
     private TransactionHandler handler;
 
     @BeforeEach
     void setup() {
-        when(state.getSwirldDualState()).thenReturn(dualState);
+        when(state.getPlatformState()).thenReturn(platformState);
 
         handler = new TransactionHandler(selfId, mock(SwirldStateMetrics.class));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKe
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
@@ -67,6 +68,12 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements
         validateTrue(key != null, ResponseCodeEnum.KEY_NOT_PROVIDED);
         final var evmKey = convertToEvmKey(asKeyUnchecked(key));
         return evmEncoder.encodeGetTokenKey(evmKey);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        final var evmKey = new EvmKey();
+        return evmEncoder.encodeGetTokenKey(status, evmKey);
     }
 
     public static GetTokenKeyWrapper<TokenID> decodeGetTokenKey(final Bytes input) {

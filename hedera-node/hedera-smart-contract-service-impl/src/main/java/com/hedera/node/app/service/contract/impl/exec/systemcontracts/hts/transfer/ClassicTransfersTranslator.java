@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
 
     private boolean isClassicCall(@NonNull final byte[] selector) {
         return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())

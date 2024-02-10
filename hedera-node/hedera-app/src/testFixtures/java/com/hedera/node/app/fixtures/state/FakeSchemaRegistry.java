@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             final var previousStates = new EmptyReadableStates();
             final var writableStates = new MapWritableStates(writables);
             schema.migrate(new MigrationContext() {
+                @Override
+                public void copyAndReleaseOnDiskState(String stateKey) {
+                    // No-op
+                }
+
                 @NonNull
                 @Override
                 public ReadableStates previousStates() {

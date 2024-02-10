@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -74,7 +75,11 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
-                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
+                body,
+                systemContractGasCalculator,
+                mockEnhancement(),
+                AccountID.DEFAULT,
+                ClassicTransfersTranslator.TRANSFER_NFTS.selector());
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }
 
@@ -95,7 +100,11 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
-                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
+                body,
+                systemContractGasCalculator,
+                mockEnhancement(),
+                AccountID.DEFAULT,
+                ClassicTransfersTranslator.CRYPTO_TRANSFER.selector());
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.RUNNIN
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.STAT_CATEGORY;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.system.Platform;
 import javax.inject.Singleton;
 

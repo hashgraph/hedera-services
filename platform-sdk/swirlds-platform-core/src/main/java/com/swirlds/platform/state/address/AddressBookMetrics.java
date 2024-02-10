@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.state.address;
 
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
-
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -41,12 +39,13 @@ public final class AddressBookMetrics {
     public static void registerAddressBookMetrics(
             @NonNull final Metrics metrics, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
 
-        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "memberID", Long.class, selfId::id)
-                .withUnit("node ID")
+        metrics.getOrCreate(new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "memberID", Long.class, selfId::id)
+                .withUnit("nodeID")
                 .withDescription("The node ID number of this member"));
 
-        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "members", Integer.class, addressBook::getSize)
-                .withUnit("count")
-                .withDescription("total number of nodes currently in the address book"));
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "members", Integer.class, addressBook::getSize)
+                        .withUnit("count")
+                        .withDescription("total number of nodes currently in the address book"));
     }
 }

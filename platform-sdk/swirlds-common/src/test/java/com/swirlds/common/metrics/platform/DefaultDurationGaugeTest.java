@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.metrics.FloatFormats;
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
@@ -45,7 +45,7 @@ class DefaultDurationGaugeTest {
                 new DurationGauge.Config(CATEGORY, NAME, SECONDS).withDescription(DESCRIPTION));
 
         assertEquals(CATEGORY, gauge.getCategory(), "The category was not set correctly in the constructor");
-        assertEquals(NAME + " (sec)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
         assertEquals(DESCRIPTION, gauge.getDescription(), "The description was not set correctly in the constructor");
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_3,
@@ -60,21 +60,21 @@ class DefaultDurationGaugeTest {
                 FloatFormats.FORMAT_DECIMAL_3,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for milliseconds");
-        assertEquals(NAME + " (millis)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
         gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for microsecond");
-        assertEquals(NAME + " (micros)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
         gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for nanoseconds");
-        assertEquals(NAME + " (nanos)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
     }
 
     @Test

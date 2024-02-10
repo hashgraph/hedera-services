@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
@@ -68,9 +73,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -78,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.primitives.Longs;
@@ -108,7 +114,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractCreateSuite extends HapiSuite {
 
@@ -146,7 +152,8 @@ public class ContractCreateSuite extends HapiSuite {
                 contractWithAutoRenewNeedSignatures(),
                 newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields(),
-                disallowCreationsOfEmptyInitCode());
+                disallowCreationsOfEmptyInitCode(),
+                createCallInConstructor());
     }
 
     @Override
@@ -157,7 +164,7 @@ public class ContractCreateSuite extends HapiSuite {
     @HapiTest
     HapiSpec createContractWithStakingFields() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("createContractWithStakingFields")
+        return defaultHapiSpec("createContractWithStakingFields", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -217,7 +224,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec insufficientPayerBalanceUponCreation() {
-        return defaultHapiSpec("InsufficientPayerBalanceUponCreation")
+        return defaultHapiSpec("InsufficientPayerBalanceUponCreation", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("bankrupt").balance(0L), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
@@ -245,10 +252,10 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "Multipurpose";
         Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
-        return defaultHapiSpec("CannotSendToNonExistentAccount")
+        return defaultHapiSpec("CannotSendToNonExistentAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract))
                 .when(contractCreate(contract).balance(666))
-                .then(contractCall(contract, "donate", donationArgs).hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
+                .then(contractCall(contract, "donate", donationArgs).hasKnownStatus(INVALID_ALIAS_KEY));
     }
 
     @HapiTest
@@ -292,7 +299,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var txn = "creation";
         final var contract = "Fuse";
 
-        return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
+        return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
@@ -328,10 +335,32 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec createEmptyConstructor() {
-        return defaultHapiSpec("createEmptyConstructor")
+        return defaultHapiSpec("createEmptyConstructor", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final HapiSpec createCallInConstructor() {
+        final var txn = "txn";
+        return defaultHapiSpec("callInConstructor")
+                .given(uploadInitCode("CallInConstructor"))
+                .when()
+                .then(
+                        contractCreate("CallInConstructor").via(txn).hasKnownStatus(SUCCESS),
+                        getTxnRecord(txn).logged(),
+                        withOpContext((spec, opLog) -> {
+                            final var op = getTxnRecord(txn);
+                            allRunFor(spec, op);
+                            final var record = op.getResponseRecord();
+                            final var creationResult = record.getContractCreateResult();
+                            final var createdIds = creationResult.getCreatedContractIDsList();
+                            assertEquals(1, createdIds.size(), "Expected one creations but got " + createdIds);
+                            assertTrue(
+                                    createdIds.get(0).getContractNum() < 10000,
+                                    "Expected contract num < 10000 but got " + createdIds);
+                        }));
     }
 
     @HapiTest
@@ -343,7 +372,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var bBeneficiary = "bBeneficiary";
         final var txn = "txn";
 
-        return defaultHapiSpec("RevertedTryExtCallHasNoSideEffects")
+        return defaultHapiSpec("RevertedTryExtCallHasNoSideEffects", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).balance(balance),
@@ -373,7 +402,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         final var invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
-        return defaultHapiSpec("CreateFailsIfMissingSigs")
+        return defaultHapiSpec("CreateFailsIfMissingSigs", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
@@ -389,7 +418,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec rejectsInsufficientGas() {
-        return defaultHapiSpec("RejectsInsufficientGas")
+        return defaultHapiSpec("RejectsInsufficientGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(0L).hasKnownStatus(INSUFFICIENT_GAS));
@@ -412,7 +441,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec rejectsInsufficientFee() {
-        return defaultHapiSpec("RejectsInsufficientFee")
+        return defaultHapiSpec("RejectsInsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
@@ -432,7 +461,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec revertsNonzeroBalance() {
-        return defaultHapiSpec("RevertsNonzeroBalance")
+        return defaultHapiSpec("RevertsNonzeroBalance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).balance(1L).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
@@ -452,7 +481,11 @@ public class ContractCreateSuite extends HapiSuite {
         final AtomicLong justSendContractNum = new AtomicLong();
         final AtomicLong beneficiaryAccountNum = new AtomicLong();
 
-        return defaultHapiSpec("DelegateContractIdRequiredForTransferInDelegateCall")
+        return defaultHapiSpec(
+                        "DelegateContractIdRequiredForTransferInDelegateCall",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(justSendContract, sendInternalAndDelegateContract),
                         contractCreate(justSendContract).gas(300_000L).exposingNumTo(justSendContractNum::set),
@@ -499,7 +532,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var FILE_KEY = "fileKey";
         final var KEY_LIST = "keyList";
         final var ACCOUNT = "acc";
-        return defaultHapiSpec("cannotCreateTooLargeContract")
+        return defaultHapiSpec("cannotCreateTooLargeContract", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(FILE_KEY),
                         newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
@@ -524,7 +557,10 @@ public class ContractCreateSuite extends HapiSuite {
         final var firstBlock = "firstBlock";
         final var timeLoggingTxn = "timeLoggingTxn";
 
-        return defaultHapiSpec("blockTimestampChangesWithinFewSeconds")
+        return defaultHapiSpec(
+                        "blockTimestampChangesWithinFewSeconds",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         contractCall(contract, "logNow").via(firstBlock),
@@ -582,7 +618,11 @@ public class ContractCreateSuite extends HapiSuite {
     @HapiTest
     HapiSpec vanillaSuccess() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("VanillaSuccess")
+        return defaultHapiSpec(
+                        "VanillaSuccess",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).adminKey(THRESHOLD),
@@ -617,7 +657,7 @@ public class ContractCreateSuite extends HapiSuite {
     HapiSpec newAccountsCanUsePureContractIdKey() {
         final var contract = "CreateTrivial";
         final var contractControlled = "contractControlled";
-        return defaultHapiSpec("NewAccountsCanUsePureContractIdKey")
+        return defaultHapiSpec("NewAccountsCanUsePureContractIdKey", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract),
@@ -638,7 +678,7 @@ public class ContractCreateSuite extends HapiSuite {
     HapiSpec contractWithAutoRenewNeedSignatures() {
         final var contract = "CreateTrivial";
         final var autoRenewAccount = "autoRenewAccount";
-        return defaultHapiSpec("contractWithAutoRenewNeedSignatures")
+        return defaultHapiSpec("contractWithAutoRenewNeedSignatures", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(contract),
