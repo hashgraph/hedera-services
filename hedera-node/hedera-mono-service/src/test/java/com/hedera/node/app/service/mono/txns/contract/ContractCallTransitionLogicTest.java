@@ -40,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -77,6 +78,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -241,7 +243,9 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
-        senderAccount.initBalance(1234L);
+
+        final long balance = 1234L;
+        senderAccount.initBalance(balance);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
@@ -265,6 +269,11 @@ class ContractCallTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
         given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
+        final Address senderEvmAddress =
+                asTypedEvmAddress(EntityId.fromNum(senderAccount.getId().num()));
+        final var worldStateAccount = new WorldStateAccount(senderEvmAddress, Wei.of(balance), codeCache, entityAccess);
+        given(worldState.get(senderEvmAddress)).willReturn(worldStateAccount);
 
         // when:
         subject.doStateTransitionOperation(
@@ -301,7 +310,8 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
-        senderAccount.initBalance(1234L);
+        final long balance = 1234L;
+        senderAccount.initBalance(balance);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
@@ -321,6 +331,11 @@ class ContractCallTransitionLogicTest {
                         null,
                         maxGas))
                 .willReturn(results);
+
+        final Address senderEvmAddress =
+                asTypedEvmAddress(EntityId.fromNum(senderAccount.getId().num()));
+        final var worldStateAccount = new WorldStateAccount(senderEvmAddress, Wei.of(balance), codeCache, entityAccess);
+        given(worldState.get(senderEvmAddress)).willReturn(worldStateAccount);
 
         assertDoesNotThrow(() -> subject.doStateTransitionOperation(
                 accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice));
@@ -342,8 +357,16 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
+        final long balance = 1234L;
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
+                null,
+                balance,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                Map.of(),
+                List.of());
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         Address.wrap(Bytes.wrap(alias.toByteArray())),
@@ -360,6 +383,12 @@ class ContractCallTransitionLogicTest {
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         // when:
+
+        final Address senderEvmAddress =
+                asTypedEvmAddress(EntityId.fromNum(senderAccount.getId().num()));
+        final var worldStateAccount = new WorldStateAccount(senderEvmAddress, Wei.of(balance), codeCache, entityAccess);
+        given(worldState.get(senderEvmAddress)).willReturn(worldStateAccount);
+
         subject.doStateTransitionOperation(
                 accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
 
@@ -384,8 +413,9 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
+        final long balance = 1234L;
         var results = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.of(Bytes.EMPTY), Optional.empty(), Map.of(), List.of());
+                balance, 0L, 124L, Optional.of(Bytes.EMPTY), Optional.empty(), Map.of(), List.of());
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         Address.wrap(Bytes.wrap(alias.toByteArray())),
@@ -401,6 +431,11 @@ class ContractCallTransitionLogicTest {
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+
+        final Address senderEvmAddress =
+                asTypedEvmAddress(EntityId.fromNum(senderAccount.getId().num()));
+        final var worldStateAccount = new WorldStateAccount(senderEvmAddress, Wei.of(balance), codeCache, entityAccess);
+        given(worldState.get(senderEvmAddress)).willReturn(worldStateAccount);
 
         // when:
         subject.doStateTransitionOperation(

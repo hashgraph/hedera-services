@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
@@ -164,6 +165,9 @@ public class FrameBuilder {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
             } else {
                 code = account.getEvmCode();
+                validateTrue(
+                        emptyCodePossiblyAllowed(config, featureFlags, contractId, transaction, code),
+                        INVALID_CONTRACT_ID);
             }
         }
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
@@ -203,5 +207,16 @@ public class FrameBuilder {
             @NonNull final ContractID contractID) {
         final var possiblyGrandFatheredEntityNumOf = contractID.hasContractNum() ? contractID.contractNum() : null;
         return !featureFlags.isAllowCallsToNonContractAccountsEnabled(config, possiblyGrandFatheredEntityNumOf);
+    }
+
+    private boolean emptyCodePossiblyAllowed(
+            @NonNull final Configuration config,
+            @NonNull final FeatureFlags featureFlags,
+            @NonNull final ContractID contractId,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final Code code) {
+        return !(contractMustBePresent(config, featureFlags, contractId) && code.equals(CodeV0.EMPTY_CODE))
+                || transaction.isEthereumTransaction()
+                || transaction.hasValue();
     }
 }
