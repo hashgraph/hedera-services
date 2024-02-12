@@ -836,6 +836,7 @@ class VirtualPipelineTests {
     @Test
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Flush Throttle")
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/pull/11497
     @Disabled
     void flushThrottle() throws InterruptedException {
 
