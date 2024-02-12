@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -50,6 +51,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -141,7 +143,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
-            if (tx.isSystem()) return;
+            if (tx.isSystem()) {
+                if (collectSignaturesEnabled()) {
+                    if (tx instanceof StateSignatureTransaction txn) {
+                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(txn);
+                    }
+                }
+                return;
+            }
             try {
                 tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
             } catch (final Exception unexpectedException) {
@@ -379,5 +388,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         return previousResult == null
                 || previousResult.configVersion()
                         == configProvider.getConfiguration().getVersion();
+    }
+
+    private boolean collectSignaturesEnabled() {
+        // TODO(nickpoorman): Get this from the configuration.
+        // return configProvider.getConfiguration().getCollectSignatures();
+        return false;
     }
 }

@@ -55,14 +55,17 @@ public class BlockStateProofProducer {
      * proof for the current round as soon as we have enough signatures. Signature gathering happens asynchronously
      * and is not guaranteed to complete immediately, therefore we do not want to block the handle thread.
      *
-     * <p>Read from the queue until we have enough signatures. Then produce the signature and complete the future.
-     *
      * <p>We don't want this to run on the handle thread, so we use the executor service that was provided.
      *
      * @return a future that will complete with the block state proof for the current round
      */
     public CompletableFuture<BlockStateProof> getBlockStateProof() {
         // TODO(nickpoorman): Implement the signature gathering.
+
+        // Read from the queue until we have enough signatures. Then produce the signature and complete the future.
+        // 1. Get the queue for the round number.
+        // 2. Read from the queue until we have enough signatures.
+
         return CompletableFuture.supplyAsync(this::buildProof, executor);
     }
 

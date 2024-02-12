@@ -31,6 +31,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;
@@ -223,6 +224,11 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         // write it out.
         final var serializedBlockItem = format.serializeBlockStateProof(blockStateProof);
         writeSerializedBlockItem(serializedBlockItem);
+    }
+
+    public void writeStateSignatureTransaction(@NonNull StateSignatureTransaction txn) {
+        // 1. Buffer the transaction to be written to the next block.
+        // 2. Collect the signatures and write the block proof.
     }
 
     // =================================================================================================================

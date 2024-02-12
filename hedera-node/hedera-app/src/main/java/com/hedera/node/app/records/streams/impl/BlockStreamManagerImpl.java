@@ -32,6 +32,7 @@ import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
+import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.records.streams.state.StateChangesSink;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -219,18 +220,12 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final HederaState state,
             @NonNull final NodeInfo creator,
             @NonNull ConsensusTransaction systemTxn) {
-        // When we get a system StateSignatureTransaction, we need to collect all the signatures and write them to the
-        // block stream. However, as it relates to keeping the running hash, these platform events will need to be
-        // included in the following block, because they are the signatures for the end root hash of the current block.
 
-        // If the system transaction is a state signature transaction, we collect the signature.
-        if (systemTxn instanceof StateSignatureTransaction txn) {
-            // TODO(nickpoorman): I'm not sure if we want an explicit write method for this or not. Is there
-            //  different behavior for writing a state signature transaction than a regular system transaction?
-            // blockStreamProducer.writeStateSignatureTransaction(txn);
-            blockStreamProducer.writeSystemTransaction(txn);
-        }
-
+        // We write the system transaction to the block stream now as we would write any other block item. For
+        // StateSignatureTransaction, the round in which they are written to the block stream might not be the round
+        // they represent (the transaction and their state changes might not be included in the block they represent),
+        // which is fine because we have another process for collecting them, and then completing the open block that is
+        // waiting for them to produce the block proof.
         blockStreamProducer.writeSystemTransaction(systemTxn);
     }
 

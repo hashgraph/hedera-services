@@ -40,6 +40,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.FunctionalBlockRecordManager;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -136,7 +137,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final boolean useBlockStreams;
 
-    private final boolean gatherSignaturesEnabled;
+    private final boolean collectSignaturesEnabled;
 
     @Inject
     public HandleWorkflow(
@@ -192,7 +193,7 @@ public class HandleWorkflow {
 
         // TODO(nickpoorman): Grab these from a config property.
         useBlockStreams = true;
-        gatherSignaturesEnabled = true;
+        collectSignaturesEnabled = true;
     }
 
     /**
@@ -277,18 +278,20 @@ public class HandleWorkflow {
             @NonNull final HederaState state,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        if (gatherSignaturesEnabled()) {
-            // Check if the transaction is a StateSignatureTransaction.
-            // FUTURE: We can probably skip this check in the future, but it's here for now so we can toggle the
-            // ability to pull these from preHandle or handle.
-            if (platformTxn instanceof StateSignatureTransaction txn) {
-                blockRecordManager.processSystemTransaction(state, creator, platformTxn, () -> {});
-                return;
-            }
 
-            // Log out that we encountered a system transaction we are not aware of.
-            logger.warn("Encountered an unknown system transaction type: {}", platformTxn);
+        // FUTURE: We can probably skip this check in the future, but it's here for now so we can toggle the
+        // ability to pull these from preHandle or handle.
+        if (collectSignaturesEnabled()) {
+            if (platformTxn instanceof StateSignatureTransaction txn) {
+                // Collect the state signature transaction. We have a singleton instance of the
+                // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
+                // network and sorting them into queues to later.
+                StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(txn);
+            }
         }
+
+        // We want to write out the system transaction to the block stream.
+        blockRecordManager.processSystemTransaction(state, creator, platformTxn, () -> {});
     }
 
     private void handlePlatformTransaction(
@@ -895,8 +898,8 @@ public class HandleWorkflow {
         return useBlockStreams;
     }
 
-    private boolean gatherSignaturesEnabled() {
-        return gatherSignaturesEnabled;
+    private boolean collectSignaturesEnabled() {
+        return collectSignaturesEnabled;
     }
 
     private boolean isConsTimeFirstTransactionInBlock(Instant consensusTimestamp) {
