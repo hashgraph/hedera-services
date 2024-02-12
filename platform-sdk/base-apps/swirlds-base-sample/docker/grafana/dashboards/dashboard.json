@@ -96,7 +96,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_wallets_count",
+          "expr": "app_wallet_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -169,7 +169,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_transactions_total",
+          "expr": "transfer_count",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -179,7 +179,7 @@
           "useBackend": false
         }
       ],
-      "title": "Transactions Count",
+      "title": "Total transfers made",
       "type": "stat"
     },
     {
@@ -246,7 +246,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_transactionCreationDuration_nanos_ns",
+          "expr": "app_transfer_time_nanos_ns",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -256,7 +256,7 @@
           "useBackend": false
         }
       ],
-      "title": "How long it complete a transaction",
+      "title": "How long it complete a transfer",
       "type": "gauge"
     },
     {

@@ -17,7 +17,7 @@
 package com.swirlds.base.sample.persistence;
 
 import com.google.common.base.Predicates;
-import com.swirlds.base.sample.domain.Transaction;
+import com.swirlds.base.sample.domain.Transfer;
 import com.swirlds.base.sample.internal.DataTransferUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
@@ -32,31 +32,31 @@ import org.apache.logging.log4j.util.Strings;
 /**
  * in-memory simple data layer for Transactions
  */
-public class TransactionDao {
+public class TransferDao {
 
     private static class InstanceHolder {
-        private static final TransactionDao INSTANCE = new TransactionDao();
+        private static final TransferDao INSTANCE = new TransferDao();
     }
 
-    public static @NonNull TransactionDao getInstance() {
+    public static @NonNull TransferDao getInstance() {
         return InstanceHolder.INSTANCE;
     }
 
-    private static final Map<String, Transaction> TRANSACTION_REPOSITORY = new ConcurrentHashMap<>();
+    private static final Map<String, Transfer> TRANSACTION_REPOSITORY = new ConcurrentHashMap<>();
 
-    public @NonNull Transaction save(final @NonNull Transaction transaction) {
+    public @NonNull Transfer save(final @NonNull Transfer transfer) {
 
-        if (TRANSACTION_REPOSITORY.containsKey(transaction.uuid())) {
+        if (TRANSACTION_REPOSITORY.containsKey(transfer.uuid())) {
             throw new IllegalArgumentException("Non modifiable resource");
         }
-        TRANSACTION_REPOSITORY.put(transaction.uuid(), transaction);
-        return transaction;
+        TRANSACTION_REPOSITORY.put(transfer.uuid(), transfer);
+        return transfer;
     }
 
     /**
      * Search using a criteria
      */
-    public @NonNull List<Transaction> findByCriteria(final @NonNull Criteria criteria) {
+    public @NonNull List<Transfer> findByCriteria(final @NonNull Criteria criteria) {
         return TRANSACTION_REPOSITORY.values().stream()
                 .filter(criteria.toSearchPredicate())
                 .toList();
@@ -101,12 +101,12 @@ public class TransactionDao {
         /**
          * @return a predicate to perform the search
          */
-        private Predicate<Transaction> toSearchPredicate() {
+        private Predicate<Transfer> toSearchPredicate() {
             if (Strings.isNotBlank(uuid)) {
                 return (t) -> t.uuid().equals(uuid);
             }
 
-            Predicate<Transaction> result = Predicates.alwaysTrue();
+            Predicate<Transfer> result = Predicates.alwaysTrue();
             if (Strings.isNotBlank(addressFrom)) {
                 result = result.and(t -> t.from().equals(addressFrom));
             }

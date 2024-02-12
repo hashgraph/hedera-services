@@ -18,8 +18,8 @@ package com.swirlds.base.sample.internal;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
 import com.swirlds.base.sample.service.FullBalanceCrudService;
-import com.swirlds.base.sample.service.TransactionsCrudService;
-import com.swirlds.base.sample.service.WalletsCrudService;
+import com.swirlds.base.sample.service.TransferCrudService;
+import com.swirlds.base.sample.service.WalletCrudService;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.undertow.Undertow;
@@ -46,10 +46,10 @@ public class ServerUtils {
                 .into(pathHandler);
         new AdapterHandler<>(
                         swirldsContext,
-                        new TransactionsCrudService(swirldsContext),
-                        config.apiBasePath() + "/transactions")
+                        new TransferCrudService(swirldsContext),
+                        config.apiBasePath() + "/transfers")
                 .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new WalletsCrudService(swirldsContext), config.apiBasePath() + "/wallets")
+        new AdapterHandler<>(swirldsContext, new WalletCrudService(swirldsContext), config.apiBasePath() + "/wallets")
                 .into(pathHandler);
 
         // Create the Undertow server with the path handler and bind it to port

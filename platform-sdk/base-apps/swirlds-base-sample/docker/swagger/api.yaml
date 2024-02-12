@@ -92,9 +92,9 @@ paths:
                 $ref: '#/components/schemas/FullBalance'
         '404':
           description: Wallet not found
-  /transactions:
+  /transfers:
     get:
-      summary: Retrieve transactions based on parameters
+      summary: Retrieve transfers based on parameters
       parameters:
         - name: uuid
           in: query
@@ -143,24 +143,24 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Transaction'
+                  $ref: '#/components/schemas/Transfer'
         '400':
           description: Search parameters error
     post:
-      summary: Create a new transaction
+      summary: Create a new transfer
       requestBody:
         description: new transaction
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TransactionInput'
+              $ref: '#/components/schemas/TransferInput'
       responses:
         '201':
-          description: Transaction successfully created
+          description: Transfer successfully done
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Transaction'
+                $ref: '#/components/schemas/Transfer'
         '400':
           description: Input error
         '404':
@@ -172,7 +172,7 @@ components:
       properties:
         address:
           type: string
-    Transaction:
+    Transfer:
       type: object
       properties:
         uuid:
@@ -187,7 +187,7 @@ components:
         timestamp:
           type: integer
           format: int64
-    TransactionInput:
+    TransferInput:
       type: object
       properties:
         from:

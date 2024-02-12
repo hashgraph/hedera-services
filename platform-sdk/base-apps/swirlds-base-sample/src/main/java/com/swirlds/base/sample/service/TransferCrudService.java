@@ -19,12 +19,12 @@ package com.swirlds.base.sample.service;
 import com.google.common.base.Preconditions;
 import com.swirlds.base.sample.domain.Balance;
 import com.swirlds.base.sample.domain.BalanceMovement;
-import com.swirlds.base.sample.domain.Transaction;
+import com.swirlds.base.sample.domain.Transfer;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.BalanceDao;
 import com.swirlds.base.sample.persistence.BalanceMovementDao;
-import com.swirlds.base.sample.persistence.TransactionDao;
-import com.swirlds.base.sample.persistence.TransactionDao.Criteria;
+import com.swirlds.base.sample.persistence.TransferDao;
+import com.swirlds.base.sample.persistence.TransferDao.Criteria;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -39,53 +39,53 @@ import org.apache.logging.log4j.Logger;
 /**
  * Controls transactions operations
  */
-public class TransactionsCrudService extends CrudService<Transaction> {
-    private static final Logger log = LogManager.getLogger(TransactionsCrudService.class);
-    private final @NonNull TransactionDao transactionDao;
+public class TransferCrudService extends CrudService<Transfer> {
+    private static final Logger log = LogManager.getLogger(TransferCrudService.class);
+    private final @NonNull TransferDao transferDao;
     private final @NonNull BalanceDao balanceDao;
     private final @NonNull BalanceMovementDao balanceMovementDao;
     private final @NonNull PlatformContext context;
 
-    public TransactionsCrudService(@NonNull final PlatformContext context) {
-        super(Transaction.class);
+    public TransferCrudService(@NonNull final PlatformContext context) {
+        super(Transfer.class);
         this.context = Objects.requireNonNull(context, "transaction cannot be null");
-        this.transactionDao = TransactionDao.getInstance();
+        this.transferDao = TransferDao.getInstance();
         this.balanceDao = BalanceDao.getInstance();
         this.balanceMovementDao = BalanceMovementDao.getInstance();
     }
 
     @NonNull
     @Override
-    public Transaction create(@NonNull final Transaction transaction) {
+    public Transfer create(@NonNull final Transfer transfer) {
         final long timestamp = System.currentTimeMillis();
         final long startNano = System.nanoTime();
-        Objects.requireNonNull(transaction, "transaction cannot be null");
-        Preconditions.checkArgument(transaction.from() != null, "transaction#from cannot be null");
-        Preconditions.checkArgument(transaction.to() != null, "transaction#to cannot be null");
-        Preconditions.checkArgument(transaction.amount() != null, "transaction#amount cannot be null");
+        Objects.requireNonNull(transfer, "transaction cannot be null");
+        Preconditions.checkArgument(transfer.from() != null, "transfer#from cannot be null");
+        Preconditions.checkArgument(transfer.to() != null, "transfer#to cannot be null");
+        Preconditions.checkArgument(transfer.amount() != null, "transfer#amount cannot be null");
 
-        final Balance fromBalance = balanceDao.findWithBlockForUpdate(transaction.from());
+        final Balance fromBalance = balanceDao.findWithBlockForUpdate(transfer.from());
         try {
             Preconditions.checkArgument(fromBalance != null, "origin wallet not found");
             Preconditions.checkArgument(
-                    fromBalance.amount().compareTo(transaction.amount()) >= 0,
+                    fromBalance.amount().compareTo(transfer.amount()) >= 0,
                     "Not enough balance in originating account");
         } catch (IllegalArgumentException e) {
-            balanceDao.release(transaction.from());
+            balanceDao.release(transfer.from());
             context.getMetrics()
-                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .getOrCreate(ApplicationMetrics.TRANSFER_TIME)
                     .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
             throw e;
         }
 
-        final Balance toBalance = balanceDao.findWithBlockForUpdate(transaction.to());
+        final Balance toBalance = balanceDao.findWithBlockForUpdate(transfer.to());
         try {
             Preconditions.checkArgument(toBalance != null, "destination wallet not found");
         } catch (IllegalArgumentException e) {
-            balanceDao.release(transaction.from());
-            balanceDao.release(transaction.to());
+            balanceDao.release(transfer.from());
+            balanceDao.release(transfer.to());
             context.getMetrics()
-                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .getOrCreate(ApplicationMetrics.TRANSFER_TIME)
                     .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
             throw e;
         }
@@ -94,34 +94,34 @@ public class TransactionsCrudService extends CrudService<Transaction> {
 
         try {
             balanceMovementDao.save(new BalanceMovement(
-                    uuid, timestamp, fromBalance.wallet(), transaction.amount().negate()));
-            balanceMovementDao.save(new BalanceMovement(uuid, timestamp, toBalance.wallet(), transaction.amount()));
-            final Transaction save = transactionDao.save(
-                    new Transaction(uuid, transaction.from(), transaction.to(), transaction.amount(), timestamp));
-            balanceDao.saveOrUpdate(fromBalance);
-            balanceDao.saveOrUpdate(toBalance);
+                    uuid, timestamp, fromBalance.wallet(), transfer.amount().negate()));
+            balanceMovementDao.save(new BalanceMovement(uuid, timestamp, toBalance.wallet(), transfer.amount()));
+            final Transfer save = transferDao.save(
+                    new Transfer(uuid, transfer.from(), transfer.to(), transfer.amount(), timestamp));
+            balanceDao.saveOrUpdate(new Balance(fromBalance.wallet(), fromBalance.amount().subtract(transfer.amount()) ));
+            balanceDao.saveOrUpdate(new Balance(toBalance.wallet(), toBalance.amount().add(transfer.amount()) ));
             context.getMetrics()
-                    .getOrCreate(ApplicationMetrics.TRANSACTION_COUNT)
+                    .getOrCreate(ApplicationMetrics.TRANSFERS_COUNT)
                     .increment();
             return save;
         } catch (Exception e) {
-            balanceMovementDao.deleteAllWith(transaction.from(), uuid, timestamp);
-            balanceMovementDao.deleteAllWith(transaction.to(), uuid, timestamp);
-            transactionDao.delete(uuid);
-            log.error("unexpected error applying transaction", e);
-            throw new RuntimeException("unexpected error applying transaction");
+            balanceMovementDao.deleteAllWith(transfer.from(), uuid, timestamp);
+            balanceMovementDao.deleteAllWith(transfer.to(), uuid, timestamp);
+            transferDao.delete(uuid);
+            log.error("unexpected error applying transfer", e);
+            throw new RuntimeException("unexpected error applying transfer");
         } finally {
-            balanceDao.release(transaction.from());
-            balanceDao.release(transaction.to());
+            balanceDao.release(transfer.from());
+            balanceDao.release(transfer.to());
             context.getMetrics()
-                    .getOrCreate(ApplicationMetrics.TRANSACTION_TIME)
+                    .getOrCreate(ApplicationMetrics.TRANSFER_TIME)
                     .set(Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS));
         }
     }
 
     @NonNull
     @Override
-    public List<Transaction> retrieveAll(@NonNull final Map<String, String> params) {
+    public List<Transfer> retrieveAll(@NonNull final Map<String, String> params) {
         Objects.requireNonNull(params, "params must not be null");
         final Criteria criteria;
         try {
@@ -129,6 +129,6 @@ public class TransactionsCrudService extends CrudService<Transaction> {
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing parameters for search" + params);
         }
-        return transactionDao.findByCriteria(criteria);
+        return transferDao.findByCriteria(criteria);
     }
 }

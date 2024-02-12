@@ -13,18 +13,18 @@ GET http://{{server}}:{{port}}/swirlds/api/wallets
 Accept: application/json
 
 ### Get balance
-GET http://{{server}}:{{port}}/swirlds/api/balances/0
+GET http://{{server}}:{{port}}/swirlds/api/balances/X
 Accept: application/json
 
 
-### create transaction
-POST http://{{server}}:{{port}}/swirlds/api/transactions
+### create transfer
+POST http://{{server}}:{{port}}/swirlds/api/transfers
 Content-Type: application/json
 
 {
   "from": "0",
-  "to": "13c6e2ce-431b-4c4a-83d8-1d028d5d144b",
-  "amount": "100000.33"
+  "to": "X",
+  "amount": "1000000"
 
 }
 

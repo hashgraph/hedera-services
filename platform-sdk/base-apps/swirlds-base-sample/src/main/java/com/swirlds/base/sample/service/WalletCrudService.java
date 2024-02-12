@@ -18,6 +18,7 @@ package com.swirlds.base.sample.service;
 
 import com.swirlds.base.sample.domain.Balance;
 import com.swirlds.base.sample.domain.Wallet;
+import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.BalanceDao;
 import com.swirlds.base.sample.persistence.WalletDao;
 import com.swirlds.common.context.PlatformContext;
@@ -31,13 +32,13 @@ import java.util.UUID;
 /**
  * Controls wallets operations
  */
-public class WalletsCrudService extends CrudService<Wallet> {
+public class WalletCrudService extends CrudService<Wallet> {
 
     private final @NonNull WalletDao dao;
     private final @NonNull BalanceDao balanceDao;
     private final @NonNull PlatformContext context;
 
-    public WalletsCrudService(final @NonNull PlatformContext context) {
+    public WalletCrudService(final @NonNull PlatformContext context) {
         super(Wallet.class);
         this.context = Objects.requireNonNull(context, "transaction cannot be null");
         this.dao = WalletDao.getInstance();
@@ -55,6 +56,7 @@ public class WalletsCrudService extends CrudService<Wallet> {
     public Wallet create(@NonNull final Wallet body) {
         final Wallet save = dao.save(new Wallet(UUID.randomUUID().toString()));
         balanceDao.saveOrUpdate(new Balance(save, BigDecimal.ZERO));
+        context.getMetrics().getOrCreate(ApplicationMetrics.WALLETS_CREATION_COUNT).increment();
         return save;
     }
 

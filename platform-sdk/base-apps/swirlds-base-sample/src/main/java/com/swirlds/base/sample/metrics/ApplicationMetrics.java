@@ -46,15 +46,19 @@ public class ApplicationMetrics {
             .withUnit("ops")
             .withDescription("requests per second");
     private static final FunctionGauge.Config<Integer> WALLETS_COUNT = new FunctionGauge.Config<>(
-                    APPLICATION_CATEGORY, "wallets_count", Integer.class, () -> WalletDao.getInstance()
+                    APPLICATION_CATEGORY, "wallet_total", Integer.class, () -> WalletDao.getInstance()
                             .countAll())
-            .withDescription("total number of wallets");
-    public static final Counter.Config TRANSACTION_COUNT = new Counter.Config(
-                    APPLICATION_CATEGORY, "transactions_count")
-            .withDescription("total number of transactions");
-    public static final DurationGauge.Config TRANSACTION_TIME = new DurationGauge.Config(
-                    APPLICATION_CATEGORY, "transaction_time", ChronoUnit.NANOS)
-            .withDescription("the time it takes to process a transaction");
+            .withDescription("total number of wallets in the system");
+
+    public static final Counter.Config WALLETS_CREATION_COUNT = new Counter.Config(
+            APPLICATION_CATEGORY, "wallet_creation_count")
+            .withDescription("total number of created wallets with the api");
+    public static final Counter.Config TRANSFERS_COUNT = new Counter.Config(
+                    APPLICATION_CATEGORY, "transfer_count")
+            .withDescription("total number of created transfers with the api");
+    public static final DurationGauge.Config TRANSFER_TIME = new DurationGauge.Config(
+                    APPLICATION_CATEGORY, "transfer_time", ChronoUnit.NANOS)
+            .withDescription("the time it takes to process a transfer");
 
     /**
      * Register all metrics configurations
@@ -64,7 +68,7 @@ public class ApplicationMetrics {
         context.getMetrics().getOrCreate(REQUEST_AVG_TIME);
         context.getMetrics().getOrCreate(ERROR_COUNT);
         context.getMetrics().getOrCreate(WALLETS_COUNT);
-        context.getMetrics().getOrCreate(TRANSACTION_COUNT);
-        context.getMetrics().getOrCreate(TRANSACTION_TIME);
+        context.getMetrics().getOrCreate(TRANSFERS_COUNT);
+        context.getMetrics().getOrCreate(TRANSFER_TIME);
     }
 }

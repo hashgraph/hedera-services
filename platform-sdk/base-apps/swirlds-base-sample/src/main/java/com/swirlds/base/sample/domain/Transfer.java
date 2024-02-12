@@ -18,4 +18,4 @@ package com.swirlds.base.sample.domain;
 
 import java.math.BigDecimal;
 
-public record Transaction(String uuid, String from, String to, BigDecimal amount, Long timestamp) {}
+public record Transfer(String uuid, String from, String to, BigDecimal amount, Long timestamp) {}
