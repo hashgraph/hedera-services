@@ -56,7 +56,9 @@ public class WalletCrudService extends CrudService<Wallet> {
     public Wallet create(@NonNull final Wallet body) {
         final Wallet save = dao.save(new Wallet(UUID.randomUUID().toString()));
         balanceDao.saveOrUpdate(new Balance(save, BigDecimal.ZERO));
-        context.getMetrics().getOrCreate(ApplicationMetrics.WALLETS_CREATION_COUNT).increment();
+        context.getMetrics()
+                .getOrCreate(ApplicationMetrics.WALLETS_CREATION_COUNT)
+                .increment();
         return save;
     }
 

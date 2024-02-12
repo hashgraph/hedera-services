@@ -96,13 +96,13 @@ public class TransferCrudService extends CrudService<Transfer> {
             balanceMovementDao.save(new BalanceMovement(
                     uuid, timestamp, fromBalance.wallet(), transfer.amount().negate()));
             balanceMovementDao.save(new BalanceMovement(uuid, timestamp, toBalance.wallet(), transfer.amount()));
-            final Transfer save = transferDao.save(
-                    new Transfer(uuid, transfer.from(), transfer.to(), transfer.amount(), timestamp));
-            balanceDao.saveOrUpdate(new Balance(fromBalance.wallet(), fromBalance.amount().subtract(transfer.amount()) ));
-            balanceDao.saveOrUpdate(new Balance(toBalance.wallet(), toBalance.amount().add(transfer.amount()) ));
-            context.getMetrics()
-                    .getOrCreate(ApplicationMetrics.TRANSFERS_COUNT)
-                    .increment();
+            final Transfer save =
+                    transferDao.save(new Transfer(uuid, transfer.from(), transfer.to(), transfer.amount(), timestamp));
+            balanceDao.saveOrUpdate(
+                    new Balance(fromBalance.wallet(), fromBalance.amount().subtract(transfer.amount())));
+            balanceDao.saveOrUpdate(
+                    new Balance(toBalance.wallet(), toBalance.amount().add(transfer.amount())));
+            context.getMetrics().getOrCreate(ApplicationMetrics.TRANSFERS_COUNT).increment();
             return save;
         } catch (Exception e) {
             balanceMovementDao.deleteAllWith(transfer.from(), uuid, timestamp);

@@ -51,10 +51,9 @@ public class ApplicationMetrics {
             .withDescription("total number of wallets in the system");
 
     public static final Counter.Config WALLETS_CREATION_COUNT = new Counter.Config(
-            APPLICATION_CATEGORY, "wallet_creation_count")
+                    APPLICATION_CATEGORY, "wallet_creation_count")
             .withDescription("total number of created wallets with the api");
-    public static final Counter.Config TRANSFERS_COUNT = new Counter.Config(
-                    APPLICATION_CATEGORY, "transfer_count")
+    public static final Counter.Config TRANSFERS_COUNT = new Counter.Config(APPLICATION_CATEGORY, "transfer_count")
             .withDescription("total number of created transfers with the api");
     public static final DurationGauge.Config TRANSFER_TIME = new DurationGauge.Config(
                     APPLICATION_CATEGORY, "transfer_time", ChronoUnit.NANOS)

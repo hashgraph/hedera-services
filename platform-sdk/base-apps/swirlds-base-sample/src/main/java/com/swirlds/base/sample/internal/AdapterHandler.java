@@ -37,14 +37,10 @@ import org.apache.logging.log4j.Logger;
 
 public class AdapterHandler<T> implements HttpHandler {
     private static final Logger log = LogManager.getLogger(AdapterHandler.class);
-    private @NonNull
-    final PlatformContext context;
-    private @NonNull
-    final CrudService<T> delegatedService;
-    private @NonNull
-    final String path;
-    private @NonNull
-    final CountPerSecond tps;
+    private @NonNull final PlatformContext context;
+    private @NonNull final CrudService<T> delegatedService;
+    private @NonNull final String path;
+    private @NonNull final CountPerSecond tps;
 
     protected AdapterHandler(
             final @NonNull PlatformContext context, CrudService<T> delegatedService, final String path) {

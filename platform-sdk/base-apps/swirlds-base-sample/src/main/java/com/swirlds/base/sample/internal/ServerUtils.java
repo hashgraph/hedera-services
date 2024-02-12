@@ -45,9 +45,7 @@ public class ServerUtils {
         new AdapterHandler<>(swirldsContext, new FullBalanceCrudService(), config.apiBasePath() + "/balances")
                 .into(pathHandler);
         new AdapterHandler<>(
-                        swirldsContext,
-                        new TransferCrudService(swirldsContext),
-                        config.apiBasePath() + "/transfers")
+                        swirldsContext, new TransferCrudService(swirldsContext), config.apiBasePath() + "/transfers")
                 .into(pathHandler);
         new AdapterHandler<>(swirldsContext, new WalletCrudService(swirldsContext), config.apiBasePath() + "/wallets")
                 .into(pathHandler);
