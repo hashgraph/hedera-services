@@ -19,10 +19,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class BlockStreamProducerConcurrent implements BlockStreamProducer {
+public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
 
     /** The logger */
-    private static final Logger logger = LogManager.getLogger(BlockStreamProducerConcurrent.class);
+    private static final Logger logger = LogManager.getLogger(ConcurrentBlockStreamProducer.class);
 
     private final ExecutorService executor;
     private final BlockStreamProducer producer;
@@ -57,7 +57,7 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
      * @param executor the executor service to use for writes
      * @param producer the producer to wrap
      */
-    public BlockStreamProducerConcurrent(
+    public ConcurrentBlockStreamProducer(
             @NonNull final ExecutorService executor, @NonNull final BlockStreamProducer producer) {
         this.executor = executor;
         this.producer = producer;

@@ -161,7 +161,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     }
 
     /** {@inheritDoc} */
-    public void close(@NonNull final HashObject endRunningHash) {
+    public void close() {
         if (state != State.OPEN) {
             throw new IllegalStateException("Cannot close a BlockRecordWriterV6 that is not open");
         }

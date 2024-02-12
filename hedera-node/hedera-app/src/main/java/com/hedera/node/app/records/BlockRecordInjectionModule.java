@@ -27,13 +27,12 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.records.streams.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamFormat;
-import com.hedera.node.app.records.streams.impl.producers.BlockStreamProducerConcurrent;
+import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamProducerSingleThreaded;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFactory;
 import com.hedera.node.app.records.streams.impl.producers.formats.BlockStreamWriterFactoryImpl;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFormatV1;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -187,7 +186,7 @@ public abstract class BlockRecordInjectionModule {
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
-            case "CONCURRENT" -> new BlockStreamProducerConcurrent(executor, serial);
+            case "CONCURRENT" -> new ConcurrentBlockStreamProducer(executor, serial);
             case "SERIAL" -> serial;
             default -> {
                 logger.fatal("Unknown stream file producer type: {}", producerType);
