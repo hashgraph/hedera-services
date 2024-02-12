@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.benchmark.reconnect;
 
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -37,11 +39,8 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.FileNotFoundException;
-
-import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * The code is partially borrowed from VirtualMapReconnectTestBase.java in swirlds-virtualmap/src/test/.
@@ -106,8 +105,7 @@ public abstract class VirtualMapReconnectBenchBase {
         final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
         try {
-            final var node =
-                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+            final var node = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
             node.release();
             final VirtualRoot root = learnerMap.getRight();
             Assertions.assertTrue(root.isHashed(), "Learner root node must be hashed");
