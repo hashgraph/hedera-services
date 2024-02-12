@@ -125,7 +125,6 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
-
     public static final List<Long> nonExistingSystemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
     public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
