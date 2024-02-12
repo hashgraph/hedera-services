@@ -54,10 +54,6 @@ hammerModuleInfo {
 }
 
 tasks.register<JMHTask>("jmhReconnect") {
-    group = "jmh"
-    jarArchive.set(tasks.jmhJar.flatMap { it.archiveFile })
-    jvm = javaToolchains.launcherFor(java.toolchain).map { it.executablePath }.get().asFile.path
-
     includes.set(listOf("Reconnect.*"))
     jvmArgs.set(listOf("-Xmx16g"))
     fork.set(1)

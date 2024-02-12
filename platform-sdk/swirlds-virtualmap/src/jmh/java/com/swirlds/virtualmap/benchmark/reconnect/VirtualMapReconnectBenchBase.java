@@ -19,9 +19,6 @@ package com.swirlds.virtualmap.benchmark.reconnect;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
@@ -31,11 +28,8 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -46,17 +40,11 @@ import com.swirlds.virtualmap.test.fixtures.TestValue;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 
 /**
- * The code is largely borrowed from VirtualMapReconnectTestBase.java in swirlds-virtualmap/src/test/.
+ * The code is partially borrowed from VirtualMapReconnectTestBase.java in swirlds-virtualmap/src/test/.
  * Ideally, it belongs to a shared test fixture, but I was unable to find a way to resolve dependencies
  * between projects and modules, so I created this copy here and removed a few static definitions that
  * are irrelevant to JMH benchmarks. In the future, this JMH-specific copy may in fact diverge
@@ -67,8 +55,8 @@ public abstract class VirtualMapReconnectBenchBase {
 
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
-    protected BrokenBuilder teacherBuilder;
-    protected BrokenBuilder learnerBuilder;
+    protected VirtualDataSourceBuilder<TestKey, TestValue> teacherBuilder;
+    protected VirtualDataSourceBuilder<TestKey, TestValue> learnerBuilder;
 
     protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
@@ -78,9 +66,8 @@ public abstract class VirtualMapReconnectBenchBase {
     }
 
     protected void setupEach() {
-        final VirtualDataSourceBuilder<TestKey, TestValue> dataSourceBuilder = createBuilder();
-        teacherBuilder = new BrokenBuilder(dataSourceBuilder);
-        learnerBuilder = new BrokenBuilder(dataSourceBuilder);
+        teacherBuilder = createBuilder();
+        learnerBuilder = createBuilder();
         teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
         learnerMap = new VirtualMap<>("Learner", learnerBuilder);
     }
@@ -99,7 +86,6 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
-        registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
 
         new TestConfigBuilder()
                 .withValue(ReconnectConfig_.ACTIVE, "true")
@@ -116,208 +102,19 @@ public abstract class VirtualMapReconnectBenchBase {
     }
 
     protected void reconnect() throws Exception {
-        reconnectMultipleTimes(1);
-    }
-
-    protected void reconnectMultipleTimes(int attempts) {
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
         final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
         try {
-            for (int i = 0; i < attempts; i++) {
-                try {
-                    final var node =
-                            MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
-                    node.release();
-                    Assertions.assertEquals(attempts - 1, i, "We should only succeed on the last try");
-                    final VirtualRoot root = learnerMap.getRight();
-                    Assertions.assertTrue(root.isHashed(), "Learner root node must be hashed");
-                } catch (Exception e) {
-                    if (i == attempts - 1) {
-                        Assertions.fail("We did not expect an exception on this reconnect attempt!", e);
-                    }
-                }
-            }
+            final var node =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+            node.release();
+            final VirtualRoot root = learnerMap.getRight();
+            Assertions.assertTrue(root.isHashed(), "Learner root node must be hashed");
         } finally {
             teacherTree.release();
             learnerTree.release();
             copy.release();
-        }
-    }
-
-    protected static final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, TestValue> {
-
-        private static final long CLASS_ID = 0x5a79654cd0f96dcfL;
-        private VirtualDataSourceBuilder<TestKey, TestValue> delegate;
-        private int numCallsBeforeThrow = Integer.MAX_VALUE;
-        private int numCalls = 0;
-        private int numTimesToBreak = 0;
-        private int numTimesBroken = 0;
-
-        public BrokenBuilder() {}
-
-        public BrokenBuilder(VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public long getClassId() {
-            return CLASS_ID;
-        }
-
-        @Override
-        public int getVersion() {
-            return 1;
-        }
-
-        @Override
-        public void serialize(final SerializableDataOutputStream out) throws IOException {
-            delegate.serialize(out);
-            out.writeInt(numCallsBeforeThrow);
-            out.writeInt(numTimesToBreak);
-            out.writeInt(numCalls);
-            out.writeInt(numTimesBroken);
-        }
-
-        @Override
-        public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-            delegate.deserialize(in, version);
-            numCallsBeforeThrow = in.readInt();
-            numTimesToBreak = in.readInt();
-            numCalls = in.readInt();
-            numTimesBroken = in.readInt();
-        }
-
-        @Override
-        public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
-            return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
-        }
-
-        @Override
-        public BreakableDataSource copy(
-                final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
-            final var breakableSnapshot = (BreakableDataSource) snapshotMe;
-            return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
-        }
-
-        @Override
-        public void snapshot(final Path destination, final VirtualDataSource<TestKey, TestValue> snapshotMe) {
-            final var breakableSnapshot = (BreakableDataSource) snapshotMe;
-            delegate.snapshot(destination, breakableSnapshot.delegate);
-        }
-
-        @Override
-        public BreakableDataSource restore(final String label, final Path from) {
-            return new BreakableDataSource(this, delegate.restore(label, from));
-        }
-
-        public void setNumCallsBeforeThrow(int num) {
-            this.numCallsBeforeThrow = num;
-        }
-
-        public void setNumTimesToBreak(int num) {
-            this.numTimesToBreak = num;
-        }
-    }
-
-    protected static final class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
-        private final VirtualDataSource<TestKey, TestValue> delegate;
-        private final BrokenBuilder builder;
-
-        public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource<TestKey, TestValue> delegate) {
-            this.delegate = Objects.requireNonNull(delegate);
-            this.builder = Objects.requireNonNull(builder);
-        }
-
-        @Override
-        public void saveRecords(
-                final long firstLeafPath,
-                final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
-                throws IOException {
-
-            final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
-                    leafRecordsToAddOrUpdate.collect(Collectors.toList());
-
-            if (builder.numTimesBroken < builder.numTimesToBreak) {
-                builder.numCalls += leaves.size();
-                if (builder.numCalls > builder.numCallsBeforeThrow) {
-                    builder.numCalls = 0;
-                    builder.numTimesBroken++;
-                    delegate.close();
-                    throw new IOException("Something bad on the DB!");
-                }
-            }
-
-            delegate.saveRecords(
-                    firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
-        }
-
-        @Override
-        public void close() throws IOException {
-            delegate.close();
-        }
-
-        @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
-            return delegate.loadLeafRecord(key);
-        }
-
-        @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final long path) throws IOException {
-            return delegate.loadLeafRecord(path);
-        }
-
-        @Override
-        public long findKey(final TestKey key) throws IOException {
-            return delegate.findKey(key);
-        }
-
-        @Override
-        public Hash loadHash(final long path) throws IOException {
-            return delegate.loadHash(path);
-        }
-
-        @Override
-        public void snapshot(final Path snapshotDirectory) throws IOException {
-            delegate.snapshot(snapshotDirectory);
-        }
-
-        @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
-            delegate.copyStatisticsFrom(that);
-        }
-
-        @Override
-        public void registerMetrics(final Metrics metrics) {
-            delegate.registerMetrics(metrics);
-        }
-
-        @Override
-        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
-        }
-
-        @Override
-        public long getFirstLeafPath() {
-            return delegate.getFirstLeafPath();
-        }
-
-        @Override
-        public long getLastLeafPath() {
-            return delegate.getLastLeafPath();
-        }
-
-        @Override
-        public void enableBackgroundCompaction() {
-            // no op
-        }
-
-        @Override
-        public void stopAndDisableBackgroundCompaction() {
-            // no op
         }
     }
 }
