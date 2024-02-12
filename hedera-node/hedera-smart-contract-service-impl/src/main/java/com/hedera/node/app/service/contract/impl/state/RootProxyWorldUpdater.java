@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.ResourceExhaustedException.validateResource;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
@@ -107,11 +107,11 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         if (contractsConfig.enforceCreationThrottle()) {
             final var creationCapacityIsAvailable =
                     !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
-            validateTrue(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+            validateResource(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
         }
 
         final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
-        validateTrue(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+        validateResource(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
 
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {
