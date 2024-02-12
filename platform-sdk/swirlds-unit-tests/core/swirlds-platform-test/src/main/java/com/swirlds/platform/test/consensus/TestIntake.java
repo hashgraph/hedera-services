@@ -17,8 +17,6 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
@@ -34,6 +32,7 @@ import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -88,7 +87,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, GENERATION_THRESHOLD);
+                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
@@ -220,24 +219,17 @@ public class TestIntake implements LoadableFromSignedState {
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
-                        GENERATION_THRESHOLD));
+                        AncientMode.GENERATION_THRESHOLD));
         linkerWiring
                 .nonAncientEventWindowInput()
                 .put(new NonAncientEventWindow(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
-                        GENERATION_THRESHOLD));
+                        AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();
-
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                ROUND_FIRST,
-                consensus.getMinGenerationNonAncient(),
-                consensus.getMinGenerationNonAncient(),
-                GENERATION_THRESHOLD);
-
-        shadowGraph.startWithEventWindow(eventWindow);
+        shadowGraph.startWithExpiredThreshold(consensus.getMinGenerationNonAncient());
     }
 
     public void flush() {

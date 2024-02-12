@@ -25,6 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.config.StateConfig;
@@ -130,9 +131,7 @@ public class SignedStateFileManager {
                         signedState.getRound());
                 return null;
             }
-            if (!signedState.isComplete()) {
-                stateLacksSignatures(signedState);
-            }
+            checkSignatures(signedState);
             final boolean success = saveStateTask(signedState, getSignedStateDir(signedState.getRound()));
             if (!success) {
                 return null;
@@ -190,26 +189,37 @@ public class SignedStateFileManager {
     }
 
     /**
-     * Method to be called when a state is being written to disk in-band, but it lacks signatures.
-     * <p>
-     * This method shouldn't be called if the state was written out-of-band.
+     * Checks if the state has enough signatures to be written to disk. If it does not, it logs an error and increments
+     * the appropriate metric.
      *
      * @param reservedState the state being written to disk
      */
-    private void stateLacksSignatures(@NonNull final SignedState reservedState) {
+    private void checkSignatures(@NonNull final SignedState reservedState) {
+        // this is debug information for ticket #11422
+        final long signingWeight1 = reservedState.getSigningWeight();
+        final long totalWeight1 = reservedState.getAddressBook().getTotalWeight();
+        if (reservedState.isComplete()) {
+            // state is complete, nothing to do
+            return;
+        }
         metrics.getTotalUnsignedDiskStatesMetric().increment();
-        final long newCount = metrics.getTotalUnsignedDiskStatesMetric().get();
 
+        final long signingWeight2 = reservedState.getSigningWeight();
+        final long totalWeight2 = reservedState.getAddressBook().getTotalWeight();
         logger.error(
                 EXCEPTION.getMarker(),
                 new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
-                                + "Collected signatures representing %d/%d weight. "
-                                + "Total unsigned disk states so far: %d.")
+                                + "This log adds debug information for #11422."
+                                + "Pre-check wight: %d/%d   Post-check wight: %d/%d"
+                                + "Pre-check threshold: %s   Post-check threshold: %s")
                         .formatted(
                                 reservedState.getRound(),
-                                reservedState.getSigningWeight(),
-                                reservedState.getAddressBook().getTotalWeight(),
-                                newCount)));
+                                signingWeight1,
+                                totalWeight1,
+                                signingWeight2,
+                                totalWeight2,
+                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
+                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2))));
     }
 
     /**
