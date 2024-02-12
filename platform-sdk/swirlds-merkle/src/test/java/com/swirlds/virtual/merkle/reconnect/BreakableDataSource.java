@@ -42,13 +42,13 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
 
     @Override
     public void saveRecords(
-            final long firstLeafPath,
-            final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+            long firstLeafPath,
+            long lastLeafPath,
+            Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+            Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+            boolean isReconnectContext)
             throws IOException {
-
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {

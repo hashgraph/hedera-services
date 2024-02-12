@@ -92,30 +92,15 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         return closed;
     }
 
-    /**
-     * Save a bulk set of changes to internal nodes and leaves.
-     *
-     * @param firstLeafPath
-     * 		the new path of first leaf node
-     * @param lastLeafPath
-     * 		the new path of last leaf node
-     * @param pathHashRecordsToUpdate
-     * 		stream of new internal nodes and updated internal nodes
-     * @param leafRecordsToAddOrUpdate
-     * 		stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete
-     * 		stream of new leaf nodes to delete, The leaf record's key and path have to be populated, all other data can
-     * 		be null.
-     */
     @Override
     public void saveRecords(
-            final long firstLeafPath,
-            final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            long firstLeafPath,
+            long lastLeafPath,
+            Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            boolean isReconnectContext)
             throws IOException {
-
         if (failureOnSave) {
             throw new IOException("Preconfigured failure on save");
         }

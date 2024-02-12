@@ -450,6 +450,7 @@ class MerkleDbDataSourceTest {
 
     @ParameterizedTest
     @EnumSource(TestType.class)
+    @Tag(TIMING_SENSITIVE)
     void snapshotRestoreIndex(final TestType testType) throws IOException {
         final int count = 1000;
         final String tableName = "vm";
