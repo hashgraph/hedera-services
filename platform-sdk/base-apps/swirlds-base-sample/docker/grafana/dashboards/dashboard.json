@@ -246,7 +246,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_transfer_time_nanos_ns",
+          "expr": "app_transfer_time_ns",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,

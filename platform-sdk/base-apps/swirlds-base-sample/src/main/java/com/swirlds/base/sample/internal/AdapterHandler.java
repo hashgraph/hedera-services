@@ -119,17 +119,16 @@ public class AdapterHandler<T> implements HttpHandler {
             result = ImmutableMap.of("error", "Internal error");
         }
 
+        final String response = DataTransferUtils.serializeToJson(result);
+        long duration = System.currentTimeMillis() - start;
         tps.count();
+        if (statusCode - 200 >= 100) {
+            context.getMetrics().getOrCreate(ApplicationMetrics.ERROR_COUNT).increment();
+        }
         exchange.setStatusCode(statusCode);
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json;charset=utf-8");
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-        final String response = DataTransferUtils.serializeToJson(result);
         exchange.getResponseSender().send(response);
-        long duration = System.currentTimeMillis() - start;
-
-        if (statusCode - 200 > 100) {
-            context.getMetrics().getOrCreate(ApplicationMetrics.ERROR_COUNT).increment();
-        }
 
         log.trace(
                 "Received Request to:{}{} took:{} answered status:{} body:{}",
