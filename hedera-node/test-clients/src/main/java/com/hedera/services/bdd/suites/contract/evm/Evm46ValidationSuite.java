@@ -130,9 +130,8 @@ public class Evm46ValidationSuite extends HapiSuite {
 
     public static final List<Long> invalidAliasNonExistingSystemAccounts = List.of(751L, 799L);
     public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
-    //    public static final List<Long> systemAccounts =
-    //            List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l, 751L, 799L, 800L, 999L, 1000L);
-    public static final List<Long> systemAccounts = List.of(0l);
+    public static final List<Long> systemAccounts =
+            List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l, 751L, 799L, 800L, 999L, 1000L);
 
     public static void main(String... args) {
         new Evm46ValidationSuite().runSuiteAsync();

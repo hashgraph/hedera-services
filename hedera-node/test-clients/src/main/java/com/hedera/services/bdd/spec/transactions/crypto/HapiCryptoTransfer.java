@@ -269,10 +269,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return tinyBarsFromTo(from, to, ignore -> amount);
     }
 
-    public static Function<HapiSpec, TransferList> tinyBarsFromTo(final String from, final Long to, final long amount) {
-        return tinyBarsFromTo(from, to, ignore -> amount);
-    }
-
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
             final String from, final ByteString to, final long amount) {
         return tinyBarsFromTo(from, to, ignore -> amount);
@@ -309,26 +305,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             long amount = amountFn.applyAsLong(spec);
             AccountID fromAccount = asIdWithAlias(from);
             AccountID toAccount = asIdWithAlias(to);
-            return TransferList.newBuilder()
-                    .addAllAccountAmounts(Arrays.asList(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(toAccount)
-                                    .setAmount(amount)
-                                    .build(),
-                            AccountAmount.newBuilder()
-                                    .setAccountID(fromAccount)
-                                    .setAmount(-1L * amount)
-                                    .build()))
-                    .build();
-        };
-    }
-
-    public static Function<HapiSpec, TransferList> tinyBarsFromTo(
-            final String from, final Long to, final ToLongFunction<HapiSpec> amountFn) {
-        return spec -> {
-            final long amount = amountFn.applyAsLong(spec);
-            final AccountID toAccount = AccountID.newBuilder().setAccountNum(to).build();
-            final AccountID fromAccount = asId(from, spec);
             return TransferList.newBuilder()
                     .addAllAccountAmounts(Arrays.asList(
                             AccountAmount.newBuilder()
