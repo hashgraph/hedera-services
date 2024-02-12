@@ -26,6 +26,22 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * ConcurrentBlockStreamWriter is a wrapper around a BlockStreamWriter that allows for concurrent writes to multiple
  * writers. The write methods do not block so that the caller may continue to make progress.
+ *
+ * <p>This implementation of ConcurrentBlockStreamWriter, the doAsync method chains asynchronous tasks in such a
+ *    way that they are executed sequentially by updating lastFutureRef with the new task that should run after the
+ *    previous one completes. This chaining uses thenCompose, which creates a new stage that, when this stage
+ *    completes normally, is executed with this stage's result as the argument to the supplied function.
+ *
+ * <p>If any task in the chain completes exceptionally (for example, due to an exception thrown during its
+ *    execution), the resulting CompletableFuture from thenCompose will also complete exceptionally with a
+ *    CompletionException. This exception wraps the original exception that caused the task to fail. An
+ *    exceptionally completed future will not execute subsequent completion stages that depend on the future's
+ *    normal completion. If one of the futures in the lastFutureRef chain completes exceptionally, it effectively
+ *    halts the execution of subsequent tasks that are dependent on normal completion. This could lead to a scenario
+ *    where the chain of operations is stopped prematurely, and tasks that are supposed to execute next are skipped.
+ *    This may not be an issue, because if one of these tasks fails, this node is unable to produce the block stream
+ *    which is the entire purpose of its existence. If the block stream is not produced, the node is in a bad state
+ *    and will likely need to restart.
  */
 public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     private final BlockStreamWriter writer;

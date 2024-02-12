@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.v7.*;
+import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.FunctionalBlockRecordManager;
@@ -53,6 +54,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -75,6 +77,8 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class BlockStreamManagerImpl implements FunctionalBlockRecordManager, StateChangesSink {
     private static final Logger logger = LogManager.getLogger(BlockRecordManagerImpl.class);
+
+    private final ExecutorService executor;
 
     /**
      * The number of blocks to keep multiplied by hash size. This is computed based on the
@@ -115,10 +119,13 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
     @Inject
     public BlockStreamManagerImpl(
+            @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaState state,
             @NonNull final BlockStreamProducer blockStreamProducer) {
         System.out.println("BlockStreamManagerImpl constructor");
+
+        this.executor = requireNonNull(executor);
 
         requireNonNull(state);
         requireNonNull(configProvider);
@@ -218,7 +225,10 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
         // If the system transaction is a state signature transaction, we collect the signature.
         if (systemTxn instanceof StateSignatureTransaction txn) {
-            blockStreamProducer.writeStateSignatureTransaction(txn);
+            // TODO(nickpoorman): I'm not sure if we want an explicit write method for this or not. Is there
+            //  different behavior for writing a state signature transaction than a regular system transaction?
+            // blockStreamProducer.writeStateSignatureTransaction(txn);
+            blockStreamProducer.writeSystemTransaction(txn);
         }
 
         blockStreamProducer.writeSystemTransaction(systemTxn);
@@ -373,7 +383,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         // asynchronously produce a state proof, once enough signatures have been collected for the round. The
         // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
 
-        final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(state, round.getRoundNum());
+        final BlockStateProofProducer stateProofProducer =
+                new BlockStateProofProducer(executor, state, round.getRoundNum());
 
         try {
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {

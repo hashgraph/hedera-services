@@ -33,6 +33,7 @@ import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFacto
 import com.hedera.node.app.records.streams.impl.producers.formats.BlockStreamWriterFactoryImpl;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFormatV1;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -41,12 +42,17 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import javax.inject.Qualifier;
 
 /** A Dagger module for facilities in the {@link com.hedera.node.app.records} package. */
 @Module
@@ -56,6 +62,18 @@ public abstract class BlockRecordInjectionModule {
 
     protected BlockRecordInjectionModule() {
         /* Nothing to do */
+    }
+
+    @Qualifier // Create a new qualifier annotation, that can be used to provide a specific executor.
+    @Retention(RetentionPolicy.RUNTIME) // Ensure the @AsyncWorkStealingExecutor annotation is available at runtime.
+    public @interface AsyncWorkStealingExecutor {}
+
+    @Provides
+    @Singleton
+    @AsyncWorkStealingExecutor
+    static ExecutorService provideExecutorService() {
+        // Customize the parallelism level if needed, or leave it to default
+        return Executors.newWorkStealingPool();
     }
 
     /** Provides the normal, default {@link java.nio.file.FileSystem}.*/
@@ -93,6 +111,7 @@ public abstract class BlockRecordInjectionModule {
     @Provides
     @Singleton
     public static FunctionalBlockRecordManager provideBlockRecordManager(
+            @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockRecordStreamProducer streamFileProducer,
@@ -113,7 +132,8 @@ public abstract class BlockRecordInjectionModule {
         return switch (recordFileVersion) {
             case BlockRecordFormatV6.VERSION_6 -> new BlockRecordManagerImpl(
                     configProvider, hederaState, streamFileProducer);
-            case BlockStreamFormatV1.VERSION_7 -> provideBlockStreamManager(configProvider, state, blockStreamProducer);
+            case BlockStreamFormatV1.VERSION_7 -> provideBlockStreamManager(
+                    executor, configProvider, state, blockStreamProducer);
             default -> {
                 logger.fatal("Unknown block record version: {}", recordFileVersion);
                 throw new IllegalArgumentException("Unknown block record version: " + recordFileVersion);
@@ -152,20 +172,22 @@ public abstract class BlockRecordInjectionModule {
     /**
      * Provides a {@link BlockStreamProducer} based on the configuration. It is possible to use a concurrent producer,
      * or a single-threaded producer, based on configuration.
+     *
+     * <p> We want to use an async ForkJoinPool as the executor, not the common pool. We create recursive tasks within
+     *     the producer, and therefore want the LIFO semantics. This should help reduce latency for the block that is
+     *     currently being constructed.
      */
     @Provides
     @Singleton
     public static BlockStreamProducer provideBlockStreamFileProducer(
+            @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
-            //            @NonNull final BlockStreamProducerConcurrentV1 concurrent,
             @NonNull final BlockStreamProducerSingleThreaded serial) {
         System.out.println("Called provideBlockStreamFileProducer");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
-                // TODO(nickpoorman): Maybe we grab an executor from dagger and pass it in here?
-                // We want to make sure we are using an async ForkJoinPool, not the common pool (which is not async).
-            case "CONCURRENT" -> new BlockStreamProducerConcurrent(serial, Executors.newWorkStealingPool());
+            case "CONCURRENT" -> new BlockStreamProducerConcurrent(serial, executor);
             case "SERIAL" -> serial;
             default -> {
                 logger.fatal("Unknown stream file producer type: {}", producerType);
@@ -175,9 +197,12 @@ public abstract class BlockRecordInjectionModule {
     }
 
     /** Provides an implementation of the {@link BlockRecordManager}. */
-    //    @Provides // FUTURE: Uncomment this once we deprecate records.
+    // FUTURE: Annotate ExecutorService with @AsyncWorkStealingExecutor and uncomment the @Provides once we deprecate
+    // records so this is directly provided by dagger.
+    // @Provides
     @Singleton
     public static FunctionalBlockRecordManager provideBlockStreamManager(
+            @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockStreamProducer blockStreamProducer) {
@@ -193,7 +218,7 @@ public abstract class BlockRecordInjectionModule {
             throw new IllegalStateException("Hedera state is null");
         }
 
-        return new BlockStreamManagerImpl(configProvider, hederaState, blockStreamProducer);
+        return new BlockStreamManagerImpl(executor, configProvider, hederaState, blockStreamProducer);
     }
 
     @Provides

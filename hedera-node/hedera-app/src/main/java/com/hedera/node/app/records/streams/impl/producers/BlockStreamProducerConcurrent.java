@@ -35,8 +35,24 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
      *
      * <p>By default, the BlockStreamWriterFactory will produce the concurrent block stream writer, so writes will not
      *    block the future chain for this producer. If we need to propagate the status of anything up, we should pass a
-     *    CompletableFuture down to be completed, for example, if need to ensure that a BlockStateProof is produced and
-     *    the entire block has been flushed and persisted to disk.
+     *    CompletableFuture down to be completed, for example, if we need to ensure that a BlockStateProof is produced
+     *    and the entire block has been flushed and persisted to disk.
+     *
+     * <p>This implementation of BlockStreamProducerConcurrent, the doAsync method chains asynchronous tasks in such a
+     *    way that they are executed sequentially by updating lastFutureRef with the new task that should run after the
+     *    previous one completes. This chaining uses thenCompose, which creates a new stage that, when this stage
+     *    completes normally, is executed with this stage's result as the argument to the supplied function.
+     *
+     * <p>If any task in the chain completes exceptionally (for example, due to an exception thrown during its
+     *    execution), the resulting CompletableFuture from thenCompose will also complete exceptionally with a
+     *    CompletionException. This exception wraps the original exception that caused the task to fail. An
+     *    exceptionally completed future will not execute subsequent completion stages that depend on the future's
+     *    normal completion. If one of the futures in the lastFutureRef chain completes exceptionally, it effectively
+     *    halts the execution of subsequent tasks that are dependent on normal completion. This could lead to a scenario
+     *    where the chain of operations is stopped prematurely, and tasks that are supposed to execute next are skipped.
+     *    This may not be an issue, because if one of these tasks fails, this node is unable to produce the block stream
+     *    which is the entire purpose of its existence. If the block stream is not produced, the node is in a bad state
+     *    and will likely need to restart.
      *
      * @param executor the executor service to use for writes
      * @param producer the producer to wrap
@@ -52,6 +68,12 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
         doAsync(CompletableFuture.runAsync(() -> producer.initFromLastBlock(runningHashes, lastBlockNumber), executor));
     }
 
+    /**
+     * Get the current running hash of block items. This is called on the handle transaction thread and will block until
+     * the most recent asynchronous operation as completed. To aid in surfacing problems with the producer, this method
+     * throws a runtime exception if the future chain has been halted due to an exception.
+     * @return The current running hash upto and including the last record stream item sent in writeRecordStreamItems().
+     */
     @NonNull
     @Override
     public Bytes getRunningHash() {
@@ -59,6 +81,13 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
         return producer.getRunningHash();
     }
 
+    /**
+     * Get the previous, previous, previous runningHash of all block stream BlockItems. This is called on the handle
+     * transaction thread and will block until he most recent asynchronous operation as completed. To aid in surfacing
+     * problems with the producer, this method throws a runtime exception if the future chain has been halted due to an
+     * exception.
+     * @return the previous, previous, previous runningHash of all block stream BlockItems
+     */
     @Nullable
     @Override
     public Bytes getNMinus3RunningHash() {
@@ -110,11 +139,11 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
 
     private void awaitFutureCompletion(Future<?> future) {
         try {
-            future.get(); // Block until the task completes
+            future.get(); // Block until the task completes.
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Interrupted while waiting for task to complete", e);
-            // TODO: Should we throw here?
+            throw new RuntimeException(e);
         } catch (ExecutionException e) {
             logger.error("Error occurred during task execution", e.getCause());
             throw new RuntimeException(e);

@@ -4,6 +4,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.v7.BlockSignature;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
+import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -16,12 +17,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Produces a proof of the state of the ledger at a given block. This is used by the {@link BlockStreamManagerImpl}.
  *
  * <p>This BlockStateProofProducer produces a proof for each round.
  */
 public class BlockStateProofProducer {
+
+    private ExecutorService executor;
 
     /* The state of the ledger */
     private final HederaState state;
@@ -40,12 +45,14 @@ public class BlockStateProofProducer {
     // 3. Once we have enough signatures, we need to execute the completable future that is responsible for
     // producing the block proof and closing this block.
 
-    public BlockStateProofProducer(@NonNull final HederaState state, final long roundNum) {
-        this.state = state;
+    public BlockStateProofProducer(
+            @NonNull final ExecutorService executor, @NonNull final HederaState state, final long roundNum) {
+        this.executor = requireNonNull(executor);
+        this.state = requireNonNull(state);
         this.roundNum = roundNum;
     }
 
-    public CompletableFuture<BlockStateProof> getBlockStateProof(ExecutorService executor) {
+    public CompletableFuture<BlockStateProof> getBlockStateProof() {
         // TODO(nickpoorman): Implement this.
         // Read from the queue until we have enough signatures.
         // Then produce the signature and complete the future.

@@ -169,7 +169,7 @@ public final class BlockStreamProducerConcurrentV1 implements BlockStreamProduce
 
             parallelExecutorService.submit(() -> {
                 blockStateProofProducer
-                        .getBlockStateProof(parallelExecutorService)
+                        .getBlockStateProof()
                         .thenComposeAsync(
                                 proof -> writeStateProof(proof) // Write the state proof and then close the writer.
                                         .thenComposeAsync(

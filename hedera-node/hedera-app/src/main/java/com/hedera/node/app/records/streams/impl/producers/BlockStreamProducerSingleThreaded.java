@@ -126,36 +126,39 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    public CompletableFuture<BlockStateProof> endBlock(
-            @NonNull final CompletableFuture<BlockStateProof> blockStateProof) {
+    public void endBlock(
+            @NonNull final BlockStateProofProducer blockStateProofProducer,
+            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
         try {
             // Block until the blockStateProof is available. This call makes the operation synchronous.
-            BlockStateProof proof = blockStateProof.get();
+            BlockStateProof proof = blockStateProofProducer.getBlockStateProof().get();
 
             // Perform the synchronous operations.
             final var lastRunningHash = getRunningHashObject();
             writeStateProof(proof);
             closeWriter(lastRunningHash, this.currentBlockNumber);
 
-            // Return a CompletableFuture that is immediately completed with the proof.
-            // This fulfills the contract of returning a CompletableFuture and ensures it is only completed after
-            // closeWriter has completed.
-            return CompletableFuture.completedFuture(proof);
-        } catch (InterruptedException | ExecutionException e) {
-            // Handle the checked exceptions thrown by Future.get()
-            // CompletableFuture's completion exceptionally handles cases where the future cannot complete normally.
-            CompletableFuture<BlockStateProof> exceptionallyCompletedFuture = new CompletableFuture<>();
-            exceptionallyCompletedFuture.completeExceptionally(e);
-            return exceptionallyCompletedFuture;
+            // If operations complete successfully, complete blockPersisted with the proof.
+            blockPersisted.complete(proof);
+        } catch (InterruptedException e) {
+            // Re-interrupt the current thread when InterruptedException is caught.
+            Thread.currentThread().interrupt();
+
+            // Exceptionally complete blockPersisted with the caught exception.
+            blockPersisted.completeExceptionally(e);
+        } catch (ExecutionException e) {
+            // Exceptionally complete blockPersisted with the cause of the ExecutionException.
+            // ExecutionException wraps the actual exception that caused the problem, so unwrap it.
+            blockPersisted.completeExceptionally(e.getCause());
         }
     }
 
     /** {@inheritDoc} */
     @Override
     public void close() {
-        // TODO(nickpoorman): I don't like this. It should wait until the block is completed, which cannot happen
-        //  until the block proof is produced, and that cannot happen until the signatures have been gossiped. This is
-        //  going to close in unpredictable ways.
+        // FUTURE: close() should wait until the block is completed, which cannot happen until the block proof is
+        // produced, and that cannot happen until the signatures have been gossiped. Today, this will going to close in
+        // unpredictable ways.
         final var lastRunningHash = getRunningHashObject();
         closeWriter(lastRunningHash, this.currentBlockNumber);
 
@@ -182,10 +185,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        // If we get a ConsensusEvent that has a different version from the one we have been working on for this block,
-        // then we must force a new block to be created.
-        if (lastConsensusEventVersion == null) {}
-
         final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
         updateRunningHashes(serializedBlockItem);
         writeSerializedBlockItem(serializedBlockItem);
@@ -203,8 +202,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         // We reuse this messageDigest to avoid creating a new one for each item.
         final MessageDigest messageDigest = format.getMessageDigest();
         // Collect all the transactions so I can see them in the dubugger.
-        final var items = result.transactionRecordStream().toList();
-        items.forEach(item -> {
+        result.transactionRecordStream().forEach(item -> {
             final var serializedBlockItems = format.serializeUserTransaction(item);
             serializedBlockItems.forEach(serializedBlockItem -> {
                 updateRunningHashesWithMessageDigest(messageDigest, serializedBlockItem);
@@ -273,6 +271,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
      */
     private void openWriter(final long newBlockNumber, @NonNull final HashObject lastRunningHash) {
         try {
+            // Depending on the configuration, this writer's methods may be asynchronous or synchronous. The
+            // BlockStreamWriterFactory instantiated by dagger will determine this.
             writer = writerFactory.create();
             writer.init(currentBlockNumber);
         } catch (final Exception e) {
@@ -300,6 +300,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     private void writeSerializedBlockItem(@NonNull final Bytes serializedItem) {
         try {
+            // Depending on the configuration, this writeItem may be an asynchronous or synchronous operation. The
+            // BlockStreamWriterFactory instantiated by dagger will determine this.
             writer.writeItem(serializedItem);
         } catch (final Exception e) {
             // This **may** prove fatal. The node should be able to carry on, but then fail when it comes to

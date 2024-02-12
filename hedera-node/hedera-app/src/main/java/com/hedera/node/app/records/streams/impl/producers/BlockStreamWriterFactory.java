@@ -30,8 +30,7 @@ public interface BlockStreamWriterFactory {
      * Create a new {@link BlockStreamWriter} instance.
      *
      * @return the new instance
-     * @param executor the executor to use for writes
      * @throws RuntimeException if creation fails
      */
-    BlockStreamWriter create(ExecutorService executor) throws RuntimeException;
+    BlockStreamWriter create() throws RuntimeException;
 }

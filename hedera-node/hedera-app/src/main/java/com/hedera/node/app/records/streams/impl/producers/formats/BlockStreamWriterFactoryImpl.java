@@ -18,6 +18,7 @@ package com.hedera.node.app.records.streams.impl.producers.formats;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFactory;
 import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamWriter;
@@ -37,25 +38,31 @@ public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
     private final ConfigProvider configProvider;
     private final SelfNodeInfo nodeInfo;
     private final FileSystem fileSystem;
+    private final ExecutorService executor;
 
     /**
+     * A factory to create writers for the block stream. We specify the annotation @AsyncWorkStealingExecutor to ensure
+     * dagger provides the correct executor.
      *
-     * @param configProvider
-     * @param fileSystem the file system to use, needed for testing to be able to use a non-standard file
-     *                   system. If null default is used.
+     * @param executor the executor to use for writing the block stream, should be a work stealing executor
+     * @param configProvider the configuration provider
+     * @param nodeInfo the node info
+     * @param fileSystem the file system to use, also used in testing to be able to use a non-standard file system
      */
     @Inject
     public BlockStreamWriterFactoryImpl(
+            @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final SelfNodeInfo nodeInfo,
             @NonNull final FileSystem fileSystem) {
+        this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
         this.nodeInfo = requireNonNull(nodeInfo);
         this.fileSystem = requireNonNull(fileSystem);
     }
 
     @Override
-    public BlockStreamWriter create(ExecutorService executor) throws RuntimeException {
+    public BlockStreamWriter create() throws RuntimeException {
         // read configuration
         final var config = configProvider.getConfiguration();
         final var recordStreamConfig = config.getConfigData(BlockStreamConfig.class);
