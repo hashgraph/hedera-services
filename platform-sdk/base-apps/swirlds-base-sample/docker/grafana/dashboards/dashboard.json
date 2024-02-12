@@ -169,7 +169,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "transfer_count",
+          "expr": "app_transfer_count_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
