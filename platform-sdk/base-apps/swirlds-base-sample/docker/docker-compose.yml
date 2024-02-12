@@ -49,7 +49,7 @@ services:
       - ../build/external/app:/app
       - ../build/external/libs:/libs
       - ./sample/config:/app/config
-      - ./tmp/data:/app/data
+      - /tmp/data:/app/data
     command: java -cp "/app/app.jar:/libs/*" com.swirlds.base.sample.Application
     working_dir: /app
     ports:
