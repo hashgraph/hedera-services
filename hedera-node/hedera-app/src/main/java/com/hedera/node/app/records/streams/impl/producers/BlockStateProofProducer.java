@@ -4,11 +4,9 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.v7.BlockSignature;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
-import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.security.SecureRandom;
@@ -39,7 +37,7 @@ public class BlockStateProofProducer {
     // We need a few things here.
     // 1. We need to be able to get all the StateSignatureTransaction events that have come in.
     // 2. We need a way to execute writing the block proof only once we have enough signatures. This will
-    // probably need to be some sort of future unless we have a guarantee that no more handles will be called
+    // probably needs to be some sort of future unless we have a guarantee that no more handles will be called
     // until the all the StateSignatureTransaction events have been processed, which is certainly not the
     // case with preHandle, so we should assume it's not the case.
     // 3. Once we have enough signatures, we need to execute the completable future that is responsible for
@@ -52,16 +50,27 @@ public class BlockStateProofProducer {
         this.roundNum = roundNum;
     }
 
+    /**
+     * Get the block state proof for the current round. This will return a future that will complete with the block
+     * proof for the current round as soon as we have enough signatures. Signature gathering happens asynchronously
+     * and is not guaranteed to complete immediately, therefore we do not want to block the handle thread.
+     *
+     * <p>Read from the queue until we have enough signatures. Then produce the signature and complete the future.
+     *
+     * <p>We don't want this to run on the handle thread, so we use the executor service that was provided.
+     *
+     * @return a future that will complete with the block state proof for the current round
+     */
     public CompletableFuture<BlockStateProof> getBlockStateProof() {
-        // TODO(nickpoorman): Implement this.
-        // Read from the queue until we have enough signatures.
-        // Then produce the signature and complete the future.
-        // We don't want this to run on the handle thread.
-        // This should run on the writer thread.
-        return CompletableFuture.completedFuture(null);
+        // TODO(nickpoorman): Implement the signature gathering.
+        return CompletableFuture.supplyAsync(this::buildProof, executor);
     }
 
-    private CompletableFuture<BlockStateProof> buildProof() {
+    /**
+     * Once we have everything needed to produce a proof, build the proof and return it.
+     * @return the block state proof for the current round
+     */
+    private BlockStateProof buildProof() {
         // Construct everything we need for the block proof.
 
         // Pass the RunningHashes to the BlockStreamProducer so it can create the block proof.
@@ -86,10 +95,10 @@ public class BlockStateProofProducer {
             blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
         }
 
-        return CompletableFuture.completedFuture(BlockStateProof.newBuilder()
+        return BlockStateProof.newBuilder()
                 .siblingHashes(siblingHashes)
                 .endRunningHashes(runningHashState.get())
                 .blockSignatures(blockSignatures)
-                .build());
+                .build();
     }
 }
