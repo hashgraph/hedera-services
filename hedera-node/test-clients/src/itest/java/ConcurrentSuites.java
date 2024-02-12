@@ -72,6 +72,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.HollowAccountFinalizationSuite;
 import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
 import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
+import com.hedera.services.bdd.suites.ethereum.NonceSuite;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -176,7 +177,8 @@ public class ConcurrentSuites {
             HelloWorldEthereumSuite::new,
             // network info
             VersionInfoSpec::new,
-            Evm46ValidationSuite::new
+            Evm46ValidationSuite::new,
+            NonceSuite::new
         };
     }
 

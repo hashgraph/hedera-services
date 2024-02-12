@@ -45,7 +45,7 @@ class DefaultDurationGaugeTest {
                 new DurationGauge.Config(CATEGORY, NAME, SECONDS).withDescription(DESCRIPTION));
 
         assertEquals(CATEGORY, gauge.getCategory(), "The category was not set correctly in the constructor");
-        assertEquals(NAME + " (sec)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
         assertEquals(DESCRIPTION, gauge.getDescription(), "The description was not set correctly in the constructor");
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_3,
@@ -60,21 +60,21 @@ class DefaultDurationGaugeTest {
                 FloatFormats.FORMAT_DECIMAL_3,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for milliseconds");
-        assertEquals(NAME + " (millis)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
         gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for microsecond");
-        assertEquals(NAME + " (micros)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
         gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for nanoseconds");
-        assertEquals(NAME + " (nanos)", gauge.getName(), "The name was not set correctly in the constructor");
+        assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
     }
 
     @Test
