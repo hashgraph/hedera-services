@@ -563,7 +563,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
                         // Update the signer of the transaction to have the threshold key with the wrong contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
-                        // Test Case 3: A Signer paying and signing a NON FUNGIBLE token burn transaction,
+                        // Test Case 2: A Signer paying and signing a NON FUNGIBLE token burn transaction,
                         // SIGNER → call → CONTRACT → delegatecall → PRECOMPILE
                         // The token and the signer have updated keys
                         contractCall(
@@ -644,7 +644,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
                         // Assert the token is NOT burned from the token treasury account
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, initialAmount),
-                        // Test Case 4: A Signer paying and signing a FUNGIBLE token burn transaction
+                        // Test Case 2: A Signer paying and signing a FUNGIBLE token burn transaction
                         // SIGNER → call → CONTRACT → delegatecall → PRECOMPILE
                         // The token and the signer have updated keys
                         contractCall(
