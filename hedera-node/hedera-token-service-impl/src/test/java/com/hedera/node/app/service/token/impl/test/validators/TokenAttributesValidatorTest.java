@@ -25,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -87,18 +86,15 @@ class TokenAttributesValidatorTest {
     }
 
     @Test
-    void failsMetadataWithEmptyBytes() {
-        byte[] emptyBytes = new byte[0];
-        assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(emptyBytes), tokensConfig))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(MISSING_TOKEN_METADATA));
+    void validatesMetadataWithNullValue() {
+        assertThatCode(() -> subject.validateTokenMetadata(null, tokensConfig)).doesNotThrowAnyException();
     }
 
     @Test
-    void failsMetadataWithNullValue() {
-        assertThatThrownBy(() -> subject.validateTokenMetadata(null, tokensConfig))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(MISSING_TOKEN_METADATA));
+    void validatesMetadataWithEmptyBytes() {
+        byte[] emptyBytes = new byte[0];
+        assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(emptyBytes), tokensConfig))
+                .doesNotThrowAnyException();
     }
 
     @Test
