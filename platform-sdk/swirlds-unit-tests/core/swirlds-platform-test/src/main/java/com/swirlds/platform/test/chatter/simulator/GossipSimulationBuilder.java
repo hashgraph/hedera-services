@@ -17,10 +17,10 @@
 package com.swirlds.platform.test.chatter.simulator;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
 import com.swirlds.platform.test.chatter.SimulatedChatterFactory;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;

@@ -25,7 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -35,7 +34,6 @@ import java.util.function.Consumer;
  * @param <OUT> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
 public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
-
     /**
      * The next task to be scheduled will be inserted into this placeholder task. When that happens, a new task will be
      * created and inserted into this placeholder.
@@ -60,6 +58,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
@@ -72,9 +71,10 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
             final boolean flushEnabled,
+            final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
 
-        super(model, name, TaskSchedulerType.SEQUENTIAL, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.SEQUENTIAL, flushEnabled, squelchingEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
@@ -149,26 +149,6 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public void flush() {
         throwIfFlushDisabled();
-        flushWithSemaphore().acquireUninterruptibly();
-    }
-
-    /**
-     * Start a flush operation with a semaphore. The flush is completed when the semaphore can be acquired.
-     *
-     * @return the semaphore that will be released when the flush is complete
-     */
-    @NonNull
-    private Semaphore flushWithSemaphore() {
-        onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(0);
-
-        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
-        SequentialTask currentTask;
-        do {
-            currentTask = nextTaskPlaceholder.get();
-        } while (!nextTaskPlaceholder.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, x -> semaphore.release(), null);
-
-        return semaphore;
+        onRamp.waitUntilEmpty();
     }
 }
