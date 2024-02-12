@@ -8,6 +8,7 @@ A simple enough application that utilizes platform-base modules. This applicatio
 
 This project consists of a simple wallet application that provides a REST API to handle wallets, balances, and transactions. The application utilizes an Undertow HTTP server to listen to connections on the configured port and limited 3erd party dependencies.
 
+![base-sample.drawio.png](.%2Fdoc%2Fbase-sample.drawio.png)
 ### Dependencies
 
 The project makes use of the following modules:
