@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -83,6 +84,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -99,9 +101,10 @@ import java.util.List;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
-// @Tag(SMART_CONTRACT)
+@HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class CryptoTransferHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
@@ -156,21 +159,19 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                //                nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                //                nonNestedCryptoTransferForNonFungibleToken(),
-                //                nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                //                nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                //
-                // nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                //                repeatedTokenIdsAreAutomaticallyConsolidated(),
-                //                hapiTransferFromForFungibleToken(),
-                //                hapiTransferFromForFungibleTokenToSystemAccountsFails(),
-                //                hapiTransferFromForNFT(),
-                //                hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
-                //                hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                //
-                // hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                //                testHapiTokenTransferToNonExistingSystemAccount(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                nonNestedCryptoTransferForNonFungibleToken(),
+                nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                repeatedTokenIdsAreAutomaticallyConsolidated(),
+                hapiTransferFromForFungibleToken(),
+                hapiTransferFromForFungibleTokenToSystemAccountsFails(),
+                hapiTransferFromForNFT(),
+                hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                testHapiTokenTransferToNonExistingSystemAccount(),
                 testHapiTokenTransferToExistingSystemAccount());
     }
 
@@ -1502,7 +1503,6 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
-                        //                        tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(200L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)))
                 .when()
                 .then(opsArray);
@@ -1511,14 +1511,9 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec testHapiTokenTransferToExistingSystemAccount() {
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[existingSystemAccounts.size()];
-        final HapiSpecOperation[] whenOps = new HapiSpecOperation[existingSystemAccounts.size()];
         final var contract = "CryptoTransfer";
         final var toSendEachTuple = 50L;
 
-        for (int i = 0; i < existingSystemAccounts.size(); i++) {
-            whenOps[i] = tokenAssociate("0.0." + existingSystemAccounts.get(i).toString(), List.of(FUNGIBLE_TOKEN))
-                    .signedBy(SENDER);
-        }
         for (int i = 0; i < existingSystemAccounts.size(); i++) {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> {
@@ -1548,7 +1543,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 })
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
             });
         }
         return defaultHapiSpec("testHapiTokenTransferToExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
@@ -1563,7 +1558,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(200L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)))
-                .when(whenOps)
+                .when()
                 .then(opsArray);
     }
 
