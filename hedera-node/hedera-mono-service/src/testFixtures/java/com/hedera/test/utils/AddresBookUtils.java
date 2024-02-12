@@ -16,9 +16,7 @@
 
 package com.hedera.test.utils;
 
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
@@ -28,17 +26,20 @@ import com.swirlds.platform.system.address.AddressBook;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import org.mockito.Mockito;
 
 /**
  * Utilities for constructing AddressBook needed for tests
  */
 public class AddresBookUtils {
 
-    public static AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
-        final var pubKey = mock(PublicKey.class);
-        given(pubKey.getAlgorithm()).willReturn("EC");
+    public static AddressBook createPretendBookFrom(
+            final Platform platform, final boolean withKeyDetails, final boolean mockPublicKey) {
+        final var publicKey = mock(PublicKey.class);
         final var cert = mock(X509Certificate.class);
-        when(cert.getPublicKey()).thenReturn(pubKey);
+        if (mockPublicKey) {
+            Mockito.when(cert.getPublicKey()).thenReturn(publicKey);
+        }
         final var address1 = new Address(
                 platform.getSelfId(),
                 "",

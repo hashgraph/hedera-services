@@ -125,11 +125,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-@MockitoSettings(strictness = Strictness.LENIENT)
 class ServicesStateTest extends ResponsibleVMapUser {
 
     private final String statesDir = "src/test/resources/states/";
@@ -933,7 +930,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         ClassLoaderHelper.loadClassPathDependencies();
         final var servicesState = tracked(new ServicesState());
         final var platform = createMockPlatformWithCrypto();
-        final var addressBook = createPretendBookFrom(platform, true);
+        final var addressBook = createPretendBookFrom(platform, true, true);
         given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
@@ -965,7 +962,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
 
-        final var pretendAddressBook = createPretendBookFrom(platform, true);
+        final var pretendAddressBook = createPretendBookFrom(platform, true, false);
 
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
@@ -989,7 +986,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         given(platform.getSelfId()).willReturn(node0);
 
-        final var pretendAddressBook = createPretendBookFrom(platform, true);
+        final var pretendAddressBook = createPretendBookFrom(platform, true, false);
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
@@ -1016,7 +1013,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
-        final var pretendAddressBook = createPretendBookFrom(platform, true);
+        final var pretendAddressBook = createPretendBookFrom(platform, true, false);
 
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
