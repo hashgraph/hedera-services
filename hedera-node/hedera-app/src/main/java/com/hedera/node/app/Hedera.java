@@ -670,7 +670,7 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
-        if (true) {
+        if (shouldDump(trigger, MOD_POST_MIGRATION)) {
             dumpModChildrenFrom(state, MOD_POST_MIGRATION);
         }
 

@@ -76,8 +76,7 @@ public class AccountDumpUtils {
             HederaAccount[] dumpableAccounts = gatherAccounts(accounts, HederaAccount::fromMono);
             reportOnAccounts(writer, dumpableAccounts);
             System.out.printf(
-                    "=== mod token associations report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
+                    "=== mod accounts report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 
@@ -89,8 +88,7 @@ public class AccountDumpUtils {
             HederaAccount[] dumpableAccounts = gatherAccounts(accounts, HederaAccount::fromMod);
             reportOnAccounts(writer, dumpableAccounts);
             System.out.printf(
-                    "=== mod token associations report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
+                    "=== mod accounts report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 
@@ -111,7 +109,7 @@ public class AccountDumpUtils {
                             },
                             threadCount);
         } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of token associations virtual map interrupted!");
+            System.err.println("*** Traversal of accounts virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
 
