@@ -373,7 +373,7 @@ public final class BlockStreamProducerConcurrentV1 implements BlockStreamProduce
             return CompletableFuture.failedFuture(new IllegalStateException("Writer cannot be null"));
         }
 
-        return writer.closeSequentiallyAsync(lastRunningHash)
+        return writer.closeSequentiallyAsync()
                 .thenAccept(v -> logger.debug("Closed block record writer for block {}", lastBlockNumber))
                 .exceptionally(e -> {
                     // If we fail to close the writer, then this node is almost certainly going to end up in deep

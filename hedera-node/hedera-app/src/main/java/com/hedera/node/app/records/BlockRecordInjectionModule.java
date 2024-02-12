@@ -187,7 +187,7 @@ public abstract class BlockRecordInjectionModule {
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
-            case "CONCURRENT" -> new BlockStreamProducerConcurrent(serial, executor);
+            case "CONCURRENT" -> new BlockStreamProducerConcurrent(executor, serial);
             case "SERIAL" -> serial;
             default -> {
                 logger.fatal("Unknown stream file producer type: {}", producerType);

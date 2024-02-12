@@ -45,7 +45,7 @@ public interface BlockStreamWriter {
      *
      * @param blockNumber the block number of the block
      * @throws IllegalStateException if called after {@link #writeItem(Bytes)} or after
-     *                               {@link #close(HashObject)}.
+     *                               {@link #close()}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
     void init(final long blockNumber);
@@ -53,11 +53,11 @@ public interface BlockStreamWriter {
     /**
      * Write a single item to the block stream output. This method may be called multiple times for different items,
      * but must be called after {@link #init(long)} and before
-     * {@link #close(HashObject)}.
+     * {@link #close()}.
      *
      * @param item the item to write
      * @throws IllegalStateException if called before {@link #init(long)} or after
-     *                               {@link #close(HashObject)}.
+     *                               {@link #close()}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
     void writeItem(@NonNull final Bytes item);
@@ -66,9 +66,8 @@ public interface BlockStreamWriter {
      * Close the block that has been produced. Must be called after
      * {@link #init(long)}.
      *
-     * @param endRunningHash  the ending running hash after the last record stream item
      * @throws IllegalStateException if called before {@link #init(long)}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
-    void close(@NonNull final HashObject endRunningHash);
+    void close();
 }

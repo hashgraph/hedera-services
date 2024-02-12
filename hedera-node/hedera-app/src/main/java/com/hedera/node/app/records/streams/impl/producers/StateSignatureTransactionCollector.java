@@ -79,7 +79,7 @@ public class StateSignatureTransactionCollector {
      * less than that round.
      * @param proof the completed BlockStateProof for a round
      */
-    public void roundComplete(@NonNull BlockStateProof proof) {
+    public void roundComplete(@NonNull final BlockStateProof proof) {
         // TODO(nickpoorman): Need to update this implementation since we don't have an ordered queue a poison pill
         //  no longer works.
 

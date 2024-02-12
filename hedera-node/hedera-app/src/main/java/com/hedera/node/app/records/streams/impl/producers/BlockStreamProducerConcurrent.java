@@ -24,8 +24,8 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
     /** The logger */
     private static final Logger logger = LogManager.getLogger(BlockStreamProducerConcurrent.class);
 
-    private final BlockStreamProducer producer;
     private final ExecutorService executor;
+    private final BlockStreamProducer producer;
     private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
 
     /**
@@ -57,14 +57,15 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
      * @param executor the executor service to use for writes
      * @param producer the producer to wrap
      */
-    public BlockStreamProducerConcurrent(@NonNull final BlockStreamProducer producer, ExecutorService executor) {
-        this.producer = producer;
+    public BlockStreamProducerConcurrent(
+            @NonNull final ExecutorService executor, @NonNull final BlockStreamProducer producer) {
         this.executor = executor;
+        this.producer = producer;
         this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
     }
 
     @Override
-    public void initFromLastBlock(@NonNull RunningHashes runningHashes, long lastBlockNumber) {
+    public void initFromLastBlock(@NonNull final RunningHashes runningHashes, long lastBlockNumber) {
         doAsync(CompletableFuture.runAsync(() -> producer.initFromLastBlock(runningHashes, lastBlockNumber), executor));
     }
 
@@ -102,28 +103,38 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
 
     @Override
     public void endBlock(
-            @NonNull BlockStateProofProducer blockStateProofProducer,
-            @NonNull CompletableFuture<BlockStateProof> blockPersisted) {
-        doAsync(CompletableFuture.runAsync(() -> producer.endBlock(blockStateProofProducer, blockPersisted), executor));
+            @NonNull final BlockStateProofProducer blockStateProofProducer,
+            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
+        // Ending a block is different in that we have to wait for a block proof. We don't want to hold up the next call
+        // to the producer from running, so we need to fork the execution off the chain of futures. We want to attach
+        // the new future to lastFutureRef so that it's only executed after lastFutureRef has successfully completed,
+        // but it should not replace lastFutureRef. We do not want the next future to be chained off this one.
+
+        // Capture the current last future without replacing it in lastFutureRef.
+        final CompletableFuture<Void> currentLastFuture = lastFutureRef.get();
+
+        // Fork off the execution, ensuring it starts after the current last future completes but doesn't block
+        // the next operation from running.
+        currentLastFuture.thenRunAsync(() -> producer.endBlock(blockStateProofProducer, blockPersisted), executor);
     }
 
     @Override
-    public void writeConsensusEvent(@NonNull ConsensusEvent consensusEvent) {
+    public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeConsensusEvent(consensusEvent), executor));
     }
 
     @Override
-    public void writeSystemTransaction(@NonNull ConsensusTransaction systemTxn) {
+    public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeSystemTransaction(systemTxn), executor));
     }
 
     @Override
-    public void writeUserTransactionItems(@NonNull ProcessUserTransactionResult items) {
+    public void writeUserTransactionItems(@NonNull final ProcessUserTransactionResult items) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeUserTransactionItems(items), executor));
     }
 
     @Override
-    public void writeStateChanges(@NonNull StateChanges stateChanges) {
+    public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeStateChanges(stateChanges), executor));
     }
 
@@ -133,11 +144,11 @@ public class BlockStreamProducerConcurrent implements BlockStreamProducer {
         producer.close();
     }
 
-    private CompletableFuture<Void> doAsync(CompletableFuture<Void> updater) {
-        return lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
+    private void doAsync(@NonNull final CompletableFuture<Void> updater) {
+        lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
     }
 
-    private void awaitFutureCompletion(Future<?> future) {
+    private void awaitFutureCompletion(@NonNull final Future<?> future) {
         try {
             future.get(); // Block until the task completes.
         } catch (InterruptedException e) {

@@ -45,45 +45,46 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     private final BlockStreamWriter writer;
-    private final ExecutorService executorService;
+    private final ExecutorService executor;
     private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
 
     /**
      * ConcurrentBlockStreamWriter ensures that all the methods called on the writer are executed sequentially in the
      * order in which they are called. This is done by chaining the lastFutureRef to the next write method.
-     * @param executorService the executor service to use for writes
+     * @param executor the executor service to use for writes
      * @param writer the writer to wrap
      */
-    public ConcurrentBlockStreamWriter(ExecutorService executorService, BlockStreamWriter writer) {
-        this.executorService = executorService;
+    public ConcurrentBlockStreamWriter(
+            @NonNull final ExecutorService executor, @NonNull final BlockStreamWriter writer) {
+        this.executor = executor;
         this.writer = writer;
         this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
     }
 
     @Override
     public void init(long blockNumber) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber), executorService));
+        updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber), executor));
     }
 
     @Override
-    public void writeItem(@NonNull Bytes item) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
+    public void writeItem(@NonNull final Bytes item) {
+        updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executor));
     }
 
-    public CompletableFuture<Void> writeItemSequentiallyAsync(@NonNull Bytes item) {
-        return updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executorService));
+    public CompletableFuture<Void> writeItemSequentiallyAsync(@NonNull final Bytes item) {
+        return updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executor));
     }
 
     @Override
-    public void close(@NonNull HashObject endRunningHash) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
+    public void close() {
+        updateLastFuture(CompletableFuture.runAsync(writer::close, executor));
     }
 
-    public CompletableFuture<Void> closeSequentiallyAsync(@NonNull HashObject endRunningHash) {
-        return updateLastFuture(CompletableFuture.runAsync(() -> writer.close(endRunningHash), executorService));
+    public CompletableFuture<Void> closeSequentiallyAsync() {
+        return updateLastFuture(CompletableFuture.runAsync(writer::close, executor));
     }
 
-    private CompletableFuture<Void> updateLastFuture(CompletableFuture<Void> updater) {
+    private CompletableFuture<Void> updateLastFuture(@NonNull final CompletableFuture<Void> updater) {
         return lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
     }
 }

@@ -131,7 +131,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             @NonNull final BlockStateProofProducer blockStateProofProducer,
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
         try {
-            // Block until the blockStateProof is available. This call makes the operation synchronous.
+            // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
+            // until it is able to get the state proof.
             BlockStateProof proof = blockStateProofProducer.getBlockStateProof().get();
 
             // Perform the synchronous operations.
@@ -262,7 +263,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             // Make sure this is logged. In the FUTURE we may need to do something more drastic, like shut down the
             // node, or maybe retry a number of times before giving up.
             try {
-                writer.close(lastRunningHash);
+                writer.close();
             } catch (final Exception e) {
                 logger.error("Error closing block record writer for block {}", lastBlockNumber, e);
             }

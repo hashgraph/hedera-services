@@ -163,7 +163,7 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     }
 
     @Override
-    public void close(@NonNull final HashObject endRunningHash) {
+    public void close() {
         if (state.ordinal() < State.OPEN.ordinal()) {
             throw new IllegalStateException("Cannot close a BlockStreamFileWriterV1 that is not open");
         }
