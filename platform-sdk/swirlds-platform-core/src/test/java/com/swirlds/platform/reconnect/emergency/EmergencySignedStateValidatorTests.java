@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
@@ -31,6 +30,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;

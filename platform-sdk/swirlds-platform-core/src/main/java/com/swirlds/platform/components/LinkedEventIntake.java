@@ -59,13 +59,6 @@ public class LinkedEventIntake {
     private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
 
     /**
-     * Whether or not the linked event intake is paused.
-     * <p>
-     * When paused, all received events will be tossed into the void
-     */
-    private boolean paused;
-
-    /**
      * Constructor
      *
      * @param consensusSupplier provides the current consensus instance
@@ -85,8 +78,6 @@ public class LinkedEventIntake {
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
-
-        this.paused = false;
     }
 
     /**
@@ -98,11 +89,6 @@ public class LinkedEventIntake {
     @NonNull
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         Objects.requireNonNull(event);
-
-        if (paused) {
-            // If paused, throw everything into the void
-            return List.of();
-        }
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
@@ -144,15 +130,6 @@ public class LinkedEventIntake {
         } finally {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
-    }
-
-    /**
-     * Pause or unpause this object.
-     *
-     * @param paused whether or not this object should be paused
-     */
-    public void setPaused(final boolean paused) {
-        this.paused = paused;
     }
 
     /**
