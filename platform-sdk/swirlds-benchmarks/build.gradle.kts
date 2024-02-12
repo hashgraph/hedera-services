@@ -23,18 +23,14 @@ jmhModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base")
     requires("com.swirlds.common")
-    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
     requires("com.swirlds.metrics.api")
     requires("com.swirlds.config.extensions")
-    requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
-    requires("com.swirlds.virtualmap.test.fixtures")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
-    requires("org.junit.jupiter.api")
     runtimeOnly("com.swirlds.config.impl")
 }
 
@@ -49,18 +45,3 @@ jmh {
 }
 
 fun listProperty(value: String) = objects.listProperty<String>().value(listOf(value))
-
-tasks.register("jmhReconnect") {
-    // Unfortunately, this is the only way to re-configure the jmh extension/plugin today,
-    // and one can only ever run a single jmh task in a given build run.
-    // So either run `./gradlew jmh` to run the regular JMH task defined above,
-    // or run `./gradlew jmhReconnect` to run the override below:
-    doFirst {
-        jmh.includes.set(listOf("Reconnect.*"))
-        jmh.jvmArgs.set(listOf("-Xmx16g"))
-        jmh.fork.set(1)
-        jmh.warmupIterations.set(2)
-        jmh.iterations.set(5)
-    }
-    finalizedBy("jmh")
-}

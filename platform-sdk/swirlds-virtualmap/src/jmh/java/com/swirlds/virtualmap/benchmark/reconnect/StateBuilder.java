@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.benchmark.reconnect;
+package com.swirlds.virtualmap.benchmark.reconnect;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.LongStream;

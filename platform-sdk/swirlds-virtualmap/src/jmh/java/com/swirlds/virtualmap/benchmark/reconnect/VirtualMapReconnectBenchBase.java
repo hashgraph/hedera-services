@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.benchmark.reconnect;
-
-import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+package com.swirlds.virtualmap.benchmark.reconnect;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -45,6 +43,8 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import org.junit.jupiter.api.Assertions;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -52,7 +52,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
+
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 
 /**
  * The code is largely borrowed from VirtualMapReconnectTestBase.java in swirlds-virtualmap/src/test/.
