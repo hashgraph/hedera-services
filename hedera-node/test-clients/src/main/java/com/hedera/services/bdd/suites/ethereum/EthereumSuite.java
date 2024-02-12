@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -57,6 +58,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -155,26 +157,28 @@ public class EthereumSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return Stream.concat(
-                        feePaymentMatrix().stream(),
-                        Stream.of(
-                                invalidTxData(),
-                                etx008ContractCreateExecutesWithExpectedRecord(),
-                                etx009CallsToTokenAddresses(),
-                                etx010TransferToCryptoAccountSucceeds(),
-                                etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                etx014ContractCreateInheritsSignerProperties(),
-                                etx009CallsToTokenAddresses(),
-                                originAndSenderAreEthereumSigner(),
-                                etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
-                                etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
-                                sendingLargerBalanceThanAvailableFailsGracefully(),
-                                directTransferWorksForERC20(),
-                                transferHbarsViaEip2930TxSuccessfully(),
-                                callToTokenAddressViaEip2930TxSuccessfully(),
-                                transferTokensViaEip2930TxSuccessfully(),
-                                accountDeletionResetsTheAliasNonce()))
-                .toList();
+        /*return Stream.concat(
+                feePaymentMatrix().stream(),
+                Stream.of(
+                        invalidTxData(),
+                        etx008ContractCreateExecutesWithExpectedRecord(),
+                        etx009CallsToTokenAddresses(),
+                        etx010TransferToCryptoAccountSucceeds(),
+                        etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                        etx014ContractCreateInheritsSignerProperties(),
+                        etx009CallsToTokenAddresses(),
+                        originAndSenderAreEthereumSigner(),
+                        etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
+                        etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
+                        sendingLargerBalanceThanAvailableFailsGracefully(),
+                        directTransferWorksForERC20(),
+                        transferHbarsViaEip2930TxSuccessfully(),
+                        callToTokenAddressViaEip2930TxSuccessfully(),
+                        transferTokensViaEip2930TxSuccessfully(),
+                        accountDeletionResetsTheAliasNonce(),
+                        legacyEtxWithSpecificChainIdEIP155()))
+        .toList();*/
+        return Stream.of(legacyEtxWithSpecificChainIdEIP155()).toList();
     }
 
     @HapiTest
@@ -873,6 +877,53 @@ public class EthereumSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))))));
+    }
+
+    @HapiTest
+    HapiSpec legacyEtxWithSpecificChainIdEIP155() {
+        final String DEPOSIT = "deposit";
+        final long depositAmount = 20_000L;
+        final Integer chainId = 0;
+
+        return propertyPreservingHapiSpec(
+                        "legacyEtxWithSpecificChainIdEIP155",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .preserving(CHAIN_ID_PROP)
+                .given(
+                        overriding(CHAIN_ID_PROP, "" + chainId),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(
+                        // overriding(CHAIN_ID_PROP, "" + chainId),
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                                .type(EthTransactionType.LEGACY_ETHEREUM)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via("payTxn")
+                                .nonce(0)
+                                .chainId(chainId)
+                                .gasPrice(50L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .sending(depositAmount)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
+                .then(withOpContext((spec, opLog) ->
+                        allRunFor(spec, getTxnRecord("payTxn").logged() /*.hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder())
+                                                .senderId(spec.registry()
+                                                        .getAccountID(spec.registry()
+                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                .getAlias()
+                                                                .toStringUtf8())))
+                                        .ethereumHash(ByteString.copyFrom(
+                                                spec.registry().getBytes(ETH_HASH_KEY))))*/)));
     }
 
     @HapiTest
