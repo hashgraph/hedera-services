@@ -353,6 +353,8 @@ public record EthTxData(
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+        } else if (vBI.compareTo(BigInteger.valueOf(27)) == 0 || vBI.compareTo(BigInteger.valueOf(28)) == 0) {
+            chainId = new byte[0];
         }
 
         return new EthTxData(

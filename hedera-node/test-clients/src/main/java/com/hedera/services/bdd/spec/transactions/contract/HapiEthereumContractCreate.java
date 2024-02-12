@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
@@ -64,6 +63,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
+    private Integer chainId = 298;
 
     @Nullable
     private BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec;
@@ -80,6 +80,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiEthereumContractCreate chainId(Integer chainId) {
+        this.chainId = chainId;
         return this;
     }
 
@@ -212,7 +217,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var ethTxData = new EthTxData(
                 null,
                 type,
-                Integers.toBytes(CHAIN_ID),
+                Integers.toBytes(chainId),
                 nonce,
                 gasPriceBytes,
                 maxPriorityGasBytes,
