@@ -30,4 +30,6 @@ testModuleInfo {
     requires("com.swirlds.platform.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.base.test.fixtures")
 }
