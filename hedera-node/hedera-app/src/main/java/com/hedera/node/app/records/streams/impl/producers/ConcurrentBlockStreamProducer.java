@@ -102,24 +102,20 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     }
 
     @Override
-    public void endBlock(
-            @NonNull final BlockStateProofProducer blockStateProofProducer,
-            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
-        // Ending a block is different in that we have to wait for a block proof. We don't want to hold up the next call
-        // to the producer from running, so we need to fork the execution off the chain of futures.
+    public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
+        // We want to end the block after the previous lastFuture has completed. Only this time, we also must return a
+        // future with the result of the endBlock call.
+        CompletableFuture<BlockEnder> enderFuture = new CompletableFuture<>();
 
-        // Get the value of the running hashes. This operation should be chained as we must ensure we get these values
-        // before following block changes them. So we add a future to collect the bits we
-        // need.
-        final var future = CompletableFuture.runAsync(blockStateProofProducer::snapshotStateHashes, executor);
-        doAsync(future);
+        // Chain the operation such that enderFuture is completed with the BlockEnder instance
+        // once producer.endBlock() completes.
+        doAsync(producer.endBlock(builder).thenAccept(enderFuture::complete).exceptionally(ex -> {
+            // Handle exceptions by completing enderFuture exceptionally.
+            enderFuture.completeExceptionally(ex);
+            return null; // CompletableFuture's exceptionally function requires a return value.
+        }));
 
-        // The next part should fork off lastFutureRef (future in this case) by attaching a new future to it without
-        // replacing it.
-
-        // Fork off the execution, ensuring it starts after the current last future completes but doesn't block
-        // the next operation from running.
-        future.thenRunAsync(() -> producer.endBlock(blockStateProofProducer, blockPersisted), executor);
+        return enderFuture;
     }
 
     @Override

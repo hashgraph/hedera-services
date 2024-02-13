@@ -31,6 +31,7 @@ import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
@@ -56,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -393,10 +395,15 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             });
         } finally {
             // Regardless of what happens in the try block, attempt to close the block.
-            // The result of `endBlock` is directed to the `blockPersisted`.
-            // For the concurrent implementation, this needs to happen on the blockStreamProducer thread and not the
-            // handle thread, thus endBlock takes over execution.
-            blockStreamProducer.endBlock(stateProofProducer, blockPersisted);
+            // In order to close the block, we need to wait until the asynchronous tasks have completed. Once they
+            // are finished, our endBlock task will run and provide us with a BlockEnder that can be used to complete
+            // the block. Then asynchronously complete the block.
+            final BlockEnder.Builder blockEnderBuilder = BlockEnder.newBuilder().setState(state);
+            blockStreamProducer
+                    // TODO(nickpoorman): We should probably pass a Callable that returns the specific information we
+                    //  want from state instead of passing the entire state object to the producer.
+                    .endBlock(blockEnderBuilder)
+                    .thenAcceptAsync(blockEnder -> blockEnder.endBlock(blockPersisted, stateProofProducer), executor);
         }
     }
 

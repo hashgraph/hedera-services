@@ -148,9 +148,9 @@ public final class BlockStreamProducerConcurrentV1 implements BlockStreamProduce
     }
 
     /** {@inheritDoc} */
-    public void endBlock(
-            @NonNull final BlockStateProofProducer blockStateProofProducer,
-            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
+    @Override
+    @NonNull
+    public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
 
         // Submit the task to our single threaded executor service. This ensures this task isn't executed
         // until all the tasks for building this block happen before it.

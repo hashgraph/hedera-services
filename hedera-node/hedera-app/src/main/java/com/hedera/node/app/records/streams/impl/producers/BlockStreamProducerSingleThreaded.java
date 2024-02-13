@@ -27,6 +27,7 @@ import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -37,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -127,39 +129,13 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    public static void endBlock(
-            @NonNull final HashObject lastRunningHash,
-            final long currentBlockNumber,
-            @NonNull final BlockStateProofProducer blockStateProofProducer,
-            @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
-        try {
-            // TODO(nickpoorman): We must fix this because it is not thread safe. There are two parts to this.
-            //  1. We need to get all the state information that we would need in the single threaded implementation.
-            //  2. We need to then execute an async function with all that state information.
-
-            // Perform the synchronous operations.
-            //            final var lastRunningHash = getRunningHashObject();
-
-            // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
-            // until it is able to get the state proof.
-            BlockStateProof proof = blockStateProofProducer.getBlockStateProof().get();
-
-            writeStateProof(proof);
-            closeWriter();
-
-            // If operations complete successfully, complete blockPersisted with the proof.
-            blockPersisted.complete(proof);
-        } catch (InterruptedException e) {
-            // Re-interrupt the current thread when InterruptedException is caught.
-            Thread.currentThread().interrupt();
-
-            // Exceptionally complete blockPersisted with the caught exception.
-            blockPersisted.completeExceptionally(e);
-        } catch (ExecutionException e) {
-            // Exceptionally complete blockPersisted with the cause of the ExecutionException.
-            // ExecutionException wraps the actual exception that caused the problem, so unwrap it.
-            blockPersisted.completeExceptionally(e.getCause());
-        }
+    @Override
+    public CompletableFuture<BlockEnder> endBlock(@NonNull BlockEnder.Builder builder) {
+        return CompletableFuture.completedFuture(builder.setLastRunningHash(getRunningHashObject())
+                .setWriter(writer)
+                .setFormat(format)
+                .setBlockNumber(currentBlockNumber)
+                .build());
     }
 
     /** {@inheritDoc} */
@@ -210,7 +186,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeUserTransactionItems(@NonNull final ProcessUserTransactionResult result) {
         // We reuse this messageDigest to avoid creating a new one for each item.
         final MessageDigest messageDigest = format.getMessageDigest();
-        // Collect all the transactions so I can see them in the dubugger.
         result.transactionRecordStream().forEach(item -> {
             final var serializedBlockItems = format.serializeUserTransaction(item);
             serializedBlockItems.forEach(serializedBlockItem -> {
@@ -224,13 +199,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         final var serializedBlockItem = format.serializeStateChanges(stateChanges);
         updateRunningHashes(serializedBlockItem);
-        writeSerializedBlockItem(serializedBlockItem);
-    }
-
-    public void writeStateProof(@NonNull final BlockStateProof blockStateProof) {
-        // We do not update running hashes with the block state proof hash like we do for other block items, we simply
-        // write it out.
-        final var serializedBlockItem = format.serializeBlockStateProof(blockStateProof);
         writeSerializedBlockItem(serializedBlockItem);
     }
 

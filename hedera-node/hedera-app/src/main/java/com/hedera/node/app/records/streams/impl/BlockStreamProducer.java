@@ -20,6 +20,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
+import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -82,14 +83,11 @@ public interface BlockStreamProducer extends AutoCloseable {
     /**
      * Called at the end of a block.
      *
-     * <p>If there is a currently open block stream, it produces the block proof, and closes the block.
-     *
-     * @param blockStateProofProducer the block state proof producer
-     * @param blockPersisted the completable future that is completed when the block persisted
+     * <p>If there is a currently open block stream, it produces the block proof, and closes the block. Since the
+     * gathering of the signatures and closing the block is an asynchronous process, this method returns a BlockEnder
+     * to hand off the responsibility of closing the block to the caller.
      */
-    void endBlock(
-            @NonNull final BlockStateProofProducer blockStateProofProducer,
-            @NonNull CompletableFuture<BlockStateProof> blockPersisted);
+    CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder);
 
     /**
      * Write ConsensusEvent to the block stream. It must be in exact consensus time order! This must only be called

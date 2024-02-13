@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.math.BigInteger;
 
 public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
 
@@ -189,7 +190,17 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
      */
     @NonNull
     private Path getBlockFilePath(final long blockNumber) {
-        return nodeScopedBlockDir.resolve(
-                blockNumber + "." + RECORD_EXTENSION + (compressFiles ? COMPRESSION_ALGORITHM_EXTENSION : ""));
+        return nodeScopedBlockDir.resolve(longToFileName(blockNumber) + "." + RECORD_EXTENSION
+                + (compressFiles ? COMPRESSION_ALGORITHM_EXTENSION : ""));
+    }
+
+    public static String longToFileName(long value) {
+        // Convert the signed long to an unsigned long using BigInteger for correct representation
+        BigInteger unsignedValue =
+                BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));
+
+        // Format the unsignedValue as a 20-character string, padded with leading zeros to ensure we have enough digits
+        // for an unsigned long. However, to allow for future expansion, we use 36 characters as that's what UUID uses.
+        return String.format("%036d", unsignedValue);
     }
 }
