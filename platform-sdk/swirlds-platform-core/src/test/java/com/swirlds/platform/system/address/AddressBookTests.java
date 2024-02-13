@@ -334,6 +334,10 @@ class AddressBookTests {
                 .setSize(100)
                 .build();
 
+        // make sure that certs are part of the round trip test.
+        assertNotNull(original.getAddress(new NodeId(0)).getSigCert());
+        assertNotNull(original.getAddress(new NodeId(0)).getAgreeCert());
+
         validateAddressBookConsistency(original);
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();

@@ -74,7 +74,7 @@ public record KeysAndCerts(
      * 		pairs will be named "s-alice", "e-alice", "a-alice" for signing, encrypting, and key
      * 		agreement.
      * @param privateKeyStore
-     * 		read the 3 keyPairs (signing,agreement,encryption) from this store
+     * 		read the 2 keyPairs (signing,agreement) from this store
      * @param publicStores
      * 		all public certificates
      * @throws KeyStoreException

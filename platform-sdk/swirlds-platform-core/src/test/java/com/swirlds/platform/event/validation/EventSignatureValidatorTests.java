@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -48,8 +47,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -100,11 +99,8 @@ class EventSignatureValidatorTests {
      * @return a mock address
      */
     private static Address generateMockAddress(final @NonNull NodeId nodeId) {
-        final PublicKey publicKey = mock(PublicKey.class);
-        final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
-        when(serializablePublicKey.getPublicKey()).thenReturn(publicKey);
-
-        return new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, null, "");
+        return new Address(
+                nodeId, "", "", 10, null, 77, null, 88, PreGeneratedX509Certs.getSigCert(nodeId.id()), null, "");
     }
 
     /**
@@ -210,10 +206,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Node has a null public key")
     void missingPublicKey() {
         final NodeId nodeId = new NodeId(88);
-        final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
-        when(serializablePublicKey.getPublicKey()).thenReturn(null);
-        final Address nodeAddress =
-                new Address(nodeId, "", "", 10, null, 77, null, 88, serializablePublicKey, null, null, "");
+        final Address nodeAddress = new Address(nodeId, "", "", 10, null, 77, null, 88, null, null, "");
 
         currentAddressBook.add(nodeAddress);
 
