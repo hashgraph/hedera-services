@@ -59,6 +59,7 @@ public class TaskSchedulerBuilder<O> {
     private TaskSchedulerMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
+    private boolean squelchingEnabled = false;
     private boolean externalBackPressure = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
@@ -128,6 +129,22 @@ public class TaskSchedulerBuilder<O> {
     @NonNull
     public TaskSchedulerBuilder<O> withFlushingEnabled(final boolean requireFlushCapability) {
         this.flushingEnabled = requireFlushCapability;
+        return this;
+    }
+
+    /**
+     * Set whether the task scheduler should enable squelching. Default false. Enabling squelching may add overhead.
+     * <p>
+     * IMPORTANT: you must not enable squelching if the scheduler handles tasks that require special cleanup. If
+     * squelching is enabled and activated, all existing and incoming tasks will be unceremoniously dumped into the
+     * void!
+     *
+     * @param squelchingEnabled true if the scheduler should enable squelching, false otherwise.
+     * @return this
+     */
+    @NonNull
+    public TaskSchedulerBuilder<O> withSquelchingEnabled(final boolean squelchingEnabled) {
+        this.squelchingEnabled = squelchingEnabled;
         return this;
     }
 
@@ -340,6 +357,7 @@ public class TaskSchedulerBuilder<O> {
                             counters.onRamp(),
                             counters.offRamp(),
                             flushingEnabled,
+                            squelchingEnabled,
                             insertionIsBlocking);
                     case SEQUENTIAL -> new SequentialTaskScheduler<>(
                             model,
@@ -350,6 +368,7 @@ public class TaskSchedulerBuilder<O> {
                             counters.offRamp(),
                             busyFractionTimer,
                             flushingEnabled,
+                            squelchingEnabled,
                             insertionIsBlocking);
                     case SEQUENTIAL_THREAD -> new SequentialThreadTaskScheduler<>(
                             model,
@@ -360,6 +379,7 @@ public class TaskSchedulerBuilder<O> {
                             busyFractionTimer,
                             sleepDuration,
                             flushingEnabled,
+                            squelchingEnabled,
                             insertionIsBlocking);
                     case DIRECT -> new DirectTaskScheduler<>(
                             model,
@@ -367,6 +387,7 @@ public class TaskSchedulerBuilder<O> {
                             buildUncaughtExceptionHandler(),
                             counters.onRamp(),
                             counters.offRamp(),
+                            squelchingEnabled,
                             busyFractionTimer,
                             false);
                     case DIRECT_STATELESS -> new DirectTaskScheduler<>(
@@ -375,6 +396,7 @@ public class TaskSchedulerBuilder<O> {
                             buildUncaughtExceptionHandler(),
                             counters.onRamp(),
                             counters.offRamp(),
+                            squelchingEnabled,
                             busyFractionTimer,
                             true);
                 };

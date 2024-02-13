@@ -57,7 +57,8 @@ public class PrecompileUtils {
                     traceabilityOn ? messageFrame.getRemainingGas() : 0L,
                     traceabilityOn ? messageFrame.getValue().toLong() : 0L,
                     traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
-                    EntityId.fromAddress(senderAddress));
+                    EntityId.fromAddress(senderAddress),
+                    null);
             childRecord.setContractCallResult(evmFnResult);
         }
     }

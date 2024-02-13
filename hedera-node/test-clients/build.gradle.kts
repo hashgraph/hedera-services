@@ -103,7 +103,7 @@ tasks.register<Test>("hapiTestCrypto") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("CRYPTO") }
+    useJUnitPlatform { includeTags("CRYPTO", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -118,7 +118,7 @@ tasks.register<Test>("hapiTestToken") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TOKEN") }
+    useJUnitPlatform { includeTags("TOKEN", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -133,7 +133,7 @@ tasks.register<Test>("hapiTestSmartContract") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("SMART_CONTRACT") }
+    useJUnitPlatform { includeTags("SMART_CONTRACT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -148,7 +148,7 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TIME_CONSUMING") }
+    useJUnitPlatform { includeTags("TIME_CONSUMING", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -163,7 +163,7 @@ tasks.register<Test>("hapiTestRestart") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("RESTART") }
+    useJUnitPlatform { includeTags("RESTART", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -177,7 +177,7 @@ tasks.register<Test>("hapiTestNDReconnect") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("ND_RECONNECT") }
+    useJUnitPlatform { includeTags("ND_RECONNECT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

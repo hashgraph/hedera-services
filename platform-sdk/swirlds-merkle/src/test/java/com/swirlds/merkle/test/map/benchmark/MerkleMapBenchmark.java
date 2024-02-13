@@ -16,6 +16,7 @@
 
 package com.swirlds.merkle.test.map.benchmark;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -26,14 +27,14 @@ import com.swirlds.common.test.fixtures.benchmark.BenchmarkOperation;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkStatistic;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.benchmark.BenchmarkAccount;
-import com.swirlds.merkle.map.test.benchmark.BenchmarkKey;
-import com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkMetadata;
-import com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkUtils;
-import com.swirlds.merkle.map.test.benchmark.operations.CreateAccountOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.DeleteAccountOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.ReadBalanceOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.TransferOperation;
+import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkAccount;
+import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkKey;
+import com.swirlds.merkle.test.fixtures.map.benchmark.MerkleMapBenchmarkMetadata;
+import com.swirlds.merkle.test.fixtures.map.benchmark.MerkleMapBenchmarkUtils;
+import com.swirlds.merkle.test.fixtures.map.benchmark.operations.CreateAccountOperation;
+import com.swirlds.merkle.test.fixtures.map.benchmark.operations.DeleteAccountOperation;
+import com.swirlds.merkle.test.fixtures.map.benchmark.operations.ReadBalanceOperation;
+import com.swirlds.merkle.test.fixtures.map.benchmark.operations.TransferOperation;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @DisplayName("MerkleMap Benchmark")
+@Tag(TIMING_SENSITIVE)
 class MerkleMapBenchmark {
 
     private static final Random random = new Random();
