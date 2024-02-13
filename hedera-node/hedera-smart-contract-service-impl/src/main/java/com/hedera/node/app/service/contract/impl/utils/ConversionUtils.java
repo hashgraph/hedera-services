@@ -239,25 +239,6 @@ public class ConversionUtils {
     }
 
     /**
-     * Returns the 2-byte chain id as a byte array.
-     *
-     * @param chainId the chain id
-     * @return the chain id as a byte array
-     */
-    public static byte[] asChainIdBytes(final int chainId) {
-        // if the chain id is 0, this means we are processing (unprotected) ethereum transaction before EIP155
-        // without this handling, the returned bytes are [0,0] and the matching of chain ids will fail
-        if (chainId == 0) {
-            return new byte[0];
-        } else {
-            final var bytes = new byte[2];
-            bytes[0] = (byte) (chainId >> 8);
-            bytes[1] = (byte) chainId;
-            return bytes;
-        }
-    }
-
-    /**
      * Wraps the first 32 bytes of the given SHA-384 {@link com.swirlds.common.crypto.Hash hash} in a Besu {@link Hash}.
      *
      * @param sha384Hash the SHA-384 hash
