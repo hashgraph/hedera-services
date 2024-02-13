@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
@@ -63,7 +64,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
-    private Integer chainId = 298;
+    private Integer chainId = CHAIN_ID;
 
     @Nullable
     private BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec;
