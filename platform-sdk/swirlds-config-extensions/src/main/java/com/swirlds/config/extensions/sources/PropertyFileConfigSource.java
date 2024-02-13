@@ -31,13 +31,7 @@ import java.util.Properties;
  * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from a
  * property file.
  */
-public class PropertyFileConfigSource extends AbstractConfigSource {
-
-    private final Map<String, String> internalProperties;
-
-    private final Path filePath;
-
-    private final int ordinal;
+public class PropertyFileConfigSource extends AbstractFileConfigSource {
 
     /**
      * Creates a new instance based on a file by using the {@link ConfigSourceOrdinalConstants#PROPERTY_FILE_ORDINAL}
@@ -47,7 +41,7 @@ public class PropertyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not loaded or parsed
      */
     public PropertyFileConfigSource(@NonNull final Path filePath) throws IOException {
-        this(filePath, ConfigSourceOrdinalConstants.PROPERTY_FILE_ORDINAL);
+        super(filePath);
     }
 
     /**
@@ -58,39 +52,12 @@ public class PropertyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not loaded or parsed
      */
     public PropertyFileConfigSource(@NonNull final Path filePath, final int ordinal) throws IOException {
-        this.filePath = Objects.requireNonNull(filePath, "filePath can not be null");
-        this.ordinal = ordinal;
-        this.internalProperties = new HashMap<>();
-        try (final BufferedReader reader = Files.newBufferedReader(filePath)) {
-            final Properties loadedProperties = new Properties();
-            loadedProperties.load(reader);
-            loadedProperties
-                    .stringPropertyNames()
-                    .forEach(name -> internalProperties.put(name, loadedProperties.getProperty(name)));
-        }
+        super(filePath, ordinal);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getName() {
-        return "Property file config source for " + filePath;
+    @NonNull
+    protected BufferedReader getReader() throws IOException {
+        return Files.newBufferedReader(filePath);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Map<String, String> getInternalProperties() {
-        return Collections.unmodifiableMap(internalProperties);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOrdinal() {
-        return ordinal;
-    }
 }
