@@ -19,13 +19,14 @@ import Utils.Companion.versionTxt
 import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
-import com.hedera.hashgraph.gradlebuild.service.TaskLockService
+import com.hedera.hashgraph.gradlebuild.services.TaskLockService
 
 plugins {
     id("java")
     id("jacoco")
     id("checkstyle")
     id("com.adarshr.test-logger")
+    id("com.hedera.hashgraph.lifecycle")
     id("com.hedera.hashgraph.jpms-modules")
     id("com.hedera.hashgraph.jpms-module-dependencies")
     id("com.hedera.hashgraph.repositories")
@@ -60,7 +61,16 @@ configurations.getByName("mainRuntimeClasspath") { extendsFrom(internal.get()) }
 
 dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
 
+tasks.buildDependents { setGroup(null) }
+
+tasks.buildNeeded { setGroup(null) }
+
+tasks.jar { setGroup(null) }
+
 sourceSets.all {
+    // Remove 'classes' tasks from 'build' group to keep it cleaned up
+    tasks.named(classesTaskName) { group = null }
+
     configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal.get()) }
     configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal.get()) }
 
@@ -162,6 +172,7 @@ testing {
             useJUnitJupiter()
             targets.all {
                 testTask {
+                    group = "build"
                     maxHeapSize = "4g"
                     // Some tests overlap due to using the same temp folders within one project
                     // maxParallelForks = 4 <- set this, once tests can run in parallel
@@ -174,6 +185,7 @@ testing {
             testType.set("hammer")
             targets.all {
                 testTask {
+                    group = "build"
                     shouldRunAfter(tasks.test)
                     usesService(
                         gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
@@ -190,6 +202,7 @@ testing {
             testType.set("time-consuming")
             targets.all {
                 testTask {
+                    group = "build"
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "16g"
                 }
@@ -201,6 +214,7 @@ testing {
             testType.set(TestSuiteType.INTEGRATION_TEST)
             targets.all {
                 testTask {
+                    group = "build"
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "8g"
                     addTestListener(testLogger())
@@ -213,6 +227,7 @@ testing {
             testType.set("end-to-end-test")
             targets.all {
                 testTask {
+                    group = "build"
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "8g"
                     jvmArgs("-XX:ActiveProcessorCount=6")
@@ -230,6 +245,22 @@ testing {
                 }
             }
         }
+    }
+}
+
+// If user gave the argument '-PactiveProcessorCount', then do:
+// - run all test tasks in sequence
+// - give the -XX:ActiveProcessorCount argument to the test JVMs
+val activeProcessorCount = providers.gradleProperty("activeProcessorCount")
+
+if (activeProcessorCount.isPresent) {
+    tasks.withType<Test>().configureEach {
+        usesService(
+            gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
+                maxParallelUsages = 1
+            }
+        )
+        jvmArgs("-XX:ActiveProcessorCount=${activeProcessorCount.get()}")
     }
 }
 
@@ -263,6 +294,14 @@ tasks.assemble {
 }
 
 tasks.check { dependsOn(tasks.jacocoTestReport) }
+
+tasks.named("qualityGate") { dependsOn(tasks.checkAllModuleInfo) }
+
+tasks.withType<JavaCompile>() {
+    // When ding a 'qualityGate' run, make sure spotlessApply is done before doing compilation and
+    // other checks based on compiled code
+    mustRunAfter(tasks.spotlessApply)
+}
 
 // Do not report dependencies from one source set to another as 'required'.
 // In particular, in case of test fixtures, the analysis would suggest to
