@@ -68,7 +68,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param stateSigner        signs a state
      * @param sigCollector       collects signatures for a state
      * @param signedStateMetrics metrics about signed states
-     * @param offerToHashLogger tracks status of the hash logger offer
+     * @param offerToHashLogger  tracks status of the hash logger offer
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
