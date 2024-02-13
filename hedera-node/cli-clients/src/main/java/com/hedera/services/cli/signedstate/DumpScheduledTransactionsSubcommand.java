@@ -16,18 +16,20 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.services.cli.signedstate.DumpTokensSubcommand.getListFormatter;
-import static com.hedera.services.cli.signedstate.DumpTokensSubcommand.getOptionalFormatter;
+import static com.hedera.services.cli.utils.Formatters.getListFormatter;
+import static com.hedera.services.cli.utils.Formatters.getNullableFormatter;
+import static com.hedera.services.cli.utils.Formatters.getOptionalFormatter;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.services.cli.signedstate.DumpTokensSubcommand.FieldBuilder;
+import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.hederahashgraph.api.proto.java.Key;
@@ -39,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
@@ -103,23 +106,24 @@ public class DumpScheduledTransactionsSubcommand {
             "java:S6218") // "Equals/hashcode method should be overridden in records containing array fields" - this
     record ScheduledTransaction(
             long number,
-            @NonNull Key grpcAdminKey,
+            @Nullable Key grpcAdminKey,
             @NonNull Optional<JKey> adminKey,
-            @NonNull String memo,
+            @Nullable String memo,
             boolean deleted,
             boolean executed,
             boolean calculatedWaitForExpiry,
             boolean waitForExpiryProvided,
             @Nullable EntityId payer,
-            EntityId schedulingAccount,
-            RichInstant schedulingTXValidStart,
+            @NonNull EntityId schedulingAccount,
+            @NonNull RichInstant schedulingTXValidStart,
             @Nullable RichInstant expirationTimeProvided,
             @Nullable RichInstant calculatedExpirationTime,
             @Nullable RichInstant resolutionTime,
             byte[] bodyBytes,
-            TransactionBody ordinaryScheduledTxn,
-            SchedulableTransactionBody scheduledTxn,
-            List<byte[]> signatories) {
+            @NonNull TransactionBody ordinaryScheduledTxn,
+            @NonNull SchedulableTransactionBody scheduledTxn,
+            @NonNull List<byte[]> signatories,
+            @NonNull List<byte[]> notary) {
 
         ScheduledTransaction(@NonNull final ScheduleVirtualValue scheduledTx) {
             this(
@@ -140,7 +144,15 @@ public class DumpScheduledTransactionsSubcommand {
                     scheduledTx.bodyBytes(),
                     scheduledTx.ordinaryViewOfScheduledTxn(),
                     scheduledTx.scheduledTxn(),
-                    scheduledTx.signatories());
+                    scheduledTx.signatories(),
+                    scheduledTx.notary().stream().map(ByteString::toByteArray).toList());
+            Objects.requireNonNull(adminKey, "adminKey");
+            Objects.requireNonNull(schedulingAccount, "schedulingAccount");
+            Objects.requireNonNull(schedulingTXValidStart, "schedulingTXValidStart");
+            Objects.requireNonNull(ordinaryScheduledTxn, "ordinaryScheduledTxn");
+            Objects.requireNonNull(scheduledTxn, "scheduledTxn");
+            Objects.requireNonNull(signatories, "signatories");
+            Objects.requireNonNull(notary, "notary");
         }
     }
 
@@ -231,15 +243,16 @@ public class DumpScheduledTransactionsSubcommand {
                     "signatories",
                     getFieldFormatter(
                             ScheduledTransaction::signatories,
+                            getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))),
+            Pair.of(
+                    "notary",
+                    getFieldFormatter(
+                            ScheduledTransaction::notary,
                             getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))));
 
     static <T> BiConsumer<FieldBuilder, ScheduledTransaction> getFieldFormatter(
             @NonNull final Function<ScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
     }
 
     static <T> void formatField(
