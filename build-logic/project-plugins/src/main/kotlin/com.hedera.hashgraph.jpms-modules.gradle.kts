@@ -314,4 +314,3 @@ extraJavaModuleInfo {
     module("org.testcontainers:testcontainers", "org.testcontainers")
     module("org.mockito:mockito-junit-jupiter", "org.mockito.junit.jupiter")
 }
-

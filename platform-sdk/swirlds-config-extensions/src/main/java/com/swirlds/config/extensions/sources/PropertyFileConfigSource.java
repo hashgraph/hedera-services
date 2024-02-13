@@ -21,11 +21,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 
 /**
  * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from a
@@ -59,5 +54,4 @@ public class PropertyFileConfigSource extends AbstractFileConfigSource {
     protected BufferedReader getReader() throws IOException {
         return Files.newBufferedReader(filePath);
     }
-
 }
