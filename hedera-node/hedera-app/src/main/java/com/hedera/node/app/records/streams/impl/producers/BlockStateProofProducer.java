@@ -7,6 +7,7 @@ import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
@@ -41,14 +42,43 @@ public class BlockStateProofProducer {
 
     private final LinkedList<StateSignatureTransaction> signatures = new LinkedList<>();
     private final AtomicReference<BlockStateProof> proof = new AtomicReference<>();
+    private final AddressBook consensusRoster;
+    private final int requiredNumberOfSignatures;
+    private volatile RunningHashes runningHashes;
+    private volatile SiblingHashes siblingHashes;
 
     public BlockStateProofProducer(
-            @NonNull final ExecutorService executor, @NonNull final HederaState state, final long roundNum) {
+            @NonNull final ExecutorService executor,
+            @NonNull final HederaState state,
+            final long roundNum,
+            final AddressBook consensusRoster) {
         this.executor = requireNonNull(executor);
         this.state = requireNonNull(state);
         this.roundNum = roundNum;
         // TODO: We need some more information here to construct the proof. When we construct this object, we need to
         //  know what the consensus roster is so that we can validate the proof before we return it.
+        // For now, we will simply require a number of signatures to be provided.
+        this.consensusRoster = consensusRoster;
+        // We need 2/3 + 1 signatures to produce a proof.
+        this.requiredNumberOfSignatures = (int) Math.ceil(consensusRoster.getSize() * 2 / 3.0) + 1;
+    }
+
+    /**
+     * Gather everything we need to produce a proof. This must be called after the round has completed at the end of
+     * the block, and we have processed and written all the transactions and BlockItems for the round. Meaning the
+     * state should be exactly what it should be at the end of producing a block, right before constructing the block
+     * proof.
+     */
+    public void snapshotStateHashes() {
+        final var states = state.getReadableStates(BlockRecordService.NAME);
+        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+
+        // Set the running hashes at the time the block was completed.
+        runningHashes = runningHashState.get();
+
+        // Set the sibling hashes at the time the block was completed.
+        // TODO(nickpoorman): Figure out how to get these.
+        // siblingHashes = state.getSiblingHashes();
     }
 
     /**
@@ -65,9 +95,15 @@ public class BlockStateProofProducer {
      * @return a future that will complete with the block state proof for the current round
      */
     public CompletableFuture<BlockStateProof> getBlockStateProof() {
-        return CompletableFuture.supplyAsync(this::buildProof, executor);
+        // Using the Supplier, return a future that will complete with the block proof for the current round as soon as
+        // we have enough signatures.
+        return CompletableFuture.supplyAsync(proofSupplier(), executor);
     }
 
+    /**
+     * Get the supplier for the block state proof for the current round.
+     * @return the supplier for the block state proof for the current round
+     */
     private Supplier<BlockStateProof> proofSupplier() {
         // Fast path if the proof has already been constructed.
         final var p = proof.get();
@@ -117,11 +153,28 @@ public class BlockStateProofProducer {
 
     /**
      * Once we have everything needed to produce a proof, build the proof and return it.
-     * @return the block state proof for the current round
+     * @return the block state proof for the current round or null if we don't have enough signatures
      */
     private BlockStateProof constructProof() {
         // Given the signatures we have, try to construct a proof.
-        // TODO(nickpoorman): Implement this.
+        // Do we have enough signatures?
+        if (!haveEnoughSignatures()) return null;
+        // If we have enough signatures, build the proof.
+        return buildProof();
+    }
+
+    /**
+     * Determine if we have enough signatures to produce a proof for this round given the consensus roster for this
+     * round.
+     * @return true if we have enough signatures to produce a proof, otherwise false
+     */
+    private boolean haveEnoughSignatures() {
+        // We need 2/3 + 1 signatures to produce a proof.
+        return signatures.size() >= requiredNumberOfSignatures;
+    }
+
+    private List<BlockSignature> buildBlockSignatures() {
+        // TODO(nickpoorman): Build the block signatures from the list of signatures.
         return null;
     }
 
@@ -132,32 +185,36 @@ public class BlockStateProofProducer {
     private BlockStateProof buildProof() {
         // Construct everything we need for the block proof.
 
-        // Pass the RunningHashes to the BlockStreamProducer so it can create the block proof.
-        final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+        // Pass the RunningHashes to the BlockStreamProducer, so it can create the block proof.
+        //        final var states = state.getReadableStates(BlockRecordService.NAME);
+        //        final var runningHashState =
+        // states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+        //
+        //        // TODO(nickpoorman): Fill in with the real hashes.
+        //        SecureRandom random = new SecureRandom();
+        //        List<Bytes> treeHashes = new ArrayList<>();
+        //        for (int i = 0; i < 20; i++) { // generate a good amount of sibling hashes
+        //            byte[] hash = new byte[48];
+        //            random.nextBytes(hash);
+        //            treeHashes.add(Bytes.wrap(hash));
+        //        }
+        //        SiblingHashes siblingHashes = new SiblingHashes(treeHashes);
+        //
+        //        // TODO(nickpoorman): Fill in with the real signatures.
+        //        List<BlockSignature> blockSignatures = new ArrayList<>();
+        //        for (int i = 0; i < 21; i++) { // 2/3 +1 nodes
+        //            byte[] signature = new byte[48];
+        //            random.nextBytes(signature);
+        //            blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
+        //        }
 
-        // TODO(nickpoorman): Fill in with the real hashes.
-        SecureRandom random = new SecureRandom();
-        List<Bytes> treeHashes = new ArrayList<>();
-        for (int i = 0; i < 20; i++) { // generate a good amount of sibling hashes
-            byte[] hash = new byte[48];
-            random.nextBytes(hash);
-            treeHashes.add(Bytes.wrap(hash));
-        }
-        SiblingHashes siblingHashes = new SiblingHashes(treeHashes);
-
-        // TODO(nickpoorman): Fill in with the real signatures.
-        List<BlockSignature> blockSignatures = new ArrayList<>();
-        for (int i = 0; i < 21; i++) { // 2/3 +1 nodes
-            byte[] signature = new byte[48];
-            random.nextBytes(signature);
-            blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
-        }
+        final var sigs = buildBlockSignatures();
+        // Verify the signatures?
 
         return BlockStateProof.newBuilder()
                 .siblingHashes(siblingHashes)
-                .endRunningHashes(runningHashState.get())
-                .blockSignatures(blockSignatures)
+                .endRunningHashes(runningHashes)
+                .blockSignatures(sigs)
                 .build();
     }
 

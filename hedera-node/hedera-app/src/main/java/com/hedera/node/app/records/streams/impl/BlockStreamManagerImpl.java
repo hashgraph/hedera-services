@@ -379,7 +379,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
 
         final BlockStateProofProducer stateProofProducer =
-                new BlockStateProofProducer(executor, state, round.getRoundNum());
+                new BlockStateProofProducer(executor, state, round.getRoundNum(), round.getConsensusRoster());
 
         try {
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {

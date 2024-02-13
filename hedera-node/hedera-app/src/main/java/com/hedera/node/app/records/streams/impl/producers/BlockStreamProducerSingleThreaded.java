@@ -127,18 +127,25 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    public void endBlock(
+    public static void endBlock(
+            @NonNull final HashObject lastRunningHash,
+            final long currentBlockNumber,
             @NonNull final BlockStateProofProducer blockStateProofProducer,
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
         try {
+            // TODO(nickpoorman): We must fix this because it is not thread safe. There are two parts to this.
+            //  1. We need to get all the state information that we would need in the single threaded implementation.
+            //  2. We need to then execute an async function with all that state information.
+
+            // Perform the synchronous operations.
+            //            final var lastRunningHash = getRunningHashObject();
+
             // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
             // until it is able to get the state proof.
             BlockStateProof proof = blockStateProofProducer.getBlockStateProof().get();
 
-            // Perform the synchronous operations.
-            final var lastRunningHash = getRunningHashObject();
             writeStateProof(proof);
-            closeWriter(lastRunningHash, this.currentBlockNumber);
+            closeWriter();
 
             // If operations complete successfully, complete blockPersisted with the proof.
             blockPersisted.complete(proof);

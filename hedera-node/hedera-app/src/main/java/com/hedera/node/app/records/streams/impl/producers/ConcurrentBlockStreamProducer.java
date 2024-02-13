@@ -106,16 +106,20 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
             @NonNull final BlockStateProofProducer blockStateProofProducer,
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted) {
         // Ending a block is different in that we have to wait for a block proof. We don't want to hold up the next call
-        // to the producer from running, so we need to fork the execution off the chain of futures. We want to attach
-        // the new future to lastFutureRef so that it's only executed after lastFutureRef has successfully completed,
-        // but it should not replace lastFutureRef. We do not want the next future to be chained off this one.
+        // to the producer from running, so we need to fork the execution off the chain of futures.
 
-        // Capture the current last future without replacing it in lastFutureRef.
-        final CompletableFuture<Void> currentLastFuture = lastFutureRef.get();
+        // Get the value of the running hashes. This operation should be chained as we must ensure we get these values
+        // before following block changes them. So we add a future to collect the bits we
+        // need.
+        final var future = CompletableFuture.runAsync(blockStateProofProducer::snapshotStateHashes, executor);
+        doAsync(future);
+
+        // The next part should fork off lastFutureRef (future in this case) by attaching a new future to it without
+        // replacing it.
 
         // Fork off the execution, ensuring it starts after the current last future completes but doesn't block
         // the next operation from running.
-        currentLastFuture.thenRunAsync(() -> producer.endBlock(blockStateProofProducer, blockPersisted), executor);
+        future.thenRunAsync(() -> producer.endBlock(blockStateProofProducer, blockPersisted), executor);
     }
 
     @Override
