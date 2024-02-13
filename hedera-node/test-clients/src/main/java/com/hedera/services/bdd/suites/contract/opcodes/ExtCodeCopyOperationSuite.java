@@ -30,6 +30,9 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.systemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -37,6 +40,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +60,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence());
+        return List.of(verifiesExistence(), testExtCodeCopyWithSystemAccounts());
     }
 
     @Override
@@ -121,6 +125,40 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
                             Assertions.assertArrayEquals(emptyBytecode.toByteArray(), accountCode);
                             Assertions.assertArrayEquals(getBytecode, contractCode);
                         }));
+    }
+
+    @HapiTest
+    HapiSpec testExtCodeCopyWithSystemAccounts() {
+        final var contract = "ExtCodeOperationsChecker";
+        final var emptyBytecode = ByteString.EMPTY;
+        final var codeCopyOf = "codeCopyOf";
+        final var account = "account";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, codeCopyOf, mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            int finalI = i;
+            opsArray[systemAccounts.size() + i] = withOpContext((spec, opLog) -> {
+                final var accountSolidityAddress = mirrorAddrWith(systemAccounts.get(finalI));
+
+                final var accountCodeCallLocal = contractCallLocal(contract, codeCopyOf, accountSolidityAddress)
+                        .saveResultTo("accountCode");
+                allRunFor(spec, accountCodeCallLocal);
+
+                final var accountCode = spec.registry().getBytes("accountCode");
+
+                Assertions.assertArrayEquals(emptyBytecode.toByteArray(), accountCode);
+            });
+        }
+
+        return defaultHapiSpec("testExtCodeCopyWithSystemAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
+                .when()
+                .then(opsArray);
     }
 
     @Override
