@@ -20,11 +20,14 @@ plugins {
 }
 
 testModuleInfo {
-    requires("com.swirlds.merkle")
-    requires("com.swirlds.base.test.fixtures")
-    requires("com.swirlds.platform.core.test.fixtures")
-    requires("awaitility")
-    requires("org.junit.jupiter.params")
-    requires("org.mockito.junit.jupiter")
-    requiresStatic("com.github.spotbugs.annotations")
+    requires("com.github.spotbugs.annotations")
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.platform.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
 }
