@@ -109,8 +109,6 @@ include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
-include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
-
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 

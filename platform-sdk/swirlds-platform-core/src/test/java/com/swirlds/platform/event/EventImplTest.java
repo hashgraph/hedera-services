@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.event;
 
-import com.swirlds.platform.dispatch.DispatchConfiguration;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Utilities for tests utilizing the {@link com.swirlds.platform.dispatch.DispatchBuilder}.
- */
-public final class DispatchBuilderUtils {
+import com.swirlds.platform.test.fixtures.utils.EqualsVerifier;
+import org.junit.jupiter.api.Test;
 
-    private DispatchBuilderUtils() {}
+public class EventImplTest {
 
-    private static DispatchConfiguration defaultConfiguration = new DispatchConfiguration(false, "", "", "", "");
-
-    /**
-     * Get a default configuration for the dispatch builder.
-     */
-    public static DispatchConfiguration getDefaultDispatchConfiguration() {
-        return defaultConfiguration;
+    @Test
+    void validateEqualsHashCodeCompareTo() {
+        assertTrue(EqualsVerifier.verifyComparable(EqualsVerifier::randomEventImpl));
     }
 }

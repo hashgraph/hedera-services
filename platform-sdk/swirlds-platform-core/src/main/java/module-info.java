@@ -65,7 +65,6 @@ module com.swirlds.platform.core {
 
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
-            com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
@@ -74,10 +73,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.observers to
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.consensus to
-            com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
-            com.swirlds.platform.test,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
@@ -90,14 +87,12 @@ module com.swirlds.platform.core {
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.gossip.chatter.protocol.processing;
     exports com.swirlds.platform.dispatch to
-            com.swirlds.platform.test,
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.types to
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.dispatch.triggers.control to
-            com.swirlds.platform.test,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.triggers.error to
             com.swirlds.platform.core.test.fixtures;

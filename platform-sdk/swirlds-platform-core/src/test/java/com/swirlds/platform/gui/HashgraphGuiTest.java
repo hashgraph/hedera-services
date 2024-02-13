@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.gui;
 
-import com.swirlds.platform.dispatch.DispatchConfiguration;
+import com.swirlds.platform.test.fixtures.gui.TestGuiSource;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-/**
- * Utilities for tests utilizing the {@link com.swirlds.platform.dispatch.DispatchBuilder}.
- */
-public final class DispatchBuilderUtils {
+class HashgraphGuiTest {
+    @Test
+    @Disabled("this test is useful for debugging consensus")
+    void runGuiWithControls() {
+        final long seed = 1;
+        final int numNodes = 4;
+        final int initialEvents = 0;
 
-    private DispatchBuilderUtils() {}
-
-    private static DispatchConfiguration defaultConfiguration = new DispatchConfiguration(false, "", "", "", "");
-
-    /**
-     * Get a default configuration for the dispatch builder.
-     */
-    public static DispatchConfiguration getDefaultDispatchConfiguration() {
-        return defaultConfiguration;
+        final TestGuiSource guiSource = new TestGuiSource(seed, numNodes);
+        guiSource.generateEvents(initialEvents);
+        guiSource.runGui();
     }
 }

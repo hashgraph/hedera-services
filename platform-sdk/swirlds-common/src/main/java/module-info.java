@@ -100,8 +100,6 @@ module com.swirlds.common {
     opens com.swirlds.common.merkle.copy to
             com.fasterxml.jackson.databind;
 
-    exports com.swirlds.common.io.streams.internal to
-            com.swirlds.platform.test;
     exports com.swirlds.common.io.extendable.extensions.internal to
             com.swirlds.common.testing;
 
@@ -138,7 +136,6 @@ module com.swirlds.common {
             com.swirlds.demo.platform,
             com.swirlds.jrs,
             com.swirlds.platform.core,
-            com.swirlds.platform.test,
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
