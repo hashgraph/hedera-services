@@ -48,6 +48,13 @@ public class Application {
     public static final String APPLICATION_PROPERTIES = "application.properties";
     public static final Path EXTERNAL_PROPERTIES = Path.of("./config/application.properties");
 
+    /**
+     * This is needed to avoid the modules validation we have in place.
+     * without this declaration, module config-impl is understood as not needed and the build process would fail
+     * but there is no other mechanism to incorporate that dependency.
+     */
+    public static final FileConverter NONE = null;
+
     public static void main(String[] args) {
         try {
             ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
