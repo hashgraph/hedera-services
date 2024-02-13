@@ -20,18 +20,24 @@ import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.du
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
+import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpModTokenType;
+import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpMonoTokenType;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -54,6 +60,7 @@ import java.util.Optional;
 public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
     private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
+    private static final String SEMANTIC_TOKEN_TYPE = "tokenTypes.txt";
 
     public static void dumpMonoChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
@@ -62,6 +69,7 @@ public class StateDumper {
         dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS), checkpoint);
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
+        dumpMonoTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), state.getChild(TOKENS), checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -80,6 +88,9 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<TokenAssociation>, OnDiskValue<TokenRelation>> tokenRelations =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKEN_RELS_KEY)));
         dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
+        final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokenTypes =
+                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKENS_KEY)));
+        dumpModTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), tokenTypes, checkpoint);
     }
 
     private static String getExtantDumpLoc(
