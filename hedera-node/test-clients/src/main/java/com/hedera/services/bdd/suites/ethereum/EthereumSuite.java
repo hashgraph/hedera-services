@@ -157,27 +157,27 @@ public class EthereumSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        /*return Stream.concat(
-                feePaymentMatrix().stream(),
-                Stream.of(
-                        invalidTxData(),
-                        etx008ContractCreateExecutesWithExpectedRecord(),
-                        etx009CallsToTokenAddresses(),
-                        etx010TransferToCryptoAccountSucceeds(),
-                        etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                        etx014ContractCreateInheritsSignerProperties(),
-                        etx009CallsToTokenAddresses(),
-                        originAndSenderAreEthereumSigner(),
-                        etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
-                        etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
-                        sendingLargerBalanceThanAvailableFailsGracefully(),
-                        directTransferWorksForERC20(),
-                        transferHbarsViaEip2930TxSuccessfully(),
-                        callToTokenAddressViaEip2930TxSuccessfully(),
-                        transferTokensViaEip2930TxSuccessfully(),
-                        accountDeletionResetsTheAliasNonce()))
-        .toList();*/
-        return Stream.of(legacyUnprotectedEtxBeforeEIP155()).toList();
+        return Stream.concat(
+                        feePaymentMatrix().stream(),
+                        Stream.of(
+                                invalidTxData(),
+                                etx008ContractCreateExecutesWithExpectedRecord(),
+                                etx009CallsToTokenAddresses(),
+                                etx010TransferToCryptoAccountSucceeds(),
+                                etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                etx014ContractCreateInheritsSignerProperties(),
+                                etx009CallsToTokenAddresses(),
+                                originAndSenderAreEthereumSigner(),
+                                etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
+                                etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
+                                sendingLargerBalanceThanAvailableFailsGracefully(),
+                                directTransferWorksForERC20(),
+                                transferHbarsViaEip2930TxSuccessfully(),
+                                callToTokenAddressViaEip2930TxSuccessfully(),
+                                transferTokensViaEip2930TxSuccessfully(),
+                                accountDeletionResetsTheAliasNonce(),
+                                legacyUnprotectedEtxBeforeEIP155()))
+                .toList();
     }
 
     @HapiTest
@@ -879,7 +879,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // test unprotected legacy ethereum transactions before EIP155
-    // this tests the behaviour when the `v` is 27 or 28
+    // this tests the behaviour when the `v` field is 27 or 28
     @HapiTest
     HapiSpec legacyUnprotectedEtxBeforeEIP155() {
         final String DEPOSIT = "deposit";
