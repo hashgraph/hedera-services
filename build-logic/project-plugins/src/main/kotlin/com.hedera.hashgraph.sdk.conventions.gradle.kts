@@ -34,6 +34,9 @@ tasks.test {
 
 val timingSensitive =
     tasks.register<Test>("timingSensitive") {
+        group = "build"
+        description = "Runs the timing sensitive tests of test suite."
+
         // Separate target (task) for timingSensitive tests.
         // Tests should eventually be fixed or moved to 'hammer'.
         testClassesDirs = sourceSets.test.get().output.classesDirs
@@ -42,7 +45,7 @@ val timingSensitive =
         usesService(
             gradle.sharedServices.registerIfAbsent(
                 "lock",
-                com.hedera.hashgraph.gradlebuild.service.TaskLockService::class
+                com.hedera.hashgraph.gradlebuild.services.TaskLockService::class
             ) {
                 maxParallelUsages = 1
             }

@@ -15,10 +15,23 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("base")
+    id("com.diffplug.spotless")
 }
 
-testModuleInfo { requires("org.junit.jupiter.api") }
+// Convenience for local development: when running './gradlew' without any parameters just show the
+// tasks from the 'build' group
+defaultTasks("tasks")
+
+tasks.named<TaskReportTask>("tasks") {
+    if (!isDetail) {
+        displayGroup = "build"
+    }
+}
+
+tasks.register("qualityGate") {
+    group = "build"
+    description = "Apply spotless rules and run all quality checks."
+    dependsOn(tasks.spotlessApply)
+    dependsOn(tasks.assemble)
+}

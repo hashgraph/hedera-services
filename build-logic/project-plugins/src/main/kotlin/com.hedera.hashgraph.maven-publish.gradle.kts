@@ -25,22 +25,11 @@ java {
     withSourcesJar()
 }
 
-val javaComponent = components["java"] as AdhocComponentWithVariants
-
-plugins.withId("java-test-fixtures") {
-    // Disable publishing of test fixture if 'java-test-fixtures' plugin is used
-    // https://docs.gradle.org/current/userguide/java_testing.html#ex-disable-publishing-of-test-fixtures-variants
-    javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) {
-        skip()
-    }
-    javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) {
-        skip()
-    }
-}
+tasks.withType<Jar>().configureEach { setGroup(null) }
 
 val maven =
     publishing.publications.create<MavenPublication>("maven") {
-        from(javaComponent)
+        from(components["java"])
         versionMapping {
             // Everything published takes the versions from the resolution result.
             // These are the versions we define in 'hedera-dependency-versions'

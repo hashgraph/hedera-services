@@ -1,4 +1,4 @@
-package com.hedera.hashgraph.gradlebuild.service
+package com.hedera.hashgraph.gradlebuild.services
 
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters

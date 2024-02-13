@@ -18,6 +18,7 @@ import Utils.Companion.versionTxt
 import net.swiftzer.semver.SemVer
 
 plugins {
+    id("com.hedera.hashgraph.lifecycle")
     id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.aggregate-reports")
     id("com.hedera.hashgraph.spotless-conventions")
