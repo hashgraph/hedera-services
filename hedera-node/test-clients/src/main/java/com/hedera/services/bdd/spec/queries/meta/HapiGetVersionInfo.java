@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -106,9 +105,10 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
         }
 
         if (yahcliLogger) {
-            COMMON_MESSAGES.info(String.format(
-                    "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
-                    asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
+            System.out.println(".i. "
+                    + String.format(
+                            "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
+                            asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
         }
     }
 

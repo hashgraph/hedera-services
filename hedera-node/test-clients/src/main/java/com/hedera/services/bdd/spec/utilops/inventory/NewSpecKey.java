@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.base.MoreObjects;
@@ -144,7 +143,7 @@ public class NewSpecKey extends UtilOp {
             final var exportPass = immediateExportPass.get();
             exportWithPass(spec, name, exportLoc, exportPass);
             if (verboseLoggingOn && yahcliLogger) {
-                COMMON_MESSAGES.info("Exported a newly generated key in PEM format to " + exportLoc);
+                System.out.println(".i. Exported a newly generated key in PEM format to " + exportLoc);
             }
         }
         if (verboseLoggingOn && !yahcliLogger) {

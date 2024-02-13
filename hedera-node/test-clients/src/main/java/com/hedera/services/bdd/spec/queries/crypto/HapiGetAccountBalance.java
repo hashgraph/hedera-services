@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -311,7 +310,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 log.info(message);
             }
             if (yahcliLogger) {
-                COMMON_MESSAGES.info(String.format("%20s | %20d |", repr, balance));
+                System.out.println(".i. " + String.format("%20s | %20d |", repr, balance));
             }
         }
     }

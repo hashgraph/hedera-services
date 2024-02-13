@@ -16,13 +16,14 @@
 
 package com.hedera.services.bdd.spec.utilops.inventory;
 
+import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.isValid;
+import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.keyFileAt;
+import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.passFileFor;
+import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.promptForPassphrase;
 import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWithPass;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkSimpleKey;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem.incorporatePem;
-import static com.hedera.services.yahcli.config.ConfigManager.isValid;
-import static com.hedera.services.yahcli.config.ConfigUtils.*;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -116,7 +117,7 @@ public class SpecKeyFromFile extends UtilOp {
             final var exportPass = finalPassphrase.orElse(immediateExportPass.get());
             exportWithPass(spec, name, exportLoc, exportPass);
             if (verboseLoggingOn && yahcliLogger) {
-                COMMON_MESSAGES.info("Exported key from " + flexLoc + " to " + exportLoc);
+                System.out.println(".i. Exported key from " + flexLoc + " to " + exportLoc);
             }
         }
         return false;

@@ -54,7 +54,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -981,7 +980,7 @@ public class UtilVerbs {
             throw new IllegalArgumentException(e);
         }
         var stylized = new String(baos.toByteArray());
-        return ByteString.copyFrom(serde.toRawFile(stylized));
+        return ByteString.copyFrom(serde.toRawFile(stylized, null));
     }
 
     public static HapiSpecOperation createLargeFile(String payer, String fileName, ByteString byteString) {
@@ -1028,10 +1027,10 @@ public class UtilVerbs {
             uploadProgress.initializeFor(appendsRequired);
 
             if (appendsToSkip == 0) {
-                COMMON_MESSAGES.info(
-                        "Beginning upload for " + fileName + " (" + appendsRequired + " appends required)");
+                System.out.println(
+                        ".i. Beginning upload for " + fileName + " (" + appendsRequired + " appends required)");
             } else {
-                COMMON_MESSAGES.info("Continuing upload for "
+                System.out.println(".i. Continuing upload for "
                         + fileName
                         + " with "
                         + appendsToSkip
@@ -1048,9 +1047,9 @@ public class UtilVerbs {
                 final var updateSubOp = fileUpdate(fileName)
                         .fee(ONE_HUNDRED_HBARS)
                         .contents(contents.substring(0, position))
-                        .alertingPre(fid ->
-                                COMMON_MESSAGES.info("Submitting initial update for file" + " 0.0." + fid.getFileNum()))
-                        .alertingPost(code -> COMMON_MESSAGES.info("Finished initial update with " + code))
+                        .alertingPre(fid -> System.out.println(
+                                ".i. Submitting initial update for file" + " 0.0." + fid.getFileNum()))
+                        .alertingPost(code -> System.out.println(".i. Finished initial update with " + code))
                         .noLogging()
                         .payingWith(payer)
                         .signedBy(payer);
@@ -1132,8 +1131,8 @@ public class UtilVerbs {
                     final var fixedAppendsHere = appendsHere.get() + 1;
                     appendSubOp.alertingPre(fid -> {
                         burstStart.set(Instant.now());
-                        COMMON_MESSAGES.info(
-                                "Starting burst " + fixedBurstNo + "/" + numBursts + " (" + fixedAppendsHere + " ops)");
+                        System.out.println(".i. Starting burst " + fixedBurstNo + "/" + numBursts + " ("
+                                + fixedAppendsHere + " ops)");
                     });
                     isFirstAppend = false;
                 }
@@ -1142,7 +1141,7 @@ public class UtilVerbs {
                     appendSubOp.alertingPost(code -> {
                         final var burstSecs = Duration.between(burstStart.get(), Instant.now())
                                 .getSeconds();
-                        COMMON_MESSAGES.info("Completed burst #"
+                        System.out.println(".i. Completed burst #"
                                 + fixedBurstNo
                                 + "/"
                                 + numBursts
