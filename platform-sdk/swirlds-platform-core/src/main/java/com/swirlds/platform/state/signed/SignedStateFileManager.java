@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
@@ -126,7 +125,7 @@ public class SignedStateFileManager {
             final SignedState signedState = reservedSignedState.get();
             if (signedState.hasStateBeenSavedToDisk()) {
                 logger.info(
-                        STATE_TO_DISK.getMarker(),
+                        EXCEPTION.getMarker(),
                         "Not saving signed state for round {} to disk because it has already been saved.",
                         signedState.getRound());
                 return null;
