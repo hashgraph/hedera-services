@@ -1,5 +1,34 @@
 module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.records;
+    exports com.hedera.services.bdd.spec.utilops.inventory;
+    exports com.hedera.services.bdd.suites;
+    exports com.hedera.services.bdd.suites.utils.sysfiles.serdes;
+    exports com.hedera.services.bdd.spec;
+    exports com.hedera.services.bdd.spec.persistence;
+    exports com.hedera.services.bdd.spec.fees;
+    exports com.hedera.services.bdd.spec.infrastructure;
+    exports com.hedera.services.bdd.spec.props;
+    exports com.hedera.services.bdd.spec.queries;
+    exports com.hedera.services.bdd.spec.queries.file;
+    exports com.hedera.services.bdd.spec.queries.meta;
+    exports com.hedera.services.bdd.spec.queries.token;
+    exports com.hedera.services.bdd.spec.queries.crypto;
+    exports com.hedera.services.bdd.spec.queries.schedule;
+    exports com.hedera.services.bdd.spec.queries.consensus;
+    exports com.hedera.services.bdd.spec.queries.contract;
+    exports com.hedera.services.bdd.spec.transactions;
+    exports com.hedera.services.bdd.spec.utilops;
+    exports com.hedera.services.bdd.suites.meta;
+    exports com.hedera.services.bdd.spec.keys.deterministic;
+    exports com.hedera.services.bdd.spec.transactions.file;
+    exports com.hedera.services.bdd.spec.transactions.token;
+    exports com.hedera.services.bdd.spec.keys;
+    exports com.hedera.services.bdd.spec.transactions.crypto;
+    exports com.hedera.services.bdd.spec.transactions.schedule;
+    exports com.hedera.services.bdd.spec.transactions.consensus;
+    exports com.hedera.services.bdd.spec.transactions.contract;
+    exports com.hedera.services.bdd.spec.transactions.system;
+    exports com.hedera.services.bdd.suites.crypto.staking;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.fasterxml.jackson.annotation;
