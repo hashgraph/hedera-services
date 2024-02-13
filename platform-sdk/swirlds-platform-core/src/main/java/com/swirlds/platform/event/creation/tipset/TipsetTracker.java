@@ -78,7 +78,11 @@ public class TipsetTracker {
 
         this.latestGenerations = new Tipset(addressBook);
 
-        tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getBirthRound);
+        } else {
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
+        }
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 

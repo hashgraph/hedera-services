@@ -125,7 +125,8 @@ class TipsetEventCreatorTests {
             @NonNull final Random random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
-            @NonNull final TransactionSupplier transactionSupplier) {
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final AncientMode ancientMode) {
 
         final Map<NodeId, SimulatedNode> eventCreators = new HashMap<>();
         final PlatformContext platformContext =
@@ -136,8 +137,7 @@ class TipsetEventCreatorTests {
             final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            // FUTURE WORK: Expand test to include birth round based ancient threshold.
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, AncientMode.GENERATION_THRESHOLD);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
@@ -291,9 +291,9 @@ class TipsetEventCreatorTests {
      * Nodes take turns creating events in a round-robin fashion.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Round Robin Test")
-    void roundRobinTest(final boolean advancingClock) {
+    void roundRobinTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -305,8 +305,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -341,9 +345,9 @@ class TipsetEventCreatorTests {
      * Each cycle, randomize the order in which nodes are asked to create events.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Random Order Test")
-    void randomOrderTest(final boolean advancingClock) {
+    void randomOrderTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -355,8 +359,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -404,9 +412,9 @@ class TipsetEventCreatorTests {
      * unable to create another event without first receiving an event from another node.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Create Many Events In A Row Test")
-    void createManyEventsInARowTest(final boolean advancingClock) {
+    void createManyEventsInARowTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -418,8 +426,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -468,9 +480,9 @@ class TipsetEventCreatorTests {
      * advance.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Node Test")
-    void zeroWeightNodeTest(final boolean advancingClock) {
+    void zeroWeightNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -492,8 +504,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -555,9 +571,9 @@ class TipsetEventCreatorTests {
      * that they do not get transitive tipset score improvements by using it.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Slow Node Test")
-    void zeroWeightSlowNodeTest(final boolean advancingClock) {
+    void zeroWeightSlowNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -579,8 +595,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
         final List<EventImpl> slowNodeEvents = new ArrayList<>();
@@ -653,9 +673,9 @@ class TipsetEventCreatorTests {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Size One Network Test")
-    void sizeOneNetworkTest(final boolean advancingClock) {
+    void sizeOneNetworkTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 1;
@@ -667,8 +687,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -875,9 +899,10 @@ class TipsetEventCreatorTests {
      * There was once a bug where it was possible to create a self event that was stale at the moment of its creation
      * time. This test verifies that this is no longer possible.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("No Stale Events At Creation Time Test")
-    void noStaleEventsAtCreationTimeTest() {
+    void noStaleEventsAtCreationTimeTest(final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 4;
@@ -894,9 +919,11 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
-        // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(
-                new NonAncientEventWindow(1, 100, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
+                1,
+                100,
+                1 /* ignored in this context */,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
@@ -924,8 +951,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -945,9 +976,9 @@ class TipsetEventCreatorTests {
 
                     final long ancientThreshold;
                     if (useBirthRoundForAncient) {
-                        ancientThreshold = Math.max(1, eventIndex - 26);
+                        ancientThreshold = Math.max(EventConstants.MINIMUM_ROUND_CREATED, eventIndex - 26);
                     } else {
-                        ancientThreshold = Math.max(0, eventIndex - 26);
+                        ancientThreshold = Math.max(EventConstants.FIRST_GENERATION, eventIndex - 26);
                     }
 
                     // Set non-ancientEventWindow after creating genesis event from each node.
