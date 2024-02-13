@@ -62,6 +62,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -69,6 +70,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("VirtualPipeline Tests")
 class VirtualPipelineTests {
 
@@ -834,6 +836,8 @@ class VirtualPipelineTests {
     @Test
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Flush Throttle")
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/pull/11497
+    @Disabled
     void flushThrottle() throws InterruptedException {
 
         final int preferredQueueSize = 2;

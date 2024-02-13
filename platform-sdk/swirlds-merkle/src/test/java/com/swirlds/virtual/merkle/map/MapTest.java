@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.map;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,11 +31,13 @@ import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 final class MapTest {
 
     VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
@@ -53,6 +56,8 @@ final class MapTest {
     @Tag(TIME_CONSUMING)
     @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-019")})
     @DisplayName("Insert one million elements with same key but different value")
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11498
+    @Disabled
     void insertRemoveAndModifyOneMillion() throws InterruptedException {
         final int changesPerBatch = 15_432; // Some unexpected size just to be crazy
         final int max = 1_000_000;

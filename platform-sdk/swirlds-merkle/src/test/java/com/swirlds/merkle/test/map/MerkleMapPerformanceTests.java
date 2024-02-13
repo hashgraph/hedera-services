@@ -16,14 +16,18 @@
 
 package com.swirlds.merkle.test.map;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+
 import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.Arguments;
 
 @DisplayName("MerkleMap Performance Tests")
+@Tag(TIMING_SENSITIVE)
 public class MerkleMapPerformanceTests extends MerkleMapTests {
 
     @Override
