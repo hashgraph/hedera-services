@@ -54,6 +54,9 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
             // Always empty before 0.40
             seeded.setContractNonces(Collections.emptyList());
         }
+        if (version < EvmFnResult.RELEASE_0470_VERSION) {
+            seeded.setSignerNonce(null);
+        }
         return seeded;
     }
 
