@@ -245,10 +245,16 @@ public class ConversionUtils {
      * @return the chain id as a byte array
      */
     public static byte[] asChainIdBytes(final int chainId) {
-        final var bytes = new byte[2];
-        bytes[0] = (byte) (chainId >> 8);
-        bytes[1] = (byte) chainId;
-        return bytes;
+        // if the chain id is 0, this means we are processing (unprotected) ethereum transaction before EIP155
+        // without this handling, the returned bytes are [0,0] and the matching of chain ids will fail
+        if (chainId == 0) {
+            return new byte[0];
+        } else {
+            final var bytes = new byte[2];
+            bytes[0] = (byte) (chainId >> 8);
+            bytes[1] = (byte) chainId;
+            return bytes;
+        }
     }
 
     /**
