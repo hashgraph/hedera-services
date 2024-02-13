@@ -80,6 +80,7 @@ class HtsSystemContractTest {
     private MockedStatic<FrameUtils> frameUtils;
 
     private HtsSystemContract subject;
+    private final Bytes validInput = Bytes.fromHexString("91548228");
 
     @BeforeEach
     void setUp() {
@@ -102,15 +103,14 @@ class HtsSystemContractTest {
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
-        assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
+        assertSame(pricedResult.fullResult(), subject.computeFully(validInput, frame));
     }
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
         given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
-
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
-        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
     }
 
@@ -120,6 +120,13 @@ class HtsSystemContractTest {
         given(call.execute(frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
+        final var result = subject.computeFully(validInput, frame);
+        assertSamePrecompileResult(expected, result);
+    }
+
+    @Test
+    void testComputeFullyWithEmptyBytes() {
+        final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
         assertSamePrecompileResult(expected, result);
     }
@@ -129,7 +136,7 @@ class HtsSystemContractTest {
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         lenient().when(updater.enhancement()).thenReturn(enhancement);
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
-        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willReturn(attempt);
+        given(attemptFactory.createCallAttemptFrom(validInput, frame)).willReturn(attempt);
         given(attempt.asExecutableCall()).willReturn(call);
     }
 }

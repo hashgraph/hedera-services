@@ -288,6 +288,11 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
+        // user transaction
+        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
+        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
+
         // Setup record builder list
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
@@ -299,7 +304,8 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext =
+                new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
         // It's awful that we have to check this every time a transaction is handled, especially since this mostly
         // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
@@ -356,13 +362,8 @@ public class HandleWorkflow {
 
             // Log start of user transaction to transaction state log
             logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(
-                    preHandleResult.payer(),
-                    preHandleResult.payerKey(),
-                    preHandleResult.status(),
-                    preHandleResult.responseCode());
-            logStartUserTransactionPreHandleResultP3(
-                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.getVerificationResults());
+            logStartUserTransactionPreHandleResultP2(preHandleResult);
+            logStartUserTransactionPreHandleResultP3(preHandleResult);
 
             // Initialize record builder list
             recordBuilder
@@ -532,18 +533,6 @@ public class HandleWorkflow {
                     }
                     recordBuilder.status(SUCCESS);
 
-                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
-                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
-                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-                        if (contractsConfig.throttleThrottleByGas()) {
-                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-                            final var gasLimitForContractTx =
-                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
-                            final var excessAmount = gasLimitForContractTx - gasUsed;
-                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-                        }
-                    }
-
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
@@ -579,6 +568,21 @@ public class HandleWorkflow {
                             e,
                             chargeException);
                 }
+            }
+        }
+
+        // After a contract operation was handled (i.e., not throttled), update the
+        // gas throttle by leaking any unused gas
+        if (isGasThrottled(transactionInfo.functionality())
+                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                && recordBuilder.hasContractResult()) {
+            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+            if (contractsConfig.throttleThrottleByGas()) {
+                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                final var gasLimitForContractTx =
+                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                final var excessAmount = gasLimitForContractTx - gasUsed;
+                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
             }
         }
 

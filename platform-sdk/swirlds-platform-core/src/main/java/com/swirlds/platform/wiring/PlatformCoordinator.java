@@ -115,21 +115,25 @@ public class PlatformCoordinator {
     }
 
     /**
-     * Safely clears the intake pipeline
-     * <p>
-     * Future work: this method should be expanded to coordinate the clearing of the entire system
+     * Safely clears the system in preparation for reconnect
      */
     public void clear() {
-        // Phase 1: pause
-        // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
-        // pipeline.
-        linkedEventIntakeWiring.pauseInput().inject(true);
-        eventCreationManagerWiring.pauseInput().inject(true);
+        // Phase 1: squelch
+        // Break cycles in the system. Flush squelched components just in case there is a task being executed when
+        // squelch is activated.
+        linkedEventIntakeWiring.startSquelchingRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
+        eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
 
+        // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
+        // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
+        // be handled.
+        consensusRoundHandlerWiring.startSquelchingRunnable().run();
+        consensusRoundHandlerWiring.flushRunnable().run();
+
         // Phase 2: flush
-        // Flush everything remaining in the intake pipeline out into the void.
+        // All cycles have been broken via squelching, so now it's time to flush everything out of the system
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
@@ -145,9 +149,10 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
         stateSignatureCollectorWiring.flush();
 
-        // Phase 4: unpause
-        // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.
-        linkedEventIntakeWiring.pauseInput().inject(false);
-        eventCreationManagerWiring.pauseInput().inject(false);
+        // Phase 4: stop squelching
+        // Once everything has been flushed out of the system, it's safe to stop squelching.
+        linkedEventIntakeWiring.stopSquelchingRunnable().run();
+        eventCreationManagerWiring.stopSquelching();
+        consensusRoundHandlerWiring.stopSquelchingRunnable().run();
     }
 }

@@ -17,8 +17,8 @@
 package com.swirlds.platform.event.creation;
 
 import static com.swirlds.platform.event.creation.EventCreationStatus.ATTEMPTING_CREATION;
+import static com.swirlds.platform.event.creation.EventCreationStatus.IDLE;
 import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBLE_PARENTS;
-import static com.swirlds.platform.event.creation.EventCreationStatus.PAUSED;
 import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 
 import com.swirlds.base.time.Time;
@@ -34,8 +34,8 @@ import java.util.Objects;
 
 /**
  * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
- * based on external rules or based on paused status. Forwards created events to a consumer, and retries forwarding if
- * the consumer is not immediately able to accept the event.
+ * based on external rules. Forwards created events to a consumer, and retries forwarding if the consumer is not
+ * immediately able to accept the event.
  */
 public class EventCreationManager {
 
@@ -53,11 +53,6 @@ public class EventCreationManager {
      * Tracks the current phase of event creation.
      */
     private final PhaseTimer<EventCreationStatus> phase;
-
-    /**
-     * Whether or not event creation is paused.
-     */
-    private boolean paused = false;
 
     /**
      * Constructor.
@@ -78,7 +73,7 @@ public class EventCreationManager {
 
         phase = new PhaseTimerBuilder<>(platformContext, time, "platform", EventCreationStatus.class)
                 .enableFractionalMetrics()
-                .setInitialPhase(PAUSED)
+                .setInitialPhase(IDLE)
                 .setMetricsNamePrefix("eventCreation")
                 .build();
     }
@@ -90,11 +85,6 @@ public class EventCreationManager {
      */
     @Nullable
     public GossipEvent maybeCreateEvent() {
-        if (paused) {
-            phase.activatePhase(PAUSED);
-            return null;
-        }
-
         if (!eventCreationRules.isEventCreationPermitted()) {
             phase.activatePhase(eventCreationRules.getEventCreationStatus());
             return null;
@@ -114,15 +104,6 @@ public class EventCreationManager {
         }
 
         return newEvent;
-    }
-
-    /**
-     * Pause or resume event creation.
-     *
-     * @param paused true to pause, false to resume
-     */
-    public void setPauseStatus(final boolean paused) {
-        this.paused = paused;
     }
 
     /**
