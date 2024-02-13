@@ -66,10 +66,6 @@ public class AccessoryUtils {
 
     public static void setLogLevels(Level logLevel, @NonNull final List<Class<?>> suites) {
         final var statusLogger = StatusLogger.getLogger();
-        statusLogger.getListeners().forEach(listener -> {
-            System.out.println("Removing listener: " + listener.getClass().getName());
-            statusLogger.removeListener(listener);
-        });
         statusLogger.registerListener(new StatusConsoleListener(logLevel));
         suites.forEach(cls -> setLogLevel(cls, logLevel));
     }
