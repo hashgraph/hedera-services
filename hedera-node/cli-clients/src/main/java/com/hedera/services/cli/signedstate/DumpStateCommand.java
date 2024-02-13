@@ -355,6 +355,27 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
+    @Command(name = "scheduled-transactions", description = "Dump scheduled transactions")
+    void scheduledTransactions(
+            @Option(
+                            names = {"--scheduled-transaction"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for scheduled transactions dump")
+                    @NonNull
+                    final Path scheduledTxsPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(scheduledTxsPath);
+        init();
+        System.out.println("=== scheduled transactions ===");
+        DumpScheduledTransactionsSubcommand.doit(
+                parent.signedState, scheduledTxsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
     /** Setup to run a dump subcommand: If _first_ subcommand being run then open signed state file */
     void init() {
         if (thisSubcommandsNumber == null) {

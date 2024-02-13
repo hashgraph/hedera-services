@@ -499,6 +499,10 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         return calculatedExpirationTime;
     }
 
+    public Set<ByteString> notary() {
+        return notary;
+    }
+
     public void setCalculatedExpirationTime(final RichInstant calculatedExpirationTime) {
         throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
         this.calculatedExpirationTime = calculatedExpirationTime;

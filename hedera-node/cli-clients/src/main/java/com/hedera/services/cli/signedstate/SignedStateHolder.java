@@ -19,6 +19,7 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -303,6 +304,14 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var rawContractStorage = servicesState.contractStorage();
         assertSignedStateComponentExists(rawContractStorage, "contractStorage");
         return rawContractStorage;
+    }
+
+    /** Get all scheduled transactions */
+    @NonNull
+    public MerkleScheduledTransactions getScheduledTransactions() {
+        final var scheduledTransactions = servicesState.scheduleTxs();
+        assertSignedStateComponentExists(scheduledTransactions, "scheduledTransactions");
+        return scheduledTransactions;
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
