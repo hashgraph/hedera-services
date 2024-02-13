@@ -288,6 +288,16 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         }
     }
 
+    /*
+     * Resets the usage for all snapshots.
+     */
+    @Override
+    public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        for (int i = 0, n = activeThrottles.size(); i < n; i++) {
+            activeThrottles.get(i).resetUsageTo(snapshots.get(i));
+        }
+    }
+
     private boolean shouldThrottleTxn(
             final boolean isScheduled,
             @NonNull final TransactionInfo txnInfo,
@@ -487,11 +497,14 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     public static boolean throttleExempt(
-            @NonNull final AccountID accountID, @NonNull final Configuration configuration) {
+            @Nullable final AccountID accountID, @NonNull final Configuration configuration) {
         final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        final long accountNum = accountID.accountNum().longValue();
-        return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
+        if (accountID != null) {
+            final long accountNum = accountID.accountNum().longValue();
+            return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
+        }
+        return false;
     }
 
     private void reclaimLastAllowedUse() {

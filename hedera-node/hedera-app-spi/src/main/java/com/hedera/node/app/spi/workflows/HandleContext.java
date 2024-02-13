@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -43,6 +44,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Predicate;
 
 /**
@@ -669,6 +671,26 @@ public interface HandleContext {
     void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
 
     /**
+     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
+     * given function at the given time. (The time matters because we want to consider how much
+     * will have leaked between now and that time.)
+     *
+     * @param n the number of the given function
+     * @param function the function
+     * @return true if the system should throttle the given number of the given function
+     * at the instant for which throttling should be calculated
+     */
+    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
+
+    /**
+     * For each following child transaction consumes the capacity
+     * required for that child transaction in the consensus throttle buckets.
+     *
+     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
+     */
+    boolean hasThrottleCapacityForChildTransactions();
+
+    /**
      * Create a checkpoint for the current childRecords.
      *
      * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
@@ -676,6 +698,19 @@ public interface HandleContext {
      */
     @NonNull
     RecordListCheckPoint createRecordListCheckPoint();
+
+    /**
+     * Returns a list of snapshots of the current usage of all active throttles.
+     * @return the active snapshots
+     */
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+
+    /**
+     * Resets the current usage of all active throttles to the given snapshots.
+     *
+     * @param snapshots the snapshots to reset to
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 
     /**
      * Returns whether the current transaction being processed was submitted by this node.

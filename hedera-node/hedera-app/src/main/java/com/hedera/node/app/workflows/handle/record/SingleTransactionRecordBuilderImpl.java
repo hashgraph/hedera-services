@@ -439,6 +439,15 @@ public class SingleTransactionRecordBuilderImpl
     // fields needed for TransactionRecord
 
     /**
+     * Gets the transaction object.
+     *
+     * @return the transaction object
+     */
+    @NonNull
+    public Transaction transaction() {
+        return transaction;
+    }
+    /**
      * Gets the consensus instant.
      *
      * @return the consensus instant

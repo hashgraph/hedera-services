@@ -17,10 +17,13 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Interface which purpose is to do the work of tracking network utilization (and its impact on
@@ -78,4 +81,43 @@ public interface NetworkUtilizationManager {
      * @param state the state of the node
      */
     void saveTo(@NonNull final HederaState state);
+
+    /*
+     * Updates the throttle requirements for the given transaction and returns whether the transaction
+     * should be throttled for the current time(Instant.now).
+     *
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param state the current state of the node
+     * @param consensusTime the consensus time
+     * @return whether the transaction should be throttled
+     */
+    boolean shouldThrottle(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final HederaState state,
+            @NonNull final Instant consensusTime);
+
+    /**
+     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
+     * given function at the given time. (The time matters because we want to consider how much
+     * will have leaked between now and that time.)
+     *
+     * @param n the number of the given function
+     * @param function the function
+     * @return true if the system should throttle the given number of the given function
+     * at the instant for which throttling should be calculated
+     */
+    boolean shouldThrottleNOfUnscaled(int n, @NonNull HederaFunctionality function, @NonNull Instant consensusTime);
+
+    /**
+     * Returns a list of snapshots of the current usage of all active throttles.
+     * @return the active snapshots
+     */
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+
+    /**
+     * Resets the current usage of all active throttles to the given snapshots.
+     *
+     * @param snapshots the snapshots to reset to
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 }
