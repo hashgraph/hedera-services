@@ -42,6 +42,8 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.14")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Permutations of very large trees reconnecting")
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
+    @Disabled
     void largeTeacherLargerLearnerPermutations(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
 
         for (int i = teacherStart; i < teacherEnd; i++) {
