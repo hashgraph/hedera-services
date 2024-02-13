@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.components;
+package com.swirlds.platform.components;
 
-import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
+import static com.swirlds.platform.components.TransactionHandlingTestUtils.newDummyEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 

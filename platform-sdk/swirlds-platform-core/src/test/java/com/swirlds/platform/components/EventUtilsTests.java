@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.components;
+package com.swirlds.platform.components;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.event.EventUtils.calculateNewEventCreationTime;
@@ -25,11 +25,11 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.platform.event.EventMocks;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.test.event.EventMocks;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

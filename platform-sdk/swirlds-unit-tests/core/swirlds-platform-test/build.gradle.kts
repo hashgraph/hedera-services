@@ -20,6 +20,8 @@ plugins {
 }
 
 testModuleInfo {
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("org.junit.jupiter.params")
     requires("com.github.spotbugs.annotations")
     requires("com.swirlds.base")
     requires("com.swirlds.common")
