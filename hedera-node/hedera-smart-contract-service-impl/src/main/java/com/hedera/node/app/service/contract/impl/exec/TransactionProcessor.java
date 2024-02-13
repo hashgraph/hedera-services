@@ -40,7 +40,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
@@ -113,13 +112,12 @@ public class TransactionProcessor {
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
-            @NonNull final Configuration config,
-            @Nullable final HydratedEthTxData hydratedEthTxData) {
+            @NonNull final Configuration config) {
 
         final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
         try {
             return processTransactionWithParties(
-                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties, hydratedEthTxData);
+                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
         } catch (HandleException e) {
             throw new AbortException(e.getStatus(), parties.senderId());
         }
@@ -132,8 +130,7 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config,
-            @NonNull final InvolvedParties parties,
-            @Nullable final HydratedEthTxData hydratedEthTxData) {
+            @NonNull final InvolvedParties parties) {
         final var gasCharges =
                 gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         final var initialFrame = frameBuilder.buildInitialFrameWith(
@@ -147,14 +144,13 @@ public class TransactionProcessor {
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
-        final var result = frameRunner.runToCompletion(
+        var result = frameRunner.runToCompletion(
                 transaction.gasLimit(),
-                parties.sender(),
+                parties.sender().hederaId(),
                 initialFrame,
                 tracer,
                 messageCall,
-                contractCreation,
-                hydratedEthTxData);
+                contractCreation);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -219,8 +215,7 @@ public class TransactionProcessor {
         // (FUTURE) Once fee charging is more consumable in the HandleContext, we will also want
         // to re-charge top-level HAPI fees in this edge case (not only gas); not urgent though
         updater.commit();
-        return resourceExhaustionFrom(
-                parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason, result.signerNonce());
+        return resourceExhaustionFrom(parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason);
     }
 
     /**

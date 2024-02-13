@@ -33,13 +33,12 @@ import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -76,15 +75,14 @@ public class FrameRunner {
      */
     public HederaEvmTransactionResult runToCompletion(
             final long gasLimit,
-            @NonNull final HederaEvmAccount sender,
+            @NonNull final AccountID senderId,
             @NonNull final MessageFrame frame,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
-            @NonNull final ContractCreationProcessor contractCreation,
-            @Nullable final HydratedEthTxData hydratedEthTxData) {
+            @NonNull final ContractCreationProcessor contractCreation) {
         requireNonNull(frame);
         requireNonNull(tracer);
-        requireNonNull(sender);
+        requireNonNull(senderId);
         requireNonNull(messageCall);
         requireNonNull(contractCreation);
 
@@ -103,23 +101,11 @@ public class FrameRunner {
 
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
-        Long signerNonce = null;
-        if (hydratedEthTxData != null && sender != null) {
-            signerNonce = sender.getNonce();
-        }
-
         if (frame.getState() == COMPLETED_SUCCESS) {
             return successFrom(
-                    gasUsed,
-                    sender.hederaId(),
-                    recipientMetadata.hederaId(),
-                    asEvmContractId(recipientAddress),
-                    frame,
-                    tracer,
-                    signerNonce);
+                    gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame, tracer);
         } else {
-            return failureFrom(
-                    gasUsed, sender.hederaId(), frame, recipientMetadata.postFailureHederaId(), tracer, signerNonce);
+            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId(), tracer);
         }
     }
 

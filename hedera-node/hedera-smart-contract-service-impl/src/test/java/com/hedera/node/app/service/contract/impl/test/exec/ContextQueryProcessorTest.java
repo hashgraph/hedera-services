@@ -88,13 +88,7 @@ class ContextQueryProcessorTest {
         given(context.query()).willReturn(Query.DEFAULT);
         given(hevmStaticTransactionFactory.fromHapiQuery(Query.DEFAULT)).willReturn(HEVM_CREATION);
         given(processor.processTransaction(
-                        HEVM_CREATION,
-                        proxyWorldUpdater,
-                        feesOnlyUpdater,
-                        hederaEvmContext,
-                        tracer,
-                        CONFIGURATION,
-                        null))
+                        HEVM_CREATION, proxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
         final var protoResult = SUCCESS_RESULT.asQueryResult();
         final var expectedResult = new CallOutcome(
