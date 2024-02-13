@@ -48,9 +48,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateHasher signedStateHasher;
 
     /**
-     * A logger handler for hash stream data
+     * A predicate that tracks the status of the hash logger offer
      */
-    private final Predicate<ReservedSignedState> hashLogger;
+    private final Predicate<ReservedSignedState> offerToHashLogger;
 
     /**
      * Used to track signed state leaks, if enabled
@@ -68,7 +68,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param stateSigner        signs a state
      * @param sigCollector       collects signatures for a state
      * @param signedStateMetrics metrics about signed states
-     * @param hashLogger         a logger for hash stream data
+     * @param offerToHashLogger tracks status of the hash logger offer
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -77,7 +77,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final Consumer<ReservedSignedState> stateSigner,
             @NonNull final Consumer<ReservedSignedState> sigCollector,
             @NonNull final SignedStateMetrics signedStateMetrics,
-            @NonNull final Predicate<ReservedSignedState> hashLogger) {
+            @NonNull final Predicate<ReservedSignedState> offerToHashLogger) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -89,16 +89,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
         this.stateSigner = Objects.requireNonNull(stateSigner);
         this.sigCollector = Objects.requireNonNull(sigCollector);
-        this.hashLogger = Objects.requireNonNull(hashLogger);
+        this.offerToHashLogger = Objects.requireNonNull(offerToHashLogger);
 
         signedStateHasher = new SignedStateHasher(signedStateMetrics, fatalErrorConsumer);
     }
 
-    private void logHashes(final SignedState signedState) {
+    private void logHashes(@NonNull final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
-            ReservedSignedState rss = signedState.reserve("logging hash state");
-            boolean offered = hashLogger.test(rss);
-            if (!offered) {
+            final ReservedSignedState rss = signedState.reserve("logging hash state");
+            final boolean offerAccepted = offerToHashLogger.test(rss);
+            if (!offerAccepted) {
                 rss.close();
             }
         }

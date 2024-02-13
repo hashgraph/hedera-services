@@ -26,9 +26,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link com.swirlds.platform.util.HashLogger}.
  *
- * @param eventInput the input wire for events to be hashed
+ * @param hashLoggerInputWire the input wire for hash logger's reserved signed state to be logged
  */
-public record HashLoggerWiring(@NonNull InputWire<ReservedSignedState> eventInput) {
+public record HashLoggerWiring(@NonNull InputWire<ReservedSignedState> hashLoggerInputWire) {
     /**
      * Create a new instance of this wiring.
      *
@@ -45,6 +45,6 @@ public record HashLoggerWiring(@NonNull InputWire<ReservedSignedState> eventInpu
      * @param hashLogger the hash logger to bind
      */
     public void bind(@NonNull final HashLogger hashLogger) {
-        ((BindableInputWire<ReservedSignedState, Void>) eventInput).bind(hashLogger::logHashes);
+        ((BindableInputWire<ReservedSignedState, Void>) hashLoggerInputWire).bind(hashLogger::logHashes);
     }
 }

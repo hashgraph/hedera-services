@@ -342,6 +342,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
+     * @param hashLogger              the hash logger to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -495,7 +496,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public InputWire<ReservedSignedState> getHashLoggerInput() {
-        return hashLoggerWiring.eventInput();
+        return hashLoggerWiring.hashLoggerInputWire();
     }
 
     /**

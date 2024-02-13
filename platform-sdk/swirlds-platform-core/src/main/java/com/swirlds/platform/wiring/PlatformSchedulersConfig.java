@@ -85,6 +85,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
  *                                                          buffer
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
+ * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
+ *                                                          task scheduler
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  */
 @ConfigData("platformSchedulers")
