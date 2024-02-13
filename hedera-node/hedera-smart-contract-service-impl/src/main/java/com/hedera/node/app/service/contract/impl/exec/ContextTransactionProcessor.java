@@ -116,7 +116,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
             if (hydratedEthTxData != null) {
-                final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
+                final var sender = requireNonNull(rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId()));
                 result = result.withSignerNonce(sender.getNonce());
             }
 
