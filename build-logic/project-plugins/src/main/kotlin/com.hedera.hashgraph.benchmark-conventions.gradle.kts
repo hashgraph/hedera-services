@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import me.champeau.jmh.JMHTask
+
 plugins { id("me.champeau.jmh") }
 
 jmh {
@@ -22,6 +24,12 @@ jmh {
 }
 
 tasks.jmh { outputs.upToDateWhen { false } }
+
+tasks.withType<JMHTask>().configureEach {
+    group = "jmh"
+    jarArchive = tasks.jmhJar.flatMap { it.archiveFile }
+    jvm = javaToolchains.launcherFor(java.toolchain).map { it.executablePath }.get().asFile.path
+}
 
 tasks.jmhJar { manifest { attributes(mapOf("Multi-Release" to true)) } }
 
