@@ -62,6 +62,10 @@ public class TokenUpdateValidator {
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
+        // validate metadata
+        if (op.hasMetadata()) {
+            validator.validateTokenMetadata(op.metadata(), tokensConfig);
+        }
         // validate token symbol, if being changed
         if (op.symbol() != null && !op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);

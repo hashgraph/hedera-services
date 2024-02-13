@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 /**
  *
  */
+@Tag(TIMING_SENSITIVE)
 class ConcurrentArrayTest {
 
     private final ArrayList<Runnable> cleanupTasks = new ArrayList<>();

@@ -583,7 +583,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T metaData(String text) {
-        memo = Optional.of(text);
+        metadata = Optional.of(text);
         return self();
     }
 
