@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 
 public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
@@ -40,19 +42,19 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
-        return grpcBytesFromPojo(pojoFrom(styledFile));
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
+        return grpcBytesFromPojo(pojoFrom(styledFile), interpolatedSrcDir);
     }
 
     @Override
-    public byte[] toValidatedRawFile(String styledFile) {
+    public byte[] toValidatedRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         var pojo = pojoFrom(styledFile);
         for (var entry : pojo.getEntries()) {
             for (BookEntryPojo.EndpointPojo endpointPojo : entry.getEndpoints()) {
                 validateIPandPort(endpointPojo.getIpAddressV4(), endpointPojo.getPort());
             }
         }
-        return grpcBytesFromPojo(pojo);
+        return grpcBytesFromPojo(pojo, interpolatedSrcDir);
     }
 
     private void validateIPandPort(String IpV4Address, Integer portNum) {
@@ -79,10 +81,11 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
         }
     }
 
-    private byte[] grpcBytesFromPojo(AddressBookPojo pojoBook) {
+    private byte[] grpcBytesFromPojo(
+            @NonNull final AddressBookPojo pojoBook, @Nullable final String interpolatedSrcDir) {
         NodeAddressBook.Builder addressBookForClients = NodeAddressBook.newBuilder();
         pojoBook.getEntries().stream()
-                .flatMap(BookEntryPojo::toGrpcStream)
+                .flatMap(pojo -> pojo.toGrpcStream(interpolatedSrcDir))
                 .forEach(addressBookForClients::addNodeAddress);
         return addressBookForClients.build().toByteArray();
     }
