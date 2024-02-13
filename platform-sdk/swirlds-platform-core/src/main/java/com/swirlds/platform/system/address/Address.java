@@ -24,10 +24,13 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.security.PublicKey;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -56,11 +59,20 @@ public class Address implements SelfSerializable {
          * added support for dns, removed unused IPv6
          */
         public static final int ADD_DNS_SUPPORT = 5;
+        /**
+         * added support for {@link X509Certificate}
+         *
+         * @since 0.48.0
+         */
+        public static final int X509_CERT_SUPPORT = 6;
     }
 
     private static final byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
     private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
+
+    /** The serialization version of this class, defaulting to most recent version.  Deserialization will override. */
+    private int serialization = ClassVersion.X509_CERT_SUPPORT;
 
     /** ID of this member. All agree on numbering for old members, and if config.txt used */
     private NodeId id;
@@ -79,11 +91,18 @@ public class Address implements SelfSerializable {
     /** port used outside the NATing firewall */
     private int portExternal;
     /** public key of the member used for signing */
-    private SerializablePublicKey sigPublicKey;
+    // deprecated for removal in version 0.49.0 or later
+    private SerializablePublicKey sigPublicKey = null;
     /** public key of the member used for encrypting */
+    // deprecated for removal in version 0.49.0 or later
     private SerializablePublicKey encPublicKey;
     /** public key of the member used for TLS key agreement */
-    private SerializablePublicKey agreePublicKey;
+    // deprecated for removal in version 0.49.0 or later
+    private SerializablePublicKey agreePublicKey = null;
+    /** signing x509 certificate of the member, contains the public key used for signing */
+    private SerializableX509Certificate sigCert = null;
+    /** agreement x509 certificate of the member, used for establishing TLS connections. */
+    private SerializableX509Certificate agreeCert = null;
     /**
      * a String that can be part of any address to supply additional information about that node
      */
@@ -93,19 +112,7 @@ public class Address implements SelfSerializable {
      * Default constructor for Address.
      */
     public Address() {
-        this(
-                NodeId.FIRST_NODE_ID,
-                "",
-                "",
-                1,
-                null,
-                -1,
-                null,
-                -1,
-                (SerializablePublicKey) null,
-                (SerializablePublicKey) null,
-                (SerializablePublicKey) null,
-                "");
+        this(NodeId.FIRST_NODE_ID, "", "", 1, null, -1, null, -1, null, null, "");
     }
 
     public Address(
@@ -129,7 +136,6 @@ public class Address implements SelfSerializable {
                 portExternal,
                 null,
                 null,
-                (SerializablePublicKey) null,
                 memo);
     }
 
@@ -140,18 +146,17 @@ public class Address implements SelfSerializable {
     /**
      * constructor for a mutable address for one member.
      *
-     * @param id                  the ID for that member
-     * @param nickname            the name given to that member by the member creating this address
-     * @param selfName            the name given to that member by themself
-     * @param weight              the amount of weight (0 if they should have no influence on the consensus)
-     * @param hostnameInternal    the IP or DNS name on the local network
-     * @param portInternal        port for the internal address
-     * @param hostnameExternal    the IP or DNS name outside the NATing firewall
-     * @param portExternal        port for the external address
-     * @param sigPublicKey        public key used for signing
-     * @param encPublicKey        public key used for encryption
-     * @param agreePublicKey      public key used for key agreement in TLS
-     * @param memo                additional information about the node, can be null
+     * @param id               the ID for that member
+     * @param nickname         the name given to that member by the member creating this address
+     * @param selfName         the name given to that member by themself
+     * @param weight           the amount of weight (0 if they should have no influence on the consensus)
+     * @param hostnameInternal the IP or DNS name on the local network
+     * @param portInternal     port for the internal address
+     * @param hostnameExternal the IP or DNS name outside the NATing firewall
+     * @param portExternal     port for the external address
+     * @param sigCert          certificate used for signing
+     * @param agreeCert        certificate used for agreement in TLS
+     * @param memo             additional information about the node, can be null
      */
     public Address(
             @NonNull final NodeId id,
@@ -162,9 +167,8 @@ public class Address implements SelfSerializable {
             final int portInternal,
             @Nullable final String hostnameExternal,
             final int portExternal,
-            @Nullable final SerializablePublicKey sigPublicKey,
-            @Nullable final SerializablePublicKey encPublicKey,
-            @Nullable final SerializablePublicKey agreePublicKey,
+            @Nullable final SerializableX509Certificate sigCert,
+            @Nullable final SerializableX509Certificate agreeCert,
             @NonNull final String memo) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.nickname = Objects.requireNonNull(nickname, "nickname must not be null");
@@ -174,9 +178,8 @@ public class Address implements SelfSerializable {
         this.portExternal = portExternal;
         this.hostnameInternal = hostnameInternal;
         this.hostnameExternal = hostnameExternal;
-        this.sigPublicKey = sigPublicKey;
-        this.encPublicKey = encPublicKey;
-        this.agreePublicKey = agreePublicKey;
+        this.sigCert = sigCert == null ? null : checkCertificateEncoding(sigCert);
+        this.agreeCert = agreeCert == null ? null : checkCertificateEncoding(agreeCert);
         this.memo = Objects.requireNonNull(memo, "memo must not be null");
     }
 
@@ -185,7 +188,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.ADD_DNS_SUPPORT;
     }
 
     /**
@@ -193,7 +196,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADD_DNS_SUPPORT;
+        return serialization;
     }
 
     /**
@@ -332,17 +335,10 @@ public class Address implements SelfSerializable {
      */
     @Nullable
     public PublicKey getSigPublicKey() {
-        return sigPublicKey.getPublicKey();
-    }
-
-    /**
-     * Get public key of the member used for encrypting.
-     *
-     * @return This member's PublicKey for encrypting.
-     */
-    @Nullable
-    public PublicKey getEncPublicKey() {
-        return encPublicKey.getPublicKey();
+        if (sigCert != null) {
+            return sigCert.getPublicKey();
+        }
+        return sigPublicKey == null ? null : sigPublicKey.getPublicKey();
     }
 
     /**
@@ -352,7 +348,30 @@ public class Address implements SelfSerializable {
      */
     @Nullable
     public PublicKey getAgreePublicKey() {
-        return agreePublicKey.getPublicKey();
+        if (agreeCert != null) {
+            return agreeCert.getPublicKey();
+        }
+        return agreePublicKey == null ? null : agreePublicKey.getPublicKey();
+    }
+
+    /**
+     * Get the {@link X509Certificate} of the member used for signing.
+     *
+     * @return The member's x509 certificate used for signing, if it exists.
+     */
+    @Nullable
+    public X509Certificate getSigCert() {
+        return sigCert == null ? null : sigCert.getCertificate();
+    }
+
+    /**
+     * Get the {@link X509Certificate} of the member used for TLS key agreement.
+     *
+     * @return The member's x509 certificate used for TLS key agreement, if it exists.
+     */
+    @Nullable
+    public X509Certificate getAgreeCert() {
+        return agreeCert == null ? null : agreeCert.getCertificate();
     }
 
     /**
@@ -475,44 +494,30 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different PublicKey for signature.
+     * Create a new Address object based this one with different {@link X509Certificate} for signature.
      *
-     * @param sigPublicKey New sigPublicKey for the created Address.
+     * @param sigCert New signing certificate for the created Address.
      * @return The new Address.
      */
     @NonNull
-    public Address copySetSigPublicKey(@NonNull final PublicKey sigPublicKey) {
-        Objects.requireNonNull(sigPublicKey, "sigPublicKey must not be null");
+    public Address copySetSigCert(@NonNull final X509Certificate sigCert) {
+        Objects.requireNonNull(sigCert, "sigCert must not be null");
         Address a = copy();
-        a.sigPublicKey = new SerializablePublicKey(sigPublicKey);
+        a.sigCert = checkCertificateEncoding(new SerializableX509Certificate(sigCert));
         return a;
     }
 
     /**
-     * Create a new Address object based this one with different PublicKey for encrypting.
+     * Create a new Address object based this one with different {@link X509Certificate} for TLS key agreement.
      *
-     * @param encPublicKey New encPublicKey for the created Address.
+     * @param agreeCert new agreement certificate for the created Address.
      * @return The new Address.
      */
     @NonNull
-    public Address copySetEncPublicKey(@NonNull final PublicKey encPublicKey) {
-        Objects.requireNonNull(encPublicKey, "encPublicKey must not be null");
+    public Address copySetAgreeCert(@NonNull final X509Certificate agreeCert) {
+        Objects.requireNonNull(agreeCert, "agreeCert must not be null");
         Address a = copy();
-        a.encPublicKey = new SerializablePublicKey(encPublicKey);
-        return a;
-    }
-
-    /**
-     * Create a new Address object based this one with different PublicKey for TLS key agreement.
-     *
-     * @param agreePublicKey New agreePublicKey for the created Address.
-     * @return The new Address.
-     */
-    @NonNull
-    public Address copySetAgreePublicKey(@NonNull final PublicKey agreePublicKey) {
-        Objects.requireNonNull(agreePublicKey, "agreePublicKey must not be null");
-        Address a = copy();
-        a.agreePublicKey = new SerializablePublicKey(agreePublicKey);
+        a.agreeCert = checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
         return a;
     }
 
@@ -545,9 +550,8 @@ public class Address implements SelfSerializable {
                 portInternal,
                 hostnameExternal,
                 portExternal,
-                sigPublicKey,
-                encPublicKey,
-                agreePublicKey,
+                sigCert,
+                agreeCert,
                 memo);
     }
 
@@ -564,9 +568,14 @@ public class Address implements SelfSerializable {
         outStream.writeInt(portInternal);
         outStream.writeNormalisedString(hostnameExternal);
         outStream.writeInt(portExternal);
-        outStream.writeSerializable(sigPublicKey, false);
-        outStream.writeSerializable(encPublicKey, false);
-        outStream.writeSerializable(agreePublicKey, false);
+        if (serialization < ClassVersion.X509_CERT_SUPPORT) {
+            outStream.writeSerializable(sigPublicKey, false);
+            outStream.writeSerializable(encPublicKey, false);
+            outStream.writeSerializable(agreePublicKey, false);
+        } else {
+            outStream.writeSerializable(sigCert, false);
+            outStream.writeSerializable(agreeCert, false);
+        }
         outStream.writeNormalisedString(memo);
     }
 
@@ -575,57 +584,29 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void deserialize(SerializableDataInputStream inStream, int version) throws IOException {
-        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
-            id = new NodeId(inStream.readLong());
-        } else {
-            id = inStream.readSerializable(false, NodeId::new);
-        }
+        serialization = version;
+        id = inStream.readSerializable(false, NodeId::new);
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
 
-        if (version < ClassVersion.ADD_DNS_SUPPORT) {
-            hostnameInternal = ipString(inStream.readByteArray(MAX_IP_LENGTH));
-        } else {
-            hostnameInternal = inStream.readNormalisedString(MAX_IP_LENGTH);
-        }
+        hostnameInternal = inStream.readNormalisedString(MAX_IP_LENGTH);
         portInternal = inStream.readInt();
-        if (version < ClassVersion.ADD_DNS_SUPPORT) {
-            hostnameExternal = ipString(inStream.readByteArray(MAX_IP_LENGTH));
-        } else {
-            hostnameExternal = inStream.readNormalisedString(MAX_IP_LENGTH);
-        }
+        hostnameExternal = inStream.readNormalisedString(MAX_IP_LENGTH);
         portExternal = inStream.readInt();
-        if (version < ClassVersion.ADD_DNS_SUPPORT) {
-            inStream.readByteArray(MAX_IP_LENGTH); // addressInternalIpv6
-            inStream.readInt(); // portInternalIpv6
-            inStream.readByteArray(MAX_IP_LENGTH); // addressExternalIpv6
-            inStream.readInt(); // portExternalIpv6
-        }
 
-        switch (version) {
-            case 1:
-                sigPublicKey = new SerializablePublicKey();
-                encPublicKey = new SerializablePublicKey();
-                agreePublicKey = new SerializablePublicKey();
-                // before version 2, the key type was not written
-                sigPublicKey.deserializeVersion0(inStream, "RSA");
-                encPublicKey.deserializeVersion0(inStream, "EC");
-                agreePublicKey.deserializeVersion0(inStream, "EC");
-                break;
-            case 2:
-                // in version 2 the key type was written as a string and the key version was not written
-                sigPublicKey = new SerializablePublicKey();
-                encPublicKey = new SerializablePublicKey();
-                agreePublicKey = new SerializablePublicKey();
-                sigPublicKey.deserialize(inStream, 1);
-                encPublicKey.deserialize(inStream, 1);
-                agreePublicKey.deserialize(inStream, 1);
-                break;
-            default:
-                sigPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
-                encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
-                agreePublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+        if (version < ClassVersion.X509_CERT_SUPPORT) {
+            sigPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+            encPublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+            agreePublicKey = inStream.readSerializable(false, SerializablePublicKey::new);
+        } else {
+            try {
+                sigCert = checkCertificateEncoding(inStream.readSerializable(false, SerializableX509Certificate::new));
+                agreeCert =
+                        checkCertificateEncoding(inStream.readSerializable(false, SerializableX509Certificate::new));
+            } catch (final IllegalArgumentException e) {
+                throw new IOException("Deserialized certificate fails to generate binary encoding.", e);
+            }
         }
         memo = inStream.readNormalisedString(STRING_MAX_BYTES);
     }
@@ -672,13 +653,71 @@ public class Address implements SelfSerializable {
                 && Objects.equals(selfName, address.selfName)
                 && Objects.equals(hostnameInternal, address.hostnameInternal)
                 && Objects.equals(hostnameExternal, address.hostnameExternal)
-                && Arrays.equals(
-                        sigPublicKey.getPublicKey().getEncoded(),
-                        address.sigPublicKey.getPublicKey().getEncoded())
-                && Arrays.equals(
-                        agreePublicKey.getPublicKey().getEncoded(),
-                        address.agreePublicKey.getPublicKey().getEncoded())
+                && equalsPublicKey(sigPublicKey, address.sigPublicKey)
+                && equalsPublicKey(agreePublicKey, address.agreePublicKey)
+                && equalsCertificate(sigCert, address.sigCert)
+                && equalsCertificate(agreeCert, address.agreeCert)
                 && Objects.equals(memo, address.memo);
+    }
+
+    /**
+     * checks for the equality of two public keys by comparing their binary encoding.
+     *
+     * @param publicKey1 the first public key to compare
+     * @param publicKey2 the second public key to compare
+     * @return true if the public keys are equal in binary encoding, false otherwise.
+     */
+    private boolean equalsPublicKey(
+            @NonNull final SerializablePublicKey publicKey1, @NonNull final SerializablePublicKey publicKey2) {
+        if (publicKey1 != null && publicKey2 != null) {
+            return Arrays.equals(
+                    publicKey1.getPublicKey().getEncoded(),
+                    publicKey2.getPublicKey().getEncoded());
+        }
+        return publicKey1 == publicKey2;
+    }
+
+    /**
+     * checks for the equality of two certificates by comparing their binary encoding.
+     *
+     * @param certificate1 the first certificate to compare
+     * @param certificate2 the second certificate to compare
+     * @return true if the certificates are equal in binary encoding, false otherwise.
+     */
+    private boolean equalsCertificate(
+            @NonNull final SerializableX509Certificate certificate1,
+            @NonNull final SerializableX509Certificate certificate2) {
+        if (certificate1 != null && certificate2 != null) {
+            try {
+                return Arrays.equals(
+                        certificate1.getCertificate().getEncoded(),
+                        certificate2.getCertificate().getEncoded());
+            } catch (CertificateEncodingException e) {
+                // this should never happen due to checking the encoding when the field is set.
+                return false;
+            }
+        }
+        return certificate1 == certificate2;
+    }
+
+    /**
+     * Throws an illegal argument exception if the certificate exists and is not encodable.
+     *
+     * @param certificate the certificate to check.
+     * @return the certificate if it is encodable.
+     */
+    @Nullable
+    private SerializableX509Certificate checkCertificateEncoding(
+            @Nullable final SerializableX509Certificate certificate) {
+        if (certificate == null) {
+            return null;
+        }
+        try {
+            certificate.getCertificate().getEncoded();
+            return certificate;
+        } catch (CertificateEncodingException e) {
+            throw new IllegalArgumentException("Certificate is not encodable");
+        }
     }
 
     /**
@@ -705,6 +744,8 @@ public class Address implements SelfSerializable {
                 .append("portExternalIpv4", portExternal)
                 .append("sigPublicKey", sigPublicKey)
                 .append("agreePublicKey", agreePublicKey)
+                .append("sigCert", sigCert)
+                .append("agreeCert", agreeCert)
                 .append("memo", memo)
                 .toString();
     }
