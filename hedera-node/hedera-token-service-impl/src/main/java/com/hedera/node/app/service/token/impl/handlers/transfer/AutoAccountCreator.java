@@ -86,9 +86,9 @@ public class AutoAccountCreator {
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
 
-        var fee = autoCreationFeeFor(syntheticCreation);
-        if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee();
+        // externalize transaction fee only for auto creation
+        if (!isAliasEVMAddress) {
+            childRecord.transactionFee(autoCreationFeeFor(syntheticCreation));
         }
         childRecord.memo(memo);
 
