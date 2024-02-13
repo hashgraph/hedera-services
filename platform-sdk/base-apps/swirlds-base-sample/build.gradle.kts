@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins {
+    id("application")
+    id("com.hedera.hashgraph.sdk.conventions")
+}
 
 application.mainClass.set("com.swirlds.base.sample.Application")
 
@@ -25,24 +28,4 @@ tasks.withType<JavaExec> {
     if (name.endsWith("main()")) {
         notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
     }
-}
-// Copy dependencies into `build/external/libs`
-val copyLib =
-    tasks.register<Copy>("copyDockerLib") {
-        from(project.configurations.runtimeClasspath)
-        into("${buildDir}/external/libs")
-    }
-
-val copyApp =
-    tasks.register<Copy>("copyDockerApp") {
-        inputs.property("projectName", project.name)
-
-        from(tasks.jar)
-        into("${buildDir}/external/app")
-        rename { "app.jar" }
-    }
-
-tasks.assemble {
-    dependsOn(copyLib)
-    dependsOn(copyApp)
 }

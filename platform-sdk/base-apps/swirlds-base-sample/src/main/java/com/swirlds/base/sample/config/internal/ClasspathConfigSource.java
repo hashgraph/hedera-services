@@ -41,10 +41,10 @@ public class ClasspathConfigSource extends AbstractConfigSource {
     public ClasspathConfigSource(final @NonNull Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath can not be null");
         this.internalProperties = new HashMap<>();
-        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filePath.toString());
-        assert inputStream != null;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            Properties loadedProperties = new Properties();
+        final InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filePath.toString());
+        Objects.requireNonNull(inputStream, "Could not load properties from classpath resource "+ filePath);
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            final Properties loadedProperties = new Properties();
             loadedProperties.load(reader);
             loadedProperties
                     .stringPropertyNames()

@@ -299,7 +299,7 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("io.undertow:undertow-core", "io.undertow.server") {
+    module("io.undertow:undertow-core", "io.undertow") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
