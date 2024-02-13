@@ -272,7 +272,7 @@ val copyValidation =
 
 val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
     }
 
@@ -286,7 +286,7 @@ val copyYahCli =
 
 val cleanYahCli =
     tasks.register<Delete>("cleanYahCli") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 
