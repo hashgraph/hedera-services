@@ -20,9 +20,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -147,7 +147,7 @@ public class BookEntryPojo {
     }
 
     @SuppressWarnings("java:S1874")
-    public Stream<NodeAddress> toGrpcStream() {
+    public Stream<NodeAddress> toGrpcStream(@Nullable final String srcDir) {
         final var grpc = NodeAddress.newBuilder();
 
         if (deprecatedIp != null) {
@@ -161,7 +161,10 @@ public class BookEntryPojo {
 
         if (rsaPubKey != null) {
             if (rsaPubKey.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                final var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
+                if (srcDir == null) {
+                    throw new IllegalStateException("No source directory given for RSA pub key replacement");
+                }
+                final var baseDir = srcDir + File.separator + "pubkeys";
                 final var computedKey = asHexEncodedDerPubKey(baseDir, grpc.getNodeId());
                 grpc.setRSAPubKey(computedKey);
             } else {
@@ -173,7 +176,10 @@ public class BookEntryPojo {
         }
         if (!certHash.equals(MISSING_CERT_HASH)) {
             if (certHash.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                final var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
+                if (srcDir == null) {
+                    throw new IllegalStateException("No source directory given for RSA cert replacement");
+                }
+                final var baseDir = srcDir + File.separator + "certs";
                 final var computedHash = asHexEncodedSha384HashFor(baseDir, grpc.getNodeId());
                 grpc.setNodeCertHash(ByteString.copyFromUtf8(computedHash));
             } else {

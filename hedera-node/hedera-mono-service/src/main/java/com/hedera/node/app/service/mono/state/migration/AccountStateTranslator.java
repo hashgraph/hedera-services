@@ -172,8 +172,6 @@ public class AccountStateTranslator {
                 .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
                 .stakedToMe(account.getStakedToMe())
                 .stakePeriodStart(account.getStakePeriodStart())
-                .stakedAccountId(stakedAccountId)
-                .stakedNodeId(stakedNodeId)
                 .firstContractStorageKey(firstContractStorageKey)
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder()
