@@ -61,6 +61,7 @@ import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV2SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
@@ -168,6 +169,7 @@ public class ConcurrentSuites {
             TokenInfoHTSSuite::new,
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
+            ContractMintHTSV2SecurityModelSuite::new,
             // contract.records
             LogsSuite::new,
             RecordsSuite::new,
