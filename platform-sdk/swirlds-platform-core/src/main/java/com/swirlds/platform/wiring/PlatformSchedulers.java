@@ -57,7 +57,7 @@ import java.util.List;
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
- * @param hashLoggerScheduler                       the scheduler for the signed state logger
+ * @param hashLoggerScheduler                       the scheduler for the hash logger
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,

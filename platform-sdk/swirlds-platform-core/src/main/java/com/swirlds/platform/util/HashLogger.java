@@ -34,7 +34,7 @@ import org.apache.logging.log4j.message.ParameterizedMessageFactory;
 /**
  * Logger responsible for logging node hashes to the swirlds-hashstream file.
  *
- * <p>HashLogger will queue up tasks to generate and log hashes from the provided signed states on a background thread.
+ * <p>HashLogger will offer tasks to generate and log hashes from the provided signed states ... to a task scheduler.
  * The implementation makes use of log4j and will make use of log4j configuration to configure how the log entries are
  * outputted.</p>
  */
@@ -82,7 +82,7 @@ public class HashLogger {
     }
 
     /**
-     * Passes the provided signed state for extracting hashes and logging.
+     * Queues the provided signed state for extracting hashes and logging.
      *
      * @param signedState the signed state to retrieve hash information from and log.
      */
