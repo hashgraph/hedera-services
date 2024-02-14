@@ -16,32 +16,27 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
+import com.hedera.node.app.service.token.records.TokenUpdateNftRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -49,6 +44,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,21 +55,18 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateNftsHandler implements TransactionHandler {
 
-    private final TokenUpdateValidator tokenUpdateValidator;
+    private final TokenUpdateNftValidator tokenUpdateNftValidator;
 
     @Inject
-    public TokenUpdateNftsHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
-        this.tokenUpdateValidator = tokenUpdateValidator;
+    public TokenUpdateNftsHandler(@NonNull final TokenUpdateNftValidator tokenUpdateNftValidator) {
+        this.tokenUpdateNftValidator = tokenUpdateNftValidator;
     }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final var op = txn.tokenUpdateOrThrow();
+        final var op = txn.tokenUpdateNftOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        if (op.hasFeeScheduleKey()) {
-            validateTruePreCheck(isValid(op.feeScheduleKey()), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
-        }
     }
 
     @Override
@@ -80,9 +74,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().tokenUpdateOrThrow();
         pureChecks(context.body());
-
         final var tokenId = op.tokenOrThrow();
-
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -95,136 +87,76 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     public void handle(@NonNull HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txn = context.body();
-        final var op = txn.tokenUpdateOrThrow();
-        final var tokenId = op.tokenOrThrow();
-        final var recordBuilder = context.recordBuilder(TokenUpdateRecordBuilder.class);
+        final var opNft = txn.tokenUpdateNftOrThrow();
+        final var tokenNftId = opNft.tokenOrThrow();
+        final var recordBuilder = context.recordBuilder(TokenUpdateNftRecordBuilder.class);
 
         // validate fields that involve config or state
-        // FUTURE - NFT VALIDATOR ?
-        final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
-        // get the resolved expiry meta and token
+        final var validationResult = tokenUpdateNftValidator.validateSemantics(context, opNft);
+        // get the validation result and token
         final var token = validationResult.token();
-        final var resolvedExpiry = validationResult.resolvedExpiryMeta();
 
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var config = context.configuration();
         final var tokensConfig = config.getConfigData(TokensConfig.class);
 
-        // FUTURE - Assume the operation has no change to the treasury ?
-        final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
-        tokenStore.put(tokenBuilder.build());
+        // Wrapping to de-dupe the serial nums:
+        final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(opNft.serialNumbers()));
+        var nftCollection = tokenStore.get(tokenNftId);
+        for (var serialNumber : nftSerialNums) {
+            validateTrue(!nftSerialNums.isEmpty(), INVALID_TRANSACTION_BODY);
+            try {
+                validateTruePreCheck(serialNumber > 0, INVALID_NFT_ID);
+            } catch (PreCheckException e) {
+                throw new RuntimeException(e);
+            }
+            // Update the metadata in the NFTS
+            // ......
+        }
+
+        //        final var op = txn.tokenUpdateOrThrow();
+        //        final var tokenId = op.tokenOrThrow();
+        //        final var accountStore = context.writableStore(WritableAccountStore.class);
+        //        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        //        final var tokenBuilder = customizeToken(token, op);
+        //        tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
     }
 
     /**
      * Build a Token based on the given token update NFT transaction body.
      * @param token token to be updated
-     * @param resolvedExpiry resolved expiry
      * @param op token update transaction body
      * @return updated token builder
      */
-    private Token.Builder customizeToken(
-            @NonNull final Token token,
-            @NonNull final ExpiryMeta resolvedExpiry,
-            @NonNull final TokenUpdateTransactionBody op) {
+    private Token.Builder customizeToken(@NonNull final Token token, @NonNull final TokenUpdateTransactionBody op) {
         final var copyToken = token.copyBuilder();
-        // All these keys are validated in validateSemantics
-        // If these keys did not exist on the token already, they can't be changed on update
-        updateKeys(op, token, copyToken);
-        updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateNameSymbolMetadataMemoAndTreasury(op, copyToken, token);
+        updateMetadata(op, copyToken);
         return copyToken;
     }
 
     /**
-     * Updates keys of the token if they are present in the token update transaction body.
-     * All keys can be updates only if they had already existed on the token.
-     * These keys can't be updated if they were not added during creation.
-     * @param op token update transaction body
-     * @param originalToken original token
+     * Updates token metadata if it is present in the token nft update transaction body.
+     * @param op token nft update transaction body
      * @param builder token builder
      */
-    private void updateKeys(
-            final TokenUpdateTransactionBody op, final Token originalToken, final Token.Builder builder) {
-        if (op.hasKycKey()) {
-            validateTrue(originalToken.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
-            builder.kycKey(op.kycKey());
-        }
-        if (op.hasFreezeKey()) {
-            validateTrue(originalToken.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
-            builder.freezeKey(op.freezeKey());
-        }
-        if (op.hasWipeKey()) {
-            validateTrue(originalToken.hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY);
-            builder.wipeKey(op.wipeKey());
-        }
-        if (op.hasSupplyKey()) {
-            validateTrue(originalToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-            builder.supplyKey(op.supplyKey());
-        }
-        if (op.hasFeeScheduleKey()) {
-            validateTrue(originalToken.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
-            builder.feeScheduleKey(op.feeScheduleKey());
-        }
-        if (op.hasPauseKey()) {
-            validateTrue(originalToken.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
-            builder.pauseKey(op.pauseKey());
-        }
-        //        if (!isExpiryOnlyUpdateOp(op)) {
-        //            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        //        }
-        if (op.hasAdminKey()) {
-            final var newAdminKey = op.adminKey();
-            if (isKeyRemoval(newAdminKey)) {
-                builder.adminKey((Key) null);
-            } else {
-                builder.adminKey(newAdminKey);
-            }
-        }
-    }
-    /**
-     * Updates expiry fields of the token if they are present in the token update transaction body.
-     * @param op token update transaction body
-     * @param resolvedExpiry resolved expiry
-     * @param builder token builder
-     */
-    private void updateExpiryFields(
-            final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
-        if (op.hasExpiry()) {
-            builder.expirationSecond(resolvedExpiry.expiry());
-        }
-        if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSeconds(resolvedExpiry.autoRenewPeriod());
-        }
-        if (op.hasAutoRenewAccount()) {
-            builder.autoRenewAccountId(resolvedExpiry.autoRenewAccountId());
-        }
-    }
-    /**
-     * Updates token name, token symbol, token memo and token treasury if they are present in the
-     * token update transaction body.
-     * @param op token update transaction body
-     * @param builder token builder
-     * @param originalToken original token
-     */
-    private void updateNameSymbolMetadataMemoAndTreasury(
-            final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
-        if (op.symbol() != null && op.symbol().length() > 0) {
-            builder.symbol(op.symbol());
-        }
-        if (op.name() != null && op.name().length() > 0) {
-            builder.name(op.name());
-        }
-        if (op.hasMemo()) {
-            builder.memo(op.memo());
-        }
-        if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
-            builder.treasuryAccountId(op.treasuryOrThrow());
-        }
+    private void updateMetadata(final TokenUpdateTransactionBody op, final Token.Builder builder) {
         if (op.hasMetadata()) {
             builder.metadata(op.metadata());
         }
+    }
+
+    //    The total price should be N * $0.001, if the list from transaction body contains N nft ids
+    //    Add op.getMetadataList().size() to BPT - Bytes Per Transaction
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var op = feeContext.body();
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(fromPbj(op));
+        return feeContext
+                .feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                .addBytesPerTransaction(meta.getBpt())
+                .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .calculate();
     }
 }

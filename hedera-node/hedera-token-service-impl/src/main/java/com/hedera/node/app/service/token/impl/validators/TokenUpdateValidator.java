@@ -70,10 +70,6 @@ public class TokenUpdateValidator {
         if (op.symbol() != null && !op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);
         }
-        // validate metadata
-        if (op.metadata() != null) {
-            validator.validateTokenMetadata(op.metadata(), tokensConfig);
-        }
         // validate token name, if being changed
         if (op.name() != null && !op.name().isEmpty()) {
             validator.validateTokenName(op.name(), tokensConfig);
