@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -915,11 +916,13 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("legacyBeforeEIP155")
-                                .logged()
-                                .hasPriority(recordWith().status(SUCCESS)))));
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("legacyBeforeEIP155")
+                                        .logged()
+                                        .hasPriority(recordWith().status(SUCCESS)))),
+                        resetToDefault(CHAIN_ID_PROP));
     }
 
     // test legacy ethereum transactions after EIP155
@@ -956,11 +959,13 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("legacyAfterEIP155")
-                                .logged()
-                                .hasPriority(recordWith().status(SUCCESS)))));
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("legacyAfterEIP155")
+                                        .logged()
+                                        .hasPriority(recordWith().status(SUCCESS)))),
+                        resetToDefault(CHAIN_ID_PROP));
     }
 
     @HapiTest
