@@ -351,9 +351,13 @@ public record EthTxData(
         byte[] v = rlpList.get(6).asBytes();
         BigInteger vBI = new BigInteger(1, v);
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
+        // https://eips.ethereum.org/EIPS/eip-155
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
+            // after EIP155 the chain id is equal to
+            // CHAIN_ID = (v - {0,1} - 35) / 2
             chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
-        } else if (vBI.compareTo(BigInteger.valueOf(27)) == 0 || vBI.compareTo(BigInteger.valueOf(28)) == 0) {
+        } else if (isLegacyUnprotectedEtx(vBI)) {
+            // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
         }
 
@@ -445,5 +449,15 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
+    }
+
+    // before EIP155 the value of v in
+    // (unprotected) ethereum transactions is either 27 or 28
+    private static boolean isLegacyUnprotectedEtx(@NonNull BigInteger vBI) {
+        // EIP155 note support for v = 27|28 cases in unprotected transaction cases
+        final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
+        final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
+        return vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_0) == 0 || vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_1) == 0;
     }
 }
