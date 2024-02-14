@@ -23,7 +23,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 public interface FeeContext {
     /**
@@ -80,9 +79,9 @@ public interface FeeContext {
     Authorizer authorizer();
 
     /**
-     * Returns the consensus time relative to which client code should calculate entity lifetimes.
-     *
-     * @return the consensus time
+     * Returns the number of signatures provided for the transaction.
+     * <p>NOTE: this property should not be used for queries</p>
+     * @return the number of signatures
      */
-    Instant currentTime();
+    int numTxnSignatures();
 }

@@ -60,7 +60,6 @@ public class BaseTokenHandler {
      * @param token the new or existing token to mint
      * @param treasuryRel the treasury relation for the token
      * @param amount the amount to mint
-     * @param isMintOnTokenCreation true if this is a mint on token creation
      * @param accountStore the account store
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store

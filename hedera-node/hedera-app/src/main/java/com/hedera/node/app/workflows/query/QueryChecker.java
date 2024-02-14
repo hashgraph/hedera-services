@@ -218,7 +218,9 @@ public class QueryChecker {
                 feeManager,
                 storeFactory,
                 configuration,
-                authorizer);
+                authorizer,
+                // Signatures aren't applicable to queries
+                -1);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }
