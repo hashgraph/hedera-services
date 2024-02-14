@@ -316,6 +316,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        // Test Case 1: Signer paying and signing a token burn transaction,
+                        // SIGNER → call → CONTRACT → call → PRECOMPILE
+                        // The signer and the token don't have updated keys
                         contractCall(
                                 HTS_CALLS,
                                 "burnTokenCall",
@@ -356,7 +359,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(SIGNER)
                                 .payingWith(SIGNER),
-                        // verify that the total supply is not affected
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
@@ -429,6 +431,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(nonFungible.get())))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        // Test Case 1: Signer paying and signing a token burn transaction,
+                        // SIGNER → call → CONTRACT → call → PRECOMPILE
+                        // The signer and the token don't have updated keys
                         contractCall(
                                 HTS_CALLS,
                                 "burnTokenCall",
@@ -440,7 +445,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER),
-                        // verify that the total supply is not affected
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
@@ -470,7 +474,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(SIGNER)
                                 .payingWith(SIGNER),
-                        // verify that the total supply is not affected
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
