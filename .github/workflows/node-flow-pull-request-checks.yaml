@@ -57,12 +57,24 @@ jobs:
 
   detect-change:
     name: Get changed files related to charts
-    uses: tj-actions/changed-files@90a06d6ba9543371ab4df8eeca0be07ca6054959 #v42.0.2
-    with:
-      files_yaml: |
-        hedera:
-          - hedera-node/**
-
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    steps:
+      - name: Get changed files related to hedera service
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+        with:
+          files_yaml: |
+            hedera:
+              - hedera-nodes/**
+      - name: List all changed files related to hedera service
+        id: check-changed-files
+        run: |
+          echo "Modified files"
+          echo "-------------------------------------------------------------------"
+          for file in ${{ steps.changed-files.outputs.hedera_all_changed_files }}; do
+            echo " - ${file} was changed"
+          done
+          echo ""
 
   spotless:
     name: Spotless
@@ -304,6 +316,33 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
+
+  service-abbreviated-panel:
+    name: Service Test Panel
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs:
+      - dependency-check
+      - spotless
+      - detect-change
+    if: ${{ needs.detect-change.outputs.hedera_any_changed == 'true' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    with:
+      custom-job-name: "Service integration test"
+      branch-name: ${{ github.head_ref || github.ref_name }}
+      hedera-tests-enabled: true
+      use-branch-for-slack-channel: true
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
+
   snyk-scan:
     name: Snyk Scan
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml

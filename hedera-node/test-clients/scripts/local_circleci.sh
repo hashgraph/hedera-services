@@ -1,11 +1,11 @@
 
 #!/usr/bin/env bash
-
+# add test 
 # script to run most circleci test at local macOS in batch mode
-# 
+#
 # Steps
 #   launch HGCApp
-#   run 
+#   run
 #       ./scripts/local_circleci.sh
 #   from test-clients/
 #
