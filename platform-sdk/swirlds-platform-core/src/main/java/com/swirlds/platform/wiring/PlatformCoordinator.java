@@ -133,7 +133,7 @@ public class PlatformCoordinator {
         consensusRoundHandlerWiring.flushRunnable().run();
 
         // Phase 2: flush
-        // All cycles have been broken via squelching, so now it's time to flush everything out of the system
+        // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
@@ -145,7 +145,7 @@ public class PlatformCoordinator {
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
 
         // Phase 4: clear
-        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
+        // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
