@@ -51,6 +51,9 @@ public class ClasspathFileConfigSource extends AbstractFileConfigSource {
         super(filePath, ordinal);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     protected BufferedReader getReader() {

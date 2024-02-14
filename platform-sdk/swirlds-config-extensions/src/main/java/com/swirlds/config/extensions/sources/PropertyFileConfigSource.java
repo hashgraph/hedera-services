@@ -50,6 +50,9 @@ public class PropertyFileConfigSource extends AbstractFileConfigSource {
         super(filePath, ordinal);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     protected BufferedReader getReader() throws IOException {
         return Files.newBufferedReader(filePath);
