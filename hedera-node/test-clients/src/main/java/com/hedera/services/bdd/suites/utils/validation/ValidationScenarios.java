@@ -764,7 +764,7 @@ public class ValidationScenarios extends HapiSuite {
         String loc = FILES + params.getTargetNetwork() + "-" + name;
         try {
             var stylized = Files.readString(Paths.get(loc));
-            return ByteString.copyFrom(serde.toRawFile(stylized));
+            return ByteString.copyFrom(serde.toRawFile(stylized, null));
         } catch (IOException e) {
             throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
         }
@@ -781,7 +781,7 @@ public class ValidationScenarios extends HapiSuite {
         if (SysFilesDownScenario.COMPARE_EVAL_MODE.equals(sys.getEvalMode())) {
             String actualLoc = "files/actual-" + fqn;
             try {
-                byte[] expected = serde.toRawFile(readString(Paths.get(loc)));
+                byte[] expected = serde.toRawFile(readString(Paths.get(loc)), null);
                 return getFileContents(fid)
                         .payingWith(SCENARIO_PAYER_NAME)
                         .saveReadableTo(serde::fromRawFile, actualLoc)
