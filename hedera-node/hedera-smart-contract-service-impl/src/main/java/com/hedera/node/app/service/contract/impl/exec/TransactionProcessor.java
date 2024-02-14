@@ -144,13 +144,8 @@ public class TransactionProcessor {
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
-        var result = frameRunner.runToCompletion(
-                transaction.gasLimit(),
-                parties.sender().hederaId(),
-                initialFrame,
-                tracer,
-                messageCall,
-                contractCreation);
+        final var result = frameRunner.runToCompletion(
+                transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -190,19 +185,17 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
-            // TODO test that goes through here
 
             // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
             // before creating a new fees-only updater (even though from a Besu perspective, these two
             // updaters appear independent, they are not)
             updater.revert();
-            return commitResourceExhaustion(result, transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
+            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;
     }
 
     private HederaEvmTransactionResult commitResourceExhaustion(
-            @NonNull final HederaEvmTransactionResult result,
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final HederaEvmContext context,
