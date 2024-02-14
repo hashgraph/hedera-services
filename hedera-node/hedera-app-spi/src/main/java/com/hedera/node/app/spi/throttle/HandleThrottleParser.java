@@ -24,13 +24,34 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 public interface HandleThrottleParser {
+    /*
+     * Rebuilds the throttle requirements based on the given throttle definitions.
+     *
+     * @param defs the throttle definitions to rebuild the throttle requirements based on
+     */
     void rebuildFor(@NonNull final ThrottleDefinitions defs);
 
+    /*
+     * Rebuilds the gas throttle based on the current configuration.
+     */
     void applyGasConfig();
 
+    /*
+     * Gets the current list of active throttles.
+     *
+     * @return the current list of active throttles
+     */
     @NonNull
     List<DeterministicThrottle> allActiveThrottles();
 
+    /*
+     * Resets the usage for all snapshots.
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
+
+    /*
+     * Gets the gas throttle.
+     */
     @Nullable
-    public GasLimitDeterministicThrottle gasLimitThrottle();
+    GasLimitDeterministicThrottle gasLimitThrottle();
 }

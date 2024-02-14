@@ -75,7 +75,9 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
-            com.hedera.node.test.clients;
+            com.hedera.node.test.clients,
+            com.swirlds.platform.core.test.fixtures,
+            com.hedera.node.app.service.mono.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.core.test.fixtures;
