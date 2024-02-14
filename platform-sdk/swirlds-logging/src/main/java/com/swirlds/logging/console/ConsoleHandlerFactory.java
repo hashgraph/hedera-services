@@ -35,6 +35,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @AutoService(LogHandlerFactory.class)
 public class ConsoleHandlerFactory implements LogHandlerFactory {
 
+    public static final String CONSOLE_HANDLER_TYPE = "console";
+
     /**
      * Creates a new {@link ConsoleHandler} instance with the specified {@link Configuration}.
      *
@@ -53,6 +55,6 @@ public class ConsoleHandlerFactory implements LogHandlerFactory {
     @NonNull
     @Override
     public String getTypeName() {
-        return "console";
+        return CONSOLE_HANDLER_TYPE;
     }
 }
