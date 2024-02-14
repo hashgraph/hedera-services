@@ -18,6 +18,7 @@ package com.swirlds.common.metrics;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.Metric;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * This class is only used to simplify the migration and will be removed afterwards.
@@ -35,5 +36,6 @@ public interface PlatformMetric extends Metric {
      * @return the {@code StatsBuffered}, if there is one, {@code null} otherwise
      * @deprecated This method is only temporary and will be removed during the Metric overhaul.
      */
+    @Nullable
     StatsBuffered getStatsBuffered();
 }
