@@ -118,7 +118,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
-//comment test
+//comment test test
         return propertyPreservingHapiSpec("V2Security004FungibleTokenBurnPositive")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
