@@ -655,99 +655,102 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 childRecordBuilder.transactionID(transactionID);
             }
 
-        try {
-            // Synthetic transaction bodies do not have transaction ids, node account
-            // ids, and so on; hence we don't need to validate them with the checker
-            dispatcher.dispatchPureChecks(txBody);
-        } catch (final PreCheckException e) {
-            childRecordBuilder.status(e.responseCode());
-            return;
-        }
-
-        final HederaFunctionality function;
-        try {
-            function = functionOf(txBody);
-        } catch (final UnknownHederaFunctionality e) {
-            logger.error("Possible bug: unknown function in transaction body", e);
-            childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-            return;
-        }
-
-        // Any keys verified for this dispatch (including the payer key if
-        // required) should incorporate the provided callback
-        final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
-        final DispatchValidationResult dispatchValidationResult;
-        try {
-            // Note the first parameter sets up that if there is no callback, then the keys are
-            // not verified here at all, which is apparently required for many contract calls.
-            dispatchValidationResult = validate(
-                    callback == null ? null : childVerifier,
-                    callback,
-                    function,
-                    txBody,
-                    syntheticPayer,
-                    networkInfo().selfNodeInfo().nodeId(),
-                    dispatchNeedsHapiPayerChecks(childCategory));
-        } catch (final PreCheckException e) {
-            // This will happen when the payer for a triggered transaction cannot afford the service fee,
-            // part of normal operations
-            childRecordBuilder.status(e.responseCode());
-            return;
-        }
-
-        final var childStack = new SavepointStackImpl(current());
-        final var childContext = new HandleContextImpl(
-                txBody,
-                function,
-                0,
-                syntheticPayer,
-                dispatchValidationResult == null ? null : dispatchValidationResult.key(),
-                networkInfo,
-                childCategory,
-                childRecordBuilder,
-                childStack,
-                configuration,
-                childVerifier,
-                recordListBuilder,
-                checker,
-                dispatcher,
-                serviceScopeLookup,
-                blockRecordInfo,
-                recordCache,
-                feeManager,
-                exchangeRateManager,
-                userTransactionConsensusTime,
-                authorizer,
-                solvencyPreCheck,
-                childRecordFinalizer,
-                networkUtilizationManager,
-                synchronizedThrottleAccumulator);
-
-        if (dispatchValidationResult != null) {
-            childContext.feeAccumulator.chargeFees(
-                    syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
-        }
-        try {
-            dispatcher.dispatchHandle(childContext);
-            childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
-        } catch (final HandleException e) {
-            if (e.shouldRollbackStack()) {
-                childStack.rollbackFullStack();
-                if (dispatchValidationResult != null) {
-                    childContext.feeAccumulator.chargeFees(
-                            syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
-                }
-                childRecordBuilder.status(e.getStatus());
-                recordListBuilder.revertChildrenOf(recordBuilder);
+            try {
+                // Synthetic transaction bodies do not have transaction ids, node account
+                // ids, and so on; hence we don't need to validate them with the checker
+                dispatcher.dispatchPureChecks(txBody);
+            } catch (final PreCheckException e) {
+                childRecordBuilder.status(e.responseCode());
+                return;
             }
-            final var finalizeContext = new ChildFinalizeContextImpl(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder);
-            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
-            // TODO(nickpoorman): This is where we need to hook our StackObserver in so that we know what changes
-            //  were a result of this child transaction.
-            childStack.commitFullStack();
+
+            final HederaFunctionality function;
+            try {
+                function = functionOf(txBody);
+            } catch (final UnknownHederaFunctionality e) {
+                logger.error("Possible bug: unknown function in transaction body", e);
+                childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+                return;
+            }
+
+            // Any keys verified for this dispatch (including the payer key if
+            // required) should incorporate the provided callback
+            final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
+            final DispatchValidationResult dispatchValidationResult;
+            try {
+                // Note the first parameter sets up that if there is no callback, then the keys are
+                // not verified here at all, which is apparently required for many contract calls.
+                dispatchValidationResult = validate(
+                        callback == null ? null : childVerifier,
+                        callback,
+                        function,
+                        txBody,
+                        syntheticPayer,
+                        networkInfo().selfNodeInfo().nodeId(),
+                        dispatchNeedsHapiPayerChecks(childCategory));
+            } catch (final PreCheckException e) {
+                // This will happen when the payer for a triggered transaction cannot afford the service fee,
+                // part of normal operations
+                childRecordBuilder.status(e.responseCode());
+                return;
+            }
+
+            final var childStack = new SavepointStackImpl(current());
+            final var childContext = new HandleContextImpl(
+                    txBody,
+                    function,
+                    0,
+                    syntheticPayer,
+                    dispatchValidationResult == null ? null : dispatchValidationResult.key(),
+                    networkInfo,
+                    childCategory,
+                    childRecordBuilder,
+                    childStack,
+                    configuration,
+                    childVerifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache,
+                    feeManager,
+                    exchangeRateManager,
+                    userTransactionConsensusTime,
+                    authorizer,
+                    solvencyPreCheck,
+                    childRecordFinalizer,
+                    networkUtilizationManager,
+                    synchronizedThrottleAccumulator);
+
+            if (dispatchValidationResult != null) {
+                childContext.feeAccumulator.chargeFees(
+                        syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+            }
+            try {
+                dispatcher.dispatchHandle(childContext);
+                childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
+            } catch (final HandleException e) {
+                if (e.shouldRollbackStack()) {
+                    childStack.rollbackFullStack();
+                    if (dispatchValidationResult != null) {
+                        childContext.feeAccumulator.chargeFees(
+                                syntheticPayer,
+                                networkInfo().selfNodeInfo().accountId(),
+                                dispatchValidationResult.fees());
+                    }
+                    childRecordBuilder.status(e.getStatus());
+                    recordListBuilder.revertChildrenOf(recordBuilder);
+                }
+                final var finalizeContext = new ChildFinalizeContextImpl(
+                        new ReadableStoreFactory(childStack),
+                        new WritableStoreFactory(childStack, TokenService.NAME),
+                        childRecordBuilder);
+                childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+                // TODO(nickpoorman): This is where we need to hook our StackObserver in so that we know what changes
+                //  were a result of this child transaction.
+                childStack.commitFullStack();
+            }
         });
     }
 

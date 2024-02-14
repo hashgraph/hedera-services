@@ -246,6 +246,23 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         blockStreamProducer.writeUserTransactionItems(result);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void markMigrationRecordsStreamed() {
+        lastBlockInfo =
+                lastBlockInfo.copyBuilder().migrationRecordsStreamed(true).build();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @NonNull
+    public Instant consTimeOfLastHandledTxn() {
+        final var lastHandledTxn = lastBlockInfo.consTimeOfLastHandledTxn();
+        return lastHandledTxn != null
+                ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
+                : Instant.EPOCH;
+    }
+
     // =================================================================================================================
     // StateChangesSink implementation
 
@@ -447,13 +464,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      */
     private long provisionalCurrentBlockNumber() {
         return lastBlockInfo.lastBlockNumber() + 1;
-    }
-
-    @Nullable
-    private Instant consTimeOfLastHandledTxn() {
-        final var consensusTimestamp = lastBlockInfo.consTimeOfLastHandledTxn();
-        if (consensusTimestamp == null) return null;
-        return Instant.ofEpochSecond(consensusTimestamp.seconds(), consensusTimestamp.nanos());
     }
 
     /**

@@ -313,7 +313,6 @@ public final class BlockRecordManagerImpl implements FunctionalBlockRecordManage
     /**
      * {@inheritDoc}
      */
-
     @NonNull
     @Override
     public Instant consTimeOfLastHandledTxn() {
@@ -321,6 +320,7 @@ public final class BlockRecordManagerImpl implements FunctionalBlockRecordManage
         return lastHandledTxn != null
                 ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
                 : Instant.EPOCH;
+    }
 
     @Nullable
     @Override
