@@ -43,8 +43,13 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -75,7 +80,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ApproveAllowanceSuite extends HapiSuite {
 
@@ -127,7 +132,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     final HapiSpec nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";
-        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck")
+        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ownerAccount),
@@ -183,7 +188,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var nestedContract = DIRECT_ERC_CALLEE;
         final var theSpender = SPENDER;
 
-        return defaultHapiSpec("htsTokenApproveToInnerContract")
+        return defaultHapiSpec(
+                        "htsTokenApproveToInnerContract",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -250,7 +259,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var allowanceTxn = ALLOWANCE_TX;
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("htsTokenAllowance")
+        return defaultHapiSpec("htsTokenAllowance", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -333,7 +342,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
-        return defaultHapiSpec("htsTokenApprove")
+        return defaultHapiSpec(
+                        "htsTokenApprove",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -395,8 +408,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var approvedForAllTxn = "approvedForAllTxn";
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("hapiNftIsApprovedForAll")
+        return defaultHapiSpec(
+                        "hapiNftIsApprovedForAll", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
+                        overriding("staking.fees.nodeRewardPercentage", "10"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
@@ -512,7 +527,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var allowanceTxn = ALLOWANCE_TX;
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("hapiNftGetApproved")
+        return defaultHapiSpec(
+                        "hapiNftGetApproved",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -596,7 +615,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
 
-        return defaultHapiSpec("hapiNftSetApprovalForAll")
+        return defaultHapiSpec(
+                        "hapiNftSetApprovalForAll",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -685,7 +708,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> calleeMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("testIndirectApprovalWith" + testName)
+        return defaultHapiSpec(
+                        "testIndirectApprovalWith" + testName,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(PRETEND_ATTACKER)
