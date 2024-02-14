@@ -1,6 +1,6 @@
 
 #!/usr/bin/env bash
-# add test 
+#
 # script to run most circleci test at local macOS in batch mode
 #
 # Steps
