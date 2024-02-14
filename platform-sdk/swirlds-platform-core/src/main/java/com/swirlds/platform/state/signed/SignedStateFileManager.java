@@ -228,18 +228,18 @@ public class SignedStateFileManager {
                             ("""
                             State written to disk for round %d did not have enough signatures.
                             This log adds debug information for #11422.
-                            Pre-check weight: %d/%d (%d%)  Post-check weight: %d/%d (%d%)
-                            Pre-check threshold: %s   Post-check threshold: %s""")
+                            Pre-check weight: %d/%d (%f%%)  Post-check weight: %d/%d (%f%%)
+                            Pre-check threshold: %s   Post-check threshold: %s"""
                                     .formatted(
                                             reservedState.getRound(),
                                             signingWeight1,
                                             totalWeight1,
+                                            signingWeight1 * 100.0 / totalWeight1,
                                             signingWeight2,
                                             totalWeight2,
-                                            signingWeight1 * 100.0 / totalWeight1,
                                             signingWeight2 * 100.0 / totalWeight2,
                                             Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
-                                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2))));
+                                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)))));
         }
     }
 
