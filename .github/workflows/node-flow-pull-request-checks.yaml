@@ -58,6 +58,8 @@ jobs:
   detect-change:
     name: Get changed files
     runs-on: [ self-hosted, Linux, large, ephemeral ]
+    outputs:
+      file_changed: ${{ steps.changed-files.outputs.hedera_any_changed }}
     steps:
       - name: Get changed files
         id: changed-files
@@ -86,18 +88,9 @@ jobs:
     steps:
       - name: Print changed files boolean
         id: print-changed-files-boolean
-        env:
-          ALL_CHANGED_FILES: ${{ needs.detect-change.steps.changed-files.outputs.hedera_all_changed_files }}
-
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
-          echo "${{ needs.detect-change.steps.changed-files.outputs.hedera_any_changed }}"
-
-          echo "${{ needs.detect-change.changed-files.outputs.hedera_any_changed }}"
+          echo "${{ needs.detect-change.outputs.file_changed }}"
           echo "-------------------------------------------------------------------"
-
 
   spotless:
     name: Spotless
@@ -347,7 +340,7 @@ jobs:
       - dependency-check
       - spotless
       - detect-change
-    if: ${{ needs.detect-change.steps.changed-files.outputs.hedera_any_changed == 'true' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.detect-change.outputs.file_changed == 'true' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
     with:
       custom-job-name: "Service integration test"
       branch-name: ${{ github.head_ref || github.ref_name }}
