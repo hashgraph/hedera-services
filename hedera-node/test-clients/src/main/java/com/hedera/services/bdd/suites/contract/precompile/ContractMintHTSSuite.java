@@ -136,7 +136,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.INFINITE)
