@@ -74,6 +74,8 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
 
     // test unprotected legacy ethereum transactions before EIP155
     // this tests the behaviour when the `v` field is 27 or 28
+    // in this case the passed chainId = 0 so ETX is before EIP155
+    // and so `v` is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
     HapiSpec legacyUnprotectedEtxBeforeEIP155() {
@@ -120,6 +122,8 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
 
     // test legacy ethereum transactions after EIP155
     // this tests the behaviour when the `v` field is 37 or 38
+    // in this case the passed chainId = 1 so ETX is after EIP155
+    // and so `v` is calculated -> v = {0,1} + CHAIN_ID * 2 + 35
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
     HapiSpec legacyEtxAfterEIP155() {
