@@ -87,6 +87,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -546,7 +547,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         /* Include custom fee payment usage in RBS calculations */
         var customFeeHbarTransfers = 0;
         var customFeeTokenTransfers = 0;
-        final var involvedTokens = new ArrayList<TokenID>();
+        final var involvedTokens = new HashSet<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
         List<AssessedCustomFee> assessedCustomFees;
         boolean triedAndFailedToUseCustomFees = false;
