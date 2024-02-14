@@ -59,6 +59,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     public static final String MINT_CONTRACT = "MintContract";
     private static final String HTS_CALLS = "HTSCalls";
+    private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
+    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
+            KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     public static final String TRESHOLD_KEY_CORRECT_CONTRACT_ID =
             "tresholdKeyWithCorrectContractAndIncorrectSignerPublicKey";
     public static final String TRESHOLD_KEY_WITH_SIGNER_KEY =
@@ -245,8 +248,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))),
                         // Create a key with shape contract and the contractId of burnToken contract
-                        newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MIXED_BURN_TOKEN)),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
                         // Test Case 1: Treasury account is paying and signing a token burn transaction, where the token
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer will have a key with the contractId (key type CONTRACT)
@@ -511,7 +515,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final HapiSpec V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var serialNumber1 = new long[]{1L};
         return propertyPreservingHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -601,7 +605,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final HapiSpec V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var initialAmount = 20L;
         return propertyPreservingHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
