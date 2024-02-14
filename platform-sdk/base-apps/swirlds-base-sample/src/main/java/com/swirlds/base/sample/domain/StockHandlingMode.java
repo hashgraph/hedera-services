@@ -16,6 +16,7 @@
 
 package com.swirlds.base.sample.domain;
 
-import java.math.BigDecimal;
-
-public record Transfer(String uuid, String from, String to, BigDecimal amount, Long timestamp) {}
+public enum StockHandlingMode {
+    FIFO,
+    LIFO
+}

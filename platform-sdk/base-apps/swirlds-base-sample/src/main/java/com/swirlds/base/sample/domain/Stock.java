@@ -16,4 +16,12 @@
 
 package com.swirlds.base.sample.domain;
 
-public record Wallet(String address) {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public record Stock(
+        @NonNull String itemId,
+        @NonNull BigDecimal unitaryPrice,
+        @NonNull Long timestamp,
+        @NonNull AtomicInteger remaining) {}

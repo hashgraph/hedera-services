@@ -17,6 +17,7 @@
 package com.swirlds.base.sample.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.undertow.server.HttpServerExchange;
@@ -42,6 +43,10 @@ import java.util.stream.Collectors;
  */
 public class DataTransferUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        MAPPER.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    }
 
     private DataTransferUtils() {}
 
@@ -146,6 +151,9 @@ public class DataTransferUtils {
                 .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().getFirst()));
     }
 
+    /**
+     * @param dateString parses a date from string
+     */
     public static Date parseDate(final String dateString) {
 
         Instant result;
@@ -159,5 +167,12 @@ public class DataTransferUtils {
                     .toInstant();
         }
         return Date.from(result);
+    }
+
+    /**
+     * creates a date from epoch value
+     */
+    public static Date fromEpoc(long epoch) {
+        return Date.from(Instant.ofEpochMilli(epoch));
     }
 }

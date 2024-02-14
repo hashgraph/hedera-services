@@ -17,11 +17,14 @@
 package com.swirlds.base.sample.domain;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 
-public record FullBalance(@NonNull Wallet wallet, @NonNull BigDecimal amount, @NonNull List<Movement> movements) {
-
-    public record Movement(@NonNull Date date, @NonNull BigDecimal amount, @NonNull String transactionUUID) {}
-}
+public record Sale(
+        @Nullable String uuid,
+        @NonNull String itemId,
+        @NonNull Integer amount,
+        @NonNull BigDecimal salePrice,
+        @Nullable StockHandlingMode mode,
+        @Nullable Date date) {}

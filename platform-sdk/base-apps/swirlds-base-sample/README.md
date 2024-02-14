@@ -6,7 +6,7 @@ A simple enough application that utilizes platform-base modules. This applicatio
 
 ## Overview
 
-This project consists of a simple wallet application that provides a REST API to handle wallets, balances, and transactions. The application utilizes an Undertow HTTP server to listen to connections on the configured port and limited 3erd party dependencies.
+This project consists of a simple inventory management application that provides a REST API to handle items, inventories, and operations. The application utilizes an Undertow HTTP server to listen to connections on the configured port and limited 3erd party dependencies.
 
 ![base-sample.drawio.png](.%2Fdoc%2Fbase-sample.drawio.png)
 ### Dependencies
@@ -47,17 +47,19 @@ The project provides a Docker Compose file that enables the following services:
 
 ## Usage
 
-The best way to run the application is through docker-compose:
+To run the application is through docker-compose & intelliJ:
 1. Build the application using `gradlew assemble`.
-2. inside `./docker` folder run `docker-compose up`
-3. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8000/`.
-4. Monitor metrics using the Prometheus server running on `http://localhost:8001/`.
-5. Visualize metrics using Grafana on `http://localhost:8002/`.
+2. Build the application using `gradlew run` or hit play in `com.swirlds.base.sample.Application` main method.
+3. inside `./docker` folder run `docker-compose up`
+4. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8080/`.
+5. Monitor metrics using the Prometheus server running on `http://localhost:9090/`.
+6. Access application's scrap endpoint for prometheus at port `http://localhost:9999/`.
+7. Visualize metrics using Grafana on `http://localhost:3000/`.
  user:admin password:admin
  There is a dashboard automatically included under explore.
  First time logging will require to change admin password.
-6. Example Http requests have been included in `./http-requests`.
-7. Rest api would be running on port 8080.
+8. Example Http requests have been included in [http-requests](http-requests%2FItems.http).
+9. Rest api will be running on port 8000.
 
 
 ## To Be Included

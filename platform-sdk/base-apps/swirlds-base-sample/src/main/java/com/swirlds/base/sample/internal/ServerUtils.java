@@ -17,9 +17,11 @@
 package com.swirlds.base.sample.internal;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
-import com.swirlds.base.sample.service.FullBalanceCrudService;
-import com.swirlds.base.sample.service.TransferCrudService;
-import com.swirlds.base.sample.service.WalletCrudService;
+import com.swirlds.base.sample.service.InventoryService;
+import com.swirlds.base.sample.service.ItemService;
+import com.swirlds.base.sample.service.OperationService;
+import com.swirlds.base.sample.service.PurchaseService;
+import com.swirlds.base.sample.service.SaleService;
 import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.undertow.Undertow;
@@ -42,14 +44,15 @@ public class ServerUtils {
         // Create a path handler to associate handlers with different paths
         PathHandler pathHandler = new PathHandler();
 
-        new AdapterHandler<>(swirldsContext, new FullBalanceCrudService(), config.apiBasePath() + "/balances")
+        new AdapterHandler<>(swirldsContext, new InventoryService(), config.apiBasePath() + "/inventories")
                 .into(pathHandler);
-        new AdapterHandler<>(
-                        swirldsContext, new TransferCrudService(swirldsContext), config.apiBasePath() + "/transfers")
+        new AdapterHandler<>(swirldsContext, new OperationService(swirldsContext), config.apiBasePath() + "/operations")
                 .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new WalletCrudService(swirldsContext), config.apiBasePath() + "/wallets")
+        new AdapterHandler<>(swirldsContext, new ItemService(), config.apiBasePath() + "/items").into(pathHandler);
+        new AdapterHandler<>(swirldsContext, new SaleService(swirldsContext), config.apiBasePath() + "/sales")
                 .into(pathHandler);
-
+        new AdapterHandler<>(swirldsContext, new PurchaseService(swirldsContext), config.apiBasePath() + "/purchases")
+                .into(pathHandler);
         // Create the Undertow server with the path handler and bind it to port
         Undertow server = Undertow.builder()
                 .addHttpListener(config.port(), config.host())
@@ -66,7 +69,7 @@ public class ServerUtils {
                     + "/ __\\ \\ /\\ / / | '__| |/ _` / __|_____| '_ \\ / _` / __|/ _ \\\n"
                     + "\\__ \\\\ V  V /| | |  | | (_| \\__ \\_____| |_) | (_| \\__ \\  __/\n"
                     + "|___/ \\_/\\_/ |_|_|  |_|\\__,_|___/ _   |_.__/ \\__,_|___/\\___|\n"
-                    + " ___  __ _ _ __ ___  _ __ | | ___| |           q             \n"
+                    + " ___  __ _ _ __ ___  _ __ | | ___| |                        \n"
                     + "/ __|/ _` | '_ ` _ \\| '_ \\| |/ _ \\ |                        \n"
                     + "\\__ \\ (_| | | | | | | |_) | |  __/_|                        \n"
                     + "|___/\\__,_|_| |_| |_| .__/|_|\\___(_) ");

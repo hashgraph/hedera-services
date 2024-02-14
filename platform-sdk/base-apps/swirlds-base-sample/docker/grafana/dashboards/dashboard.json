@@ -96,7 +96,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_wallet_total",
+          "expr": "app_item_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -106,7 +106,7 @@
           "useBackend": false
         }
       ],
-      "title": "Wallets Count",
+      "title": "Items Count",
       "type": "stat"
     },
     {
@@ -169,7 +169,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_transfer_count_total",
+          "expr": "app_operation_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -179,7 +179,7 @@
           "useBackend": false
         }
       ],
-      "title": "Total transfers made",
+      "title": "Total operations made",
       "type": "stat"
     },
     {
@@ -246,7 +246,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "app_transfer_time_ns",
+          "expr": "app_operation_time_ns",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -256,7 +256,7 @@
           "useBackend": false
         }
       ],
-      "title": "How long it complete a transfer",
+      "title": "How long it complete an operation",
       "type": "gauge"
     },
     {
@@ -331,7 +331,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "restapi_requests_count_total",
+          "expr": "restapi_requests_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -403,7 +403,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "restapi_error_count_total",
+          "expr": "restapi_error_total",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -440,7 +440,7 @@
               }
             ]
           },
-          "unit": "ms",
+          "unit": "ns",
           "unitScale": true
         },
         "overrides": []
@@ -479,7 +479,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "restapi_request_avg_time_ms",
+          "expr": "restapi_request_avg_time_ns",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -500,7 +500,7 @@
           "refId": "B"
         }
       ],
-      "title": "Request Avg Time ms",
+      "title": "Request Avg Time ns",
       "type": "bargauge"
     },
     {

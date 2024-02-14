@@ -16,8 +16,19 @@
 
 package com.swirlds.base.sample.domain;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigDecimal;
+import java.util.function.BiFunction;
 
-public record BalanceMovement(
-        String transactionUUID, @NonNull Long timestamp, @NonNull Wallet wallet, @NonNull BigDecimal amount) {}
+public enum OperationType {
+    ADDITION(Math::addExact),
+    DEDUCTION(Math::subtractExact);
+
+    private final BiFunction<Integer, Integer, Integer> operation;
+
+    OperationType(BiFunction<Integer, Integer, Integer> operation) {
+        this.operation = operation;
+    }
+
+    public int apply(int arg1, int arg2) {
+        return this.operation.apply(arg1, arg2);
+    }
+}

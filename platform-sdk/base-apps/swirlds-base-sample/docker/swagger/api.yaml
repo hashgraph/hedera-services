@@ -1,32 +1,32 @@
 openapi: 3.0.1
 info:
   title: Platform Base Sample
-  description: Simple Rest API sample for Platform Base frameworks
+  description: Inventory Management API for managing items, operations, and detailed inventory
   version: 1.0.0
+
 servers:
-  - url: 'http://localhost:8080/swirlds/api/'
   - url: 'http://localhost:8000/swirlds/api/'
 paths:
-  /wallets:
+  /items:
     post:
-      summary: Create a new wallet
+      summary: Create a new item
       requestBody:
-        description: new Wallet
+        description: new item
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/Item'
       responses:
         '201':
-          description: Wallet successfully created
+          description: item successfully created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Wallet'
+                $ref: '#/components/schemas/Item'
         '500':
           description: Server error
     get:
-      summary: Get all Wallets
+      summary: Get all items
       responses:
         "200":
           description: OK
@@ -35,14 +35,14 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Wallet'
-  /wallets/{address}:
+                  $ref: '#/components/schemas/Item'
+  /items/{itemId}:
     get:
-      summary: Get a Wallet
+      summary: Get a item
       parameters:
-        - name: address
+        - name: itemId
           in: path
-          description: address of the wallet to retrieve
+          description: id of the item to retrieve
           required: true
           schema:
             type: string
@@ -52,61 +52,56 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Wallet'
+                $ref: '#/components/schemas/Item'
         '404':
-          description: Wallet not found
+          description: Item not found
         '500':
           description: Server error
     delete:
-      summary: Delete a wallet by address
+      summary: Delete an Item by id
       parameters:
-        - name: address
+        - name: itemId
           in: path
-          description: address of the wallet to retrieve
+          description: Id of the item to delete
           required: true
           schema:
             type: string
       responses:
         '202':
-          description: Wallet successfully deleted
+          description: item successfully deleted
         '404':
-          description: Wallet not found
+          description: item not found
         '500':
           description: Server error
-  /balances/{address}:
+  /inventories/{itemId}:
     get:
-      summary: Retrieve full balance by address
+      summary: Retrieve inventory info for an item
       parameters:
-        - name: address
+        - name: itemId
           in: path
-          description: address of the wallet to retrieve
+          description: itemId to retrieve
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: Successful operation
+          description: Successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FullBalance'
+                $ref: '#/components/schemas/Inventory'
         '404':
-          description: Wallet not found
-  /transfers:
+          description: Item not found
+  /operations:
     get:
-      summary: Retrieve transfers based on parameters
+      summary: Retrieve operations based on parameters
       parameters:
         - name: uuid
           in: query
           required: false
           schema:
             type: string
-        - name: addressFrom
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: addressTo
+        - name: itemId
           in: query
           required: false
           schema:
@@ -123,13 +118,13 @@ paths:
           schema:
             type: string
             format: date-time
-        - name: amountFrom
+        - name: unitaryPriceFrom
           in: query
           required: false
           schema:
             type: number
             format: float
-        - name: amountTo
+        - name: unitaryPriceTo
           in: query
           required: false
           schema:
@@ -143,80 +138,204 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Transfer'
+                  $ref: '#/components/schemas/Operation'
         '400':
           description: Search parameters error
     post:
-      summary: Create a new transfer
+      summary: Create a new operation
       requestBody:
         description: new transaction
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TransferInput'
+              $ref: '#/components/schemas/OperationInput'
       responses:
         '201':
-          description: Transfer successfully done
+          description: Operation successfully done
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Transfer'
+                $ref: '#/components/schemas/Operation'
         '400':
           description: Input error
         '404':
-          description: Wallets not found
+          description: Item not found
+  /sales:
+    post:
+      summary: Create a new sale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInput'
+      responses:
+        '201':
+          description: Sale successfully submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sale'
+        '400':
+          description: Bad request
+  /purchases:
+    post:
+      summary: Create a new purchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInput'
+      responses:
+        '201':
+          description: Purchase successfully submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purchase'
+        '400':
+          description: Bad request
 components:
   schemas:
-    Wallet:
+    Item:
       type: object
       properties:
-        address:
+        description:
           type: string
-    Transfer:
+        sku:
+          type: string
+        minimumStockLevel:
+          type: integer
+        category:
+          type: string
+        id:
+          type: string
+    OperationInput:
+      type: object
+      properties:
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationDetail'
+        type:
+          $ref: '#/components/schemas/OperationType'
+    Operation:
       type: object
       properties:
         uuid:
           type: string
-        from:
-          type: string
-        to:
-          type: string
-        amount:
-          type: number
-          format: float
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationDetail'
         timestamp:
           type: integer
-          format: int64
-    TransferInput:
+        type:
+          $ref: '#/components/schemas/OperationType'
+    OperationDetail:
       type: object
       properties:
-        from:
-          type: string
-        to:
+        itemId:
           type: string
         amount:
+          type: integer
+        unitaryPrice:
           type: number
-          format: float
+        mode:
+          $ref: '#/components/schemas/StockHandlingMode'
+    Inventory:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/Item'
+        amount:
+          type: integer
+        stock:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stock'
+        movements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'
+    Stock:
+      type: object
+      properties:
+        unitaryPrice:
+          type: number
+        date:
+          type: string
+          format: date-time
+        quantity:
+          type: integer
     Movement:
       type: object
       properties:
-        transactionUUID:
-          type: string
         date:
           type: string
           format: date-time
         amount:
-          type: number
-          format: float
-    FullBalance:
+          type: integer
+        operationUUID:
+          type: string
+    OperationType:
+      type: string
+      enum:
+        - ADDITION
+        - DEDUCTION
+    StockHandlingMode:
+      type: string
+      enum:
+        - FIFO
+        - LIFO
+    SaleInput:
       type: object
       properties:
-        wallet:
-          $ref: '#/components/schemas/Wallet'
+        itemId:
+          type: string
         amount:
+          type: integer
+        salePrice:
           type: number
-          format: float
-        balanceMovements:
-          type: array
-          items:
-            $ref: '#/components/schemas/Movement'
+        mode:
+          type: string
+    Sale:
+      type: object
+      properties:
+        uuid:
+          type: string
+        itemId:
+          type: string
+        amount:
+          type: integer
+        salePrice:
+          type: number
+        mode:
+          type: string
+        date:
+          type: string
+          format: date-time
+    PurchaseInput:
+      type: object
+      properties:
+        itemId:
+          type: string
+        amount:
+          type: integer
+        buyPrice:
+          type: number
+    Purchase:
+      type: object
+      properties:
+        uuid:
+          type: string
+        itemId:
+          type: string
+        amount:
+          type: integer
+        buyPrice:
+          type: number
+        date:
+          type: string
+          format: date-time

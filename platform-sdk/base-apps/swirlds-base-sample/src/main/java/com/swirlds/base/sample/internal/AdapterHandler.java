@@ -35,6 +35,9 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Adapts a CrudService into an HttpHandler for undertow
+ */
 public class AdapterHandler<T> implements HttpHandler {
     private static final Logger log = LogManager.getLogger(AdapterHandler.class);
     private @NonNull final PlatformContext context;
@@ -60,7 +63,6 @@ public class AdapterHandler<T> implements HttpHandler {
     public void handleRequest(final @NonNull HttpServerExchange exchange) {
         String requestMethod = exchange.getRequestMethod().toString();
         long start = System.nanoTime();
-        context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_COUNT).increment();
 
         final List<String> urlParts = DataTransferUtils.urlToList(exchange);
         Object result = null;
@@ -116,10 +118,12 @@ public class AdapterHandler<T> implements HttpHandler {
         }
 
         final String response = DataTransferUtils.serializeToJson(result);
-        long duration = System.currentTimeMillis() - start;
+        long duration = System.nanoTime() - start;
+        context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_TOTAL).increment();
+        context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_AVG_TIME).update(duration);
         tps.count();
         if (statusCode - 200 >= 100) {
-            context.getMetrics().getOrCreate(ApplicationMetrics.ERROR_COUNT).increment();
+            context.getMetrics().getOrCreate(ApplicationMetrics.ERROR_TOTAL).increment();
         }
         exchange.setStatusCode(statusCode);
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json;charset=utf-8");
@@ -127,7 +131,7 @@ public class AdapterHandler<T> implements HttpHandler {
         exchange.getResponseSender().send(response);
 
         log.trace(
-                "Received Request to:{}{} took:{} answered status:{} body:{}",
+                "Received Request to:{}{} took:{}ns answered status:{} body:{}",
                 requestMethod,
                 exchange.getRequestURL(),
                 duration,
@@ -158,7 +162,7 @@ public class AdapterHandler<T> implements HttpHandler {
         return this.delegatedService.retrieveAll(params);
     }
 
-    private String getControllerName() {
+    private @NonNull String getControllerName() {
         return DataTransferUtils.urlToList(this.path).getLast();
     }
 
@@ -167,10 +171,16 @@ public class AdapterHandler<T> implements HttpHandler {
         return this.path;
     }
 
-    public void into(final PathHandler pathHandler) {
+    /**
+     * Adds the handler into a pathHandler
+     */
+    public void into(@NonNull final PathHandler pathHandler) {
         pathHandler.addPrefixPath(path, this);
     }
 
+    /**
+     * cors support
+     */
     private static void handleOptionsRequest(@NonNull final HttpServerExchange exchange) {
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
         exchange.getResponseHeaders()
