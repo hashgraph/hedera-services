@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+@Timeout(15)
 class ConcurrentTestSupportTest {
 
     @Test
