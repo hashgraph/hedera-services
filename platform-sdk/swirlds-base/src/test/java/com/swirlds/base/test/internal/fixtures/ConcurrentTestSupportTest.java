@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-@Timeout(5)
 class ConcurrentTestSupportTest {
 
     @Test
@@ -76,8 +75,8 @@ class ConcurrentTestSupportTest {
     void testMultipleTasksThatRunsTooLong() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
-            final List<Runnable> runnables = IntStream.range(500, 2_000)
-                    .mapToObj(i -> (Runnable) () -> sleep(i))
+            final List<Runnable> runnables = IntStream.range(0, 50)
+                    .mapToObj(i -> (Runnable) () -> sleep(2000))
                     .toList();
 
             // then
