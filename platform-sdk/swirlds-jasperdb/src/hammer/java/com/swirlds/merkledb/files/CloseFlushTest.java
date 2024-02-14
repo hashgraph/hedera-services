@@ -152,12 +152,12 @@ public class CloseFlushTest {
 
                 @Override
                 public void saveRecords(
-                        long firstLeafPath,
-                        long lastLeafPath,
-                        Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                        Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
-                        boolean isReconnectContext) {
+                        final long firstLeafPath,
+                        final long lastLeafPath,
+                        final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(
                                 firstLeafPath,

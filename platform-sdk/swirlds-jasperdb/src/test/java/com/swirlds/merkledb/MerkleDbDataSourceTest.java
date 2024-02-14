@@ -587,6 +587,7 @@ class MerkleDbDataSourceTest {
     }
 
     @ParameterizedTest
+    @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
     void dirtyDeletedLeavesBetweenFlushes(final TestType testType) throws IOException {
         final String tableName = "vm";

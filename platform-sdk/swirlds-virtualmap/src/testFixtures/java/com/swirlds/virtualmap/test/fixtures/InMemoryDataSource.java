@@ -94,12 +94,12 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
 
     @Override
     public void saveRecords(
-            long firstLeafPath,
-            long lastLeafPath,
-            Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
-            boolean isReconnectContext)
+            final long firstLeafPath,
+            final long lastLeafPath,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            final boolean isReconnectContext)
             throws IOException {
         if (failureOnSave) {
             throw new IOException("Preconfigured failure on save");
@@ -121,7 +121,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         }
 
         deleteInternalRecords(firstLeafPath);
-        deleteLeafRecords(leafRecordsToDelete);
+        deleteLeafRecords(leafRecordsToDelete, isReconnectContext);
         saveInternalRecords(lastLeafPath, pathHashRecordsToUpdate);
         saveLeafRecords(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate);
         // Save the leaf paths for later validation checks and to let us know when to delete internals
@@ -307,14 +307,15 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         }
     }
 
-    private void deleteLeafRecords(final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
+    private void deleteLeafRecords(
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete, final boolean isReconnectContext) {
         final var itr = leafRecordsToDelete.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
             final long path = rec.getPath();
             final K key = rec.getKey();
             final long oldPath = keyToPathMap.get(key);
-            if (path == oldPath) {
+            if (!isReconnectContext || path == oldPath) {
                 this.keyToPathMap.remove(key);
                 this.leafRecords.remove(path);
             }
