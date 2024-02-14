@@ -16,6 +16,9 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.services.cli.utils.Formatters.getListFormatter;
+import static com.hedera.services.cli.utils.Formatters.getNullableFormatter;
+import static com.hedera.services.cli.utils.Formatters.getOptionalFormatter;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static com.hedera.services.cli.utils.ThingsToStrings.toStructureSummaryOfJKey;
 
@@ -31,6 +34,7 @@ import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.DumpStateCommand.KeyDetails;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithFeeSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
+import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -281,28 +285,6 @@ public class DumpTokensSubcommand {
     /** String that separates sub-fields (e.g., in lists). */
     static final String SUBFIELD_SEPARATOR = ",";
 
-    static class FieldBuilder {
-        final StringBuilder sb;
-        final String fieldSeparator;
-
-        FieldBuilder(@NonNull final String fieldSeparator) {
-            this.sb = new StringBuilder();
-            this.fieldSeparator = fieldSeparator;
-        }
-
-        void append(@NonNull final String v) {
-            sb.append(v);
-            sb.append(fieldSeparator);
-        }
-
-        @Override
-        @NonNull
-        public String toString() {
-            if (sb.length() > fieldSeparator.length()) sb.setLength(sb.length() - fieldSeparator.length());
-            return sb.toString();
-        }
-    }
-
     static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
     static Function<String, String> csvQuote = s -> quoteForCsv(FIELD_SEPARATOR, s);
 
@@ -350,31 +332,6 @@ public class DumpTokensSubcommand {
             @NonNull final Function<Token, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(token)));
-    }
-
-    static <T> Function<Optional<T>, String> getOptionalFormatter(@NonNull final Function<T, String> formatter) {
-        return ot -> ot.isPresent() ? formatter.apply(ot.get()) : "";
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
-    }
-
-    static <T> Function<List<T>, String> getListFormatter(
-            @NonNull final Function<T, String> formatter, @NonNull final String subfieldSeparator) {
-        return lt -> {
-            if (!lt.isEmpty()) {
-                final var sb = new StringBuilder();
-                for (@NonNull final var e : lt) {
-                    final var v = formatter.apply(e);
-                    sb.append(v);
-                    sb.append(subfieldSeparator);
-                }
-                // Remove last subfield separator
-                if (sb.length() >= subfieldSeparator.length()) sb.setLength(sb.length() - subfieldSeparator.length());
-                return sb.toString();
-            } else return "";
-        };
     }
 
     void formatToken(@NonNull final Writer writer, @NonNull final Token token) {
