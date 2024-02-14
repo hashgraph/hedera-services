@@ -35,7 +35,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -44,9 +44,9 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.virtual.ContractValue;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
@@ -107,9 +107,14 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<ContractValue>> contracts = requireNonNull(
-                state.getChild(state.findNodeIndex(ContractService.NAME, "BYTECODE"))); // TODO: move to a constant
-        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), contracts, checkpoint);
+        // TODO: duplicated
+        final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
+                requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
+
+        //        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Account>> contracts = requireNonNull(
+        //                state.getChild(state.findNodeIndex(ContractService.NAME, "BYTECODE"))); // TODO: move to a
+        // constant
+        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), accounts, files, checkpoint);
     }
 
     private static String getExtantDumpLoc(

@@ -17,13 +17,18 @@
 package com.hedera.node.app.bbm.contracts;
 
 import static com.hedera.node.app.bbm.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.bbm.DumpCheckpoint;
+import com.hedera.node.app.bbm.accounts.AccountDumpUtils;
+import com.hedera.node.app.bbm.accounts.HederaAccount;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.state.virtual.ContractValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -34,11 +39,14 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -50,19 +58,89 @@ public class ContractBytecodesDumpUtils {
 
     public static void dumpModContractBytecodes(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<ContractValue>> contracts,
-            @NonNull final DumpCheckpoint checkpoint) {}
+            @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> files,
+            @NonNull final DumpCheckpoint checkpoint) {
+        final var dumpableAccounts = AccountDumpUtils.gatherAccounts(accounts, HederaAccount::fromMod);
+        final var contracts = getModContracts(dumpableAccounts, files);
+        final var sb = generateReport(contracts);
+        try (@NonNull final var writer = new Writer(path)) {
+            writer.writeln(sb.toString());
+            System.out.printf(
+                    "=== mono contract bytecodes report is %d bytes at checkpoint %s%n",
+                    writer.getSize(), checkpoint.name());
+        }
+    }
+
+    private static Contracts getModContracts(
+            HederaAccount[] dumpableAccounts, VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> files) {
+        final var smartContracts = Arrays.stream(dumpableAccounts)
+                .filter(HederaAccount::smartContract)
+                .toList();
+        final var deletedSmartContract =
+                smartContracts.stream().filter(HederaAccount::deleted).toList();
+
+        final var extractedFiles = gatherModFiles(files);
+
+        final var contractContents = new ArrayList<Contract>(ESTIMATED_NUMBER_OF_CONTRACTS);
+        for (final var smartContract : smartContracts) {
+            final var fileId = new FileID(0, 0, smartContract.accountId().accountNum()); // TODO: not sure
+            if (extractedFiles.containsKey(fileId)) {
+                final var hederaFile = extractedFiles.get(fileId);
+                if (null != hederaFile) {
+                    final var c = new Contract(
+                            new TreeSet<>(),
+                            hederaFile.contents(),
+                            deletedSmartContract.contains(smartContract) ? Validity.DELETED : Validity.ACTIVE);
+                    c.ids().add(smartContract.accountId().accountNum().intValue());
+                    contractContents.add(c);
+                }
+            }
+        }
+
+        final var deletedContractIds = deletedSmartContract.stream()
+                .map(c -> c.accountId().accountNum().intValue())
+                .toList();
+        return new Contracts(contractContents, deletedContractIds, smartContracts.size());
+    }
+
+    // TODO: duplicated. Will be deleted after https://github.com/hashgraph/hedera-services/pull/11385 is merged
+    @NonNull
+    private static Map<FileId, HederaFile> gatherModFiles(VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
+        final var r = new HashMap<FileId, HederaFile>();
+        final var threadCount = 8;
+        final var files = new ConcurrentLinkedQueue<Pair<FileId, HederaFile>>();
+        try {
+            VirtualMapLike.from(source)
+                    .extractVirtualMapData(
+                            getStaticThreadManager(),
+                            p -> files.add(Pair.of(FileId.fromMod(p.left().getKey()), HederaFile.fromMod(p.right()))),
+                            threadCount);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of files virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+        files.forEach(filePair -> r.put(filePair.getKey(), filePair.getValue()));
+        return r;
+    }
 
     public static void dumpMonoContractBytecodes(
             @NonNull final Path path,
             @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
             @NonNull final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> files,
             @NonNull final DumpCheckpoint checkpoint) {
-
         final var accountAdapter = AccountStorageAdapter.fromOnDisk(VirtualMapLike.from(accounts));
-
         final var knownContracts = ContractUtils.getContracts(files, accountAdapter);
+        final var sb = generateReport(knownContracts);
+        try (@NonNull final var writer = new Writer(path)) {
+            writer.writeln(sb.toString());
+            System.out.printf(
+                    "=== mono contract bytecodes report is %d bytes at checkpoint %s%n",
+                    writer.getSize(), checkpoint.name());
+        }
+    }
 
+    private static StringBuilder generateReport(Contracts knownContracts) {
         var r = getNonTrivialContracts(knownContracts);
         var contractsWithBytecode = r.getLeft();
         var zeroLengthContracts = r.getRight();
@@ -89,13 +167,7 @@ public class ContractBytecodesDumpUtils {
                         contractsWithBytecode.deletedContracts().size()));
 
         appendFormattedContractLines(sb, contractsWithBytecode);
-
-        try (@NonNull final var writer = new Writer(path)) {
-            writer.writeln(sb.toString());
-            System.out.printf(
-                    "=== mono contract bytecodes report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-        }
+        return sb;
     }
 
     /** Returns all contracts with bytecodes from the signed state, plus the ids of contracts with 0-length bytecodes.
