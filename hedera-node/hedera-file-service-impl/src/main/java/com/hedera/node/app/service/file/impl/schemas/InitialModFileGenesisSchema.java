@@ -95,7 +95,7 @@ public class InitialModFileGenesisSchema extends Schema {
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.
      */
-    private static final int MAX_FILES_HINT = 50_000_000;
+    private static final int MAX_FILES_HINT = 500_000_000;
 
     private final ConfigProvider configProvider;
     private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
