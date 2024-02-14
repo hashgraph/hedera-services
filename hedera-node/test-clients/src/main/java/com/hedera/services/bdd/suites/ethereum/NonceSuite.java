@@ -131,6 +131,7 @@ public class NonceSuite extends HapiSuite {
                 nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed(),
                 nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailed(),
                 nonceNotUpdatedForNonEthereumTransaction(),
+                revertsWhenSenderDoesNotExist(),
                 // evm smart contract reversions
                 nonceUpdatedAfterEvmReversionDueContractLogic(),
                 nonceUpdatedAfterEvmReversionDueInsufficientGas(),
@@ -1098,6 +1099,36 @@ public class NonceSuite extends HapiSuite {
                         getTxnRecord(TX)
                                 .hasPriority(recordWith()
                                         .contractCreateResult(resultWith().signerNonce(1L))));
+    }
+
+    @HapiTest
+    HapiSpec revertsWhenSenderDoesNotExist() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+        return defaultHapiSpec(
+                        "revertsWhenSenderDoesNotExist")
+                .given(
+                        cryptoCreate(RECEIVER).balance(0L).exposingCreatedIdTo(receiverId::set),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        ethereumCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        TRANSFER_TO_FUNCTION,
+                                        mirrorAddrWith(receiverId.get().getAccountNum()))
+                                .type(EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .gasLimit(ENOUGH_GAS_LIMIT)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID)
+                                .via(TX))))
+                .then(
+                        getTxnRecord(TX)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @Override
