@@ -94,7 +94,7 @@ jobs:
             echo "$file was changed"
           done
           echo "${{ needs.detect-change.steps.changed-files.outputs.hedera_any_changed }}"
-          
+
           echo "${{ needs.detect-change.changed-files.outputs.hedera_any_changed }}"
           echo "-------------------------------------------------------------------"
 
