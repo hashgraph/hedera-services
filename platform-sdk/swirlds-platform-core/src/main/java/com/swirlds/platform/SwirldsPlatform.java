@@ -598,13 +598,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                platformContext,
-                selfId,
-                consensusRef::get,
-                shadowGraph,
-                intakeEventCounter,
-                platformWiring.getKeystoneEventSequenceNumberOutput());
+        final LinkedEventIntake linkedEventIntake =
+                new LinkedEventIntake(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,

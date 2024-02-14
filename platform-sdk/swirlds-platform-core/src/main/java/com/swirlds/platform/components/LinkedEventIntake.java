@@ -18,7 +18,6 @@ package com.swirlds.platform.components;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -51,11 +50,6 @@ public class LinkedEventIntake {
      */
     private final IntakeEventCounter intakeEventCounter;
 
-    /**
-     * The secondary wire that outputs the keystone event sequence number
-     */
-    private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
-
     private final AddedEventMetrics eventAddedMetrics;
 
     private final StaleMetrics staleMetrics;
@@ -63,26 +57,23 @@ public class LinkedEventIntake {
     /**
      * Constructor
      *
-     * @param platformContext                   the platform context
-     * @param selfId                            the ID of the node
-     * @param consensusSupplier                 provides the current consensus instance
-     * @param shadowGraph                       tracks events in the hashgraph
-     * @param intakeEventCounter                tracks the number of events from each peer that have been received, but
-     *                                          aren't yet through the intake pipeline
-     * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
+     * @param platformContext    the platform context
+     * @param selfId             the ID of the node
+     * @param consensusSupplier  provides the current consensus instance
+     * @param shadowGraph        tracks events in the hashgraph
+     * @param intakeEventCounter tracks the number of events from each peer that have been received, but
+     *                           aren't yet through the intake pipeline
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final Shadowgraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
 
         this.eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
         this.staleMetrics = new StaleMetrics(platformContext, selfId);
@@ -111,17 +102,6 @@ public class LinkedEventIntake {
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
 
             eventAddedMetrics.eventAdded(event);
-
-            if (consensusRounds != null) {
-                consensusRounds.forEach(round -> {
-                    // it is important that a flush request for the keystone event is submitted before starting
-                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
-                    // where the transaction handler is waiting for a given event to become durable, but the
-                    // PCES writer hasn't been notified yet that the event should be flushed.
-                    keystoneEventSequenceNumberOutput.forward(
-                            round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
-                });
-            }
 
             final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
 
