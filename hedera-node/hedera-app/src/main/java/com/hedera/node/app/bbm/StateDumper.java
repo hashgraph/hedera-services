@@ -107,13 +107,9 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        // TODO: duplicated
+        // TODO: duplicated. Will be deleted after https://github.com/hashgraph/hedera-services/pull/11385 is merged
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
-
-        //        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Account>> contracts = requireNonNull(
-        //                state.getChild(state.findNodeIndex(ContractService.NAME, "BYTECODE"))); // TODO: move to a
-        // constant
         dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), accounts, files, checkpoint);
     }
 
