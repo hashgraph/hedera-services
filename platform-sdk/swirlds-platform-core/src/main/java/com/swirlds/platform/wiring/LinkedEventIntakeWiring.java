@@ -20,7 +20,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -30,20 +29,18 @@ import java.util.List;
 /**
  * Wiring for the {@link LinkedEventIntake}.
  *
- * @param eventInput                        the input wire for events to be added to the hashgraph
- * @param consensusRoundOutput              the output wire for consensus rounds
- * @param consensusEventsOutput             the output wire for consensus events, transformed from the consensus round
- *                                          output
- * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
- * @param flushRunnable                     the runnable to flush the intake
- * @param startSquelchingRunnable           the runnable to start squelching
- * @param stopSquelchingRunnable            the runnable to stop squelching
+ * @param eventInput              the input wire for events to be added to the hashgraph
+ * @param consensusRoundOutput    the output wire for consensus rounds
+ * @param consensusEventsOutput   the output wire for consensus events, transformed from the consensus round
+ *                                output
+ * @param flushRunnable           the runnable to flush the intake
+ * @param startSquelchingRunnable the runnable to start squelching
+ * @param stopSquelchingRunnable  the runnable to stop squelching
  */
 public record LinkedEventIntakeWiring(
         @NonNull InputWire<EventImpl> eventInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<List<EventImpl>> consensusEventsOutput,
-        @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
         @NonNull Runnable flushRunnable,
         @NonNull Runnable startSquelchingRunnable,
         @NonNull Runnable stopSquelchingRunnable) {
@@ -62,7 +59,6 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
                 consensusRoundOutput,
                 consensusRoundOutput.buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents),
-                taskScheduler.buildSecondaryOutputWire(),
                 taskScheduler::flush,
                 taskScheduler::startSquelching,
                 taskScheduler::stopSquelching);

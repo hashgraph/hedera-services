@@ -24,7 +24,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
@@ -126,8 +125,8 @@ public class TestIntake implements LoadableFromSignedState {
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
 
-        final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                () -> consensus, dispatcher, shadowGraph, intakeEventCounter, mock(StandardOutputWire.class));
+        final LinkedEventIntake linkedEventIntake =
+                new LinkedEventIntake(() -> consensus, dispatcher, shadowGraph, intakeEventCounter);
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
