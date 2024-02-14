@@ -1104,8 +1104,7 @@ public class NonceSuite extends HapiSuite {
     @HapiTest
     HapiSpec revertsWhenSenderDoesNotExist() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "revertsWhenSenderDoesNotExist")
+        return defaultHapiSpec("revertsWhenSenderDoesNotExist")
                 .given(
                         cryptoCreate(RECEIVER).balance(0L).exposingCreatedIdTo(receiverId::set),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1125,10 +1124,9 @@ public class NonceSuite extends HapiSuite {
                                 .gasLimit(ENOUGH_GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)
                                 .via(TX))))
-                .then(
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().signerNonce(0L))));
+                .then(getTxnRecord(TX)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @Override
