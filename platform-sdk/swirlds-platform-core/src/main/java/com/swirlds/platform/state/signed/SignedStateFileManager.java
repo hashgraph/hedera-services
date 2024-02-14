@@ -18,6 +18,7 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
@@ -205,20 +206,41 @@ public class SignedStateFileManager {
 
         final long signingWeight2 = reservedState.getSigningWeight();
         final long totalWeight2 = reservedState.getAddressBook().getTotalWeight();
-        logger.error(
-                EXCEPTION.getMarker(),
-                new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
-                                + "This log adds debug information for #11422."
-                                + "Pre-check wight: %d/%d   Post-check wight: %d/%d"
-                                + "Pre-check threshold: %s   Post-check threshold: %s")
-                        .formatted(
-                                reservedState.getRound(),
-                                signingWeight1,
-                                totalWeight1,
-                                signingWeight2,
-                                totalWeight2,
-                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
-                                Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2))));
+
+        // don't log an error if this is a freeze state. they are expected to lack signatures
+        if (reservedState.isFreezeState()) {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    """
+                    Freeze state written to disk for round {} was not fully signed. This is expected.
+                    "Collected signatures representing {}/{} ({}%) weight."
+                    """,
+                    reservedState.getRound(),
+                    reservedState.getSigningWeight(),
+                    reservedState.getAddressBook().getTotalWeight(),
+                    reservedState.getSigningWeight()
+                            * 100.0
+                            / reservedState.getAddressBook().getTotalWeight());
+        } else {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    new InsufficientSignaturesPayload(
+                            ("""
+                            State written to disk for round %d did not have enough signatures.
+                            This log adds debug information for #11422.
+                            Pre-check weight: %d/%d (%d%)  Post-check weight: %d/%d (%d%)
+                            Pre-check threshold: %s   Post-check threshold: %s""")
+                                    .formatted(
+                                            reservedState.getRound(),
+                                            signingWeight1,
+                                            totalWeight1,
+                                            signingWeight2,
+                                            totalWeight2,
+                                            signingWeight1 * 100.0 / totalWeight1,
+                                            signingWeight2 * 100.0 / totalWeight2,
+                                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
+                                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2))));
+        }
     }
 
     /**
