@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
@@ -119,6 +118,7 @@ public class BlockEnder {
         }
     }
 
+    @NonNull
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -130,31 +130,37 @@ public class BlockEnder {
         private volatile BlockStreamFormat format;
         private volatile long blockNumber;
 
+        @NonNull
         public Builder setLastRunningHash(@NonNull final HashObject lastRunningHash) {
             this.lastRunningHash = lastRunningHash;
             return this;
         }
 
+        @NonNull
         public Builder setWriter(@NonNull final BlockStreamWriter writer) {
             this.writer = writer;
             return this;
         }
 
+        @NonNull
         public Builder setState(@NonNull final HederaState state) {
             this.state = state;
             return this;
         }
 
+        @NonNull
         public Builder setFormat(@NonNull final BlockStreamFormat format) {
             this.format = format;
             return this;
         }
 
+        @NonNull
         public Builder setBlockNumber(final long blockNumber) {
             this.blockNumber = blockNumber;
             return this;
         }
 
+        @NonNull
         public BlockEnder build() {
             return new BlockEnder(lastRunningHash, writer, state, format, blockNumber);
         }

@@ -1,7 +1,6 @@
 package com.hedera.node.app.records.streams.impl.producers;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
@@ -64,44 +63,50 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
         this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void initFromLastBlock(@NonNull final RunningHashes runningHashes, long lastBlockNumber) {
+    public void initFromLastBlock(@NonNull final RunningHashes runningHashes, final long lastBlockNumber) {
         doAsync(CompletableFuture.runAsync(() -> producer.initFromLastBlock(runningHashes, lastBlockNumber), executor));
     }
 
     /**
+     * {@inheritDoc}
      * Get the current running hash of block items. This is called on the handle transaction thread and will block until
      * the most recent asynchronous operation as completed. To aid in surfacing problems with the producer, this method
      * throws a runtime exception if the future chain has been halted due to an exception.
      * @return The current running hash upto and including the last record stream item sent in writeRecordStreamItems().
      */
-    @NonNull
     @Override
+    @NonNull
     public Bytes getRunningHash() {
         blockUntilRunningHashesUpdated();
         return producer.getRunningHash();
     }
 
     /**
+     * {@inheritDoc}
      * Get the previous, previous, previous runningHash of all block stream BlockItems. This is called on the handle
      * transaction thread and will block until he most recent asynchronous operation as completed. To aid in surfacing
      * problems with the producer, this method throws a runtime exception if the future chain has been halted due to an
      * exception.
      * @return the previous, previous, previous runningHash of all block stream BlockItems
      */
-    @Nullable
     @Override
+    @Nullable
     public Bytes getNMinus3RunningHash() {
         blockUntilRunningHashesUpdated();
         return producer.getNMinus3RunningHash();
     }
 
+    /** {@inheritDoc} */
     @Override
     public void beginBlock() {
         doAsync(CompletableFuture.runAsync(producer::beginBlock, executor));
     }
 
+    /** {@inheritDoc} */
     @Override
+    @NonNull
     public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
         // We want to end the block after the previous lastFuture has completed. Only this time, we also must return a
         // future with the result of the endBlock call.
@@ -118,16 +123,19 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
         return enderFuture;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeConsensusEvent(consensusEvent), executor));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeSystemTransaction(systemTxn), executor));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeUserTransactionItems(@NonNull final ProcessUserTransactionResult items) {
         doAsync(CompletableFuture.runAsync(() -> producer.writeUserTransactionItems(items), executor));
@@ -138,6 +146,7 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
         doAsync(CompletableFuture.runAsync(() -> producer.writeStateChanges(stateChanges), executor));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() throws Exception {
         blockUntilRunningHashesUpdated();

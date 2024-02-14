@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import java.util.concurrent.ExecutorService;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Creates a new {@link BlockStreamWriter} instance on demand, based on configuration. During processing of
@@ -32,5 +32,6 @@ public interface BlockStreamWriterFactory {
      * @return the new instance
      * @throws RuntimeException if creation fails
      */
+    @NonNull
     BlockStreamWriter create() throws RuntimeException;
 }

@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import com.hedera.hapi.streams.HashObject;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,7 +62,7 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     }
 
     @Override
-    public void init(long blockNumber) {
+    public void init(final long blockNumber) {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber), executor));
     }
 
@@ -71,20 +71,12 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
         updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executor));
     }
 
-    public CompletableFuture<Void> writeItemSequentiallyAsync(@NonNull final Bytes item) {
-        return updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executor));
-    }
-
     @Override
     public void close() {
         updateLastFuture(CompletableFuture.runAsync(writer::close, executor));
     }
 
-    public CompletableFuture<Void> closeSequentiallyAsync() {
-        return updateLastFuture(CompletableFuture.runAsync(writer::close, executor));
-    }
-
-    private CompletableFuture<Void> updateLastFuture(@NonNull final CompletableFuture<Void> updater) {
-        return lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
+    private void updateLastFuture(@NonNull final CompletableFuture<Void> updater) {
+        lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
     }
 }

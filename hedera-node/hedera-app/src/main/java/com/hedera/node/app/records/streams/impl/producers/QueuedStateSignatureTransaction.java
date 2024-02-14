@@ -4,8 +4,6 @@ import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-import static java.util.Objects.requireNonNull;
-
 public record QueuedStateSignatureTransaction(
         @Nullable StateSignatureTransaction sig, @Nullable BlockStateProof proof) {
     // Ensure that the signature is not null

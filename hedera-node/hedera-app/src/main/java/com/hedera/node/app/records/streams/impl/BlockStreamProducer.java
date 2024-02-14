@@ -48,7 +48,7 @@ public interface BlockStreamProducer extends AutoCloseable {
      *                                    computed based on this hash.
      * @param lastBlockNumber The last block number that was committed to state.
      */
-    void initFromLastBlock(@NonNull RunningHashes runningHashes, long lastBlockNumber);
+    void initFromLastBlock(@NonNull final RunningHashes runningHashes, final long lastBlockNumber);
 
     /**
      * Get the current running hash of block items. This is called on the handle transaction thread. It will
@@ -81,12 +81,15 @@ public interface BlockStreamProducer extends AutoCloseable {
     void beginBlock();
 
     /**
-     * Called at the end of a block.
+     * Called at the end of a block. Since the gathering of the signatures and closing the block is an asynchronous
+     * process, this method returns a CompletableFuture completed with a BlockEnder to hand off the responsibility of
+     * closing the block to the caller. Then BlockStreamProducer can continue making progress on the next block while
+     * the BlockEnder is responsible for writing the proof and closing the block.
      *
-     * <p>If there is a currently open block stream, it produces the block proof, and closes the block. Since the
-     * gathering of the signatures and closing the block is an asynchronous process, this method returns a BlockEnder
-     * to hand off the responsibility of closing the block to the caller.
+     * @param builder the builder to use to end the block
+     * @return a future that will complete with the BlockEnder instance once the block has been ended
      */
+    @NonNull
     CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder);
 
     /**

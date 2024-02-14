@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.streams.v7.*;
@@ -31,10 +29,13 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This is a prototype for a RecordFileWriter for a streamlined version of V6 format, going to true protobuf and
@@ -58,6 +59,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
     // BlockStreamFormat ===============================================================================================
 
     /** {@inheritDoc} */
+    @NonNull
     private Bytes serializeBlockItem(@NonNull final BlockItem blockItem) {
         // The only thing we need to serialize is the BlockItem itself.
         return BlockItem.PROTOBUF.toBytes(blockItem);
@@ -65,6 +67,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public Bytes serializeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
         // TODO(nickpoorman): Update this code once Platform has Events defined in protobuf.
         EventImpl eventImpl = (EventImpl) consensusEvent;
@@ -132,6 +135,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public Bytes serializeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         var systemTxnBuilder = SystemTransaction.newBuilder();
 
@@ -193,6 +197,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public Stream<Bytes> serializeUserTransaction(@NonNull final SingleTransactionRecord item) {
         // User transactions produce a series of BlockItems.
         final var blockItems = List.of(
@@ -213,6 +218,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public Bytes serializeStateChanges(@NonNull final StateChanges stateChanges) {
         // We can have multiple state changes in a single BlockItem.
         return serializeBlockItem(
@@ -221,12 +227,14 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public Bytes serializeBlockStateProof(@NonNull final BlockStateProof stateProof) {
         return serializeBlockItem(BlockItem.newBuilder().stateProof(stateProof).build());
     }
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public MessageDigest getMessageDigest() {
         try {
             return MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -256,6 +264,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     // private methods =================================================================================================
 
+    @NonNull
     private TransactionResult extractTransactionResult(@NonNull final SingleTransactionRecord item) {
         // Is there a case where we don't have a receipt?
         final var receipt = item.transactionRecord().receiptOrThrow();
@@ -276,6 +285,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .build();
     }
 
+    @NonNull
     private TransactionOutput extractTransactionOutput(@NonNull final SingleTransactionRecord item) {
         final var builder = TransactionOutput.newBuilder();
 
@@ -344,7 +354,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
             case ETHEREUM_TRANSACTION -> builder.ethereumOuput(buildEthereumTransactionOutput(item));
             case NODE_STAKE_UPDATE -> {} // NOOP
             case UTIL_PRNG -> builder.utilPrngOuput(buildUtilPrngOutput(item));
-                // No default case so we can get compiler warnings if we are missing one.
+                // No default case, so we can get compiler warnings if we are missing one.
         }
 
         return builder.build();
@@ -352,12 +362,14 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     // Output builders =================================================================================================
 
+    @NonNull
     private ContractCallOutput.Builder buildContractCallOutput(@NonNull final SingleTransactionRecord item) {
         return ContractCallOutput.newBuilder()
                 .sidecars(item.transactionSidecarRecords())
                 .contractCallResult(item.transactionRecord().contractCallResult());
     }
 
+    @NonNull
     private ContractCreateOutput.Builder buildContractCreateOutput(@NonNull final SingleTransactionRecord item) {
         var transactionRecord = item.transactionRecord();
         return ContractCreateOutput.newBuilder()
@@ -374,17 +386,20 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .evmAddress(item.transactionRecord().evmAddress());
     }
 
+    @NonNull
     private CryptoTransferOutput.Builder buildCryptoTransferOutput(@NonNull final SingleTransactionRecord item) {
         return CryptoTransferOutput.newBuilder()
                 .assessedCustomFees(item.transactionRecord().assessedCustomFees());
     }
 
+    @NonNull
     private FileCreateOutput.Builder buildFileCreateOutput(@NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
         return FileCreateOutput.newBuilder().fileId(receipt.fileID());
     }
 
+    @NonNull
     private ConsensusCreateTopicOutput.Builder buildConsensusCreateTopicOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -392,6 +407,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return ConsensusCreateTopicOutput.newBuilder().topicId(receipt.topicID());
     }
 
+    @NonNull
     private ConsensusSubmitMessageOutput.Builder buildConsensusSubmitMessageOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -402,12 +418,14 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .topicRunningHashVersion(receipt.topicRunningHashVersion());
     }
 
+    @NonNull
     private TokenCreateOutput.Builder buildTokenCreationOutput(@NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
         return TokenCreateOutput.newBuilder().tokenId(receipt.tokenID());
     }
 
+    @NonNull
     private TokenMintOutput.Builder buildTokenMintOutput(@NonNull final SingleTransactionRecord item) {
         if (isMintNonFungibleToken(item)) {
             return TokenMintOutput.newBuilder()
@@ -430,6 +448,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return item.transactionOutputs().tokenType() == TokenType.NON_FUNGIBLE_UNIQUE;
     }
 
+    @NonNull
     private TokenMintNonFungibleUniqueOutput.Builder buildTokenMintNonFungibleUniqueOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -439,6 +458,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .serialNumbers(receipt.serialNumbers());
     }
 
+    @NonNull
     private TokenMintFungibleCommonOutput.Builder buildTokenMintFungibleCommonOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -459,6 +479,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return item.transactionOutputs().tokenType() == TokenType.NON_FUNGIBLE_UNIQUE;
     }
 
+    @NonNull
     private TokenBurnOutput.Builder buildTokenBurnOutput(@NonNull final SingleTransactionRecord item) {
         if (isBurnNonFungibleToken(item)) {
             return TokenBurnOutput.newBuilder()
@@ -468,6 +489,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         }
     }
 
+    @NonNull
     private TokenBurnNonFungibleUniqueOutput.Builder buildTokenBurnNonFungibleUniqueOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -475,6 +497,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return TokenBurnNonFungibleUniqueOutput.newBuilder().newTotalSupply(receipt.newTotalSupply());
     }
 
+    @NonNull
     private TokenBurnFungibleCommonOutput.Builder buildTokenBurnFungibleCommonOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -495,6 +518,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return item.transactionOutputs().tokenType() == TokenType.NON_FUNGIBLE_UNIQUE;
     }
 
+    @NonNull
     private TokenWipeAccountOutput.Builder buildTokenWipeOutput(@NonNull final SingleTransactionRecord item) {
         if (isWipeNonFungibleToken(item)) {
             return TokenWipeAccountOutput.newBuilder()
@@ -505,6 +529,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         }
     }
 
+    @NonNull
     private TokenWipeAccountNonFungibleUniqueOutput.Builder buildTokenWipeNonFungibleUniqueOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -512,6 +537,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return TokenWipeAccountNonFungibleUniqueOutput.newBuilder().newTotalSupply(receipt.newTotalSupply());
     }
 
+    @NonNull
     private TokenWipeAccountFungibleCommonOutput.Builder buildTokenWipeFungibleCommonOutput(
             @NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
@@ -519,6 +545,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return TokenWipeAccountFungibleCommonOutput.newBuilder().newTotalSupply(receipt.newTotalSupply());
     }
 
+    @NonNull
     private ScheduleCreateOutput.Builder buildScheduleCreateOutput(@NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
@@ -528,6 +555,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .scheduleRef(item.transactionRecord().scheduleRef());
     }
 
+    @NonNull
     private ScheduleSignOutput.Builder buildScheduleSignOutput(@NonNull final SingleTransactionRecord item) {
         // TODO(nickpoorman): Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
@@ -536,12 +564,14 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 .scheduleRef(item.transactionRecord().scheduleRef());
     }
 
+    @NonNull
     private EthereumOutput.Builder buildEthereumTransactionOutput(@NonNull final SingleTransactionRecord item) {
         return EthereumOutput.newBuilder()
                 .sidecars(item.transactionSidecarRecords())
                 .ethereumHash(item.transactionRecord().ethereumHash());
     }
 
+    @NonNull
     private UtilPrngOutput.Builder buildUtilPrngOutput(@NonNull final SingleTransactionRecord item) {
         var builder = UtilPrngOutput.newBuilder();
         var record = item.transactionRecord();

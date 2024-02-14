@@ -6,15 +6,13 @@ import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -94,6 +92,7 @@ public class BlockStateProofProducer {
      *
      * @return a future that will complete with the block state proof for the current round
      */
+    @NonNull
     public CompletableFuture<BlockStateProof> getBlockStateProof() {
         // Using the Supplier, return a future that will complete with the block proof for the current round as soon as
         // we have enough signatures.
@@ -104,6 +103,7 @@ public class BlockStateProofProducer {
      * Get the supplier for the block state proof for the current round.
      * @return the supplier for the block state proof for the current round
      */
+    @NonNull
     private Supplier<BlockStateProof> proofSupplier() {
         // Fast path if the proof has already been constructed.
         final var p = proof.get();
@@ -119,6 +119,7 @@ public class BlockStateProofProducer {
      * Collect the signatures for the current round and construct a proof.
      * @return the block state proof for the current round
      */
+    @NonNull
     private BlockStateProof collectProof() {
         final var q = StateSignatureTransactionCollector.getInstance().getQueueForRound(roundNum);
 
@@ -155,6 +156,7 @@ public class BlockStateProofProducer {
      * Once we have everything needed to produce a proof, build the proof and return it.
      * @return the block state proof for the current round or null if we don't have enough signatures
      */
+    @Nullable
     private BlockStateProof constructProof() {
         // Given the signatures we have, try to construct a proof.
         // Do we have enough signatures?
@@ -173,15 +175,17 @@ public class BlockStateProofProducer {
         return signatures.size() >= requiredNumberOfSignatures;
     }
 
+    @NonNull
     private List<BlockSignature> buildBlockSignatures() {
         // TODO(nickpoorman): Build the block signatures from the list of signatures.
-        return null;
+        return List.of();
     }
 
     /**
      * Once we have everything needed to produce a proof, build the proof and return it.
      * @return the block state proof for the current round
      */
+    @NonNull
     private BlockStateProof buildProof() {
         // Construct everything we need for the block proof.
 
@@ -232,7 +236,7 @@ public class BlockStateProofProducer {
      * @param proof the proof to verify
      * @return true if the proof is valid, otherwise false
      */
-    private boolean verifyProof(BlockStateProof proof) {
+    private boolean verifyProof(@NonNull final BlockStateProof proof) {
         // TODO(nickpoorman): Implement this.
         return false;
     }
@@ -242,7 +246,8 @@ public class BlockStateProofProducer {
      * @param p the proof to set
      * @return the proof that was set or the one that was already set
      */
-    private BlockStateProof setProof(BlockStateProof p) {
+    @NonNull
+    private BlockStateProof setProof(@NonNull final BlockStateProof p) {
         // Only set the proof if it's currently not set.
         if (proof.compareAndSet(null, p)) {
             return p;
@@ -256,6 +261,7 @@ public class BlockStateProofProducer {
      * @param e the queued state signature transaction
      * @return the proof if it was supplied, otherwise null
      */
+    @Nullable
     private BlockStateProof tryConsumeProof(@NonNull final QueuedStateSignatureTransaction e) {
         // If a proof was not provided we can't consume it.
         final var p = e.proof();

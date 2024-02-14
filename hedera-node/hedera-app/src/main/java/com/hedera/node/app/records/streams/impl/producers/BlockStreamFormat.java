@@ -42,6 +42,7 @@ public interface BlockStreamFormat {
      * @param consensusEvent The {@link ConsensusEvent} to serialize.
      * @return the serialized bytes of the consensus event.
      */
+    @NonNull
     Bytes serializeConsensusEvent(@NonNull final ConsensusEvent consensusEvent);
 
     /**
@@ -51,6 +52,7 @@ public interface BlockStreamFormat {
      * @param systemTxn The {@link ConsensusTransaction} to serialize.
      * @return the serialized bytes of the system transaction.
      */
+    @NonNull
     Bytes serializeSystemTransaction(@NonNull final ConsensusTransaction systemTxn);
 
     /**
@@ -61,6 +63,7 @@ public interface BlockStreamFormat {
      * @param item The {@link SingleTransactionRecord} to serialize.
      * @return the serialized bytes of the user transaction.
      */
+    @NonNull
     Stream<Bytes> serializeUserTransaction(@NonNull final SingleTransactionRecord item);
 
     /**
@@ -70,6 +73,7 @@ public interface BlockStreamFormat {
      * @param stateChanges The {@link StateChanges} to serialize.
      * @return the serialized bytes of the state changes.
      */
+    @NonNull
     Bytes serializeStateChanges(@NonNull final StateChanges stateChanges);
 
     /**
@@ -78,6 +82,7 @@ public interface BlockStreamFormat {
      * @param blockStateProof The {@link BlockStateProof} to serialize.
      * @return the serialized bytes of the block state proof.
      */
+    @NonNull
     Bytes serializeBlockStateProof(@NonNull final BlockStateProof blockStateProof);
 
     /**
@@ -85,6 +90,7 @@ public interface BlockStreamFormat {
      *
      * @return a non-thread safe MessageDigest instance
      */
+    @NonNull
     MessageDigest getMessageDigest();
 
     /**
@@ -97,6 +103,7 @@ public interface BlockStreamFormat {
      * @param serializedItem the intermediary format serialized {@link BlockItem} to add to the running hash
      * @return the new running hash, or startRunningHash if there were no items to add
      */
+    @NonNull
     Bytes computeNewRunningHash(
             @NonNull final MessageDigest messageDigest,
             @NonNull final Bytes startRunningHash,

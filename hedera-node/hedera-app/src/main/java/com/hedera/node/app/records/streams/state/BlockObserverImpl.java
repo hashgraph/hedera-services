@@ -41,7 +41,11 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Observer watches a Record and a Stack. It ties the changes in a stack to the transactions that created the state
@@ -96,7 +100,7 @@ public class BlockObserverImpl implements BlockObserver {
      * Flush the state changes to the sink.
      * @param sink the sink to flush the state changes to.
      */
-    private void flushStateChanges(StateChangesSink sink, StateChangesCause cause) {
+    private void flushStateChanges(@NonNull final StateChangesSink sink, @NonNull final StateChangesCause cause) {
         final var sc = StateChanges.newBuilder()
                 .stateChanges(stateChanges)
                 .cause(cause)
@@ -113,7 +117,8 @@ public class BlockObserverImpl implements BlockObserver {
      * Flush the end-of-round state changes to the sink.
      * @param sink the sink to flush the end-of-round state changes to.
      */
-    private void flushEndOfRoundStateChanges(StateChangesSink sink, StateChangesCause cause) {
+    private void flushEndOfRoundStateChanges(
+            @NonNull final StateChangesSink sink, @NonNull final StateChangesCause cause) {
         final var sc = StateChanges.newBuilder()
                 .stateChanges(endOfRoundStateChanges)
                 .cause(cause)
@@ -238,7 +243,7 @@ public class BlockObserverImpl implements BlockObserver {
      * changes that should be written using the same behavior.
      * @param stateChange the state change to add to be written to the block stream.
      */
-    public void addStateChange(@NonNull StateChange stateChange) {
+    public void addStateChange(@NonNull final StateChange stateChange) {
         // We may want to ignore certain state changes if their data is captured elswhere in the block stream.
         if (isIgnoredStateChange(stateChange)) {
             return;
@@ -257,11 +262,11 @@ public class BlockObserverImpl implements BlockObserver {
         stateChanges.add(stateChange);
     }
 
-    private boolean isIgnoredStateChange(@NonNull StateChange stateChange) {
+    private boolean isIgnoredStateChange(@NonNull final StateChange stateChange) {
         return stateChange.stateName().equals("RecordCache.TransactionRecordQueue");
     }
 
-    private boolean isEndOfRoundStateChange(@NonNull StateChange stateChange) {
+    private boolean isEndOfRoundStateChange(@NonNull final StateChange stateChange) {
         return stateChange.hasSingletonUpdate() || stateChange.hasSingletonDelete();
     }
 
@@ -271,7 +276,7 @@ public class BlockObserverImpl implements BlockObserver {
      * state change if it's a singleton and already exists in our change list.
      * @param stateChange the state change to be written at the end of the round
      */
-    private void addEndOfRoundStateChange(StateChange stateChange) {
+    private void addEndOfRoundStateChange(@NonNull final StateChange stateChange) {
         // If it's a singleton and already exists, remove the old one.
         if (stateChange.hasSingletonUpdate() && endOfRoundSingletonStateChanges.containsKey(stateChange.stateName())) {
             // Remove the old stateChange from both the list and the map.
@@ -303,7 +308,7 @@ public class BlockObserverImpl implements BlockObserver {
     }
 
     // TODO(nickpoorman): We should have PBJ generate these.
-    private static <K> void setMapUpdateChangeKey(MapUpdateChange.Builder b, K key) {
+    private static <K> void setMapUpdateChangeKey(@NonNull final MapUpdateChange.Builder b, @NonNull final K key) {
         switch (key) {
             case AccountID accountID -> b.accountIdKey(accountID);
             case EntityIDPair entityIDPair -> b.entityIdPairKey(entityIDPair);
@@ -324,7 +329,7 @@ public class BlockObserverImpl implements BlockObserver {
         }
     }
 
-    private static <V> void setMapUpdateChangeValue(MapUpdateChange.Builder b, V value) {
+    private static <V> void setMapUpdateChangeValue(@NonNull final MapUpdateChange.Builder b, @NonNull final V value) {
         switch (value) {
             case Account account -> b.accountValue(account);
             case AccountID accountID -> b.accountIdValue(accountID);
@@ -359,7 +364,8 @@ public class BlockObserverImpl implements BlockObserver {
         BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
-    private static <V> void setQueuePushChangeElement(QueuePushChange.Builder b, V value) {
+    private static <V> void setQueuePushChangeElement(
+            @NonNull final QueuePushChange.Builder b, @NonNull final V value) {
         switch (value) {
             case ProtoBytes protoBytesElement -> b.protoBytesElement(protoBytesElement);
             case ProtoString protoStringElement -> b.protoStringElement(protoStringElement);
@@ -394,7 +400,8 @@ public class BlockObserverImpl implements BlockObserver {
         BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
-    private <V> void setSingletonUpdateChangeValue(SingletonUpdateChange.Builder b, V value) {
+    private <V> void setSingletonUpdateChangeValue(
+            @NonNull final SingletonUpdateChange.Builder b, @NonNull final V value) {
         switch (value) {
             case BlockInfo blockInfo -> b.blockInfoValue(blockInfo);
             case EntityNumber entityNumber -> b.entityNumberValue(entityNumber);

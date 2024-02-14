@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.stream.Stream;
 
@@ -71,7 +72,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * @param state         The state to read BlockInfo from and update when new blocks are created
      * @return               true if a new block was created, false otherwise
      */
-    boolean startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
+    boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state);
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
@@ -79,7 +80,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * to multiple transactions.
      * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
      */
-    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
+    void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only
@@ -91,7 +92,8 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * @param recordStreamItems Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from
      */
-    void endUserTransaction(@NonNull Stream<SingleTransactionRecord> recordStreamItems, @NonNull HederaState state);
+    void endUserTransaction(
+            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final HederaState state);
 
     /**
      * Called at the end of a round to make sure the running hash and block information is up-to-date in state.
@@ -100,7 +102,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      *
      * @param state The state to update
      */
-    void endRound(@NonNull HederaState state);
+    void endRound(@NonNull final HederaState state);
 
     /**
      * Closes this BlockRecordManager and wait for any threads to finish.

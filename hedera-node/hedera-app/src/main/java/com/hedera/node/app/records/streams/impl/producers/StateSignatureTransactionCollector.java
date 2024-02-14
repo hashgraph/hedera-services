@@ -69,7 +69,8 @@ public class StateSignatureTransactionCollector {
      * @param roundNum the round number to get the queue for
      * @return the queue for the given round number
      */
-    public TransferQueue<QueuedStateSignatureTransaction> getQueueForRound(long roundNum) {
+    @NonNull
+    public TransferQueue<QueuedStateSignatureTransaction> getQueueForRound(final long roundNum) {
         // If there is no queue for this round, create one.
         return getOrCreateQueue(roundNum);
     }
@@ -96,7 +97,8 @@ public class StateSignatureTransactionCollector {
         });
     }
 
-    private LinkedTransferQueue<QueuedStateSignatureTransaction> getOrCreateQueue(long roundNum) {
+    @NonNull
+    private LinkedTransferQueue<QueuedStateSignatureTransaction> getOrCreateQueue(final long roundNum) {
         return signatureQueues.computeIfAbsent(roundNum, k -> new LinkedTransferQueue<>());
     }
 }

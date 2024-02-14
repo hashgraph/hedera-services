@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.UncheckedIOException;
 
 /**

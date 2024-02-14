@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BlockObserverSingleton {
     private static final AtomicReference<BlockObserver> instance = new AtomicReference<>(new NoOpBlockObserver());
 
-    public static void initInstance(@NonNull ConfigProvider configProvider) {
+    public static void initInstance(@NonNull final ConfigProvider configProvider) {
         final var current = instance.get();
 
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
@@ -51,6 +51,7 @@ public class BlockObserverSingleton {
                 + "Please check the configuration for blockStreamConfig and blockRecordStreamConfig.");
     }
 
+    @NonNull
     public static BlockObserver getInstanceOrThrow() {
         BlockObserver observer = instance.get();
         if (observer == null) {

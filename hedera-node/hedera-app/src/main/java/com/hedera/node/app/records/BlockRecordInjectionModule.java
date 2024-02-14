@@ -27,9 +27,9 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.records.streams.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamFormat;
-import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamProducerSingleThreaded;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFactory;
+import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.formats.BlockStreamWriterFactoryImpl;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFormatV1;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
@@ -41,17 +41,17 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import javax.inject.Qualifier;
+import javax.inject.Singleton;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import javax.inject.Qualifier;
 
 /** A Dagger module for facilities in the {@link com.hedera.node.app.records} package. */
 @Module
@@ -78,6 +78,7 @@ public abstract class BlockRecordInjectionModule {
     /** Provides the normal, default {@link java.nio.file.FileSystem}.*/
     @Provides
     @Singleton
+    @NonNull
     static FileSystem provideFileSystem() {
         System.out.println("Called provideFileSystem");
         return FileSystems.getDefault();
@@ -89,6 +90,7 @@ public abstract class BlockRecordInjectionModule {
      */
     @Provides
     @Singleton
+    @NonNull
     public static BlockRecordStreamProducer provideStreamFileProducer(
             @NonNull final ConfigProvider configProvider,
             @NonNull final StreamFileProducerConcurrent concurrent,
@@ -109,6 +111,7 @@ public abstract class BlockRecordInjectionModule {
     /** Provides an implementation of the {@link com.hedera.node.app.records.BlockRecordManager}. */
     @Provides
     @Singleton
+    @NonNull
     public static FunctionalBlockRecordManager provideBlockRecordManager(
             @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
@@ -142,6 +145,7 @@ public abstract class BlockRecordInjectionModule {
 
     @Provides
     @Singleton
+    @NonNull
     public static BlockRecordFormat provideBlockRecordFormat(@NonNull final ConfigProvider configProvider) {
         System.out.println("Called provideBlockRecordFormat");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
@@ -164,6 +168,7 @@ public abstract class BlockRecordInjectionModule {
 
     @Binds
     @Singleton
+    @NonNull
     public abstract BlockRecordWriterFactory provideBlockRecordWriterFactory(
             @NonNull BlockRecordWriterFactoryImpl impl);
 
@@ -178,6 +183,7 @@ public abstract class BlockRecordInjectionModule {
      */
     @Provides
     @Singleton
+    @NonNull
     public static BlockStreamProducer provideBlockStreamFileProducer(
             @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
@@ -200,6 +206,7 @@ public abstract class BlockRecordInjectionModule {
     // records so this is directly provided by dagger.
     // @Provides
     @Singleton
+    @NonNull
     public static FunctionalBlockRecordManager provideBlockStreamManager(
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
@@ -222,6 +229,7 @@ public abstract class BlockRecordInjectionModule {
 
     @Provides
     @Singleton
+    @NonNull
     public static BlockStreamFormat provideBlockStreamFormat(@NonNull final ConfigProvider configProvider) {
         System.out.println("Called provideBlockStreamFormat");
         final var blockVersion = validateBlockStreamVersion(configProvider);
@@ -236,6 +244,7 @@ public abstract class BlockRecordInjectionModule {
 
     @Binds
     @Singleton
+    @NonNull
     public abstract BlockStreamWriterFactory provideBlockStreamWriterFactory(
             @NonNull BlockStreamWriterFactoryImpl impl);
 

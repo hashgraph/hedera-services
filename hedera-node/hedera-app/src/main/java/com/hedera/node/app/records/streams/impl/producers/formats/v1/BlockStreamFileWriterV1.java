@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
-import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
-
-import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -27,17 +24,20 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import java.math.BigInteger;
+
+import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
 
 public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
 
@@ -103,6 +103,7 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     // =================================================================================================================
     // Implementation of methods in BlockStreamWriter
 
+    @Override
     public void init(final long blockNumber) {
         if (state != State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a BlockStreamFileWriterV1 twice");
@@ -194,7 +195,8 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
                 + (compressFiles ? COMPRESSION_ALGORITHM_EXTENSION : ""));
     }
 
-    public static String longToFileName(long value) {
+    @NonNull
+    public static String longToFileName(final long value) {
         // Convert the signed long to an unsigned long using BigInteger for correct representation
         BigInteger unsignedValue =
                 BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));

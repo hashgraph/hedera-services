@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.records.streams.impl;
 
-import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.*;
+import com.hedera.hapi.streams.v7.BlockStateProof;
+import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
@@ -33,7 +31,6 @@ import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
-import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
 import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.records.streams.state.StateChangesSink;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -48,22 +45,21 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of {@link BlockRecordManager} primarily responsible for managing state ({@link RunningHashes} and
@@ -126,10 +122,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaState state,
             @NonNull final BlockStreamProducer blockStreamProducer) {
-        System.out.println("BlockStreamManagerImpl constructor");
 
         this.executor = requireNonNull(executor);
-
         requireNonNull(state);
         requireNonNull(configProvider);
         this.blockStreamProducer = requireNonNull(blockStreamProducer);
@@ -184,9 +178,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     // =================================================================================================================
     // BlockRecordManager implementation
 
-    /** {@inheritDoc} */
-    //    @Override
-    public void startRound(@NonNull HederaState state, @NonNull Round round) {
+    private void startRound() {
         roundsUntilNextBlock--;
 
         // We do not have an open block so create a new one.
@@ -194,7 +186,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     /** {@inheritDoc} */
-    //    @Override
+    @Override
     public void endRound(@NonNull final HederaState state) {
         if (roundsUntilNextBlock == 0) {
             updateBlockInfoForEndRound(state);
@@ -204,40 +196,21 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         updateRunningHashesInState(state);
     }
 
-    /** {@inheritDoc} */
-    //    @Override
-    public void startConsensusEvent(@NonNull HederaState state, @NonNull ConsensusEvent platformEvent) {
+    private void startConsensusEvent(@NonNull final ConsensusEvent platformEvent) {
         blockStreamProducer.writeConsensusEvent(platformEvent);
     }
 
-    public void endConsensusEvent(@NonNull HederaState state, @NonNull ConsensusEvent platformEvent) {}
+    private void endConsensusEvent() {}
 
-    /** {@inheritDoc} */
-    //    @Override
-    public void startSystemTransaction(@NonNull HederaState state, @NonNull ConsensusTransaction systemTxn) {}
+    private void startSystemTransaction() {}
 
-    /** {@inheritDoc} */
-    //    @Override
-    public void endSystemTransaction(
-            @NonNull final HederaState state,
-            @NonNull final NodeInfo creator,
-            @NonNull ConsensusTransaction systemTxn) {
-
+    private void endSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         // We write the system transaction to the block stream now as we would write any other block item. For
         // StateSignatureTransaction, the round in which they are written to the block stream might not be the round
         // they represent (the transaction and their state changes might not be included in the block they represent),
         // which is fine because we have another process for collecting them, and then completing the open block that is
         // waiting for them to produce the block proof.
         blockStreamProducer.writeSystemTransaction(systemTxn);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void endUserTransaction(
-            @NonNull final Stream<SingleTransactionRecord> singleTransactionRecordStream,
-            @NonNull final HederaState state) {
-        // Throw an exception saying that this isn't implemented for this class.
-        throw new UnsupportedOperationException("endUserTransaction is not implemented for BlockStreamManagerImpl");
     }
 
     /**
@@ -253,9 +226,15 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     /** {@inheritDoc} */
-    //    @Override
-    public void endProcessUserTransaction(
-            @NonNull final ProcessUserTransactionResult result, @NonNull final HederaState state) {
+    @Override
+    public void endUserTransaction(
+            @NonNull final Stream<SingleTransactionRecord> singleTransactionRecordStream,
+            @NonNull final HederaState state) {
+        // Throw an exception saying that this isn't implemented for this class.
+        throw new UnsupportedOperationException("endUserTransaction is not implemented for BlockStreamManagerImpl");
+    }
+
+    private void endProcessUserTransaction(@NonNull final ProcessUserTransactionResult result) {
 
         // check if we need to run event recovery before we can write any new records to stream
         if (!this.eventRecoveryCompleted) {
@@ -271,9 +250,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     // StateChangesSink implementation
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
-    public void writeStateChanges(StateChanges stateChanges) {
+    public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         blockStreamProducer.writeStateChanges(stateChanges);
     }
 
@@ -288,8 +266,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
+    @Nullable
     public Bytes getNMinus3RunningHash() {
         return blockStreamProducer.getNMinus3RunningHash();
     }
@@ -304,8 +282,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
+    @Nullable
     public Instant firstConsTimeOfLastBlock() {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
@@ -313,27 +291,29 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     /**
      * {@inheritDoc}
      */
-    @Nullable
     @Override
+    @Nullable
     public Instant firstConsTimeOfCurrentBlock() {
         return BlockRecordInfoUtils.firstConsTimeOfCurrentBlock(lastBlockInfo);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public @NonNull Timestamp currentBlockTimestamp() {
+    @NonNull
+    public Timestamp currentBlockTimestamp() {
         return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
+    @Nullable
     public Bytes lastBlockHash() {
         return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
+    @Nullable
     public Bytes blockHashByBlockNumber(final long blockNo) {
         return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
@@ -385,7 +365,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
         try {
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
-                this.startRound(state, round);
+                this.startRound();
                 try {
                     runnable.run();
                 } finally {
@@ -415,28 +395,26 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Supplier<ProcessUserTransactionResult> callable) {
         BlockObserverSingleton.getInstanceOrThrow().recordUserTransactionStateChanges(this, platformTxn, () -> {
+            //noinspection ResultOfMethodCallIgnored
             this.startUserTransaction(consensusTime, state);
-            ProcessUserTransactionResult result = null;
-            try {
-                result = callable.get();
-            } finally {
-                // In BlockStreams we want to make sure we close any opened transactions.
-                this.endProcessUserTransaction(result, state);
-            }
+            ProcessUserTransactionResult result = callable.get();
+            this.endProcessUserTransaction(result);
         });
     }
 
     /** {@inheritDoc} */
     @Override
     public void processConsensusEvent(
-            @NonNull HederaState state, @NonNull ConsensusEvent platformEvent, @NonNull Runnable runnable) {
+            @NonNull final HederaState state,
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final Runnable runnable) {
         BlockObserverSingleton.getInstanceOrThrow().recordEventStateChanges(this, platformEvent, () -> {
-            this.startConsensusEvent(state, platformEvent);
+            this.startConsensusEvent(platformEvent);
             try {
                 runnable.run();
             } finally {
-                // In BlockStreams we want to make sure we close any opened rounds.
-                this.endConsensusEvent(state, platformEvent);
+                // In BlockStreams we want to make sure we close any opened events.
+                this.endConsensusEvent();
             }
         });
     }
@@ -444,17 +422,17 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     /** {@inheritDoc} */
     @Override
     public void processSystemTransaction(
-            @NonNull HederaState state,
+            @NonNull final HederaState state,
             @NonNull final NodeInfo creator,
-            @NonNull ConsensusTransaction systemTxn,
-            @NonNull Runnable runnable) {
+            @NonNull final ConsensusTransaction systemTxn,
+            @NonNull final Runnable runnable) {
         BlockObserverSingleton.getInstanceOrThrow().recordSystemTransactionStateChanges(this, systemTxn, () -> {
-            this.startSystemTransaction(state, systemTxn);
+            this.startSystemTransaction();
             try {
                 runnable.run();
             } finally {
                 // In BlockStreams we want to make sure we close any opened rounds.
-                this.endSystemTransaction(state, creator, systemTxn);
+                this.endSystemTransaction(systemTxn);
             }
         });
     }
@@ -471,8 +449,10 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         return lastBlockInfo.lastBlockNumber() + 1;
     }
 
+    @Nullable
     private Instant consTimeOfLastHandledTxn() {
         final var consensusTimestamp = lastBlockInfo.consTimeOfLastHandledTxn();
+        if (consensusTimestamp == null) return null;
         return Instant.ofEpochSecond(consensusTimestamp.seconds(), consensusTimestamp.nanos());
     }
 
@@ -481,9 +461,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      */
     private void beginBlock() {
         blockOpen = true;
-
-        // TODO(nickpoorman): I'm not sure this is correct...
-        // When a new block is created, we must let the blockStreamProducer know, so it can create a new block.
         blockStreamProducer.beginBlock();
     }
 
@@ -535,9 +512,10 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      * @param justFinishedBlockNumber The new block number
      * @param hashOfJustFinishedBlock The new block hash
      */
+    @NonNull
     private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
-            @NonNull final long justFinishedBlockNumber,
+            final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock) {
         // compute new block hashes bytes
         final byte[] blockHashesBytes = lastBlockInfo.blockHashes().toByteArray();

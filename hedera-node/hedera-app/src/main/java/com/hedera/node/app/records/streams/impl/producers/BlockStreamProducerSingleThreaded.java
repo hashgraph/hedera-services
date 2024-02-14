@@ -16,32 +16,28 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
-import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.MessageDigest;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import java.security.MessageDigest;
+import java.util.concurrent.CompletableFuture;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A single threaded implementation of {@link BlockStreamProducer} where all operations happen in a blocking
@@ -102,7 +98,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     @Override
-    public void initFromLastBlock(@NonNull final RunningHashes runningHashes, long lastBlockNumber) {
+    public void initFromLastBlock(@NonNull final RunningHashes runningHashes, final long lastBlockNumber) {
         if (this.runningHash != null) {
             throw new IllegalStateException("initFromLastBlock() must only be called once");
         }
@@ -130,7 +126,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BlockEnder> endBlock(@NonNull BlockEnder.Builder builder) {
+    @NonNull
+    public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
         return CompletableFuture.completedFuture(builder.setLastRunningHash(getRunningHashObject())
                 .setWriter(writer)
                 .setFormat(format)
@@ -154,16 +151,16 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     }
 
     /** {@inheritDoc} */
-    @NonNull
     @Override
+    @NonNull
     public Bytes getRunningHash() {
         assert runningHash != null : "initFromLastBlock() must be called before getRunningHash()";
         return runningHash;
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
+    @Nullable
     public Bytes getNMinus3RunningHash() {
         return runningHashNMinus3;
     }
@@ -202,11 +199,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         writeSerializedBlockItem(serializedBlockItem);
     }
 
-    public void writeStateSignatureTransaction(@NonNull StateSignatureTransaction txn) {
-        // 1. Buffer the transaction to be written to the next block.
-        // 2. Collect the signatures and write the block proof.
-    }
-
     // =================================================================================================================
     // private implementation
 
@@ -214,17 +206,19 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         return this.lastConsensusEventVersion == null;
     }
 
-    private boolean hasConsensusEventVersionChanged(final @NonNull ConsensusEvent newConsensusEvent) {
+    private boolean hasConsensusEventVersionChanged(@NonNull final ConsensusEvent newConsensusEvent) {
         final var oldVersion = requireNonNull(this.lastConsensusEventVersion, "lastConsensusEventVersion is null");
         // Check if the current consensus event version is different from newConsensusEvent.
         var newVersion = newConsensusEvent.getSoftwareVersion();
         return newVersion.compareTo(oldVersion) != 0;
     }
 
+    @NonNull
     private HashObject asHashObject(@NonNull final Bytes hash) {
         return new HashObject(HashAlgorithm.SHA_384, (int) hash.length(), hash);
     }
 
+    @NonNull
     private HashObject getRunningHashObject() {
         return asHashObject(getRunningHash());
     }

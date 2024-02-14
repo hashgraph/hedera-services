@@ -31,9 +31,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import java.io.UncheckedIOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.UncheckedIOException;
 
 /**
  * A {@link BlockStreamWriter} that writes a single {@link Block} to a destination. It writes the
@@ -89,7 +90,8 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     /**
      * {@inheritDoc}
      */
-    public void init(long blockNumber) {
+    @Override
+    public void init(final long blockNumber) {
 
         if (state != State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a BlockStreamWriterV1 twice");
@@ -132,12 +134,13 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     // Implementation of methods in BlockStreamWriter
 
     /**
-     *  {@inheritDoc}
+     * {@inheritDoc}
      *
      * <p>If we ever bind a bottleneck here, due to the http2 transport having Head-Of-Line blocking, we may want to
      * consider buffering up and batching writes of block items to avoid round trips. This optimization should only be
      * made with extensive benchmarking of various different batch sizes.
      **/
+    @Override
     @SuppressWarnings("java:S125")
     public void writeItem(@NonNull final Bytes item) {
         if (state != State.OPEN) {
@@ -161,6 +164,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     }
 
     /** {@inheritDoc} */
+    @Override
     public void close() {
         if (state != State.OPEN) {
             throw new IllegalStateException("Cannot close a BlockRecordWriterV6 that is not open");
@@ -387,6 +391,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     //        }
     //    }
 
+    @NonNull
     private BlockServiceGrpc.BlockServiceStub blockNodeClient() {
         // TODO(nickpoorman): Implement this. These details should be provided in the config.
         //   We should also reuse the ManagedChannel and stub and not create a new one for each rpc call.

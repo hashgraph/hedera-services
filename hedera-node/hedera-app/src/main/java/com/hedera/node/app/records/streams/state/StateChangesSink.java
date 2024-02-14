@@ -17,14 +17,13 @@
 package com.hedera.node.app.records.streams.state;
 
 import com.hedera.hapi.streams.v7.StateChanges;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StateChangesSink {
 
     /**
      * Write the state changes to the sink.
      * @param stateChanges the state changes to write
-     * @return the state changes that were not written to the sink. The sink can choose to return StateChanges that
-     *         should be written at a future time.
      */
-    void writeStateChanges(StateChanges stateChanges);
+    void writeStateChanges(@NonNull final StateChanges stateChanges);
 }
