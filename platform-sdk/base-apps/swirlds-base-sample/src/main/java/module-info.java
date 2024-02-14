@@ -3,7 +3,6 @@ module com.swirlds.base.sample {
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;
-    requires com.swirlds.config.impl;
     requires com.swirlds.metrics.api;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;

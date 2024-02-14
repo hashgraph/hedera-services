@@ -19,6 +19,11 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
 }
 
+mainModuleInfo {
+    annotationProcessor("com.swirlds.config.processor")
+    runtimeOnly("com.swirlds.config.impl")
+}
+
 application.mainClass.set("com.swirlds.base.sample.Application")
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.

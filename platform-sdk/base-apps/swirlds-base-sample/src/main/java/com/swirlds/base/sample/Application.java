@@ -35,7 +35,6 @@ import com.swirlds.config.extensions.sources.ClasspathFileConfigSource;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
-import com.swirlds.config.impl.converters.FileConverter;
 import com.swirlds.metrics.api.Metrics;
 import java.nio.file.Path;
 import java.util.Set;
@@ -47,13 +46,6 @@ public class Application {
     private static final String SWIRLDS_CONFIG_PACKAGE = "com.swirlds";
     public static final String APPLICATION_PROPERTIES = "application.properties";
     public static final Path EXTERNAL_PROPERTIES = Path.of("./config/application.properties");
-
-    /**
-     * This is needed to avoid the modules validation we have in place.
-     * without this declaration, module config-impl is understood as not needed and the build process would fail
-     * but there is no other mechanism to incorporate that dependency.
-     */
-    public static final FileConverter NONE = null;
 
     public static void main(String[] args) {
         try {
