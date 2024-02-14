@@ -46,8 +46,6 @@ import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.bouncycastle.util.Arrays;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;

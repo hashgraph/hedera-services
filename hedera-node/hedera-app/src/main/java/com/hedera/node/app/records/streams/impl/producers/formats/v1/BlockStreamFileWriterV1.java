@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
+import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
+
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -24,9 +26,6 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,8 +35,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
-
-import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
 

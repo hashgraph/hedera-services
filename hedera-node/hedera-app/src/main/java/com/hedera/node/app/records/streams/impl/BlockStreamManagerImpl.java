@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.records.streams.impl;
 
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -47,19 +50,15 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link BlockRecordManager} primarily responsible for managing state ({@link RunningHashes} and

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.streams.v7.*;
@@ -29,13 +31,10 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This is a prototype for a RecordFileWriter for a streamlined version of V6 format, going to true protobuf and

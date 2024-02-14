@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.records.streams;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
 
 public record ProcessUserTransactionResult(
         @NonNull Stream<SingleTransactionRecord> transactionRecordStream, @NonNull TransactionBody transactionBody) {

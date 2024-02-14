@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFactory;
@@ -26,13 +28,10 @@ import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.nio.file.FileSystem;
 import java.util.concurrent.ExecutorService;
-
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {

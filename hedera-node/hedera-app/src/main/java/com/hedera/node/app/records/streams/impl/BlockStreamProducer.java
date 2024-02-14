@@ -17,20 +17,15 @@
 package com.hedera.node.app.records.streams.impl;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
-import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Produces a stream of blocks. This is used by the {@link BlockStreamManagerImpl}.

@@ -339,20 +339,21 @@ public class HandleWorkflow {
 
             final var recordListBuilder = new RecordListBuilder(consensusNow);
             final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
-    
+
             // Setup helpers
             final var configuration = configProvider.getConfiguration();
             final var stack = new SavepointStackImpl(state);
             final var readableStoreFactory = new ReadableStoreFactory(stack);
             final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
-    
-            final var tokenServiceContext =
-                    new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+
+            final var tokenServiceContext = new TokenContextImpl(
+                    configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
             // It's awful that we have to check this every time a transaction is handled, especially since this mostly
             // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
             genesisRecordsTimeHook.process(tokenServiceContext);
             try {
-                // If this is the first user transaction after midnight, then handle staking updates prior to handling the
+                // If this is the first user transaction after midnight, then handle staking updates prior to handling
+                // the
                 // transaction itself.
                 stakingPeriodTimeHook.process(stack, tokenServiceContext);
             } catch (final Exception e) {
@@ -420,12 +421,14 @@ public class HandleWorkflow {
 
                 // Set up the verifier
                 final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-                final var legacyFeeCalcNetworkVpt =
-                        transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+                final var legacyFeeCalcNetworkVpt = transactionInfo
+                        .signatureMap()
+                        .sigPairOrElse(emptyList())
+                        .size();
                 final var verifier = new DefaultKeyVerifier(
                         legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
                 final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
-    
+
                 // Setup context
                 final var context = new HandleContextImpl(
                         txBody,
@@ -453,10 +456,10 @@ public class HandleWorkflow {
                         childRecordFinalizer,
                         networkUtilizationManager,
                         synchronizedThrottleAccumulator);
-    
+
                 // Calculate the fee
                 fees = dispatcher.dispatchComputeFees(context);
-    
+
                 // Run all pre-checks
                 final var validationResult = validate(
                         consensusNow,
@@ -465,14 +468,15 @@ public class HandleWorkflow {
                         readableStoreFactory,
                         fees,
                         platformEvent.getCreatorId().id());
-    
+
                 networkUtilizationManager.resetFrom(stack);
                 final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
                 if (validationResult.status() != SO_FAR_SO_GOOD) {
                     final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
                     if (sigVerificationFailed) {
                         // If the signature status isn't ok, only work done will be fee charging
-                        // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
+                        // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may
+                        // want to
                         // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
                         // SO_FAR_SO_GOOD
                         networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
@@ -579,18 +583,18 @@ public class HandleWorkflow {
                             }
                         }
                         recordBuilder.status(SUCCESS);
-    
+
                         // Notify responsible facility if system-file was uploaded.
                         // Returns SUCCESS if no system-file was uploaded
                         final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
-    
+
                         recordBuilder
                                 .exchangeRate(exchangeRateManager.exchangeRates())
                                 .status(fileUpdateResult);
-    
+
                         // Notify if platform state was updated
                         platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
-    
+
                     } catch (final HandleException e) {
                         // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                         rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
@@ -631,13 +635,13 @@ public class HandleWorkflow {
                     networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
                 }
             }
-    
+
             networkUtilizationManager.saveTo(stack);
             transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
-    
+
             // Commit all state changes
             stack.commitFullStack();
-    
+
             // store all records at once, build() records end of transaction to log
             final var recordListResult = recordListBuilder.build();
             recordCache.add(creator.nodeId(), payer, recordListResult.records());

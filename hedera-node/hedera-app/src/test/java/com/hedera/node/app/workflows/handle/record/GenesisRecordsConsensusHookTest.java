@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;

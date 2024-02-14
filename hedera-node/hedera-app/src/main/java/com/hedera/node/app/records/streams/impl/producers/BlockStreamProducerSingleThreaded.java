@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
@@ -30,14 +32,11 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.inject.Inject;
 import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
-
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A single threaded implementation of {@link BlockStreamProducer} where all operations happen in a blocking

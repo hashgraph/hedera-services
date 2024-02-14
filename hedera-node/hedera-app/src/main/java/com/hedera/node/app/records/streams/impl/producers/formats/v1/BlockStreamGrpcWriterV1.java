@@ -31,10 +31,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.io.UncheckedIOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.UncheckedIOException;
 
 /**
  * A {@link BlockStreamWriter} that writes a single {@link Block} to a destination. It writes the
