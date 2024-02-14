@@ -65,7 +65,7 @@ jobs:
         with:
           files_yaml: |
             hedera:
-              - hedera-nodes/**
+              - hedera-node/**
       - name: List all changed files related to hedera service
         id: check-changed-files
         run: |
