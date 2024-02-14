@@ -162,8 +162,8 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenSignerDoesExistPrecheckFailed() {
-        return defaultHapiSpec("nonceNotUpdatedWhenSignerDoesExistPrecheckFailed")
+    HapiSpec nonceNotUpdatedWhenSignerDoesExistPrecheckFailed() {
+        return defaultHapiSpec("nonceNotUpdatedWhenSignerDoesExistPrecheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -180,7 +180,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed() {
+    HapiSpec nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -202,7 +202,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed() {
+    HapiSpec nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -224,7 +224,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed() {
+    HapiSpec nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -245,7 +245,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
+    HapiSpec nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
         final Map<String, String> startingProps = new HashMap<>();
         final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
         AtomicLong maxGasPerSec = new AtomicLong();
@@ -273,7 +273,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed() {
+    HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed() {
         return defaultHapiSpec("nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -299,7 +299,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailed() {
+    HapiSpec nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailed",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -329,7 +329,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed",
@@ -359,7 +359,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailed",
@@ -390,10 +390,10 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
         return defaultHapiSpec(
-                        "nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed")
+                        "nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -419,7 +419,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
+    HapiSpec nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailed",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -449,7 +449,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedForNonEthereumTransaction() {
+    HapiSpec nonceNotUpdatedForNonEthereumTransaction() {
         return defaultHapiSpec("nonceNotUpdatedForNonEthereumTransaction")
                 .given(
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -464,7 +464,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterSuccessfulInternalCall() {
+    HapiSpec nonceUpdatedAfterSuccessfulInternalCall() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterSuccessfulInternalCall",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -491,7 +491,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueContractLogic() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueContractLogic() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueContractLogic",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -520,7 +520,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGas() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGas() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientGas")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -546,7 +546,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmount() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmount() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueInsufficientTransferAmount",
@@ -583,7 +583,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompile0x2() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompile0x2() {
         AccountID eth0x2 = AccountID.newBuilder().setAccountNum(2).build();
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompile0x2",
@@ -618,7 +618,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompile0x167() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompile0x167() {
         AccountID eth0x167 = AccountID.newBuilder().setAccountNum(2).build();
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompile0x167",
@@ -653,7 +653,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded() {
         final String TOKEN_TREASURY = "treasury";
         final String FUNGIBLE_TOKEN = "fungibleToken";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
@@ -704,7 +704,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterSuccessfulInternalTransfer() {
+    HapiSpec nonceUpdatedAfterSuccessfulInternalTransfer() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec(
                         "nonceUpdatedAfterSuccessfulInternalTransfer",
@@ -739,7 +739,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterSuccessfulInternalContractDeployment() {
+    HapiSpec nonceUpdatedAfterSuccessfulInternalContractDeployment() {
         return defaultHapiSpec("nonceUpdatedAfterSuccessfulInternalContractDeployment", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         cryptoCreate(RECEIVER).balance(0L),
@@ -765,7 +765,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate() {
+    HapiSpec nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -792,9 +792,9 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate() {
+    HapiSpec nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
-                        "nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate")
+                        "nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
@@ -820,7 +820,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate")
@@ -848,7 +848,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailedEthContractCreate",
@@ -878,7 +878,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    HapiSpec
             nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate")
@@ -906,7 +906,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
+    HapiSpec nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -935,7 +935,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -963,7 +963,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -988,7 +988,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate",
                         NONDETERMINISTIC_ETHEREUM_DATA)
@@ -1014,7 +1014,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate",
                         NONDETERMINISTIC_ETHEREUM_DATA)
@@ -1043,7 +1043,7 @@ public class NonceSuite extends HapiSuite {
 
     // depends on https://github.com/hashgraph/hedera-services/pull/11359
     @HapiTest
-    private HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate() {
+    HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate() {
         return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1069,7 +1069,7 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
+    HapiSpec nonceUpdatedAfterSuccessfulEthereumContractCreation() {
         return defaultHapiSpec("nonceUpdatedAfterSuccessfulEthereumContractCreation", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
