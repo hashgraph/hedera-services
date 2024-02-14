@@ -77,6 +77,9 @@ public class OrderedComparison {
     private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
             List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
         List<RecordStreamEntry> ret = new ArrayList<>();
+        if (secondEntries.isEmpty()) {
+            return ret;
+        }
         RecordStreamEntry firstEntry, secondEntry;
         int secondIndex = 0;
         for (RecordStreamEntry entry : firstEntries) {
