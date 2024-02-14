@@ -86,8 +86,16 @@ jobs:
     steps:
       - name: Print changed files boolean
         id: print-changed-files-boolean
+        env:
+          ALL_CHANGED_FILES: ${{ needs.detect-change.steps.changed-files.outputs.hedera_all_changed_files }}
+
         run: |
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
           echo "${{ needs.detect-change.steps.changed-files.outputs.hedera_any_changed }}"
+          
+          echo "${{ needs.detect-change.changed-files.outputs.hedera_any_changed }}"
           echo "-------------------------------------------------------------------"
 
 
