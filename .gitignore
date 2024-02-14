@@ -1081,4 +1081,3 @@ gha-creds-*.json
 
 ### Temporary ignore for differential testing
 hedera-node/test-clients/rcdiff/diff.txt
-/platform-sdk/base-apps/swirlds-base-sample/docker/sample/data/**
