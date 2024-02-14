@@ -189,7 +189,7 @@ public final class CryptoStatic {
      * by a Certificate Authority (CA), whose name is CaDistinguishedName and whose key pair is CaPair.
      * <p>
      * In Swirlds, each member creates a separate certificate for each of their 3 key pairs (signing,
-     * agreement, encryption). The signing certificate is self-signed, and is treated as if it were a CA.
+     * agreement). The signing certificate is self-signed, and is treated as if it were a CA.
      * The other two certificates are each signed by the signing key pair. So for either of them, the
      * complete certificate chain consists of two certificates.
      * <p>
@@ -205,7 +205,7 @@ public final class CryptoStatic {
      * @return the self-signed certificate
      * @throws KeyGeneratingException in any issue occurs
      */
-    static X509Certificate generateCertificate(
+    public static X509Certificate generateCertificate(
             String distinguishedName,
             KeyPair pair,
             String caDistinguishedName,
@@ -381,7 +381,7 @@ public final class CryptoStatic {
      * @throws KeyStoreException    if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
     @NonNull
-    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
+    public static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
             throws ExecutionException, InterruptedException, KeyStoreException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
 
@@ -448,10 +448,10 @@ public final class CryptoStatic {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
-            PublicKey sigKey = publicStores.getPublicKey(KeyCertPurpose.SIGNING, name);
-            PublicKey agrKey = publicStores.getPublicKey(KeyCertPurpose.AGREEMENT, name);
+            final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, name);
+            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
             addressBook.add(
-                    addressBook.getAddress(nodeId).copySetSigPublicKey(sigKey).copySetAgreePublicKey(agrKey));
+                    addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
         }
     }
 
