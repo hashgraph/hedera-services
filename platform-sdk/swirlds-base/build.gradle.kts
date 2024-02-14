@@ -21,4 +21,7 @@ plugins {
     id("com.hedera.hashgraph.java-test-fixtures")
 }
 
-testModuleInfo { requires("org.junit.jupiter.api") }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.assertj.core")
+}
