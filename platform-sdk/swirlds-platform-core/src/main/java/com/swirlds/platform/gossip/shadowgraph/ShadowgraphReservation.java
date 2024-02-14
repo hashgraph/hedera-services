@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,22 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ShadowgraphReservation implements AutoCloseable {
 
     /**
-     * The event window that this reservation is for.
+     * The event ancient indicator that is reserved
      */
-    private final NonAncientEventWindow eventWindow;
+    private final long reservedIndicator;
 
     /**
      * The number of reservations on this ancient indicator.
      */
     private final AtomicInteger reservationCount;
 
-    /**
-     * Constructor.
-     *
-     * @param eventWindow the event window that this reservation is for
-     */
-    public ShadowgraphReservation(@NonNull final NonAncientEventWindow eventWindow) {
-        this.eventWindow = Objects.requireNonNull(eventWindow);
+    public ShadowgraphReservation(final long reservedIndicator) {
+        this.reservedIndicator = reservedIndicator;
         reservationCount = new AtomicInteger(1);
     }
 
@@ -74,22 +66,12 @@ public final class ShadowgraphReservation implements AutoCloseable {
     }
 
     /**
-     * Get the event window at the time of the reservation.
-     *
-     * @return the event window
-     */
-    @NonNull
-    public NonAncientEventWindow getEventWindow() {
-        return eventWindow;
-    }
-
-    /**
      * Returns the ancient indicator that this instance tracks reservations for. The returned value is always zero or
      * greater.
      *
      * @return the ancient indicator that is reserved
      */
     public long getReservedIndicator() {
-        return eventWindow.getExpiredThreshold();
+        return reservedIndicator;
     }
 }

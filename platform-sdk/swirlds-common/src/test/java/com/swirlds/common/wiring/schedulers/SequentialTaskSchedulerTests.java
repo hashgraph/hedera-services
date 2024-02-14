@@ -56,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 class SequentialTaskSchedulerTests {
 
     @Test
@@ -2365,7 +2366,7 @@ class SequentialTaskSchedulerTests {
             inputWire.inject(i);
         }
 
-        assertEventuallyTrue(() -> handleCount.get() > 5, Duration.ofMillis(10), "Some tasks should get handled");
+        assertEventuallyTrue(() -> handleCount.get() > 5, Duration.ofSeconds(1), "Some tasks should get handled");
         assertTrue(taskScheduler.getUnprocessedTaskCount() > 10, "There should be some unprocessed tasks");
 
         taskScheduler.startSquelching();

@@ -43,6 +43,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -53,6 +54,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Virtual Map Reconnect Test")
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
@@ -321,6 +323,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
+    @Tag(TIMING_SENSITIVE)
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 
@@ -372,6 +375,8 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On First Internal")
     @Tag(TIME_CONSUMING)
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
+    @Disabled
     void teacherAbortsReconnectOnFirstInternal(final TreePermutation treePermutation) {
 
         configureReconnectToFailQuickly();

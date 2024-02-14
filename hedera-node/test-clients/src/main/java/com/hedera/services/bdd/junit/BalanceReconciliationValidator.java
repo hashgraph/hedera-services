@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEngine.runSpec;
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.suites.records.BalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,16 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
                 List.of(() -> new BalanceValidation(expectedBalances, accountClassifier)),
                 TestBase::contextualizedSpecsFromConcurrent);
         concurrentExecutionOf(validationSpecs);
+    }
+
+    @Override
+    public void validateRecordsAndSidecarsHapi(
+            final HapiTestEnv env, final List<RecordWithSidecars> recordsWithSidecars)
+            throws InvocationTargetException, IllegalAccessException {
+        getExpectedBalanceFrom(recordsWithSidecars);
+        System.out.println("Expected balances: " + expectedBalances);
+
+        runSpec(env, new BalanceValidation(expectedBalances, accountClassifier), "validateBalances");
     }
 
     private void getExpectedBalanceFrom(final List<RecordWithSidecars> recordsWithSidecars) {
