@@ -56,6 +56,10 @@ public record EthTxData(
     static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
     static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
 
+    // EIP155 note support for v = 27|28 cases in unprotected transaction cases
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
     public static EthTxData populateEthTxData(byte[] data) {
         try {
             var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(data);
@@ -454,10 +458,6 @@ public record EthTxData(
     // before EIP155 the value of v in
     // (unprotected) ethereum transactions is either 27 or 28
     private static boolean isLegacyUnprotectedEtx(@NonNull BigInteger vBI) {
-        // EIP155 note support for v = 27|28 cases in unprotected transaction cases
-        final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
-        final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
-
         return vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_0) == 0 || vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_1) == 0;
     }
 }
