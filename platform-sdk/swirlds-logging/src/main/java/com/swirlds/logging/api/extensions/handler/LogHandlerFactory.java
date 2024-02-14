@@ -30,6 +30,7 @@ public interface LogHandlerFactory {
     /**
      * Creates a new log handler.
      *
+     * @param configKey the configuration key for the log handler
      * @param configuration the configuration
      * @return the log handler
      */
@@ -37,7 +38,11 @@ public interface LogHandlerFactory {
     LogHandler create(@NonNull String configKey, @NonNull Configuration configuration);
 
     /**
-     * Name used for configuration
+     * Name used to reference a handler type in the configuration. If the name is "console", then the configuration
+     * would look like:
+     * <pre>
+     *     logging.handler.NAME.type=console
+     * </pre>
      *
      * @return name
      */

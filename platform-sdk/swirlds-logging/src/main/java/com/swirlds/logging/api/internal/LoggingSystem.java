@@ -16,7 +16,6 @@
 
 package com.swirlds.logging.api.internal;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
@@ -34,6 +33,7 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class LoggingSystem implements LogEventConsumer {
     private static final String LOGGING_HANDLER_PREFIX = "logging.handler.";
     private static final int LOGGING_HANDLER_PREFIX_LENGTH = LOGGING_HANDLER_PREFIX.length();
-    private static final String LOGGING_HANDLER_TYPE = "logging.handler.%s.type";
+    private static final String LOGGING_HANDLER_TYPE = LOGGING_HANDLER_PREFIX + "%s.type";
 
     /**
      * The emergency logger that is used to log errors that occur during the logging process.
@@ -95,8 +95,7 @@ public class LoggingSystem implements LogEventConsumer {
      * @param configuration the configuration of the logging system
      */
     public LoggingSystem(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration, "configuration must not be null");
-        this.configuration = configuration;
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");;
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
         this.levelConfig = new HandlerLoggingLevelConfig(configuration);
@@ -287,8 +286,7 @@ public class LoggingSystem implements LogEventConsumer {
      *
      * @return handler list
      */
-    @VisibleForTesting
-    List<LogHandler> getHandlers() {
-        return handlers;
+    public List<LogHandler> getHandlers() {
+        return Collections.unmodifiableList(handlers);
     }
 }
