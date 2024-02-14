@@ -76,6 +76,21 @@ jobs:
           done
           echo ""
 
+  show-change-result:
+    name: Show change result
+    needs:
+      - dependency-check
+      - spotless
+      - detect-change
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    steps:
+      - name: Print changed files boolean
+        id: print-changed-files-boolean
+        run: |
+          echo "${{ needs.detect-change.changed-files.outputs.hedera_any_changed }}"
+          echo "-------------------------------------------------------------------"
+
+
   spotless:
     name: Spotless
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
