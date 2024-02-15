@@ -26,6 +26,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.accounts.AccountDumpUtils;
 import com.hedera.node.app.bbm.accounts.HederaAccount;
+import com.hedera.node.app.bbm.files.FileId;
+import com.hedera.node.app.bbm.files.FilesDumpUtils;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -80,11 +82,11 @@ public class ContractBytecodesDumpUtils {
         final var deletedSmartContract =
                 smartContracts.stream().filter(HederaAccount::deleted).toList();
 
-        final var extractedFiles = gatherModFiles(files);
+        final var extractedFiles = FilesDumpUtils.gatherModFiles(files);
 
         final var contractContents = new ArrayList<Contract>(ESTIMATED_NUMBER_OF_CONTRACTS);
         for (final var smartContract : smartContracts) {
-            final var fileId = new FileID(0, 0, smartContract.accountId().accountNum()); // TODO: not sure
+            final var fileId = new FileId(0, 0, smartContract.accountId().accountNum()); // TODO: not sure
             if (extractedFiles.containsKey(fileId)) {
                 final var hederaFile = extractedFiles.get(fileId);
                 if (null != hederaFile) {
@@ -102,26 +104,6 @@ public class ContractBytecodesDumpUtils {
                 .map(c -> c.accountId().accountNum().intValue())
                 .toList();
         return new Contracts(contractContents, deletedContractIds, smartContracts.size());
-    }
-
-    // TODO: duplicated. Will be deleted after https://github.com/hashgraph/hedera-services/pull/11385 is merged
-    @NonNull
-    private static Map<FileId, HederaFile> gatherModFiles(VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
-        final var r = new HashMap<FileId, HederaFile>();
-        final var threadCount = 8;
-        final var files = new ConcurrentLinkedQueue<Pair<FileId, HederaFile>>();
-        try {
-            VirtualMapLike.from(source)
-                    .extractVirtualMapData(
-                            getStaticThreadManager(),
-                            p -> files.add(Pair.of(FileId.fromMod(p.left().getKey()), HederaFile.fromMod(p.right()))),
-                            threadCount);
-        } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of files virtual map interrupted!");
-            Thread.currentThread().interrupt();
-        }
-        files.forEach(filePair -> r.put(filePair.getKey(), filePair.getValue()));
-        return r;
     }
 
     public static void dumpMonoContractBytecodes(
