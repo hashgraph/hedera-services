@@ -25,11 +25,7 @@ import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Objects;
 
@@ -44,29 +40,31 @@ public class AddressRosterEntry implements RosterEntry {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int ENCODED_CERT_MAX_SIZE = 8192;
-
     private Address address;
-    private X509Certificate sigCert;
 
     /**
      * Constructs a new {@link AddressRosterEntry} from the given {@link Address} and {@link KeysAndCerts}.
      *
-     * @param address      the address
-     * @param keysAndCerts the keys and certs containing the signing certificate
+     * @param address the address
      */
-    public AddressRosterEntry(@NonNull final Address address, @NonNull final KeysAndCerts keysAndCerts) {
-        Objects.requireNonNull(address);
-        Objects.requireNonNull(keysAndCerts);
-
-        this.address = address;
-        this.sigCert = keysAndCerts.sigCert();
+    public AddressRosterEntry(@NonNull final Address address) {
+        this.address = Objects.requireNonNull(address);
     }
 
     /**
      * Empty constructor for deserialization.
      */
     public AddressRosterEntry() {}
+
+    /**
+     * Returns the address.
+     *
+     * @return the address
+     */
+    @NonNull
+    public Address getAddress() {
+        return address;
+    }
 
     /**
      * {@inheritDoc}
@@ -87,23 +85,11 @@ public class AddressRosterEntry implements RosterEntry {
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(address, false);
-        try {
-            out.writeByteArray(sigCert.getEncoded());
-        } catch (final CertificateEncodingException e) {
-            throw new IOException("Could not encode certificate", e);
-        }
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         address = in.readSerializable(false, Address::new);
-        final byte[] encodedCert = in.readByteArray(ENCODED_CERT_MAX_SIZE);
-        try {
-            sigCert = (X509Certificate)
-                    CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(encodedCert));
-        } catch (final CertificateException e) {
-            throw new IOException("Could not decode certificate", e);
-        }
     }
 
     @Override
@@ -131,7 +117,7 @@ public class AddressRosterEntry implements RosterEntry {
     @NonNull
     @Override
     public X509Certificate getSigningCertificate() {
-        return sigCert;
+        return Objects.requireNonNull(address.getSigCert());
     }
 
     @Override
@@ -143,20 +129,17 @@ public class AddressRosterEntry implements RosterEntry {
             return false;
         }
         final AddressRosterEntry that = (AddressRosterEntry) o;
-        return Objects.equals(address, that.address) && Objects.equals(sigCert, that.sigCert);
+        return Objects.equals(address, that.address);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(address, sigCert);
+        return Objects.hash(address);
     }
 
     @Override
     public String toString() {
 
-        return new ToStringBuilder(this)
-                .append("address", address)
-                .append("sigCert", sigCert)
-                .toString();
+        return new ToStringBuilder(this).append("address", address).toString();
     }
 }

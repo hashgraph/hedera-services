@@ -24,31 +24,27 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.Roster;
 import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 public class AddressBookRosterTests {
 
+    @Test
     @DisplayName("Serialize and deserialize AddressBook derived Roster")
-    @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void serializeDeserializeTest(
-            @NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
-            throws IOException, ConstructableRegistryException {
+    void serializeDeserializeTest() throws IOException, ConstructableRegistryException {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        final Roster roster = new AddressBookRoster(addressBook, keysAndCerts);
+        final AddressBookRoster roster = new AddressBookRoster(addressBook);
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
@@ -58,16 +54,17 @@ public class AddressBookRosterTests {
         final SerializableDataInputStream in =
                 new SerializableDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
 
-        Roster roster2 = in.readSerializable();
+        final AddressBookRoster roster2 = in.readSerializable();
         assertEquals(roster, roster2);
+        assertEquals(addressBook, roster2.getAddressBook());
     }
 
+    @Test
     @DisplayName("Roster derived from AddressBook")
-    @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void addressBookRosterTest(
-            @NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) {
-        final Roster roster = new AddressBookRoster(addressBook, keysAndCerts);
+    void addressBookRosterTest() {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(100).build();
+        final Roster roster = new AddressBookRoster(addressBook);
         final Iterator<RosterEntry> entries = roster.iterator();
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
@@ -80,5 +77,29 @@ public class AddressBookRosterTests {
             assertEquals(address.getSigPublicKey(), rosterEntry.getSigningPublicKey());
         }
         assertFalse(entries.hasNext());
+    }
+
+    @Test
+    @DisplayName("Serialize and deserialize AddressBook derived Roster")
+    void serializeDeserializeEntryTest() throws IOException, ConstructableRegistryException {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(100).build();
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final Roster roster = new AddressBookRoster(addressBook);
+
+        for (final RosterEntry entry : roster) {
+
+            final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+
+            out.writeSerializable(entry, true);
+
+            final SerializableDataInputStream in =
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
+
+            RosterEntry entry2 = in.readSerializable();
+            assertEquals(entry, entry2);
+            assertEquals(addressBook.getAddress(entry.getNodeId()), ((AddressRosterEntry) entry2).getAddress());
+        }
     }
 }
