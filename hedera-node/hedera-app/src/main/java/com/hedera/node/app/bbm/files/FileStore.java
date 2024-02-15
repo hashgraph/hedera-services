@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
-}
+package com.hedera.node.app.bbm.files;
 
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("org.assertj.core")
+enum FileStore {
+    ORDINARY,
+    SPECIAL
 }

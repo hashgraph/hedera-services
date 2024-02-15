@@ -324,8 +324,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public Instant currentTime() {
-        return consensusNow();
+    public int numTxnSignatures() {
+        return verifier.numSignaturesVerified();
     }
 
     @Override
