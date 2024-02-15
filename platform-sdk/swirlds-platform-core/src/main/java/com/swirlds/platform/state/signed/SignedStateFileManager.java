@@ -219,8 +219,8 @@ public class SignedStateFileManager {
                     reservedState.getSigningWeight(),
                     reservedState.getAddressBook().getTotalWeight(),
                     reservedState.getSigningWeight()
-                            * 100.0
-                            / reservedState.getAddressBook().getTotalWeight());
+                            / reservedState.getAddressBook().getTotalWeight()
+                            * 100.0);
         } else {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -234,10 +234,10 @@ public class SignedStateFileManager {
                                             reservedState.getRound(),
                                             signingWeight1,
                                             totalWeight1,
-                                            signingWeight1 * 100.0 / totalWeight1,
+                                            signingWeight1 / totalWeight1 * 100.0,
                                             signingWeight2,
                                             totalWeight2,
-                                            signingWeight2 * 100.0 / totalWeight2,
+                                            signingWeight2 / totalWeight2 * 100.0,
                                             Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
                                             Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)))));
         }
