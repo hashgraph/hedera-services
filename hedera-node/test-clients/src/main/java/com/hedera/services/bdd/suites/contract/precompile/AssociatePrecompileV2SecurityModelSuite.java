@@ -118,8 +118,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
         return List.of(
                 v2Security031AssociateSingleTokenWithDelegateContractKey(),
                 v2Security010NestedAssociateNftAndNonFungibleTokens(),
-                V2Security036TokenAssociateFromDelegateCallWithDelegateContractId()
-        );
+                V2Security036TokenAssociateFromDelegateCallWithDelegateContractId());
     }
 
     @HapiTest
@@ -556,16 +555,17 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         contractCreate(
                                 NESTED_ASSOCIATE_CONTRACT,
                                 asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
-                        //SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE(HTS)
-                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
+                        // SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE(HTS)
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                NESTED_ASSOCIATE_CONTRACT,
-                                "associateDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                        NESTED_ASSOCIATE_CONTRACT,
+                                        "associateDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
                                 .via("nestedAssociateFungibleTxn")
@@ -574,14 +574,14 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         getTxnRecord("nestedAssociateFungibleTxn")
                                 .andAllChildRecords()
                                 .logged(),
-                        //non fungible token
+                        // non fungible token
                         contractCall(
-                                NESTED_ASSOCIATE_CONTRACT,
-                                "associateDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                        NESTED_ASSOCIATE_CONTRACT,
+                                        "associateDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
                                 .via("nestedAssociateNonFungibleTxn")
@@ -589,8 +589,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         getTxnRecord("nestedAssociateNonFungibleTxn")
                                 .andAllChildRecords()
-                                .logged()
-                        )))
+                                .logged())))
                 .then(
                         getAccountInfo(ACCOUNT)
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN)
@@ -614,8 +613,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS))))
-                        );
+                                                        htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     @HapiTest
@@ -645,16 +643,17 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         contractCreate(
                                 NESTED_ASSOCIATE_CONTRACT,
                                 asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec))),
-                        //SIGNER → call → CONTRACT A → staticcall → CONTRACT B → call → PRECOMPILE(HTS)
-                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
+                        // SIGNER → call → CONTRACT A → staticcall → CONTRACT B → call → PRECOMPILE(HTS)
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                NESTED_ASSOCIATE_CONTRACT,
-                                "associateStaticCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                        NESTED_ASSOCIATE_CONTRACT,
+                                        "associateStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
                                 .via("associateStaticcallFungibleTxn")
@@ -662,13 +661,10 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord("associateStaticcallFungibleTxn")
                                 .andAllChildRecords()
-                                .logged()
-                )))
+                                .logged())))
                 .then(
                         emptyChildRecordsCheck("associateStaticcallFungibleTxn", CONTRACT_REVERT_EXECUTED),
-                        getAccountInfo(ACCOUNT)
-                                .hasNoTokenRelationship(FUNGIBLE_TOKEN)
-                );
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FUNGIBLE_TOKEN));
     }
 
     @Override
