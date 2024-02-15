@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateNftRecordBuilder;
@@ -42,7 +43,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -98,26 +98,26 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
 
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var config = context.configuration();
-        final var tokensConfig = config.getConfigData(TokensConfig.class);
 
         // Wrapping to de-dupe the serial nums:
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(opNft.serialNumbers()));
         var nftCollection = tokenStore.get(tokenNftId);
-        for (var serialNumber : nftSerialNums) {
+        for (final Long nftSerialNumber : nftSerialNums) {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TRANSACTION_BODY);
             try {
-                validateTruePreCheck(serialNumber > 0, INVALID_NFT_ID);
+                validateTruePreCheck(nftSerialNumber > 0, INVALID_NFT_ID);
             } catch (PreCheckException e) {
                 throw new RuntimeException(e);
             }
-            // Update the metadata in the NFTS
-            // ......
-        }
+            final var nftStore = context.writableStore(WritableNftStore.class);
+            final var nft = nftStore.get(tokenNftId, nftSerialNumber);
+            validateTrue(nft != null, INVALID_NFT_ID);
 
-        //        final var op = txn.tokenUpdateOrThrow();
-        //        final var tokenId = op.tokenOrThrow();
-        //        final var accountStore = context.writableStore(WritableAccountStore.class);
-        //        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+            // Update the metadata in the listed NFTs
+            final var nftOwner = nft.ownerId();
+            long ser = nftCollection.lastUsedSerialNumber();
+            var meta = nftCollection.metadata();
+        }
         //        final var tokenBuilder = customizeToken(token, op);
         //        tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
