@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.serdes;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.streams.AugmentedDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,6 +40,16 @@ public class IoUtils {
     public static void writeNullableString(@Nullable final String msg, final SerializableDataOutputStream out)
             throws IOException {
         writeNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
+    }
+
+    @Nullable
+    public static Long readNullableLong(final SerializableDataInputStream in) throws IOException {
+        return readNullable(in, AugmentedDataInputStream::readLong);
+    }
+
+    public static void writeNullableLong(@Nullable final Long num, final SerializableDataOutputStream out)
+            throws IOException {
+        writeNullable(num, out, (numVal, outVal) -> outVal.writeLong(numVal));
     }
 
     @Nullable

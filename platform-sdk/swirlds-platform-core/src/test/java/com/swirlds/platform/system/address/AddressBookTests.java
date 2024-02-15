@@ -34,7 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -333,6 +333,10 @@ class AddressBookTests {
         final AddressBook original = new RandomAddressBookGenerator(getRandomPrintSeed())
                 .setSize(100)
                 .build();
+
+        // make sure that certs are part of the round trip test.
+        assertNotNull(original.getAddress(new NodeId(0)).getSigCert());
+        assertNotNull(original.getAddress(new NodeId(0)).getAgreeCert());
 
         validateAddressBookConsistency(original);
 

@@ -46,6 +46,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -130,11 +131,18 @@ public class FileCreateHandler implements TransactionHandler {
             handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());
             builder.memo(fileCreateTransactionBody.memo());
 
+            final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
                     .fileNum(handleContext.newEntityNum())
-                    .shardNum(fileCreateTransactionBody.shardIDOrThrow().shardNum())
-                    .realmNum(fileCreateTransactionBody.realmIDOrThrow().realmNum())
+                    .shardNum(
+                            fileCreateTransactionBody.hasShardID()
+                                    ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
+                                    : hederaConfig.shard())
+                    .realmNum(
+                            fileCreateTransactionBody.hasRealmID()
+                                    ? fileCreateTransactionBody.realmIDOrThrow().realmNum()
+                                    : hederaConfig.realm())
                     .build();
             builder.fileId(fileId);
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
