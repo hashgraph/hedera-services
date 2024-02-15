@@ -20,13 +20,24 @@ services:
   grafana:
     image: grafana/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning/
     volumes:
       - ./grafana/prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+      - ./grafana/loki.yaml:/etc/grafana/provisioning/datasources/loki.yaml
       - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     restart: always
     network_mode: "host"
     depends_on:
       - prometheus
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/:/etc/loki/
+    restart: always
+    network_mode: "host"

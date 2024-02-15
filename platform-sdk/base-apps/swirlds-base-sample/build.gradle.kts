@@ -22,6 +22,7 @@ plugins {
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
     runtimeOnly("com.swirlds.config.impl")
+    runtimeOnly("loki.log4j2")
 }
 
 application.mainClass.set("com.swirlds.base.sample.BaseSampleMain")

@@ -303,6 +303,10 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
+    module("pl.tkowalcz.tjahzi:log4j2-appender-nodep", "loki.log4j2") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
     module("junit:junit", "junit")
     //    module("org.apache.commons:commons-compress", "org.apache.commons.compress")
     module("org.hamcrest:hamcrest", "org.hamcrest")

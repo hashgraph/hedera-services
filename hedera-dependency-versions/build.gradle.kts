@@ -121,6 +121,7 @@ moduleInfo {
     version("org.wildfly.common", "1.5.4.Final")
     version("org.wildfly.client", "1.0.1.Final")
     version("io.undertow", "2.3.10.Final")
+    version("loki.log4j2", "0.9.17")
 
 
 }
