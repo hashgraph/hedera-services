@@ -58,7 +58,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String CONTRACT_KEY = "ContractKey";
     public static final String MINT_CONTRACT = "MintContract";
-    private static final String HTS_CALLS = "HTSCalls";
     private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
@@ -308,27 +307,24 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .adminKey(TOKEN_TREASURY)
                                 .supplyKey(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
-                        uploadInitCode(HTS_CALLS),
-                        contractCreate(HTS_CALLS),
+                        uploadInitCode(MIXED_BURN_TOKEN),
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        contractCreate(
+                                MIXED_BURN_TOKEN, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get()))),
                         // Test Case 1: Signer paying and signing a token burn transaction,
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer and the token don't have updated keys
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                BigInteger.valueOf(amountToBurn),
-                                new long[0])
+                                MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
-                                .signedBy(SIGNER),
+                                .signedBy(SIGNER)
+                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // verify that the total supply of the tokens is not affected
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
@@ -348,23 +344,22 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // The signer and the token have a threshold key with the signer's public key
                         // and the wrong contract id (MINT_CONTRACT)
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                MIXED_BURN_TOKEN,
+                                "burnToken",
                                 BigInteger.valueOf(amountToBurn),
                                 new long[0])
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
                                 .logged(),
-                        // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of HTS_CALLS contract
+                        // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of MIXED_BURN_TOKEN contract
                         // Here the key has the contract`id of the correct contract
-                        newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
+                        newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Set the token's supply key to the initial one
                         tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
@@ -374,16 +369,12 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The token has no updated supply key. The signer has the correct threshold key
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                BigInteger.valueOf(amountToBurn),
-                                new long[0])
+                                MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
@@ -403,8 +394,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec V2Security004NonFungibleTokenBurnNegative() {
-        final var initialAmount = 1L;
-        final var amountToBurn = 1L;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[]{1L};
 
@@ -423,27 +412,25 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
                         // Mint NFT, so that we can verify that the burn fails as expected
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8(FIRST))),
-                        uploadInitCode(HTS_CALLS),
-                        contractCreate(HTS_CALLS),
+                        uploadInitCode(MIXED_BURN_TOKEN),
+                        //contractCreate(MIXED_BURN_TOKEN),
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(nonFungible.get())))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        contractCreate(
+                                MIXED_BURN_TOKEN, HapiParserUtil.asHeadlongAddress(asAddress(nonFungible.get()))),
                         // Test Case 1: Signer paying and signing a token burn transaction,
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer and the token don't have updated keys
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                BigInteger.valueOf(0),
-                                serialNumber1)
+                                MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
-                                .signedBy(SIGNER),
+                                .signedBy(SIGNER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
@@ -463,23 +450,19 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // The signer and the token have a threshold key with the signer's public key
                         // and the wrong contract id
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                BigInteger.valueOf(0),
-                                serialNumber1)
+                                MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
                                 .logged(),
-                        // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of HTS_CALLS contract
+                        // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of MIXED_BURN_TOKEN contract
                         // Here the key has the contract`id of the correct contract
-                        newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
+                        newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Set the token's supply key to the initial one
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
@@ -489,16 +472,12 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The token has no updated supply key. The signer has the correct threshold key
                         contractCall(
-                                HTS_CALLS,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                BigInteger.valueOf(0),
-                                serialNumber1)
+                                MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .andAllChildRecords()
@@ -535,7 +514,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         uploadInitCode(MIXED_BURN_TOKEN)
                 )
                 .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,contractCreate(
+                        spec, contractCreate(
                                 MIXED_BURN_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))),
@@ -624,7 +603,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         uploadInitCode(MIXED_BURN_TOKEN)
                 )
                 .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,contractCreate(
+                        spec, contractCreate(
                                 MIXED_BURN_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))),
