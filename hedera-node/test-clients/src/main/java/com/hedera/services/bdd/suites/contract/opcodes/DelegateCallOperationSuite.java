@@ -74,7 +74,7 @@ public class DelegateCallOperationSuite extends HapiSuite {
                             final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
                             final var contractCall = contractCall(
-                                    contract, "delegateCall", asHeadlongAddress(solidityAddress))
+                                            contract, "delegateCall", asHeadlongAddress(solidityAddress))
                                     .hasKnownStatus(SUCCESS);
 
                             allRunFor(spec, contractCall);
@@ -89,15 +89,15 @@ public class DelegateCallOperationSuite extends HapiSuite {
             opsArray[i] = contractCall(contract, "call", mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
 
-            opsArray[i + systemAccounts.size()] = contractCall(contract, "callCode",
-                    mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[i + systemAccounts.size()] = contractCall(
+                            contract, "callCode", mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
-            opsArray[i + systemAccounts.size() * 2] = contractCall(contract, "delegateCall",
-                    mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[i + systemAccounts.size() * 2] = contractCall(
+                            contract, "delegateCall", mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
 
-            opsArray[i + systemAccounts.size() * 3] = contractCall(contract, "staticcall",
-                    mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[i + systemAccounts.size() * 3] = contractCall(
+                            contract, "staticcall", mirrorAddrWith(systemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
         }
         return defaultHapiSpec("verifiesCallOperationsForSystemAccounts")
