@@ -316,7 +316,9 @@ public record EthTxData(
     }
 
     public boolean matchesChainId(final byte[] hederaChainId) {
-        return Arrays.compare(chainId, hederaChainId) == 0;
+        // first two checks handle the unprotected ethereum transactions
+        // before EIP155 - source: https://eips.ethereum.org/EIPS/eip-155
+        return chainId == null || chainId.length == 0 || Arrays.compare(chainId, hederaChainId) == 0;
     }
 
     @VisibleForTesting
