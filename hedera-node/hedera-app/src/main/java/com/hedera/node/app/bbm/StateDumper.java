@@ -26,8 +26,8 @@ import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpModToke
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpMonoTokenType;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;

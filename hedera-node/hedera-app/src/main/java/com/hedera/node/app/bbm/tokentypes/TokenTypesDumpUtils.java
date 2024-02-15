@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.bbm.tokentypes;
 
+import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -34,7 +37,6 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +46,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 public class TokenTypesDumpUtils {
 
@@ -141,8 +140,7 @@ public class TokenTypesDumpUtils {
         r.put(TokenType.NON_FUNGIBLE_UNIQUE, new HashMap<>());
 
         final var threadCount = 8;
-        final var allMappings =
-                new ConcurrentLinkedQueue<Pair<TokenType, Map<Long, Token>>>();
+        final var allMappings = new ConcurrentLinkedQueue<Pair<TokenType, Map<Long, Token>>>();
         try {
 
             VirtualMapLike.from(source)
@@ -191,9 +189,7 @@ public class TokenTypesDumpUtils {
     }
 
     private static void reportOnTokens(
-            @NonNull final Writer writer,
-            @NonNull final String type,
-            @NonNull final Map<Long, Token> tokens) {
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
         writer.writeln("=== %s token types%n".formatted(type));
         writer.writeln(formatHeader());
         tokens.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatToken(writer, e.getValue()));
@@ -244,8 +240,7 @@ public class TokenTypesDumpUtils {
 
     @NonNull
     static <T> BiConsumer<FieldBuilder, Token> getFieldFormatter(
-            @NonNull final Function<Token, T> fun,
-            @NonNull final Function<T, String> formatter) {
+            @NonNull final Function<Token, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
@@ -278,8 +273,7 @@ public class TokenTypesDumpUtils {
         };
     }
 
-    static void formatToken(
-            @NonNull final Writer writer, @NonNull final Token token) {
+    static void formatToken(@NonNull final Writer writer, @NonNull final Token token) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, token));
         writer.writeln(fb);
@@ -293,8 +287,6 @@ public class TokenTypesDumpUtils {
     static String formatHeader() {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
-
-
 
     public static boolean jkeyPresentAndOk(@NonNull Optional<JKey> ojkey) {
         if (ojkey.isEmpty()) return false;
