@@ -240,7 +240,7 @@ class HandleWorkflowTest extends AppTestBase {
         accountsState.commit();
 
         when(round.iterator()).thenReturn(List.of(event).iterator());
-        when(event.consensusTransactionIterator())
+        when(event.unfilteredConsensusTransactionIterator())
                 .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
         when(event.getCreatorId()).thenReturn(nodeSelfId);
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);

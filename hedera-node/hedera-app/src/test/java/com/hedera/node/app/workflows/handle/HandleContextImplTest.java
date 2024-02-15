@@ -36,12 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -57,6 +52,7 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.records.FunctionalBlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -89,6 +85,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -106,8 +103,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -124,6 +123,7 @@ import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
 class HandleContextImplTest extends StateTestBase implements Scenarios {
@@ -877,6 +877,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .thenReturn(MapWritableStates.builder().state(accountsState).build());
 
             doAnswer(invocation -> {
+                        System.out.println("Adding ACAI to child stack");
                         final var childContext = invocation.getArgument(0, HandleContext.class);
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
@@ -884,6 +885,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 .getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
+                        System.out.println("Added ACAI to child stack");
                         return null;
                     })
                     .when(dispatcher)
@@ -897,6 +899,48 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
                     .thenReturn(childRecordBuilder);
+
+            // We must call the callable passed to our functions.
+            //            lenient()
+            //                    .doAnswer((Answer<Void>) invocation -> {
+            //                        Object[] args = invocation.getArguments();
+            //                        Runnable runnable = (Runnable) args[3]; // Get the Runnable argument
+            //                        runnable.run(); // Execute the runnable
+            //                        CompletableFuture<?> future = (CompletableFuture<?>) args[2]; // Get the future
+            // argument
+            //                        // Complete the future
+            //                        future.complete(null);
+            //                        return null; // Since the method is void, return null
+            //                    })
+            //                    .when(blockRecordManager)
+            //                    .processRound(any(), any(), any(), any());
+            //            lenient()
+            //                    .doAnswer((Answer<Stream<SingleTransactionRecord>>) invocation -> {
+            //                        Object[] args = invocation.getArguments();
+            //                        Supplier<Stream<SingleTransactionRecord>> callable =
+            //                                (Supplier<Stream<SingleTransactionRecord>>) args[3];
+            //                        return callable.get(); // Execute the callable and return the result
+            //                    })
+            //                    .when(blockRecordManager)
+            //                    .processUserTransaction(any(), any(), any(), any());
+            //            lenient()
+            //                    .doAnswer((Answer<Void>) invocation -> {
+            //                        Object[] args = invocation.getArguments();
+            //                        Runnable runnable = (Runnable) args[2]; // Get the Runnable argument
+            //                        runnable.run(); // Execute the runnable
+            //                        return null; // Since the method is void, return null
+            //                    })
+            //                    .when(blockRecordManager)
+            //                    .processConsensusEvent(any(), any(), any());
+            //            lenient()
+            //                    .doAnswer((Answer<Void>) invocation -> {
+            //                        Object[] args = invocation.getArguments();
+            //                        Runnable runnable = (Runnable) args[2]; // Get the Runnable argument
+            //                        runnable.run(); // Execute the runnable
+            //                        return null; // Since the method is void, return null
+            //                    })
+            //                    .when(blockRecordManager)
+            //                    .processSystemTransaction(any(), any(), any(), any());
 
             stack = new SavepointStackImpl(baseState);
         }
@@ -1019,7 +1063,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -1031,6 +1075,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             verify(dispatcher).dispatchPureChecks(txBody);
+            System.out.println("Checking ACAI is in the stack");
             assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
@@ -1072,7 +1117,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -1159,7 +1204,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack.peek().getWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             // then
             assertThatNoException()
@@ -1239,7 +1284,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
             given(selfNodeInfo.nodeId()).willReturn(0L);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
-            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             // when
             context.dispatchReversiblePrecedingTransaction(

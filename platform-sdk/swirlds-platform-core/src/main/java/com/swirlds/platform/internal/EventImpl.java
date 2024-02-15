@@ -391,6 +391,7 @@ public class EventImpl extends EventMetadata
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Iterator<ConsensusTransaction> unfilteredConsensusTransactionIterator() {
         if (getTransactions() == null) {
             return Collections.emptyIterator();

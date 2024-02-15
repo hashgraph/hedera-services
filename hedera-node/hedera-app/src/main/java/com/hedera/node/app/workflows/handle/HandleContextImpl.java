@@ -627,131 +627,127 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @Nullable final Predicate<Key> callback) {
-        BlockObserverSingleton.getInstanceOrThrow().recordUserChildTransactionStateChanges(() -> {
+        // Disable this since we can't record child transactions like this yet due to the way we commit the stack.
+        // BlockObserverSingleton.getInstanceOrThrow().recordUserChildTransactionStateChanges(() -> {
 
-            // Initialize record builder list
-            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
-            final var signedTransaction =
-                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-            final var transaction = Transaction.newBuilder()
-                    .signedTransactionBytes(signedTransactionBytes)
-                    .build();
-            childRecordBuilder
-                    .transaction(transaction)
-                    .transactionBodyType(txBody.data().kind())
-                    .transactionBytes(signedTransactionBytes)
-                    .memo(txBody.memo());
+        // Initialize record builder list
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+        childRecordBuilder
+                .transaction(transaction)
+                .transactionBodyType(txBody.data().kind())
+                .transactionBytes(signedTransactionBytes)
+                .memo(txBody.memo());
+        // If there are any failures in the child transaction, we don't want to set transfer list
+        // to be compatible with mono-service
+        if (childCategory == CHILD) {
+            childRecordBuilder.transferList(null);
+        }
 
-            // If there are any failures in the child transaction, we don't want to set transfer list
-            // to be compatible with mono-service
-            if (childCategory == CHILD) {
-                childRecordBuilder.transferList(null);
-            }
+        // Set the transactionId if provided
+        final var transactionID = txBody.transactionID();
+        if (transactionID != null) {
+            childRecordBuilder.transactionID(transactionID);
+        }
 
-            // Set the transactionId if provided
-            final var transactionID = txBody.transactionID();
-            if (transactionID != null) {
-                childRecordBuilder.transactionID(transactionID);
-            }
+        try {
+            // Synthetic transaction bodies do not have transaction ids, node account
+            // ids, and so on; hence we don't need to validate them with the checker
+            dispatcher.dispatchPureChecks(txBody);
+        } catch (final PreCheckException e) {
+            childRecordBuilder.status(e.responseCode());
+            return;
+        }
 
-            try {
-                // Synthetic transaction bodies do not have transaction ids, node account
-                // ids, and so on; hence we don't need to validate them with the checker
-                dispatcher.dispatchPureChecks(txBody);
-            } catch (final PreCheckException e) {
-                childRecordBuilder.status(e.responseCode());
-                return;
-            }
+        final HederaFunctionality function;
+        try {
+            function = functionOf(txBody);
+        } catch (final UnknownHederaFunctionality e) {
+            logger.error("Possible bug: unknown function in transaction body", e);
+            childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            return;
+        }
 
-            final HederaFunctionality function;
-            try {
-                function = functionOf(txBody);
-            } catch (final UnknownHederaFunctionality e) {
-                logger.error("Possible bug: unknown function in transaction body", e);
-                childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-                return;
-            }
-
-            // Any keys verified for this dispatch (including the payer key if
-            // required) should incorporate the provided callback
-            final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
-            final DispatchValidationResult dispatchValidationResult;
-            try {
-                // Note the first parameter sets up that if there is no callback, then the keys are
-                // not verified here at all, which is apparently required for many contract calls.
-                dispatchValidationResult = validate(
-                        callback == null ? null : childVerifier,
-                        callback,
-                        function,
-                        txBody,
-                        syntheticPayer,
-                        networkInfo().selfNodeInfo().nodeId(),
-                        dispatchNeedsHapiPayerChecks(childCategory));
-            } catch (final PreCheckException e) {
-                // This will happen when the payer for a triggered transaction cannot afford the service fee,
-                // part of normal operations
-                childRecordBuilder.status(e.responseCode());
-                return;
-            }
-
-            final var childStack = new SavepointStackImpl(current());
-            final var childContext = new HandleContextImpl(
-                    txBody,
+        // Any keys verified for this dispatch (including the payer key if
+        // required) should incorporate the provided callback
+        final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
+        final DispatchValidationResult dispatchValidationResult;
+        try {
+            // Note the first parameter sets up that if there is no callback, then the keys are
+            // not verified here at all, which is apparently required for many contract calls.
+            dispatchValidationResult = validate(
+                    callback == null ? null : childVerifier,
+                    callback,
                     function,
-                    0,
+                    txBody,
                     syntheticPayer,
-                    dispatchValidationResult == null ? null : dispatchValidationResult.key(),
-                    networkInfo,
-                    childCategory,
-                    childRecordBuilder,
-                    childStack,
-                    configuration,
-                    childVerifier,
-                    recordListBuilder,
-                    checker,
-                    dispatcher,
-                    serviceScopeLookup,
-                    blockRecordInfo,
-                    recordCache,
-                    feeManager,
-                    exchangeRateManager,
-                    userTransactionConsensusTime,
-                    authorizer,
-                    solvencyPreCheck,
-                    childRecordFinalizer,
-                    networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    networkInfo().selfNodeInfo().nodeId(),
+                    dispatchNeedsHapiPayerChecks(childCategory));
+        } catch (final PreCheckException e) {
+            // This will happen when the payer for a triggered transaction cannot afford the service fee,
+            // part of normal operations
+            childRecordBuilder.status(e.responseCode());
+            return;
+        }
 
-            if (dispatchValidationResult != null) {
-                childContext.feeAccumulator.chargeFees(
-                        syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
-            }
-            try {
-                dispatcher.dispatchHandle(childContext);
-                childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
-            } catch (final HandleException e) {
-                if (e.shouldRollbackStack()) {
-                    childStack.rollbackFullStack();
-                    if (dispatchValidationResult != null) {
-                        childContext.feeAccumulator.chargeFees(
-                                syntheticPayer,
-                                networkInfo().selfNodeInfo().accountId(),
-                                dispatchValidationResult.fees());
-                    }
-                    childRecordBuilder.status(e.getStatus());
-                    recordListBuilder.revertChildrenOf(recordBuilder);
+        final var childStack = new SavepointStackImpl(current());
+        final var childContext = new HandleContextImpl(
+                txBody,
+                function,
+                0,
+                syntheticPayer,
+                dispatchValidationResult == null ? null : dispatchValidationResult.key(),
+                networkInfo,
+                childCategory,
+                childRecordBuilder,
+                childStack,
+                configuration,
+                childVerifier,
+                recordListBuilder,
+                checker,
+                dispatcher,
+                serviceScopeLookup,
+                blockRecordInfo,
+                recordCache,
+                feeManager,
+                exchangeRateManager,
+                userTransactionConsensusTime,
+                authorizer,
+                solvencyPreCheck,
+                childRecordFinalizer,
+                networkUtilizationManager,
+                synchronizedThrottleAccumulator);
+
+        if (dispatchValidationResult != null) {
+            childContext.feeAccumulator.chargeFees(
+                    syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+        }
+        try {
+            dispatcher.dispatchHandle(childContext);
+            childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
+        } catch (final HandleException e) {
+            if (e.shouldRollbackStack()) {
+                childStack.rollbackFullStack();
+                if (dispatchValidationResult != null) {
+                    childContext.feeAccumulator.chargeFees(
+                            syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
                 }
-                final var finalizeContext = new ChildFinalizeContextImpl(
-                        new ReadableStoreFactory(childStack),
-                        new WritableStoreFactory(childStack, TokenService.NAME),
-                        childRecordBuilder);
-                childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
-                // TODO(nickpoorman): This is where we need to hook our StackObserver in so that we know what changes
-                //  were a result of this child transaction.
-                childStack.commitFullStack();
             }
-        });
+            childRecordBuilder.status(e.getStatus());
+            recordListBuilder.revertChildrenOf(recordBuilder);
+        }
+        final var finalizeContext = new ChildFinalizeContextImpl(
+                new ReadableStoreFactory(childStack),
+                new WritableStoreFactory(childStack, TokenService.NAME),
+                childRecordBuilder);
+        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        childStack.commitFullStack();
+        // });
     }
 
     private @Nullable DispatchValidationResult validate(

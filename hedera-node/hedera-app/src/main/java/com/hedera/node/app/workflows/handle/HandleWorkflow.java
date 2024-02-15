@@ -322,6 +322,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        System.out.print("called handleUserTransaction");
+
         // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
         // user transaction
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
