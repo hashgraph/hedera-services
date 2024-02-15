@@ -78,9 +78,9 @@ public class NonceSuite extends HapiSuite {
     private static final String REVERTER_CONSTRUCTOR_CONTRACT = "ReverterConstructor";
     private static final String REVERTER_CONSTRUCTOR_TRANSFER_CONTRACT = "ReverterConstructorTransfer";
     private static final String REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_ETH_PRECOMPILE_CONTRACT =
-            "ReverterConstructorCallWithValueToEthPrecompile";
+            "ConsValueEthPrecompile";
     private static final String REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT =
-            "ReverterConstructorCallWithValueToHederaPrecompile";
+            "ConsValueSysContract";
     private static final String EXTERNAL_FUNCTION = "externalFunction";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
