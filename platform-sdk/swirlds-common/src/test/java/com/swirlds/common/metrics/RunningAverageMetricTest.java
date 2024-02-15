@@ -22,61 +22,26 @@ import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.metrics.api.MetricType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @DisplayName("Testing RunningAverageMetric")
 class RunningAverageMetricTest {
 
-    private final RunningAverageMetric sut = new RunningAverageMetric() {
-        @Override
-        public Double get(ValueType valueType) {
-            return null;
-        }
+    private RunningAverageMetric sut;
 
-        @Override
-        public double getHalfLife() {
-            return 0;
-        }
-
-        @Override
-        public void update(double value) {}
-
-        @Override
-        public double get() {
-            return 0;
-        }
-
-        @Override
-        public String getCategory() {
-            return null;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public String getDescription() {
-            return null;
-        }
-
-        @Override
-        public String getUnit() {
-            return null;
-        }
-
-        @Override
-        public String getFormat() {
-            return null;
-        }
-
-        @Override
-        public void reset() {}
-    };
+    @BeforeEach
+    void setup() {
+        sut = Mockito.mock(RunningAverageMetric.class);
+        when(sut.getMetricType()).thenCallRealMethod();
+        when(sut.getDataType()).thenCallRealMethod();
+        when(sut.getValueTypes()).thenCallRealMethod();
+    }
 
     @Test
     void getMetricType() {

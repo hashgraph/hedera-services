@@ -21,6 +21,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.statistics.StatsRunningAverage;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Platform-implementation of {@link RunningAverageMetric}
@@ -29,7 +30,7 @@ import com.swirlds.common.metrics.statistics.StatsRunningAverage;
 public class DefaultRunningAverageMetric extends AbstractDistributionMetric implements RunningAverageMetric {
 
     @SuppressWarnings("removal")
-    private final StatsRunningAverage runningAverage;
+    private final @NonNull StatsRunningAverage runningAverage;
 
     public DefaultRunningAverageMetric(final RunningAverageMetric.Config config) {
         this(config, Time.getCurrent());
@@ -47,6 +48,7 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @SuppressWarnings("removal")
     @Override
     public StatsBuffered getStatsBuffered() {

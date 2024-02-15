@@ -21,6 +21,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.statistics.StatsSpeedometer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Platform-implementation of {@link SpeedometerMetric}
@@ -46,6 +47,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @SuppressWarnings("removal")
     @Override
     public StatsBuffered getStatsBuffered() {
