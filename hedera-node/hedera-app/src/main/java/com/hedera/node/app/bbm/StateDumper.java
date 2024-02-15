@@ -21,6 +21,8 @@ import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpMonoAccounts
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
 import static com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils.dumpModContractBytecodes;
+import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
+import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
@@ -66,6 +68,7 @@ import java.util.Optional;
 public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
     private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
+    private static final String SEMANTIC_FILES = "files.txt";
     private static final String SEMANTIC_ACCOUNTS = "accounts.txt";
     private static final String SEMANTIC_CONTRACT_BYTECODES = "contractBytecodes.txt";
 
@@ -76,6 +79,7 @@ public class StateDumper {
         dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS), checkpoint);
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
+        dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
         dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(ACCOUNTS), checkpoint);
 
         ContractBytecodesDumpUtils.dumpMonoContractBytecodes(
@@ -95,6 +99,7 @@ public class StateDumper {
                 Optional.ofNullable(blockInfo.consTimeOfLastHandledTxn())
                         .map(then -> Instant.ofEpochSecond(then.seconds(), then.nanos()))
                         .orElse(null));
+
         final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniqueTokens =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, NFTS_KEY)));
         dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint);
@@ -102,6 +107,10 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<TokenAssociation>, OnDiskValue<TokenRelation>> tokenRelations =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKEN_RELS_KEY)));
         dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
+
+        final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
+                requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
+        dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
 
         final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));

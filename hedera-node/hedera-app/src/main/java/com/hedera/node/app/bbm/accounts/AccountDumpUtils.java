@@ -24,6 +24,7 @@ import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -67,9 +68,13 @@ public class AccountDumpUtils {
     private static final Collector<CharSequence, ?, String> parenWrappingJoiner =
             Collectors.joining(SUBFIELD_SEPARATOR, "(", ")");
 
+    private AccountDumpUtils() {
+        // Utility class
+    }
+
     public static void dumpMonoAccounts(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<OnDiskAccount>, OnDiskAccount> accounts,
+            @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
             @NonNull final DumpCheckpoint checkpoint) {
 
         try (@NonNull final var writer = new Writer(path)) {
@@ -386,7 +391,7 @@ public class AccountDumpUtils {
      * didn't just put this in the `Map` class.
      */
     @NonNull
-    static Map<String, String> toMap(String... es) {
+    private static Map<String, String> toMap(String... es) {
         if (0 != es.length % 2) {
             throw new IllegalArgumentException(
                     "must have even number of args to `toMap`, %d given".formatted(es.length));

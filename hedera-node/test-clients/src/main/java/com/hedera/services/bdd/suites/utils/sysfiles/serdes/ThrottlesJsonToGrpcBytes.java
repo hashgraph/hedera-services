@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
     private static final int MINIMUM_NETWORK_SIZE = 1;
@@ -51,12 +52,12 @@ public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         return toPojo(styledFile).toProto().toByteArray();
     }
 
     @Override
-    public byte[] toValidatedRawFile(String styledFile) {
+    public byte[] toValidatedRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         var pojo = toPojo(styledFile);
         for (var bucket : pojo.getBuckets()) {
             bucket.asThrottleMapping(believedNetworkSize);

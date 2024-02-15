@@ -69,8 +69,10 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -217,7 +219,9 @@ public interface BaseScaffoldingModule {
             @NonNull final HederaState state,
             @NonNull final RecordCache recordCache,
             @NonNull final Configuration configuration,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+        final var consensusTime = Instant.now();
         return (query, payerId) -> new QueryContextImpl(
                 state,
                 new ReadableStoreFactory(state),
@@ -245,6 +249,7 @@ public interface BaseScaffoldingModule {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -284,6 +289,7 @@ public interface BaseScaffoldingModule {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    networkUtilizationManager,
                     synchronizedThrottleAccumulator);
         };
     }
@@ -345,5 +351,16 @@ public interface BaseScaffoldingModule {
                 () -> List.of(backendThrottle.gasLimitThrottle()));
 
         return new CongestionMultipliers(txnRateMultiplier, gasFeeMultiplier);
+    }
+
+    @Provides
+    @Singleton
+    static NetworkUtilizationManager createNetworkUtilizationManager(@NonNull ConfigProvider configProvider) {
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+        final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
+
+        final var congestionMultipliers =
+                getCongestionMultipliers(configProvider, genericFeeMultiplier, backendThrottle);
+        return new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers);
     }
 }
