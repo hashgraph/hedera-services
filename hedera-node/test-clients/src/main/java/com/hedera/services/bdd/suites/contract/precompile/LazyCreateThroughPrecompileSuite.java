@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountB
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -48,8 +49,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -654,5 +659,63 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .logged());
                 }))
                 .then();
+    }
+
+    @HapiTest
+    final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
+        return defaultHapiSpec("revertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
+                .given(
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(AUTO_CREATION_MODES),
+                        contractCreate(AUTO_CREATION_MODES),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(OWNER, NFT_TOKEN, AUTO_CREATION_MODES, false, List.of(2L))
+                                .via(BASE_APPROVE_TXN)
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    allRunFor(
+                            spec,
+                            // transfer allowed NFT
+                            contractCall(
+                                            AUTO_CREATION_MODES,
+                                            "createIndirectlyRevertingAndRecover",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(NFT_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(OWNER))),
+                                            HapiParserUtil.asHeadlongAddress(addressBytes),
+                                            2L)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(TRANSFER_TXN)
+                                    .alsoSigningWithFullPrefix(OWNER)
+                                    .hasKnownStatus(SUCCESS));
+                }))
+                .then(
+                        getTxnRecord(TRANSFER_TXN).hasNonStakingChildRecordCount(1),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))));
     }
 }
