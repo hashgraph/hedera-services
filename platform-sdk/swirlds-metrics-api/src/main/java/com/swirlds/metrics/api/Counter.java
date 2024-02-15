@@ -34,6 +34,7 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     default MetricType getMetricType() {
         return MetricType.COUNTER;
     }
@@ -42,6 +43,7 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     default DataType getDataType() {
         return DataType.INT;
     }
@@ -50,6 +52,7 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
     }
@@ -58,8 +61,9 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     default Long get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -78,10 +82,8 @@ public interface Counter extends Metric {
      * <p>
      * The value of a {@code Counter} can only increase, thus only non-negative numbers can be added.
      *
-     * @param value
-     * 		the value that needs to be added
-     * @throws IllegalArgumentException
-     * 		if {@code value <= 0}
+     * @param value the value that needs to be added
+     * @throws IllegalArgumentException if {@code value <= 0}
      */
     void add(final long value);
 
@@ -98,17 +100,25 @@ public interface Counter extends Metric {
         /**
          * Constructor of {@code Counter.Config}
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name     a short name for the metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
         }
 
+        /**
+         * Constructor of {@code Counter.Config}
+         *
+         * @param category    the kind of metric (metrics are grouped or filtered by this)
+         * @param name        a short name for the metric
+         * @param description metric description
+         * @param unit        metric unit
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -120,6 +130,7 @@ public interface Counter extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Counter.Config withDescription(@NonNull final String description) {
             return new Counter.Config(getCategory(), getName(), description, getUnit());
@@ -128,6 +139,7 @@ public interface Counter extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Counter.Config withUnit(@NonNull final String unit) {
             return new Counter.Config(getCategory(), getName(), getDescription(), unit);
@@ -136,6 +148,7 @@ public interface Counter extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<Counter> getResultClass() {
             return Counter.class;

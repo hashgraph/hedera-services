@@ -16,18 +16,21 @@
 
 package com.swirlds.platform.event.deduplication;
 
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -84,30 +87,34 @@ public class EventDeduplicator {
             .withUnit("events");
     private final LongAccumulator disparateSignatureAccumulator;
 
-    /**
-     * Keeps track of the number of events that are duplicates
-     * <p>
-     * Future work: Duplicate event metrics should be created and managed by this class directly once the intake
-     * monolith is dismantled.
-     */
-    private final EventIntakeMetrics eventIntakeMetrics;
+    private final CountPerSecond duplicateEventsPerSecond;
+
+    private static final RunningAverageMetric.Config AVG_DUPLICATE_PERCENT_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "dupEvPercent")
+            .withDescription("percentage of events received that are already known")
+            .withFormat(FORMAT_10_2);
+    private final RunningAverageMetric avgDuplicatePercent;
 
     /**
      * Constructor
      *
      * @param platformContext    the platform context
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
-     * @param eventIntakeMetrics keeps track of the number of events that are duplicates
      */
     public EventDeduplicator(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final PlatformContext platformContext, @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
-        this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
+        final Metrics metrics = platformContext.getMetrics();
+
+        this.disparateSignatureAccumulator = metrics.getOrCreate(DISPARATE_SIGNATURE_CONFIG);
+        this.duplicateEventsPerSecond = new CountPerSecond(
+                metrics,
+                new CountPerSecond.Config(PLATFORM_CATEGORY, "dupEv_per_sec")
+                        .withDescription("number of events received per second that are already known")
+                        .withUnit("hz"));
+        this.avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
 
         final AncientMode ancientMode = platformContext
                 .getConfiguration()
@@ -145,12 +152,15 @@ public class EventDeduplicator {
                 disparateSignatureAccumulator.update(1);
             }
 
-            eventIntakeMetrics.nonDuplicateEvent();
+            // move toward 0%
+            avgDuplicatePercent.update(0);
 
             return event;
         } else {
             // duplicate descriptor and signature
-            eventIntakeMetrics.duplicateEvent();
+            duplicateEventsPerSecond.count(1);
+            // move toward 100%
+            avgDuplicatePercent.update(100);
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
 
             return null;

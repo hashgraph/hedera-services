@@ -36,7 +36,6 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -157,8 +156,7 @@ class EventDeduplicatorTests {
                                         ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
                                 .getOrCreateConfig())
                         .build(),
-                intakeEventCounter,
-                mock(EventIntakeMetrics.class));
+                intakeEventCounter);
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;
