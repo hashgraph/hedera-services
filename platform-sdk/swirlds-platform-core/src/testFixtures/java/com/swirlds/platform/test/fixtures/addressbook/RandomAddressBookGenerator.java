@@ -19,14 +19,13 @@ package com.swirlds.platform.test.fixtures.addressbook;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.KeyType;
-import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.NameUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
@@ -159,9 +158,8 @@ public class RandomAddressBookGenerator {
         Objects.requireNonNull(random, "Random must not be null");
         Objects.requireNonNull(id, "NodeId must not be null");
 
-        final SerializablePublicKey sigPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, id.id());
-        final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
-        final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
+        final SerializableX509Certificate sigCert = PreGeneratedX509Certs.getSigCert(id.id());
+        final SerializableX509Certificate agreeCert = PreGeneratedX509Certs.getAgreeCert(id.id());
 
         final String nickname = NameUtils.getName(id.id());
         final String selfName = RandomUtils.randomString(random, 10);
@@ -196,9 +194,8 @@ public class RandomAddressBookGenerator {
                 portInternalIpv4,
                 addressExternalHostname,
                 portExternalIpv4,
-                sigPublicKey,
-                encPublicKey,
-                agreePublicKey,
+                sigCert,
+                agreeCert,
                 memo);
     }
 
