@@ -277,6 +277,7 @@ public class LoggingSystem implements LogEventConsumer {
      *
      * @return the log event factory of the logging system
      */
+    @NonNull
     public LogEventFactory getLogEventFactory() {
         return logEventFactory;
     }
@@ -286,6 +287,7 @@ public class LoggingSystem implements LogEventConsumer {
      *
      * @return handler list
      */
+    @NonNull
     public List<LogHandler> getHandlers() {
         return Collections.unmodifiableList(handlers);
     }
