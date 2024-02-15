@@ -92,7 +92,8 @@ class TipsetEventCreatorTests {
             @NonNull NodeId nodeId,
             @NonNull TipsetTracker tipsetTracker,
             @NonNull EventCreator eventCreator,
-            @NonNull TipsetWeightCalculator tipsetWeightCalculator) {}
+            @NonNull TipsetWeightCalculator tipsetWeightCalculator) {
+    }
 
     /**
      * Build an event creator for a node.
@@ -408,9 +409,9 @@ class TipsetEventCreatorTests {
     }
 
     /**
-     * This test is very similar to the {@link #randomOrderTest(boolean)}, except that we repeat the test several times
-     * using the same event creator. This fails when we do not clear the event creator in between runs, but should not
-     * fail if we have cleared the vent creator.
+     * This test is very similar to the {@link #randomOrderTest(boolean, boolean)}, except that we repeat the test
+     * several times using the same event creator. This fails when we do not clear the event creator in between runs,
+     * but should not fail if we have cleared the vent creator.
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
@@ -428,7 +429,8 @@ class TipsetEventCreatorTests {
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get,
+                        AncientMode.GENERATION_THRESHOLD);
 
         for (int i = 0; i < 5; i++) {
             final Map<Hash, EventImpl> events = new HashMap<>();
