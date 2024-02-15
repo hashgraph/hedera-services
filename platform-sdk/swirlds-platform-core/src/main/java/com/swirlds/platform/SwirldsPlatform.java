@@ -610,12 +610,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                consensusRef::get,
-                eventObserverDispatcher,
-                shadowGraph,
-                intakeEventCounter,
-                platformWiring.getKeystoneEventSequenceNumberOutput());
+        final LinkedEventIntake linkedEventIntake =
+                new LinkedEventIntake(consensusRef::get, eventObserverDispatcher, shadowGraph, intakeEventCounter);
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
@@ -910,10 +906,12 @@ public class SwirldsPlatform implements Platform {
             // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
             platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableState.setState(signedState.reserve("set latest immutable to reconnect state"));
-            stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
-            platformWiring.getSaveStateToDiskInput().put(signedState.reserve("save reconnect state to disk"));
+            // this will send the state to the signature collector which will send it to be written to disk.
+            // in the future, we might not send it to the collector because it already has all the signatures
+            // if this is the case, we must make sure to send it to the writer directly
+            stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensus(signedState);
 
