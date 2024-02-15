@@ -22,6 +22,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.threading.atomic.AtomicDouble;
 import com.swirlds.metrics.api.DoubleGauge;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -39,6 +40,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         return List.of(new SnapshotEntry(VALUE, get()));
