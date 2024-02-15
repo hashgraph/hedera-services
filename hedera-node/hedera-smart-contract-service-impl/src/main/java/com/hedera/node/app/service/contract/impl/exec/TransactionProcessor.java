@@ -115,7 +115,6 @@ public class TransactionProcessor {
             @NonNull final Configuration config) {
 
         final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
-
         try {
             return processTransactionWithParties(
                     transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
@@ -186,6 +185,7 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
+
             // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
             // before creating a new fees-only updater (even though from a Besu perspective, these two
             // updaters appear independent, they are not)
@@ -262,7 +262,6 @@ public class TransactionProcessor {
         }
         if (transaction.isEthereumTransaction()) {
             validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
-            parties.sender().incrementNonce();
         }
         return parties;
     }

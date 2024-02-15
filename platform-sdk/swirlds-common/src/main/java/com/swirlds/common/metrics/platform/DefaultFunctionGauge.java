@@ -22,6 +22,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -42,6 +43,7 @@ public class DefaultFunctionGauge<T> extends DefaultMetric implements FunctionGa
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public DataType getDataType() {
         return dataType;
@@ -50,6 +52,7 @@ public class DefaultFunctionGauge<T> extends DefaultMetric implements FunctionGa
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         return List.of(new SnapshotEntry(VALUE, get()));
