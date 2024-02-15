@@ -18,6 +18,10 @@
       "usage": {
         "libraryPanels": [
           {
+            "name": "Platform Status (new)",
+            "uid": "bdcky36wafe9se"
+          },
+          {
             "name": "conns Changes",
             "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d"
           }
@@ -26,78 +30,84 @@
     }
   ],
   "__elements": {
-    "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98": {
-      "name": "Platform Status",
-      "uid": "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98",
+    "bdcky36wafe9se": {
+      "name": "Platform Status (new)",
+      "uid": "bdcky36wafe9se",
       "kind": 1,
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
         },
         "description": "",
         "fieldConfig": {
           "defaults": {
             "color": {
-              "mode": "thresholds"
+              "mode": "continuous-GrYlRd"
+            },
+            "custom": {
+              "fillOpacity": 61,
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineWidth": 0,
+              "spanNulls": false
             },
             "mappings": [
               {
                 "options": {
                   "1": {
-                    "color": "super-light-blue",
+                    "color": "super-light-green",
                     "index": 0,
-                    "text": "Starting Up"
+                    "text": "STARTING_UP"
                   },
                   "2": {
-                    "color": "semi-dark-green",
+                    "color": "green",
                     "index": 1,
-                    "text": "Active"
-                  },
-                  "3": {
-                    "color": "#808080",
-                    "index": 10,
-                    "text": "Disconnected"
+                    "text": "ACTIVE"
                   },
                   "4": {
-                    "color": "semi-dark-orange",
+                    "color": "red",
                     "index": 2,
-                    "text": "Behind"
+                    "text": "BEHIND"
                   },
                   "5": {
-                    "color": "purple",
+                    "color": "light-blue",
                     "index": 3,
-                    "text": "Freezing"
+                    "text": "FREEZING"
                   },
                   "6": {
-                    "color": "dark-purple",
+                    "color": "dark-blue",
                     "index": 4,
-                    "text": "Freeze Complete"
+                    "text": "FREEZE_COMPLETE"
                   },
                   "7": {
-                    "color": "blue",
+                    "color": "super-light-yellow",
                     "index": 5,
-                    "text": "Replaying Events"
+                    "text": "REPLAYING_EVENTS"
                   },
                   "8": {
-                    "color": "super-light-green",
+                    "color": "text",
                     "index": 6,
-                    "text": "Observing"
+                    "text": "OBSERVING"
                   },
                   "9": {
-                    "color": "light-yellow",
+                    "color": "orange",
                     "index": 7,
-                    "text": "Checking"
+                    "text": "CHECKING"
                   },
                   "10": {
-                    "color": "light-orange",
+                    "color": "purple",
                     "index": 8,
-                    "text": "Reconnect Complete"
+                    "text": "RECONNECT_COMPLETE"
                   },
                   "11": {
-                    "color": "dark-red",
+                    "color": "#250707",
                     "index": 9,
-                    "text": "Catastrophic Failure"
+                    "text": "CATASTROPHIC_FAILURE"
                   }
                 },
                 "type": "value"
@@ -115,25 +125,30 @@
                   "value": 80
                 }
               ]
-            }
+            },
+            "unitScale": true
           },
           "overrides": []
         },
-        "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "textMode": "auto"
+        "libraryPanel": {
+          "name": "Platform Status (new)",
+          "uid": "bdcky36wafe9se"
         },
-        "pluginVersion": "10.3.0-63137",
+        "options": {
+          "alignValue": "left",
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "mergeValues": true,
+          "rowHeight": 0.9,
+          "showValue": "auto",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
         "targets": [
           {
             "datasource": {
@@ -142,9 +157,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "exemplar": false,
-            "expr": "platform_PlatformStatus{environment=\"$network\"}",
-            "format": "time_series",
+            "expr": "platform_PlatformStatus{environment=\"$network\", node_id=~\"$NodeID\"}",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -155,7 +168,7 @@
           }
         ],
         "title": "Platform Status",
-        "type": "stat"
+        "type": "state-timeline"
       }
     },
     "a5c5c524-a234-4292-85ae-9fb58f7a863a": {
@@ -368,7 +381,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.3.0-63588"
+      "version": "10.4.0-66955"
     },
     {
       "type": "datasource",
@@ -423,15 +436,15 @@
   "panels": [
     {
       "gridPos": {
-        "h": 7,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 7,
+      "id": 13,
       "libraryPanel": {
-        "uid": "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98",
-        "name": "Platform Status"
+        "uid": "bdcky36wafe9se",
+        "name": "Platform Status (new)"
       }
     },
     {
@@ -439,7 +452,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 16
       },
       "id": 5,
       "libraryPanel": {
@@ -511,7 +524,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 24
       },
       "id": 10,
       "options": {
@@ -594,7 +607,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -610,7 +624,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 32
       },
       "id": 11,
       "options": {
@@ -708,7 +722,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 41
       },
       "id": 1,
       "options": {
@@ -823,7 +837,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 49
       },
       "id": 2,
       "options": {
@@ -881,7 +895,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 57
       },
       "id": 9,
       "libraryPanel": {
@@ -890,7 +904,6 @@
       }
     }
   ],
-  "refresh": "5s",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -949,13 +962,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2024-02-09T17:50:36.987Z",
+    "to": "2024-02-11T21:57:23.869Z"
   },
   "timepicker": {},
   "timezone": "utc",
   "title": "Reconnects",
   "uid": "a11737aa-3390-4951-8ddb-0b1b3f06aebc",
-  "version": 20,
+  "version": 21,
   "weekStart": ""
 }
