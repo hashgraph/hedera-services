@@ -72,6 +72,9 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
             // set an empty transfer list even if there are no hbar changes but the parent record succeeded
             // to be compatible with mono-service
             recordBuilder.transferList(TransferList.DEFAULT);
+        } else if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
+            // set null to transfer list if the child record failed to be compatible with mono-service
+            recordBuilder.transferList(null);
         }
 
         // Declare the top-level token transfer list, which list will include BOTH fungible and non-fungible token

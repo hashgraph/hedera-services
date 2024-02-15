@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -162,9 +164,12 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
+        given(recordBuilder.status()).willReturn(SUCCESS);
         subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
 
-        verify(recordBuilder).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
+        BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
     @Test
@@ -315,10 +320,14 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore.put(tokenRel.copyBuilder().frozen(true).build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
+        given(recordBuilder.status()).willReturn(SUCCESS);
 
         subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
 
         verify(recordBuilder).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
+        BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
     @Test

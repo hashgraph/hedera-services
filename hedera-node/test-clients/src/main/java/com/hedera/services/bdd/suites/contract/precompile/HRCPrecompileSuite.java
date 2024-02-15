@@ -35,6 +35,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -57,7 +61,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class HRCPrecompileSuite extends HapiSuite {
 
@@ -106,7 +110,7 @@ public class HRCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
-        return defaultHapiSpec("hrcNftAndFungibleTokenAssociateFromEOA")
+        return defaultHapiSpec("hrcNftAndFungibleTokenAssociateFromEOA", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -215,7 +219,11 @@ public class HRCPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
-        return defaultHapiSpec("hrcNFTAndFungibleTokenAssociateFromContract")
+        return defaultHapiSpec(
+                        "hrcNFTAndFungibleTokenAssociateFromContract",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -324,7 +332,10 @@ public class HRCPrecompileSuite extends HapiSuite {
     final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
-        return defaultHapiSpec("hrcTokenAssociateFromSameEOATwiceShouldFail")
+        return defaultHapiSpec(
+                        "hrcTokenAssociateFromSameEOATwiceShouldFail",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RANDOM_KEY),
@@ -390,7 +401,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
-        return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail")
+        return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RANDOM_KEY),
@@ -438,7 +449,10 @@ public class HRCPrecompileSuite extends HapiSuite {
     final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
-        return defaultHapiSpec("hrcTokenDissociateWhenBalanceNotZeroShouldFail")
+        return defaultHapiSpec(
+                        "hrcTokenDissociateWhenBalanceNotZeroShouldFail",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RANDOM_KEY),
@@ -508,7 +522,10 @@ public class HRCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();
 
-        return defaultHapiSpec("hrcTooManyTokenAssociateShouldFail")
+        return defaultHapiSpec(
+                        "hrcTooManyTokenAssociateShouldFail",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         overriding("tokens.maxPerAccount", "2"),
                         overriding("entities.limitTokenAssociations", "true"),
