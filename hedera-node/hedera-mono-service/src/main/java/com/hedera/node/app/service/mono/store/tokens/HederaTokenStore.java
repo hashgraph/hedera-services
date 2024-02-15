@@ -371,6 +371,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
     @Override
     public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
+        // Note: this method assumes that the token for tId exists! Otherwise get(tId) will throw an exception
         return get(tId).decimals() == expectedDecimals;
     }
 

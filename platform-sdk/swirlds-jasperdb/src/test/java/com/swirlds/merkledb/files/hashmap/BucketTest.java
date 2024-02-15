@@ -277,6 +277,14 @@ class BucketTest {
         assertEquals(0, outBucket.getBucketIndex());
     }
 
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    void parsedBucketPutIfEqual(final KeyType keyType) throws IOException {
+        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
+        final Bucket<VirtualLongKey> bucket = new ParsedBucket<>(keyType.keySerializer, null);
+        assertDoesNotThrow(() -> bucket.putValue(key1, INVALID_VALUE, 1));
+    }
+
     private void checkKey(Bucket<VirtualLongKey> bucket, VirtualLongKey key) {
         var findResult =
                 assertDoesNotThrow(() -> bucket.findValue(key.hashCode(), key, -1), "No exception should be thrown");

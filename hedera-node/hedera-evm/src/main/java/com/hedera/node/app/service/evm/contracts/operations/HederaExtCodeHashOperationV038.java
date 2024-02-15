@@ -58,6 +58,13 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
     public OperationResult execute(MessageFrame frame, EVM evm) {
         try {
             final Address address = Words.toAddress(frame.popStackItem());
+            boolean accountIsWarm =
+                    frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
+            long localCost = cost(accountIsWarm);
+            if (frame.getRemainingGas() < localCost) {
+                return new OperationResult(localCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             if (systemAccountDetector.test(address)) {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
@@ -68,20 +75,13 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
                 }
             }
             final var account = frame.getWorldUpdater().get(address);
-            boolean accountIsWarm =
-                    frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
-            long localCost = cost(accountIsWarm);
-            if (frame.getRemainingGas() < localCost) {
-                return new OperationResult(localCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            if (account != null && !account.isEmpty()) {
+                frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
             } else {
-                if (account != null && !account.isEmpty()) {
-                    frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
-                } else {
-                    frame.pushStackItem(UInt256.ZERO);
-                }
-
-                return new OperationResult(localCost, null);
+                frame.pushStackItem(UInt256.ZERO);
             }
+
+            return new OperationResult(localCost, null);
         } catch (final UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         } catch (final OverflowException ofe) {
