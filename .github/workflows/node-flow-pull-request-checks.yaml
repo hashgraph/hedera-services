@@ -57,7 +57,7 @@ jobs:
 
   detect-change:
     name: Get changed files
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
     outputs:
       file_changed: ${{ steps.changed-files.outputs.hedera_any_changed }}
     steps:
