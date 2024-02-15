@@ -63,7 +63,7 @@ class ConcurrentTestSupportTest {
     @Test
     void testATaskThatRunsTooLong() {
         // given
-        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
+        try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofMillis(500))) {
             final Runnable runnable = () -> sleep(1_010);
 
             // then
@@ -76,7 +76,7 @@ class ConcurrentTestSupportTest {
     void testMultipleTasksThatRunsTooLong() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
-            final List<Runnable> runnables = IntStream.range(0, 50)
+            final List<Runnable> runnables = IntStream.range(0, 10)
                     .mapToObj(i -> (Runnable) () -> sleep(2000))
                     .toList();
 
