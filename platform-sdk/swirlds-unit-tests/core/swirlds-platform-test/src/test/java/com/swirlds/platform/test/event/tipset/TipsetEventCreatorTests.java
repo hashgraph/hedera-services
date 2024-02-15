@@ -92,8 +92,7 @@ class TipsetEventCreatorTests {
             @NonNull NodeId nodeId,
             @NonNull TipsetTracker tipsetTracker,
             @NonNull EventCreator eventCreator,
-            @NonNull TipsetWeightCalculator tipsetWeightCalculator) {
-    }
+            @NonNull TipsetWeightCalculator tipsetWeightCalculator) {}
 
     /**
      * Build an event creator for a node.
@@ -428,9 +427,8 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get,
-                        AncientMode.GENERATION_THRESHOLD);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
 
         for (int i = 0; i < 5; i++) {
             final Map<Hash, EventImpl> events = new HashMap<>();
