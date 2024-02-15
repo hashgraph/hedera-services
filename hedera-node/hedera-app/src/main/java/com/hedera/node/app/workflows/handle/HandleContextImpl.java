@@ -110,6 +110,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final TransactionBody txBody;
     private final HederaFunctionality functionality;
     private final AccountID payer;
+    private AccountID topLevelPayer;
     private final Key payerKey;
     private final NetworkInfo networkInfo;
     private final TransactionCategory category;
@@ -194,6 +195,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
+        this.topLevelPayer = requireNonNull(payer, "payer must not be null");
         this.payerKey = payerKey;
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.category = requireNonNull(category, "category must not be null");
@@ -403,7 +405,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        return authorizer.isSuperUser(payer());
+        return authorizer.isSuperUser(topLevelPayer);
     }
 
     @Override
@@ -705,6 +707,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 childRecordFinalizer,
                 synchronizedThrottleAccumulator);
 
+        // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
+        childContext.setTopLevelPayer(topLevelPayer);
+
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
                     syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
@@ -931,5 +936,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         public DispatchValidationResult {
             requireNonNull(key);
         }
+    }
+
+    private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
+        this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
     }
 }

@@ -85,10 +85,13 @@ public class AutoAccountCreator {
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
-
-        // externalize transaction fee only for auto creation
-        if (!isAliasEVMAddress) {
-            childRecord.transactionFee(autoCreationFeeFor(syntheticCreation));
+        // match mono - If superuser is the payer don't charge fee
+        if (!handleContext.isSuperUser()) {
+            var fee = autoCreationFeeFor(syntheticCreation);
+            if (isAliasEVMAddress) {
+                fee += getLazyCreationFinalizationFee();
+            }
+            childRecord.transactionFee(fee);
         }
         childRecord.memo(memo);
 
