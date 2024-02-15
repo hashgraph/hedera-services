@@ -213,7 +213,7 @@ public class SignedStateFileManager {
                     STATE_TO_DISK.getMarker(),
                     """
                     Freeze state written to disk for round {} was not fully signed. This is expected.
-                    "Collected signatures representing {}/{} ({}%) weight."
+                    Collected signatures representing {}/{} ({}%) weight.
                     """,
                     reservedState.getRound(),
                     reservedState.getSigningWeight(),
