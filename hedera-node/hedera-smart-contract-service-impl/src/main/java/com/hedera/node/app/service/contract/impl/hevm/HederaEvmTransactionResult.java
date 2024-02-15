@@ -69,7 +69,8 @@ public record HederaEvmTransactionResult(
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges,
         @Nullable ResponseCodeEnum finalStatus,
-        @Nullable ContractActions actions) {
+        @Nullable ContractActions actions,
+        @Nullable Long signerNonce) {
     public HederaEvmTransactionResult {
         requireNonNull(senderId);
         requireNonNull(output);
@@ -222,7 +223,8 @@ public record HederaEvmTransactionResult(
                 requireNonNull(logs),
                 stateChanges,
                 null,
-                actions);
+                actions,
+                null);
     }
 
     /**
@@ -256,7 +258,8 @@ public record HederaEvmTransactionResult(
                 Collections.emptyList(),
                 maybeReadOnlyStateChangesFrom(frame),
                 null,
-                maybeActionsFrom(frame, tracer));
+                maybeActionsFrom(frame, tracer),
+                null);
     }
 
     /**
@@ -283,6 +286,7 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
+                null,
                 null,
                 null,
                 null);
@@ -315,6 +319,7 @@ public record HederaEvmTransactionResult(
                 List.of(),
                 null,
                 reason,
+                null,
                 null);
     }
 
@@ -331,7 +336,10 @@ public record HederaEvmTransactionResult(
 
     private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
         requireNonNull(errorMessage);
-        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .errorMessage(errorMessage)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
@@ -345,7 +353,8 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null);
+                .errorMessage(null)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult asSuccessResultForQuery() {
@@ -356,6 +365,7 @@ public record HederaEvmTransactionResult(
                 .contractID(recipientId)
                 .logInfo(pbjLogsFrom(logs))
                 .errorMessage(null)
+                .signerNonce(signerNonce)
                 .build();
     }
 
@@ -403,5 +413,22 @@ public record HederaEvmTransactionResult(
             }
             return asPbjStateChanges(accesses);
         }
+    }
+
+    public HederaEvmTransactionResult withSignerNonce(@Nullable final Long signerNonce) {
+        return new HederaEvmTransactionResult(
+                gasUsed,
+                gasPrice,
+                senderId,
+                recipientId,
+                recipientEvmAddress,
+                output,
+                haltReason,
+                revertReason,
+                logs,
+                stateChanges,
+                finalStatus,
+                actions,
+                signerNonce);
     }
 }
