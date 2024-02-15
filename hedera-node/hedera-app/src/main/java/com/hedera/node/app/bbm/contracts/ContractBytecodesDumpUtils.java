@@ -17,7 +17,6 @@
 package com.hedera.node.app.bbm.contracts;
 
 import static com.hedera.node.app.bbm.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -46,9 +45,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 

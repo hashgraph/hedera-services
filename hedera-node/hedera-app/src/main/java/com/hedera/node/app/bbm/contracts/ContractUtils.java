@@ -34,6 +34,10 @@ public class ContractUtils {
     static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
     static final int ESTIMATED_NUMBER_OF_DELETED_CONTRACTS = 10_000;
 
+    private ContractUtils() {
+        // Utility class
+    }
+
     /**
      * Return all the bytecodes for all the contracts in this state.
      */
