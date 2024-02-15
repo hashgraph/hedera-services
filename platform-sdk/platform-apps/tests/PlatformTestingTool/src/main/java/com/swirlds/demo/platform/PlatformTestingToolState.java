@@ -538,7 +538,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         setChild(ChildIndices.FCM_FAMILY, fcmFamily);
     }
 
-    public List<TransactionCounter> getTransactionCounter() {
+    public TransactionCounterList getTransactionCounter() {
         return getChild(ChildIndices.TRANSACTION_COUNTER);
     }
 
@@ -1112,6 +1112,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final ConsensusTransaction trans,
             final PlatformState platformState,
             final long roundNum) {
+        final long countBefore = getTransactionCounter().sum();
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
@@ -1126,6 +1127,10 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             Thread.currentThread().interrupt();
         } catch (final ExecutionException e) {
             logger.error(EXCEPTION.getMarker(), "Exception while handling transaction", e);
+        }
+        final long countAfter = getTransactionCounter().sum();
+        if (countAfter == countBefore) {
+            logger.error(DEMO_INFO.getMarker(), "Did not handle a transaction");
         }
     }
 

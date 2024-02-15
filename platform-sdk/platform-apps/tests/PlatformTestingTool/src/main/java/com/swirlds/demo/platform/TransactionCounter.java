@@ -73,7 +73,7 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
 
     private boolean immutable;
 
-    long getTotalFCMTransactionAmount() {
+    public long getTotalFCMTransactionAmount() {
         return fcmCreateAmount
                 + fcmUpdateAmount
                 + fcmDeleteAmount

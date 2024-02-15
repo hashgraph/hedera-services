@@ -48,4 +48,8 @@ public class TransactionCounterList extends AbstractListLeaf<TransactionCounter>
     public TransactionCounterList copy() {
         return new TransactionCounterList(this);
     }
+
+    public long sum(){
+        return elements.stream().mapToLong(TransactionCounter::getTotalFCMTransactionAmount).sum();
+    }
 }
