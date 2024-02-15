@@ -328,7 +328,7 @@ jobs:
       - detect-change
     if: ${{ needs.detect-change.outputs.file_changed == 'true' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
     with:
-      custom-job-name: "Short service test"
+      custom-job-name: "Network Error Tests"
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: true
