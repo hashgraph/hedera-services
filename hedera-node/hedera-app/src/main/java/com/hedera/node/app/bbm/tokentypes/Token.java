@@ -74,8 +74,7 @@ record Token(
     static Token fromMono(@NonNull final MerkleToken token) {
         var tokenRes = new Token(
                 token.tokenType(),
-                TokenSupplyType.fromProtobufOrdinal(
-                        0), // TokenSupplyType.fromProtobufOrdinal(token.supplyType().ordinal()),
+                supplyTypeFromMono(token.supplyType()),
                 token.getKey().longValue(),
                 token.symbol(),
                 token.name(),
@@ -117,12 +116,11 @@ record Token(
     }
 
     static Token fromMod(@NonNull final com.hedera.hapi.node.state.token.Token token) {
-        Token tokenRes = null;
-
+        Token tokenRes;
         try {
             tokenRes = new Token(
                     TokenType.valueOf(token.tokenType().protoName()),
-                    TokenSupplyType.fromProtobufOrdinal(token.supplyType().ordinal()),
+                    token.supplyType(),
                     token.tokenId().tokenNum(),
                     token.symbol(),
                     token.name(),
@@ -133,17 +131,12 @@ record Token(
                     token.maxSupply(),
                     token.totalSupply(),
                     token.lastUsedSerialNumber(),
-                    // todo check if this is the same
-                    //                token.expiry(),
-                    //                token.autoRenewPeri(),
                     token.expirationSecond(),
                     token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
                     token.accountsFrozenByDefault(),
                     token.accountsKycGrantedByDefault(),
                     idFromMod(token.treasuryAccountId()),
                     idFromMod(token.autoRenewAccountId()),
-                    // todo check if this is the same
-                    //                token.customFeeSchedule(),
                     customFeesFromMod(token.customFees()),
                     keyFromMod(token.adminKey()),
                     keyFromMod(token.feeScheduleKey()),
@@ -186,6 +179,13 @@ record Token(
             fcCustomFees.add(fcCustomFee);
         });
         return fcCustomFees;
+    }
+
+    static TokenSupplyType supplyTypeFromMono(
+            @NonNull com.hedera.node.app.service.mono.state.enums.TokenSupplyType tokenSupplyType) {
+        return (tokenSupplyType.equals(com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE))
+                ? TokenSupplyType.INFINITE
+                : TokenSupplyType.FINITE;
     }
 
     private static Optional<JKey> keyFromMod(@Nullable Key key) throws InvalidKeyException {

@@ -16,13 +16,9 @@
 
 package com.hedera.node.app.bbm.tokentypes;
 
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
@@ -38,6 +34,7 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +44,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 public class TokenTypesDumpUtils {
 
@@ -59,45 +59,44 @@ public class TokenTypesDumpUtils {
     static Function<String, String> csvQuote = s -> quoteForCsv(FIELD_SEPARATOR, s);
     // spotless:off
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, com.hedera.node.app.bbm.tokentypes.Token>>> fieldFormatters = List.of(
-            Pair.of("tokenType", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
-            Pair.of("tokenSupplyType", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::tokenSupplyType, TokenSupplyType::name)),
-            Pair.of("tokenTypeId", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::tokenTypeId, Object::toString)),
-            Pair.of("symbol", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::symbol, csvQuote)),
-            Pair.of("name", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::name, csvQuote)),
-            Pair.of("memo", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::memo, csvQuote)),
-            Pair.of("isDeleted", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::deleted, booleanFormatter)),
-            Pair.of("isPaused", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::paused, booleanFormatter)),
-            Pair.of("decimals", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::decimals, Object::toString)),
-            Pair.of("maxSupply", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::maxSupply, Object::toString)),
-            Pair.of("totalSupply", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::totalSupply, Object::toString)),
-            Pair.of("lastUsedSerialNumber", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::lastUsedSerialNumber, Object::toString)),
-            Pair.of("expiry", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::expiry, Object::toString)),
-            Pair.of("autoRenewPeriod", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::autoRenewPeriod, getOptionalFormatter(Object::toString))),
-            Pair.of("accountsFrozenByDefault", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::accountsFrozenByDefault, booleanFormatter)),
-            Pair.of("accountsKycGrantedByDefault", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::accountsKycGrantedByDefault, booleanFormatter)),
-            Pair.of("treasuryAccount", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::treasury, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
-            Pair.of("autoRenewAccount", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::autoRenewAccount, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
-            Pair.of("feeSchedule", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::feeSchedule,
+    static List<Pair<String, BiConsumer<FieldBuilder, Token>>> fieldFormatters = List.of(
+            Pair.of("tokenType", getFieldFormatter(Token::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
+            Pair.of("tokenSupplyType", getFieldFormatter(Token::tokenSupplyType, TokenSupplyType::name)),
+            Pair.of("tokenTypeId", getFieldFormatter(Token::tokenTypeId, Object::toString)),
+            Pair.of("symbol", getFieldFormatter(Token::symbol, csvQuote)),
+            Pair.of("name", getFieldFormatter(Token::name, csvQuote)),
+            Pair.of("memo", getFieldFormatter(Token::memo, csvQuote)),
+            Pair.of("isDeleted", getFieldFormatter(Token::deleted, booleanFormatter)),
+            Pair.of("isPaused", getFieldFormatter(Token::paused, booleanFormatter)),
+            Pair.of("decimals", getFieldFormatter(Token::decimals, Object::toString)),
+            Pair.of("maxSupply", getFieldFormatter(Token::maxSupply, Object::toString)),
+            Pair.of("totalSupply", getFieldFormatter(Token::totalSupply, Object::toString)),
+            Pair.of("lastUsedSerialNumber", getFieldFormatter(Token::lastUsedSerialNumber, Object::toString)),
+            Pair.of("expiry", getFieldFormatter(Token::expiry, Object::toString)),
+            Pair.of("autoRenewPeriod", getFieldFormatter(Token::autoRenewPeriod, getOptionalFormatter(Object::toString))),
+            Pair.of("accountsFrozenByDefault", getFieldFormatter(Token::accountsFrozenByDefault, booleanFormatter)),
+            Pair.of("accountsKycGrantedByDefault", getFieldFormatter(Token::accountsKycGrantedByDefault, booleanFormatter)),
+            Pair.of("treasuryAccount", getFieldFormatter(Token::treasury, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
+            Pair.of("autoRenewAccount", getFieldFormatter(Token::autoRenewAccount, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
+            Pair.of("feeSchedule", getFieldFormatter(Token::feeSchedule,
                     getNullableFormatter(getListFormatter(ThingsToStrings::toStringOfFcCustomFee, SUBFIELD_SEPARATOR)))),
-            Pair.of("adminKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("feeScheduleKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::feeScheduleKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("frezeKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::freezeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("kycKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::kycKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("pauseKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::pauseKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("supplyKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::supplyKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("wipeKey", getFieldFormatter(com.hedera.node.app.bbm.tokentypes.Token::wipeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))));
+            Pair.of("adminKey", getFieldFormatter(Token::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("feeScheduleKey", getFieldFormatter(Token::feeScheduleKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("frezeKey", getFieldFormatter(Token::freezeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("kycKey", getFieldFormatter(Token::kycKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("pauseKey", getFieldFormatter(Token::pauseKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("supplyKey", getFieldFormatter(Token::supplyKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("wipeKey", getFieldFormatter(Token::wipeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))));
     // spotless:on
 
     public static void dumpModTokenType(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokens,
+            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<com.hedera.hapi.node.state.token.Token>> tokens,
             @NonNull final DumpCheckpoint checkpoint) {
 
         try (@NonNull final var writer = new Writer(path)) {
-            final var allTokens = gatherTokensFromMod(tokens, com.hedera.node.app.bbm.tokentypes.Token::fromMod);
-            reportOnTokens(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
-            reportOnTokens(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
+            final var allTokens = gatherTokensFromMod(tokens, Token::fromMod);
+            dump(writer, allTokens);
             System.out.printf(
                     "=== mod tokens report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
@@ -108,20 +107,19 @@ public class TokenTypesDumpUtils {
             @NonNull final MerkleMap<EntityNum, MerkleToken> tokens,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var allTokens = gatherTokensFromMono(tokens, com.hedera.node.app.bbm.tokentypes.Token::fromMono);
-            reportOnTokens(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
-            reportOnTokens(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
+            final var allTokens = gatherTokensFromMono(tokens, Token::fromMono);
+            dump(writer, allTokens);
             System.out.printf(
                     "=== mono tokens report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 
     @NonNull
-    private static Map<TokenType, Map<Long, com.hedera.node.app.bbm.tokentypes.Token>> gatherTokensFromMono(
+    private static Map<TokenType, Map<Long, Token>> gatherTokensFromMono(
             @NonNull final MerkleMap<EntityNum, MerkleToken> source,
-            @NonNull final Function<MerkleToken, com.hedera.node.app.bbm.tokentypes.Token> valueMapper) {
+            @NonNull final Function<MerkleToken, Token> valueMapper) {
 
-        final var allTokens = new HashMap<TokenType, Map<Long, com.hedera.node.app.bbm.tokentypes.Token>>();
+        final var allTokens = new HashMap<TokenType, Map<Long, Token>>();
 
         allTokens.put(TokenType.FUNGIBLE_COMMON, new HashMap<>());
         allTokens.put(TokenType.NON_FUNGIBLE_UNIQUE, new HashMap<>());
@@ -134,17 +132,17 @@ public class TokenTypesDumpUtils {
     }
 
     @NonNull
-    private static Map<TokenType, Map<Long, com.hedera.node.app.bbm.tokentypes.Token>> gatherTokensFromMod(
-            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> source,
-            @NonNull final Function<Token, com.hedera.node.app.bbm.tokentypes.Token> valueMapper) {
-        final var r = new HashMap<TokenType, Map<Long, com.hedera.node.app.bbm.tokentypes.Token>>();
+    private static Map<TokenType, Map<Long, Token>> gatherTokensFromMod(
+            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<com.hedera.hapi.node.state.token.Token>> source,
+            @NonNull final Function<com.hedera.hapi.node.state.token.Token, Token> valueMapper) {
+        final var r = new HashMap<TokenType, Map<Long, Token>>();
 
         r.put(TokenType.FUNGIBLE_COMMON, new HashMap<>());
         r.put(TokenType.NON_FUNGIBLE_UNIQUE, new HashMap<>());
 
         final var threadCount = 8;
         final var allMappings =
-                new ConcurrentLinkedQueue<Pair<TokenType, Map<Long, com.hedera.node.app.bbm.tokentypes.Token>>>();
+                new ConcurrentLinkedQueue<Pair<TokenType, Map<Long, Token>>>();
         try {
 
             VirtualMapLike.from(source)
@@ -153,9 +151,8 @@ public class TokenTypesDumpUtils {
                             p -> {
                                 var tokenId = p.left().getKey();
                                 var currentToken = p.right().getValue();
-                                var tokenMap = new HashMap<Long, com.hedera.node.app.bbm.tokentypes.Token>();
+                                var tokenMap = new HashMap<Long, Token>();
                                 tokenMap.put(tokenId.tokenNum(), valueMapper.apply(currentToken));
-
                                 allMappings.add(Pair.of(currentToken.tokenType(), tokenMap));
                             },
                             threadCount);
@@ -172,17 +169,90 @@ public class TokenTypesDumpUtils {
         return r;
     }
 
+    private static void dump(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, Token>> allTokens) {
+        reportSummary(writer, allTokens);
+
+        reportOnTokens(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
+        reportOnTokens(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
+
+        reportOnKeyStructure(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
+        reportOnKeyStructure(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
+
+        reportOnFees(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
+        reportOnFees(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
+    }
+
+    private static void reportSummary(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, Token>> allTokens) {
+        writer.writeln("=== %7d: fungible token types"
+                .formatted(allTokens.get(TokenType.FUNGIBLE_COMMON).size()));
+        writer.writeln("=== %7d: non-fungible token types"
+                .formatted(allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE).size()));
+        writer.writeln("");
+    }
+
+    private static void reportOnTokens(
+            @NonNull final Writer writer,
+            @NonNull final String type,
+            @NonNull final Map<Long, Token> tokens) {
+        writer.writeln("=== %s token types%n".formatted(type));
+        writer.writeln(formatHeader());
+        tokens.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatToken(writer, e.getValue()));
+        writer.writeln("");
+    }
+
+    private static void reportOnKeyStructure(
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
+
+        final BiConsumer<String, Function<Token, String>> map = (title, fun) -> {
+            final var histogram = new HashMap<String, Integer>();
+
+            for (@NonNull var e : tokens.entrySet()) {
+                histogram.merge(fun.apply(e.getValue()), 1, Integer::sum);
+            }
+
+            writer.writeln("=== %s %s (%d distinct)%n".formatted(type, title, histogram.size()));
+            histogram.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEachOrdered(e -> writer.writeln("%7d: %s".formatted(e.getValue(), e.getKey())));
+            writer.writeln("");
+        };
+
+        map.accept("key structures", Token::getKeyStructure);
+        map.accept("key role profiles", Token::getKeyProfile);
+        map.accept("key complexity", Token::getKeyComplexity);
+    }
+
+    private static void reportOnFees(
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
+        final var histogram = new HashMap<String, Integer>();
+        for (@NonNull var token : tokens.values()) {
+            final var fees = token.feeSchedule();
+            if (null == fees) continue;
+            final var feeProfile = fees.stream()
+                    .map(ThingsToStrings::toSketchyStringOfFcCustomFee)
+                    .sorted()
+                    .collect(Collectors.joining(SUBFIELD_SEPARATOR));
+            histogram.merge(feeProfile, 1, Integer::sum);
+        }
+
+        writer.writeln("=== %s fee schedules (%d distinct)%n".formatted(type, histogram.size()));
+        histogram.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEachOrdered(e -> writer.writeln("%7d: %s".formatted(e.getValue(), e.getKey())));
+        writer.writeln("");
+    }
+
     @NonNull
-    static <T> BiConsumer<FieldBuilder, com.hedera.node.app.bbm.tokentypes.Token> getFieldFormatter(
-            @NonNull final Function<com.hedera.node.app.bbm.tokentypes.Token, T> fun,
+    static <T> BiConsumer<FieldBuilder, Token> getFieldFormatter(
+            @NonNull final Function<Token, T> fun,
             @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final com.hedera.node.app.bbm.tokentypes.Token token,
-            @NonNull final Function<com.hedera.node.app.bbm.tokentypes.Token, T> fun,
+            @NonNull final Token token,
+            @NonNull final Function<Token, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(token)));
     }
@@ -209,7 +279,7 @@ public class TokenTypesDumpUtils {
     }
 
     static void formatToken(
-            @NonNull final Writer writer, @NonNull final com.hedera.node.app.bbm.tokentypes.Token token) {
+            @NonNull final Writer writer, @NonNull final Token token) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, token));
         writer.writeln(fb);
@@ -224,38 +294,7 @@ public class TokenTypesDumpUtils {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    static void reportOnTokens(
-            @NonNull final Writer writer,
-            @NonNull final String type,
-            @NonNull final Map<Long, com.hedera.node.app.bbm.tokentypes.Token> tokens) {
-        writer.writeln("=== %s token types%n".formatted(type));
-        writer.writeln(formatHeader());
-        tokens.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatToken(writer, e.getValue()));
-        writer.writeln("");
-    }
 
-    // todo add the other reports from the DumpTokensSubcommand
-    //    void reportOnKeyStructure(
-    //            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
-    //
-    //        final BiConsumer<String, Function<Token, String>> map = (title, fun) -> {
-    //            final var histogram = new HashMap<String, Integer>();
-    //
-    //            for (@NonNull var e : tokens.entrySet()) {
-    //                histogram.merge(fun.apply(e.getValue()), 1, Integer::sum);
-    //            }
-    //
-    //            writer.writeln("=== %s %s (%d distinct)%n".formatted(type, title, histogram.size()));
-    //            histogram.entrySet().stream()
-    //                    .sorted(Map.Entry.comparingByKey())
-    //                    .forEachOrdered(e -> writer.writeln("%7d: %s".formatted(e.getValue(), e.getKey())));
-    //            writer.writeln("");
-    //        };
-    //
-    //        map.accept("key structures", com.hedera.node.app.bbm.tokentypes.Token::getKeyStructure);
-    //        map.accept("key role profiles", com.hedera.node.app.bbm.tokentypes.Token::getKeyProfile);
-    //        map.accept("key complexity", com.hedera.node.app.bbm.tokentypes.Token::getKeyComplexity);
-    //    }
 
     public static boolean jkeyPresentAndOk(@NonNull Optional<JKey> ojkey) {
         if (ojkey.isEmpty()) return false;
