@@ -115,16 +115,12 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
-import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.observers.EventObserver;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -175,7 +171,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -366,7 +361,6 @@ public class SwirldsPlatform implements Platform {
 
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -592,12 +586,7 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getIssDetectorWiring().roundCompletedInput()::put,
                 appVersion);
 
-        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PcesSequencer sequencer = new PcesSequencer();
-
-        final List<EventObserver> eventObservers = new ArrayList<>(List.of(addedEventMetrics, eventIntakeMetrics));
-
-        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
@@ -609,8 +598,7 @@ public class SwirldsPlatform implements Platform {
 
         final InternalEventValidator internalEventValidator = new InternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
-        final EventDeduplicator eventDeduplicator =
-                new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
+        final EventDeduplicator eventDeduplicator = new EventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
                 platformContext,
                 time,
@@ -622,7 +610,7 @@ public class SwirldsPlatform implements Platform {
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
         final LinkedEventIntake linkedEventIntake =
-                new LinkedEventIntake(consensusRef::get, eventObserverDispatcher, shadowGraph, intakeEventCounter);
+                new LinkedEventIntake(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,

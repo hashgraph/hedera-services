@@ -21,13 +21,11 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.ConsensusRoundObserver;
-import com.swirlds.platform.observers.EventAddedObserver;
 
 /**
  * Transfers information from consensus to the chatter module
  */
-public class ChatterNotifier implements EventAddedObserver, ConsensusRoundObserver {
+public class ChatterNotifier {
     private final NodeId selfId;
     private final ChatterCore<GossipEvent> chatterCore;
 
@@ -36,10 +34,6 @@ public class ChatterNotifier implements EventAddedObserver, ConsensusRoundObserv
         this.chatterCore = chatterCore;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             chatterCore.eventCreated(event.getBaseEvent());
@@ -48,10 +42,6 @@ public class ChatterNotifier implements EventAddedObserver, ConsensusRoundObserv
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void consensusRound(final ConsensusRound consensusRound) {
         chatterCore.shiftWindow(consensusRound.getGenerations().getMinRoundGeneration());
     }

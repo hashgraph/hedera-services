@@ -20,9 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.ConsensusRoundObserver;
-import com.swirlds.platform.observers.EventAddedObserver;
-import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,7 +30,7 @@ import java.util.List;
  * Stores all output of consensus used in testing. This output can be used to validate consensus
  * results.
  */
-public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserver, StaleEventObserver, Clearable {
+public class ConsensusOutput implements Clearable {
     private final Time time;
     private final LinkedList<ConsensusRound> consensusRounds;
     private final LinkedList<EventImpl> addedEvents;
@@ -50,12 +47,10 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
         staleEvents = new LinkedList<>();
     }
 
-    @Override
     public void eventAdded(@NonNull final EventImpl event) {
         addedEvents.add(event);
     }
 
-    @Override
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
         for (final EventImpl event : consensusRound.getConsensusEvents()) {
             // this a workaround until Consensus starts using a clock that is provided
@@ -64,7 +59,6 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
         consensusRounds.add(consensusRound);
     }
 
-    @Override
     public void staleEvent(@NonNull final EventImpl event) {
         staleEvents.add(event);
     }
