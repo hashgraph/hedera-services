@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.observers;
+package com.hedera.node.app.bbm.files;
 
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.EventAddedObserver;
-
-public class AddedObserver extends SimpleEventTracker implements EventAddedObserver {
-    @Override
-    public void eventAdded(EventImpl event) {
-        observe(ObservationType.ADDED, event);
-    }
+enum FileStore {
+    ORDINARY,
+    SPECIAL
 }
