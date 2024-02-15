@@ -33,6 +33,7 @@ public interface IntegerGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -41,6 +42,7 @@ public interface IntegerGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.INT;
@@ -49,6 +51,7 @@ public interface IntegerGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -57,9 +60,10 @@ public interface IntegerGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default Integer get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -98,8 +102,8 @@ public interface IntegerGauge extends Metric {
          * 		the kind of metric (metrics are grouped or filtered by this)
          * @param name
          * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
 
@@ -107,6 +111,22 @@ public interface IntegerGauge extends Metric {
             this.initialValue = 0;
         }
 
+        /**
+         * Constructor of {@code IntegerGauge.Config}
+         *
+         * The {@link #getInitialValue() initialValue} is by default set to {@code 0},
+         * the {@link #getFormat() format} is set to "%d".
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param description metric description
+         * @param unit        metric unit
+         * @param format format for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -122,6 +142,7 @@ public interface IntegerGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerGauge.Config withDescription(@NonNull final String description) {
             return new IntegerGauge.Config(
@@ -131,6 +152,7 @@ public interface IntegerGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerGauge.Config withUnit(@NonNull final String unit) {
             return new IntegerGauge.Config(
@@ -143,8 +165,8 @@ public interface IntegerGauge extends Metric {
          * @param format
          * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if {@code format} is {@code null}
+         * @throws IllegalArgumentException if {@code format} consists only of whitespaces
          */
         @NonNull
         public IntegerGauge.Config withFormat(@NonNull final String format) {
@@ -177,6 +199,7 @@ public interface IntegerGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<IntegerGauge> getResultClass() {
             return IntegerGauge.class;
