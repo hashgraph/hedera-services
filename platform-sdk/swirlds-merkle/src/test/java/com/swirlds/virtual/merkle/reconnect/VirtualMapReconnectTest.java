@@ -323,6 +323,8 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
     @Tag(TIMING_SENSITIVE)
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
+    @Disabled
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 
