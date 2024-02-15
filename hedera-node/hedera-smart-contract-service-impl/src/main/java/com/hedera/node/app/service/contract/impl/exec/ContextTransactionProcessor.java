@@ -111,8 +111,14 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
         // Process the transaction and return its outcome
         try {
-            final var result = processor.processTransaction(
+            var result = processor.processTransaction(
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
+
+            if (hydratedEthTxData != null) {
+                final var sender = requireNonNull(rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId()));
+                result = result.withSignerNonce(sender.getNonce());
+            }
+
             // For mono-service fidelity, externalize an initcode-only sidecar when a top-level creation fails
             if (!result.isSuccess() && hevmTransaction.needsInitcodeExternalizedOnFailure()) {
                 final var contractBytecode = ContractBytecode.newBuilder()
@@ -129,7 +135,16 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
-            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
+
+            var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
+
+            if (context.body().hasEthereumTransaction()) {
+                final var sender = rootProxyWorldUpdater.getHederaAccount(e.senderId());
+                if (sender != null) {
+                    result = result.withSignerNonce(sender.getNonce());
+                }
+            }
+
             return CallOutcome.fromResultsWithoutSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }
