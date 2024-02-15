@@ -1130,7 +1130,16 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
         final long countAfter = getTransactionCounter().sum();
         if (countAfter == countBefore) {
-            logger.error(DEMO_INFO.getMarker(), "Did not handle a transaction");
+            try {
+                logger.error(DEMO_INFO.getMarker(), "A transaction did not increment the counter\n{}",
+                        TestTransaction.parseFrom(
+                                TestTransactionWrapper.parseFrom(trans.getContents()).getTestTransactionRawBytes()
+                        )
+                );
+            } catch (final InvalidProtocolBufferException e) {
+                logger.error(DEMO_INFO.getMarker(),
+                        "A transaction did not increment the counter but it could not be parsed", e);
+            }
         }
     }
 
