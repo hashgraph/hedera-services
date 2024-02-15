@@ -89,7 +89,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final String FOURTH = "Fourth!";
     private static final String DELEGATE_CALL_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID =
             "FungibleTokenHasTheContractIdOnDelegateCall";
-    private static final String BURN_TOKEN_VIA_DELEGATE_CALL = "DelegateCallsToken";
     private static final String DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID =
             "NonFungibleTokenHasTheContractIdOnDelegateCall";
     private static final String DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID_SIGNER_SIGNS =
