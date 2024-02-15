@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -54,30 +53,22 @@ public class LinkedEventIntake {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
-     * The secondary wire that outputs the keystone event sequence number
-     */
-    private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
-
-    /**
      * Constructor
      *
      * @param consensusSupplier provides the current consensus instance
      * @param dispatcher        invokes event related callbacks
      * @param shadowGraph       tracks events in the hashgraph
-     * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final Shadowgraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
     }
 
     /**
@@ -106,12 +97,6 @@ public class LinkedEventIntake {
 
             if (consensusRounds != null) {
                 consensusRounds.forEach(round -> {
-                    // it is important that a flush request for the keystone event is submitted before starting
-                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
-                    // where the transaction handler is waiting for a given event to become durable, but the
-                    // PCES writer hasn't been notified yet that the event should be flushed.
-                    keystoneEventSequenceNumberOutput.forward(
-                            round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
                     // Future work: this dispatcher now only handles metrics. Remove this and put the metrics where
                     // they belong
                     dispatcher.consensusRound(round);
