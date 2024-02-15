@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -34,6 +35,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,22 +72,24 @@ public record HederaAccount(
         @Nullable List<AccountFungibleTokenAllowance> tokenAllowances,
         int numberTreasuryTitles,
         boolean expiredAndPendingRemoval,
-        @NonNull Bytes firstContractStorageKey) {
+        @NonNull Bytes firstContractStorageKey,
+        boolean immutable,
+        long stakedNodeAddressBookId) {
 
     private static final AccountID MISSING_ACCOUNT_ID = AccountID.DEFAULT;
+    public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
 
     public static HederaAccount fromMono(OnDiskAccount account) {
         return new HederaAccount(
-                null, // TODO: how to get the accountId?
+                AccountID.newBuilder().accountNum(account.getAccountNumber()).build(),
                 Bytes.wrap(account.getAlias().toByteArray()),
-                null, // TODO: do we have a util class from converting from JKey to Key?
+                PbjConverter.asPbjKey(account.getKey()),
                 account.getExpiry(),
-                account.getBalance(), // TODO: is this tinybarBalance?
+                account.getBalance() * ONE_HBAR_IN_TINYBARS,
                 account.getMemo(),
                 account.isDeleted(),
                 account.getStakedToMe(),
                 account.getStakePeriodStart(),
-                // TODO: how can I get the StakedIdOneOfType type? Or it should be hard-coded?
                 new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, account.getStakedId()),
                 account.isDeclineReward(),
                 account.isReceiverSigRequired(),
@@ -110,8 +114,16 @@ public record HederaAccount(
                 toAccountFungibleTokenAllowance(account.getFungibleTokenAllowances()),
                 account.getNumTreasuryTitles(),
                 account.isExpiredAndPendingRemoval(),
-                Bytes.EMPTY // TODO: account.getFirstContractStorageKey() - how to map ContractKey to Bytes?
-                );
+                toBytes(account.getFirstContractStorageKey().getKey()),
+                account.isImmutable(),
+                account.getStakedNodeAddressBookId());
+    }
+
+    @NonNull
+    private static Bytes toBytes(@NonNull final int[] packed) {
+        final var buf = ByteBuffer.allocate(32);
+        buf.asIntBuffer().put(packed);
+        return Bytes.wrap(buf.array());
     }
 
     private static List<AccountCryptoAllowance> toCryptoAllowance(Map<EntityNum, Long> cryptoAllowanceMap) {
@@ -172,7 +184,23 @@ public record HederaAccount(
                 account.getValue().tokenAllowances(),
                 account.getValue().numberTreasuryTitles(),
                 account.getValue().expiredAndPendingRemoval(),
-                account.getValue().firstContractStorageKey());
+                account.getValue().firstContractStorageKey(),
+                isAccountImmutable(account.getValue()),
+                account.getValue().stakedNodeId() != null ? account.getValue().stakedNodeId() : 0);
+    }
+
+    private static final AccountID immutableAccount1 =
+            AccountID.newBuilder().accountNum(800).build();
+    private static final AccountID immutableAccount2 =
+            AccountID.newBuilder().accountNum(801).build();
+    private static final List<AccountID> immutableAccounts = List.of(immutableAccount1, immutableAccount2);
+
+    private static boolean isAccountImmutable(Account account) {
+        return immutableAccounts.contains(account.accountId());
+    }
+
+    public boolean isImmutable() {
+        return immutable;
     }
 
     public EntityNumPair getHeadNftKey() {
@@ -181,6 +209,17 @@ public record HederaAccount(
         }
 
         return EntityNumPair.fromLongs(headNftId().tokenId().tokenNum(), headNftSerialNumber);
+    }
+
+    public EntityNumPair getLatestAssociation() {
+        if (accountId == null || accountId.accountNum() == null || headTokenId() == null) {
+            return null;
+        }
+        return EntityNumPair.fromLongs(accountId.accountNum(), headTokenId().tokenNum());
+    }
+
+    public long totalStake() {
+        return tinybarBalance() / ONE_HBAR_IN_TINYBARS + stakedToMe();
     }
 
     public AccountID getProxy() {
@@ -193,6 +232,20 @@ public record HederaAccount(
     public static HederaAccount dummyAccount() {
         return new HederaAccount(
                 null, null, null, 0, 0, "", false, 0, 0, null, false, false, null, null, 0, 0, 0, 0, 0, false, 0, 0, 0,
-                null, 0, 0, null, null, null, 0, false, null);
+                null, 0, 0, null, null, null, 0, false, null, false, 0);
+    }
+
+    public int[] getFirstUint256Key() {
+        return toInts(firstContractStorageKey);
+    }
+
+    private static int[] toInts(Bytes bytes) {
+        final var bytesArray = bytes.toByteArray();
+        ByteBuffer buf = ByteBuffer.wrap(bytesArray);
+        int[] ints = new int[bytesArray.length / 4];
+        for (int i = 0; i < ints.length; i++) {
+            ints[i] = buf.getInt();
+        }
+        return ints;
     }
 }

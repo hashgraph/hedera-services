@@ -270,11 +270,12 @@ public class AccountDumpUtils {
                 doWithBuilder(sb, ThingsToStrings::toStringOfAccountId)),
             Field.of("cryptoAllowances", a::cryptoAllowances,
                 doWithBuilder(sb, ThingsToStrings::toStringOfAccountCryptoAllowances)),
-            // Field.of("firstUint256Key", a::getFirstUint256Key, doWithBuilder(sb, ThingsToStrings::toStringOfIntArray)), TODO: how to get?
+            Field.of("firstUint256Key", a::getFirstUint256Key, doWithBuilder(sb, ThingsToStrings::toStringOfIntArray)),
             Field.of("fungibleTokenAllowances", a::tokenAllowances,
                 doWithBuilder(sb, ThingsToStrings::toStringOfAccountFungibleTokenAllowances)),
             Field.of("headNftKey", a::getHeadNftKey, doWithBuilder(sb, ThingsToStrings::toStringOfEntityNumPair)),
-//            Field.of("latestAssociation", a::getLatestAssociation, doWithBuilder(sb, ThingsToStrings::toStringOfEntityNumPair)), TODO: how to get?
+            Field.of("latestAssociation", a::getLatestAssociation,
+                doWithBuilder(sb, ThingsToStrings::toStringOfEntityNumPair)),
             Field.of("memo", a::memo, s -> {
                 if (s.isEmpty()) {
                     return false;
@@ -326,7 +327,7 @@ public class AccountDumpUtils {
             Pair.of("DR", HederaAccount::declineReward),
             Pair.of("ER", HederaAccount::expiredAndPendingRemoval),
             Pair.of("HA", a -> a.alias() != null),
-            // Pair.of("IM", HederaAccount::isImmutable), TODO: how to get?
+            Pair.of("IM", HederaAccount::isImmutable),
             Pair.of("PR", a -> (int) a.stakedId().value() < 0 && !a.declineReward()),
             Pair.of("RSR", HederaAccount::receiverSigRequired),
             Pair.of("SC", HederaAccount::smartContract),
@@ -343,10 +344,10 @@ public class AccountDumpUtils {
             Pair.of("HTI", a -> a.headTokenId().tokenNum()),
             Pair.of("N", HederaAccount::ethereumNonce),
             Pair.of("SID", a -> (long) a.stakedId().value()),
-            // Pair.of("SNID", HederaAccount::getStakedNodeAddressBookId), // TODO: how to get?
+            Pair.of("SNID", HederaAccount::stakedNodeAddressBookId),
             Pair.of("SPS", coerceMinus1ToBeDefault(HederaAccount::stakePeriodStart)),
             Pair.of("STM", HederaAccount::stakedToMe),
-            // Pair.of("TS", HederaAccount::totalStake), TODO: how to get?
+            Pair.of("TS", HederaAccount::totalStake),
             Pair.of("TSL", coerceMinus1ToBeDefault(HederaAccount::stakeAtStartOfLastRewardedPeriod)));
 
     /** For the compressed field output we want to have field name abbreviations (for compactness), but for the CSV

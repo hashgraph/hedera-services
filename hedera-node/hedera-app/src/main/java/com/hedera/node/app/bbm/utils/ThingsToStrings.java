@@ -259,7 +259,6 @@ public class ThingsToStrings {
             return false;
         }
 
-        // TODO: not sure about this
         final var hash =
                 CryptographyHolder.get().digestSync(key.ed25519().toByteArray()).getValue();
         toStringOfByteArray(sb, hash);
