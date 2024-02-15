@@ -319,8 +319,8 @@ jobs:
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
 
-  service-test-panel:
-    name: Service Test Panel
+  hedera-node-jrs-panel:
+    name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs:
       - dependency-check
