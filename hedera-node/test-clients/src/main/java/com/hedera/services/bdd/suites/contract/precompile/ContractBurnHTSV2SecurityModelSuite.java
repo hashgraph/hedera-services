@@ -75,7 +75,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final String SIGNER_BURNS_WITH_CONTRACT_ID =
             "signerBurnsAndTokenSupplyKeyHasTheIntermediaryContractId";
     private static final String SIGNER_BURNS_WITH_TRESHOLD_KEY = "tokenAndSignerHaveThresholdKey";
-    private static final String SIGNER_BURNS_WITH_SIGNER_PUBLIC_KEY =
+    private static final String SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID =
             "signerBurnsAndTokenSupplyKeyHasTheSignerPublicKey";
     private static final String SIGNER_AND_PAYER_ARE_DIFFERENT = "signerAndPayerAreDifferentAccounts";
     private static final String TOKEN_HAS_NO_UPDATED_KEY = "tokenHasUpdatedContractKey";
@@ -153,17 +153,10 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Assert that the token is burdned - total supply should be decreased with the amount that was
                         // burned
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount - amountToBurn),
-                        // Create a new key with treshhold key with correct contract id
-                        newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
-                                .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
-                        // Update token supply key with the correct contract id
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
-                        // Update signer with the correct contract id
-                        cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
                         // Test Case 2: the Treasury account is paying and signing a token burn transaction,
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
-                                .via(SIGNER_BURNS_WITH_SIGNER_PUBLIC_KEY)
+                                .via(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY),
@@ -201,7 +194,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         getTxnRecord(SIGNER_BURNS_WITH_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().status(SUCCESS)),
-                        getTxnRecord(SIGNER_BURNS_WITH_SIGNER_PUBLIC_KEY)
+                        getTxnRecord(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().status(SUCCESS)),
                         getTxnRecord(SIGNER_AND_PAYER_ARE_DIFFERENT)
@@ -262,7 +255,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer will have a key with the contractId (key type CONTRACT)
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber2)
-                                .via(SIGNER_BURNS_WITH_SIGNER_PUBLIC_KEY)
+                                .via(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER),
@@ -280,7 +273,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         getTxnRecord(SIGNER_BURNS_WITH_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().status(SUCCESS)),
-                        getTxnRecord(SIGNER_BURNS_WITH_SIGNER_PUBLIC_KEY)
+                        getTxnRecord(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().status(SUCCESS)),
                         getTxnRecord(SIGNER_AND_PAYER_ARE_DIFFERENT)
@@ -350,11 +343,11 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 new long[0])
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
-                                .alsoSigningWithFullPrefix(SIGNER)
+                                .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
-                        getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
+                        getTxnRecord(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .logged(),
                         // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of MIXED_BURN_TOKEN contract
@@ -376,7 +369,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(initialAmount),
-                        getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
+                        getTxnRecord(TOKEN_HAS_NO_UPDATED_KEY)
                                 .andAllChildRecords()
                                 .logged())))
                 .then(
@@ -453,11 +446,11 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
-                                .alsoSigningWithFullPrefix(SIGNER)
+                                .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
-                        getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
+                        getTxnRecord(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .andAllChildRecords()
                                 .logged(),
                         // Create a key with thresh 1/2 with sigs: new ed25519 key, contractId of MIXED_BURN_TOKEN contract
@@ -479,7 +472,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
-                        getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
+                        getTxnRecord(TOKEN_HAS_NO_UPDATED_KEY)
                                 .andAllChildRecords()
                                 .logged())))
                 .then(
@@ -567,8 +560,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Assert that the token is NOT burned
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1L),
                         // Assert the token is NOT burned from the token treasury account
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L)
                 )))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -576,9 +568,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                             // Verify that each test case has 1 top level call with the correct status
                             // NOTE: the used contract will revert when the token is not burned.
                             // The receipt has the revert error message.
-                            childRecordsCheck(
+                            emptyChildRecordsCheck(
                                     DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID, CONTRACT_REVERT_EXECUTED),
-                            childRecordsCheck(
+                            emptyChildRecordsCheck(
                                     DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID_SIGNER_SIGNS,
                                     CONTRACT_REVERT_EXECUTED)
                     );
@@ -656,9 +648,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                             // Verify that each test case has 1 top level call with the correct status
                             // NOTE: the used contract will revert when the token is not burned.
                             // The receipt has the revert error message.
-                            childRecordsCheck(
+                            emptyChildRecordsCheck(
                                     DELEGATE_CALL_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID, CONTRACT_REVERT_EXECUTED),
-                            childRecordsCheck(
+                            emptyChildRecordsCheck(
                                     DELEGATE_CALL_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID_SIGNER_SIGNS,
                                     CONTRACT_REVERT_EXECUTED)
                     );
