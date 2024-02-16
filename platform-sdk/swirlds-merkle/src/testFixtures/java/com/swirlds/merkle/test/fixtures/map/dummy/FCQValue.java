@@ -39,7 +39,7 @@ public class FCQValue<T extends FastCopyable & SerializableHashable> extends Par
 
     protected static final int FCQ_VALUE_TYPE = 5;
 
-    private static final long CLASS_ID = 0x9ce2813e6b425a9bL;
+    private static final long CLASS_ID = 0x9ce2813e6b425a9cL;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
