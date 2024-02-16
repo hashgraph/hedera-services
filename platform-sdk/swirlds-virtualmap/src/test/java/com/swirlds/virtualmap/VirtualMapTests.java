@@ -84,7 +84,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -1048,8 +1047,6 @@ class VirtualMapTests extends VirtualTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-019")})
     @DisplayName("Insert one million elements with same key but different value")
     @Tag(TestQualifierTags.TIME_CONSUMING)
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11498
-    @Disabled
     void insertRemoveAndModifyOneMillion() throws InterruptedException {
         final int changesPerBatch = 15_432; // Some unexpected size just to be crazy
         final int max = 1_000_000;
