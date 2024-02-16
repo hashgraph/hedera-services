@@ -29,7 +29,6 @@ import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * Wiring for the {@link EventCreationManager}.
@@ -43,7 +42,6 @@ public class EventCreationManagerWiring {
     private final BindableInputWire<ClearTrigger, GossipEvent> clearInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
-    private EventCreationManager eventCreationManager;
 
     /**
      * Create a new instance of this wiring.
@@ -87,7 +85,6 @@ public class EventCreationManagerWiring {
      * @param eventCreationManager the event creation manager to bind
      */
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
-        this.eventCreationManager = Objects.requireNonNull(eventCreationManager);
         eventInput.bind(eventCreationManager::registerEvent);
         nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
         clearInput.bind(eventCreationManager::clear);
