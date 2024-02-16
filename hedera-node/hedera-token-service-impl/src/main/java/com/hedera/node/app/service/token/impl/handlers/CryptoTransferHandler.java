@@ -87,6 +87,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -137,6 +138,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(context);
 
         final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final ReadableTokenStore tokenStore = context.createStore(ReadableTokenStore.class);
         final ReadableNftStore nftStore = context.createStore(ReadableNftStore.class);
         final ReadableTokenRelationStore tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
         final CryptoTransferTransactionBody op = context.body().cryptoTransferOrThrow();
@@ -155,6 +157,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 .filter(TokenTransferList::hasNftTransfers)
                 .forEach(tokenTransferList -> {
                     final TokenID tokenID = tokenTransferList.tokenOrThrow();
+                    tokenStore.warm(tokenID);
                     final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
                     for (final NftTransfer nftTransfer : nftTransfers) {
                         warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
@@ -544,7 +547,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         /* Include custom fee payment usage in RBS calculations */
         var customFeeHbarTransfers = 0;
         var customFeeTokenTransfers = 0;
-        final var involvedTokens = new ArrayList<TokenID>();
+        final var involvedTokens = new HashSet<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
         List<AssessedCustomFee> assessedCustomFees;
         boolean triedAndFailedToUseCustomFees = false;

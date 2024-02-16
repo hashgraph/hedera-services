@@ -21,6 +21,9 @@ import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
+import com.swirlds.common.wiring.schedulers.internal.Squelcher;
+import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
 import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -40,8 +43,8 @@ import java.util.function.Consumer;
  * <ol>
  * <li>Unscheduled: the task has not been passed to the scheduler yet (e.g. via {@link InputWire#put(Object)})</li>
  * <li>Scheduled but not processed: the task has been passed to the scheduler but the corresponding handler has not
- * yet returned (either because the handler has not yet been called or because the handler has been called but hasn't finished
- * yet)</li>
+ * yet returned (either because the handler has not yet been called or because the handler has been called but hasn't
+ * finished yet)</li>
  * <li>Processed: the corresponding handle method for the task has been called and has returned.</li>
  * </ol>
  *
@@ -57,12 +60,19 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     private final boolean insertionIsBlocking;
 
     /**
+     * Handles squelching for this task scheduler. Will be a valid object whether or not squelching is enabled for this
+     * task scheduler.
+     */
+    private final Squelcher squelcher;
+
+    /**
      * Constructor.
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
      * @param type                the type of task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled   if true, then squelching will be enabled, otherwise trying to squelch will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
      */
@@ -71,12 +81,20 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
+            final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
+
+        if (squelchingEnabled) {
+            this.squelcher = new DefaultSquelcher();
+        } else {
+            this.squelcher = new ThrowingSquelcher();
+        }
+
         primaryOutputWire = new StandardOutputWire<>(model, name);
         this.insertionIsBlocking = insertionIsBlocking;
     }
@@ -218,7 +236,8 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
      * {@link ObjectCounter#COUNT_UNDEFINED} unless one of the following is true:
      * <ul>
-     * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
+     * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value
+     * true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
      * <li>{@link TaskSchedulerBuilder#withOnRamp(ObjectCounter)} is passed a counter that is not a no op counter</li>
      * </ul>
@@ -249,6 +268,35 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
         if (!flushEnabled) {
             throw new UnsupportedOperationException("Flushing is not enabled for the task scheduler " + name);
         }
+    }
+
+    /**
+     * Start squelching, and continue doing so until {@link #stopSquelching()} is called.
+     *
+     * @throws UnsupportedOperationException if squelching is not supported by this scheduler
+     * @throws IllegalStateException         if scheduler is already squelching
+     */
+    public void startSquelching() {
+        squelcher.startSquelching();
+    }
+
+    /**
+     * Stop squelching.
+     *
+     * @throws UnsupportedOperationException if squelching is not supported by this scheduler
+     * @throws IllegalStateException         if scheduler is not currently squelching
+     */
+    public void stopSquelching() {
+        squelcher.stopSquelching();
+    }
+
+    /**
+     * Get whether or not this task scheduler is currently squelching.
+     *
+     * @return true if this task scheduler is currently squelching, false otherwise
+     */
+    public final boolean currentlySquelching() {
+        return squelcher.shouldSquelch();
     }
 
     /**

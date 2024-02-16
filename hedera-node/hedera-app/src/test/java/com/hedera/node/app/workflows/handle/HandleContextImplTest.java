@@ -89,6 +89,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -183,6 +184,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
+    private NetworkUtilizationManager networkUtilizationManager;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
@@ -235,6 +239,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                networkUtilizationManager,
                 synchronizedThrottleAccumulator);
     }
 
@@ -265,6 +270,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             authorizer,
             solvencyPreCheck,
             childRecordFinalizer,
+            networkUtilizationManager,
             synchronizedThrottleAccumulator
         };
 
@@ -394,6 +400,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    networkUtilizationManager,
                     synchronizedThrottleAccumulator);
         }
 
@@ -926,6 +933,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    networkUtilizationManager,
                     synchronizedThrottleAccumulator);
         }
 

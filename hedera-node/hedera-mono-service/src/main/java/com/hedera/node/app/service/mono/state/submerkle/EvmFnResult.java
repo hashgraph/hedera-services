@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableLong;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableString;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableLong;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableString;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -27,6 +29,7 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.google.protobuf.Int64Value;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -54,7 +57,8 @@ public class EvmFnResult implements SelfSerializable {
     static final int RELEASE_0260_VERSION = 5;
     static final int RELEASE_0290_VERSION = 6;
     static final int RELEASE_0400_VERSION = 7;
-    static final int CURRENT_VERSION = RELEASE_0400_VERSION;
+    static final int RELEASE_0470_VERSION = 8;
+    static final int CURRENT_VERSION = RELEASE_0470_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -79,6 +83,7 @@ public class EvmFnResult implements SelfSerializable {
     private long amount;
     private byte[] functionParameters = EMPTY;
     private EntityId senderId;
+    private Long signerNonce;
 
     public EvmFnResult() {
         // RuntimeConstructable
@@ -105,12 +110,13 @@ public class EvmFnResult implements SelfSerializable {
                     recipient,
                     serializableIdsFrom(result.getCreatedContracts()),
                     serializableContractNoncesFrom(result.getContractNonces()),
-                    evmAddress);
+                    evmAddress,
+                    result.getSignerNonce());
         } else {
             final var error = result.getRevertReason()
                     .map(Object::toString)
                     .orElse(result.getHaltReason().map(Object::toString).orElse(null));
-            return failure(result.getGasUsed(), error);
+            return failure(result.getGasUsed(), error, result.getSignerNonce());
         }
     }
 
@@ -127,7 +133,8 @@ public class EvmFnResult implements SelfSerializable {
             final long gas,
             final long amount,
             final byte[] functionParameters,
-            final EntityId senderId) {
+            final EntityId senderId,
+            final Long signerNonce) {
         this.contractId = contractId;
         this.result = result;
         this.error = error;
@@ -141,6 +148,7 @@ public class EvmFnResult implements SelfSerializable {
         this.amount = amount;
         this.functionParameters = functionParameters;
         this.senderId = senderId;
+        this.signerNonce = signerNonce;
     }
 
     /* --- SelfSerializable --- */
@@ -197,6 +205,9 @@ public class EvmFnResult implements SelfSerializable {
         if (version >= RELEASE_0400_VERSION) {
             contractNonces = in.readSerializableList(MAX_CREATED_CONTRACT_NONCES, true, ContractNonceInfo::new);
         }
+        if (version >= RELEASE_0470_VERSION) {
+            signerNonce = readNullableLong(in);
+        }
     }
 
     @Override
@@ -214,6 +225,7 @@ public class EvmFnResult implements SelfSerializable {
         out.writeByteArray(functionParameters);
         writeNullableSerializable(senderId, out);
         out.writeSerializableList(contractNonces, true, true);
+        writeNullableLong(signerNonce, out);
     }
 
     /* --- Object --- */
@@ -238,7 +250,8 @@ public class EvmFnResult implements SelfSerializable {
                 && gas == that.gas
                 && amount == that.amount
                 && Arrays.equals(functionParameters, that.functionParameters)
-                && Objects.equals(senderId, that.senderId);
+                && Objects.equals(senderId, that.senderId)
+                && Objects.equals(signerNonce, that.signerNonce);
     }
 
     @Override
@@ -265,6 +278,7 @@ public class EvmFnResult implements SelfSerializable {
                 .add("amount", amount)
                 .add("functionParameters", hex(functionParameters))
                 .add("senderId", senderId)
+                .add("signerNonce", signerNonce)
                 .toString();
     }
 
@@ -325,6 +339,10 @@ public class EvmFnResult implements SelfSerializable {
         return senderId;
     }
 
+    public Long getSignerNonce() {
+        return signerNonce;
+    }
+
     public void setEvmAddress(final byte[] evmAddress) {
         this.evmAddress = evmAddress;
     }
@@ -343,6 +361,10 @@ public class EvmFnResult implements SelfSerializable {
 
     public void setSenderId(final EntityId senderId) {
         this.senderId = senderId;
+    }
+
+    public void setSignerNonce(Long signerNonce) {
+        this.signerNonce = signerNonce;
     }
 
     public void setContractNonces(List<ContractNonceInfo> contractNonces) {
@@ -391,6 +413,9 @@ public class EvmFnResult implements SelfSerializable {
         if (senderId != null) {
             grpc.setSenderId(senderId.toGrpcAccountId());
         }
+        if (signerNonce != null) {
+            grpc.setSignerNonce(Int64Value.newBuilder().setValue(signerNonce).build());
+        }
         return grpc.build();
     }
 
@@ -433,7 +458,8 @@ public class EvmFnResult implements SelfSerializable {
             final Address recipient,
             final List<EntityId> createdContractIds,
             final List<ContractNonceInfo> contractNonces,
-            final byte[] evmAddress) {
+            final byte[] evmAddress,
+            final Long signerNonce) {
         return new EvmFnResult(
                 isMirror(recipient.toArray()) ? EntityId.fromAddress(recipient) : null,
                 output.toArrayUnsafe(),
@@ -447,10 +473,11 @@ public class EvmFnResult implements SelfSerializable {
                 0L,
                 0L,
                 EMPTY,
-                null);
+                null,
+                signerNonce);
     }
 
-    private static EvmFnResult failure(final long gasUsed, final String error) {
+    private static EvmFnResult failure(final long gasUsed, final String error, final Long signerNonce) {
         return new EvmFnResult(
                 null,
                 EMPTY,
@@ -464,6 +491,7 @@ public class EvmFnResult implements SelfSerializable {
                 0L,
                 0L,
                 EMPTY,
-                null);
+                null,
+                signerNonce);
     }
 }
