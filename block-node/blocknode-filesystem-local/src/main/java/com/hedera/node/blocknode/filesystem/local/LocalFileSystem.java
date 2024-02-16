@@ -19,7 +19,7 @@ package com.hedera.node.blocknode.filesystem.local;
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
 import com.hedera.node.blocknode.filesystem.api.DummyFileSystemApi;
 
-public class LocalFileSystem implements DummyFileSystemApi {
+public final class LocalFileSystem implements DummyFileSystemApi {
     @Override
     public void doSomething() {
         final DummyCoreSpi dummyCoreSpi = () -> {

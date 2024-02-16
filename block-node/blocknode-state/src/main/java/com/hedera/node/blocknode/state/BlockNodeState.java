@@ -19,7 +19,7 @@ package com.hedera.node.blocknode.state;
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
 import com.swirlds.platform.state.State;
 
-public class BlockNodeState {
+public final class BlockNodeState {
     public State applicationState() {
         final DummyCoreSpi dummyCoreSpi = () -> {
             // Do nothing.

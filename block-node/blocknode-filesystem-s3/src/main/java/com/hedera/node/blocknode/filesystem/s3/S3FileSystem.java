@@ -19,7 +19,7 @@ package com.hedera.node.blocknode.filesystem.s3;
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
 import com.hedera.node.blocknode.filesystem.api.DummyFileSystemApi;
 
-public class S3FileSystem implements DummyFileSystemApi {
+public final class S3FileSystem implements DummyFileSystemApi {
     @Override
     public void doSomething() {
         final DummyCoreSpi dummyCoreSpi = () -> {
