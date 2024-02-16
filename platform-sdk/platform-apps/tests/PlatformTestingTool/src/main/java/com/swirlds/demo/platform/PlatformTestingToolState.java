@@ -240,6 +240,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handles quorum determinations for all {@link ControlTransaction} processed by the handle method.
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
+
     private long transactionsIgnoredByExpectedMap = 0;
 
     public PlatformTestingToolState() {
@@ -654,9 +655,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         logger.info(
                 DEMO_INFO.getMarker(),
-                "Copying round {}, transactions ignored by expected map: {}."
-                +" This log is added to debug #11254",
-                roundCounter, transactionsIgnoredByExpectedMap);
+                "Copying round {}, transactions ignored by expected map: {}." + " This log is added to debug #11254",
+                roundCounter,
+                transactionsIgnoredByExpectedMap);
 
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
