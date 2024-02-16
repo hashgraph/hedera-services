@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-import Utils.Companion.versionTxt
 import org.owasp.dependencycheck.reporting.ReportGenerator
 
-plugins {
-    id("org.owasp.dependencycheck")
-}
+plugins { id("org.owasp.dependencycheck") }
 
 dependencyCheck {
     autoUpdate = true
