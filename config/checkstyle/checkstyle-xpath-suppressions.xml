@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
+<suppressions>
+    <!-- Allow try with resources to use a final keyword -->
+    <suppress-xpath files="." checks="RedundantModifier" query="//LITERAL_TRY//RESOURCE_SPECIFICATION//*" />
+
+    <!-- Treat add* methods as if they are setters for the purposes of hidden field checks -->
+    <suppress-xpath files="." checks="HiddenField" query="//METHOD_DEF[./IDENT[starts-with(@text,'add')]]//*" />
+</suppressions>
