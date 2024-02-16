@@ -27,7 +27,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertS
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
@@ -96,13 +95,13 @@ class HtsSystemContractTest {
 
     @Test
     void returnsResultFromImpliedCall() {
-        commonMocks();
         givenValidCallAttempt();
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
         given(attempt.senderId()).willReturn(SENDER_ID);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(validInput, frame));
     }
@@ -139,11 +138,5 @@ class HtsSystemContractTest {
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
         given(attemptFactory.createCallAttemptFrom(validInput, frame)).willReturn(attempt);
         given(attempt.asExecutableCall()).willReturn(call);
-    }
-
-    private void commonMocks() {
-        final var remainingGas = 10000L;
-        when(frame.getRemainingGas()).thenReturn(remainingGas);
-        when(frame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
     }
 }

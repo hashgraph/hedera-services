@@ -16,13 +16,15 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.metrics.AddedEventMetrics;
+import com.swirlds.platform.metrics.StaleMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
@@ -39,11 +41,6 @@ public class LinkedEventIntake {
     private final Supplier<Consensus> consensusSupplier;
 
     /**
-     * An {@link EventObserverDispatcher} instance
-     */
-    private final EventObserverDispatcher dispatcher;
-
-    /**
      * Stores events, expires them, provides event lookup methods
      */
     private final Shadowgraph shadowGraph;
@@ -53,31 +50,33 @@ public class LinkedEventIntake {
      */
     private final IntakeEventCounter intakeEventCounter;
 
-    /**
-     * The secondary wire that outputs the keystone event sequence number
-     */
-    private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
+    private final AddedEventMetrics eventAddedMetrics;
+
+    private final StaleMetrics staleMetrics;
 
     /**
      * Constructor
      *
-     * @param consensusSupplier provides the current consensus instance
-     * @param dispatcher        invokes event related callbacks
-     * @param shadowGraph       tracks events in the hashgraph
-     * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
+     * @param platformContext    the platform context
+     * @param selfId             the ID of the node
+     * @param consensusSupplier  provides the current consensus instance
+     * @param shadowGraph        tracks events in the hashgraph
+     * @param intakeEventCounter tracks the number of events from each peer that have been received, but
+     *                           aren't yet through the intake pipeline
      */
     public LinkedEventIntake(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final NodeId selfId,
             @NonNull final Supplier<Consensus> consensusSupplier,
-            @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final Shadowgraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
-        this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
+
+        this.eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
+        this.staleMetrics = new StaleMetrics(platformContext, selfId);
     }
 
     /**
@@ -102,21 +101,7 @@ public class LinkedEventIntake {
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
 
-            dispatcher.eventAdded(event);
-
-            if (consensusRounds != null) {
-                consensusRounds.forEach(round -> {
-                    // it is important that a flush request for the keystone event is submitted before starting
-                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
-                    // where the transaction handler is waiting for a given event to become durable, but the
-                    // PCES writer hasn't been notified yet that the event should be flushed.
-                    keystoneEventSequenceNumberOutput.forward(
-                            round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
-                    // Future work: this dispatcher now only handles metrics. Remove this and put the metrics where
-                    // they belong
-                    dispatcher.consensusRound(round);
-                });
-            }
+            eventAddedMetrics.eventAdded(event);
 
             final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
 
@@ -146,7 +131,7 @@ public class LinkedEventIntake {
 
         for (final EventImpl staleEvent : staleEvents) {
             staleEvent.setStale(true);
-            dispatcher.staleEvent(staleEvent);
+            staleMetrics.staleEvent(staleEvent);
         }
     }
 
