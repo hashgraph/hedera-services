@@ -17,6 +17,7 @@
 package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -44,9 +45,9 @@ import java.util.Objects;
  * A class used to store base event data that is used to create the hash of that event.
  * <p>
  * A base event is a set of data describing an event at the point when it is created, before it is added to the
- * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event
- * and some data is additional and does not affect the hash. This data is split into 2 classes:
- * {@link BaseEventHashedData} and {@link BaseEventUnhashedData}.
+ * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
+ * data is additional and does not affect the hash. This data is split into 2 classes: {@link BaseEventHashedData} and
+ * {@link BaseEventUnhashedData}.
  */
 public class BaseEventHashedData extends AbstractSerializableHashable
         implements OptionalSelfSerializable<EventSerializationOptions> {
@@ -55,13 +56,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     public static class ClassVersion {
         /**
-         * In this version, the transactions contained by this event are encoded using
-         * LegacyTransaction class. No longer supported.
+         * In this version, the transactions contained by this event are encoded using LegacyTransaction class. No
+         * longer supported.
          */
         public static final int ORIGINAL = 1;
         /**
-         * In this version, the transactions contained by this event are encoded using a newer version Transaction
-         * class with different subclasses to support internal system transactions and application transactions
+         * In this version, the transactions contained by this event are encoded using a newer version Transaction class
+         * with different subclasses to support internal system transactions and application transactions
          */
         public static final int TRANSACTION_SUBCLASSES = 2;
 
@@ -71,9 +72,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         public static final int SOFTWARE_VERSION = 3;
 
         /**
-         * Event descriptors replace the hashes and generation of the parents in the event.
-         * Multiple otherParents are supported.
-         * birthRound is added for lookup of the effective roster at the time of event creation.
+         * Event descriptors replace the hashes and generation of the parents in the event. Multiple otherParents are
+         * supported. birthRound is added for lookup of the effective roster at the time of event creation.
          *
          * @since 0.46.0
          */
@@ -82,7 +82,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     /**
      * The version of the serialization to use.  May be overridden by the version encountered when deserializing.
-     *
+     * <p>
      * DEPRECATED:  remove after 0.46.0 goes to mainnet.
      */
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
@@ -111,20 +111,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Create a BaseEventHashedData object
      *
-     * @param softwareVersion
-     *      the software version of the node that created this event.
-     * @param creatorId
-     * 		ID of this event's creator
-     * @param selfParent
-     *         self parent event descriptor
-     * @param otherParents
-     *        other parent event descriptors
-     * @param birthRound
-     *         the round in which this event was created.
-     * @param timeCreated
-     * 		creation time, as claimed by its creator
-     * @param transactions
-     * 		the payload: an array of transactions included in this event instance
+     * @param softwareVersion the software version of the node that created this event.
+     * @param creatorId       ID of this event's creator
+     * @param selfParent      self parent event descriptor
+     * @param otherParents    other parent event descriptors
+     * @param birthRound      the round in which this event was created.
+     * @param timeCreated     creation time, as claimed by its creator
+     * @param transactions    the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
             @NonNull SoftwareVersion softwareVersion,
@@ -321,7 +314,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return birthRound;
+        // TODO don't merge until this is reverted
+        return Math.max(birthRound, ROUND_FIRST);
     }
 
     /**
@@ -409,7 +403,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     *  Check if the event has a self parent.
+     * Check if the event has a self parent.
+     *
      * @return true if the event has a self parent
      */
     public boolean hasSelfParent() {
@@ -418,6 +413,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     /**
      * Check if the event has other parents.
+     *
      * @return true if the event has other parents
      */
     public boolean hasOtherParent() {
@@ -426,6 +422,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     /**
      * Get the hash value of the parent event.
+     *
      * @return the hash value of the parent event
      */
     @Nullable
@@ -435,7 +432,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     /**
      * Get the hash value of the other parent with the maximum generation.
-     * @return  the hash value of the other parent with the maximum generation
+     *
+     * @return the hash value of the other parent with the maximum generation
      */
     @Nullable
     public byte[] getOtherParentHashValue() {
@@ -462,10 +460,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Calculates the generation of an event based on its parents generations
      *
-     * @param selfParentGeneration
-     * 		the generation of the self parent
-     * @param otherParentGeneration
-     * 		the generation of the other parent
+     * @param selfParentGeneration  the generation of the self parent
+     * @param otherParentGeneration the generation of the other parent
      * @return the generation of the event
      */
     public static long calculateGeneration(final long selfParentGeneration, final long otherParentGeneration) {
