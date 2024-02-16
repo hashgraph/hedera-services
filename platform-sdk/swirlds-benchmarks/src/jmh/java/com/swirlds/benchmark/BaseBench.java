@@ -34,16 +34,15 @@ import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
-
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Level;
@@ -139,7 +138,8 @@ public abstract class BaseBench {
             registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
             registry.registerConstructable(
                     new ClassConstructorPair(BenchmarkMerkleInternal.class, BenchmarkMerkleInternal::new));
-            registry.registerConstructable(new ClassConstructorPair(BenchmarkMerkleLeaf.class, BenchmarkMerkleLeaf::new));
+            registry.registerConstructable(
+                    new ClassConstructorPair(BenchmarkMerkleLeaf.class, BenchmarkMerkleLeaf::new));
             registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
             registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
             registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
