@@ -64,6 +64,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
+    private Integer chainId = CHAIN_ID;
 
     @Nullable
     private BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec;
@@ -80,6 +81,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiEthereumContractCreate chainId(Integer chainId) {
+        this.chainId = chainId;
         return this;
     }
 
@@ -217,7 +223,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var ethTxData = new EthTxData(
                 null,
                 type,
-                Integers.toBytes(CHAIN_ID),
+                Integers.toBytes(chainId),
                 nonce,
                 gasPriceBytes,
                 maxPriorityGasBytes,

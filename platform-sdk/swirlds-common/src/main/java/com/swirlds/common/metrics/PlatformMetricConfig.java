@@ -68,6 +68,7 @@ public abstract class PlatformMetricConfig<T extends Metric, C extends MetricCon
      */
     public abstract T create(@NonNull final PlatformMetricsFactory factory);
 
+    @NonNull
     @Override
     public final T create(@NonNull MetricsFactory factory) {
         if (factory instanceof PlatformMetricsFactory) {
