@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.creation;
 
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * An object that creates new events.
  */
-public interface EventCreator extends Clearable {
+public interface EventCreator {
 
     /**
      * Register a new event from event intake.
@@ -49,4 +48,9 @@ public interface EventCreator extends Clearable {
      */
     @Nullable
     GossipEvent maybeCreateEvent();
+
+    /**
+     * Reset the event creator to its initial state.
+     */
+    void clear();
 }

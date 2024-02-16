@@ -22,7 +22,6 @@ import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Calculates tipset advancement weights for events created by a node.
  */
-public class TipsetWeightCalculator implements Clearable {
+public class TipsetWeightCalculator {
 
     private static final Logger logger = LogManager.getLogger(TipsetWeightCalculator.class);
 
@@ -327,9 +326,8 @@ public class TipsetWeightCalculator implements Clearable {
     }
 
     /**
-     * {@inheritDoc}
+     * Clear the tipset weight calculator to its initial state.
      */
-    @Override
     public void clear() {
         snapshot = new Tipset(addressBook);
         latestSelfEventTipset = snapshot;

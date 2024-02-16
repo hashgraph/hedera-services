@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,7 +32,7 @@ import java.util.Set;
  * Keeps track of events created that have no children. These events are candidates to be used as parents when creating
  * a new event.
  */
-public class ChildlessEventTracker implements Clearable {
+public class ChildlessEventTracker {
 
     private final Set<EventDescriptor> childlessEvents = new HashSet<>();
     private final Map<NodeId, EventDescriptor> eventsByCreator = new HashMap<>();
@@ -121,9 +120,8 @@ public class ChildlessEventTracker implements Clearable {
     }
 
     /**
-     * {@inheritDoc}
+     * Clear the internal state of this object.
      */
-    @Override
     public void clear() {
         childlessEvents.clear();
         eventsByCreator.clear();

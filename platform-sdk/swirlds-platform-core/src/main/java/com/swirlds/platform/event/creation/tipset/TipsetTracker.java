@@ -23,7 +23,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Computes and tracks tipsets for non-ancient events.
  */
-public class TipsetTracker implements Clearable {
+public class TipsetTracker {
 
     private static final Logger logger = LogManager.getLogger(TipsetTracker.class);
 
@@ -186,9 +185,8 @@ public class TipsetTracker implements Clearable {
     }
 
     /**
-     * {@inheritDoc}
+     * Reset the tipset tracker to its initial state.
      */
-    @Override
     public void clear() {
         nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
         latestGenerations = new Tipset(addressBook);
