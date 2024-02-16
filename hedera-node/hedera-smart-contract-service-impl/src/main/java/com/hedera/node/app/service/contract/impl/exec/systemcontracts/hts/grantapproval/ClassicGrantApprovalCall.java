@@ -39,7 +39,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
-
     // too many parameters
     @SuppressWarnings("java:S107")
     public ClassicGrantApprovalCall(

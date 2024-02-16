@@ -299,8 +299,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     : EnumSet.noneOf(ResponseCodeEnum.class);
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
-                if (parsedItem.isPropertyOverride()) {
-                    // Property overrides vary with the previous contents of 0.0.121
+                if (parsedItem.isSpecialFileChange()) {
+                    // Special file changes vary from their previous contents e.g. file update or append to 0.0.121 or
+                    // 0.0.111
                     continue;
                 }
                 final var body = parsedItem.itemBody();

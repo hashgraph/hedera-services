@@ -26,6 +26,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -89,7 +90,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 SYSTEM_ACCOUNT_CREDIT_SCREEN);
     }
 
-    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+    private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())) {
             return decoder.decodeCryptoTransfer(attempt.inputBytes(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())) {

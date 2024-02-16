@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
@@ -109,7 +110,13 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                         ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != SUCCESS) {
-            return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
+            if (status == NOT_SUPPORTED) {
+                // matching behaviour of mono-service HTS system contract which directly enforced feature flags, ending
+                // up doing an exceptional halt on NOT_SUPPORTED and consuming all gas
+                return haltWith(gasRequirement, recordBuilder);
+            } else {
+                return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
+            }
         } else {
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)

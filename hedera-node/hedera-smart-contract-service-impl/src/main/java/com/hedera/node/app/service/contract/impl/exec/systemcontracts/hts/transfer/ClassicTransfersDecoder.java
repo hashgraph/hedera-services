@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -127,14 +128,18 @@ public class ClassicTransfersDecoder {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferToken(
+    public @Nullable TransactionBody decodeTransferToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(encoded);
+        final long amount = call.get(3);
+        if (amount < 0) {
+            return null;
+        }
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
                 ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
-                call.get(3),
+                amount,
                 IsApproval.FALSE)));
     }
 
