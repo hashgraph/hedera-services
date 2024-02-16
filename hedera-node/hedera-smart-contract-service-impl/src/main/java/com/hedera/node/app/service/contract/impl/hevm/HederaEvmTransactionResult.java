@@ -296,22 +296,21 @@ public record HederaEvmTransactionResult(
      * Create a result for a transaction that failed due to validation exceptions.
      *
      * @param senderId the sender of the EVM transaction
-     * @param transaction the transaction object
+     * @param recipientId the recipient of the EVM transaction
      * @param reason   the reason for the failure
      * @return the result
      */
     public static HederaEvmTransactionResult fromAborted(
             @NonNull final AccountID senderId,
-            @NonNull final HederaEvmTransaction transaction,
+            @Nullable ContractID recipientId,
             @NonNull final ResponseCodeEnum reason) {
         requireNonNull(senderId);
-        requireNonNull(transaction);
         requireNonNull(reason);
         return new HederaEvmTransactionResult(
                 0,
                 0,
                 senderId,
-                transaction.contractId(),
+                recipientId,
                 null,
                 Bytes.EMPTY,
                 null,
