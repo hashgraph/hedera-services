@@ -43,6 +43,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -438,7 +439,9 @@ class StateSigningTests {
         for (final Address address : newAddressBook) {
             final PublicKey publicKey = mock(PublicKey.class);
             when(publicKey.getAlgorithm()).thenReturn("RSA");
-            final Address newAddress = address.copySetSigPublicKey(publicKey);
+            final X509Certificate certificate = mock(X509Certificate.class);
+            when(certificate.getPublicKey()).thenReturn(publicKey);
+            final Address newAddress = address.copySetSigCert(certificate);
             // This replaces the old address
             newAddressBook.add(newAddress);
         }

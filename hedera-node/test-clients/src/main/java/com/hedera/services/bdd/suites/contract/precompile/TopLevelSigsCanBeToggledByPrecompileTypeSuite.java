@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.THE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.TOKEN_ASSOCIATE_FUNCTION;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.ALICE;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.BURN_TOKEN_WITH_EVENT;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.CREATION_TX;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.THE_BURN_CONTRACT;
@@ -78,7 +77,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAUSE_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
-import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -108,6 +106,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
     public static final String WIPE_CONTRACT = "WipeTokenAccount";
     public static final String ADMIN_ACCOUNT = "admin";
+    public static final String TOKEN = "yahcliToken";
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybodySecond";
     public static final String WIPE_KEY = "wipeKey";

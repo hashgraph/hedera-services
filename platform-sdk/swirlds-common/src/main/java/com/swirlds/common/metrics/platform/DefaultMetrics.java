@@ -26,6 +26,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -50,57 +52,52 @@ public class DefaultMetrics implements PlatformMetrics {
     public static final int EXCEPTION_RATE_THRESHOLD = 10;
 
     // A reference to the NodeId of the current node
-    private final NodeId selfId;
+    private final @Nullable NodeId selfId;
 
     // The MetricKeyRegistry ensures that no two conflicting metrics with the same key exist
-    private final MetricKeyRegistry metricKeyRegistry;
+    private final @NonNull MetricKeyRegistry metricKeyRegistry;
 
     // A map of metric-keys to metrics
-    private final NavigableMap<String, Metric> metricMap = new ConcurrentSkipListMap<>();
+    private final @NonNull NavigableMap<String, Metric> metricMap = new ConcurrentSkipListMap<>();
 
     // A read-only view of all registered metrics
-    private final Collection<Metric> metricsView = Collections.unmodifiableCollection(metricMap.values());
+    private final @NonNull Collection<Metric> metricsView = Collections.unmodifiableCollection(metricMap.values());
 
     // A map of all global metrics in the system (only used if this instance maintains platform metrics
-    private final Map<String, String> globalMetricKeys = new ConcurrentHashMap<>();
+    private final @NonNull Map<String, String> globalMetricKeys = new ConcurrentHashMap<>();
 
     // Factory that creates specific implementation of Metric
-    private final PlatformMetricsFactory factory;
+    private final @NonNull PlatformMetricsFactory factory;
 
     // Helper-class that implements the Observer-pattern for MetricsEvents
-    private final MetricsEventBus<MetricsEvent> eventBus;
+    private final @NonNull MetricsEventBus<MetricsEvent> eventBus;
 
     // Helper class that maintains a list of all metrics, which need to be updated in regular intervals
-    private final MetricsUpdateService updateService;
+    private final @Nullable MetricsUpdateService updateService;
 
     /**
      * Constructor of {@code DefaultMetrics}
      *
-     * @param selfId
-     * 		the {@link NodeId} of the platform, {@code null} if these are the global metrics
-     * @param metricKeyRegistry
-     * 		the {@link MetricKeyRegistry} that ensures no conflicting metrics are registered
-     * @param executor
-     * 		the {@link ScheduledExecutorService} that will be used by this {@code DefaultMetrics}
-     * @param factory
-     * 		the {@link PlatformMetricsFactory} that will be used to create new instances of {@link Metric}
-     * @param metricsConfig
-     *      the {@link MetricsConfig} for metrics configuration
+     * @param selfId            the {@link NodeId} of the platform, {@code null} if these are the global metrics
+     * @param metricKeyRegistry the {@link MetricKeyRegistry} that ensures no conflicting metrics are registered
+     * @param executor          the {@link ScheduledExecutorService} that will be used by this {@code DefaultMetrics}
+     * @param factory           the {@link PlatformMetricsFactory} that will be used to create new instances of
+     *                          {@link Metric}
+     * @param metricsConfig     the {@link MetricsConfig} for metrics configuration
      * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code metricKeyRegistry}</li>
-     *       <li>{@code executor}</li>
-     *       <li>{@code factory}</li>
-     *       <li>{@code metricsConfig}</li>
-     *     </ul>
-     *
+     *                              <ul>
+     *                                <li>{@code metricKeyRegistry}</li>
+     *                                <li>{@code executor}</li>
+     *                                <li>{@code factory}</li>
+     *                                <li>{@code metricsConfig}</li>
+     *                              </ul>
      */
     public DefaultMetrics(
-            final NodeId selfId,
-            final MetricKeyRegistry metricKeyRegistry,
-            final ScheduledExecutorService executor,
-            final PlatformMetricsFactory factory,
-            final MetricsConfig metricsConfig) {
+            final @Nullable NodeId selfId,
+            final @NonNull MetricKeyRegistry metricKeyRegistry,
+            final @NonNull ScheduledExecutorService executor,
+            final @NonNull PlatformMetricsFactory factory,
+            final @NonNull MetricsConfig metricsConfig) {
         this.selfId = selfId;
         this.metricKeyRegistry = Objects.requireNonNull(metricKeyRegistry, "metricsKeyRegistry must not be null");
         this.factory = Objects.requireNonNull(factory, "factory must not be null");
@@ -124,7 +121,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public Metric getMetric(final String category, final String name) {
+    public Metric getMetric(final @NonNull String category, final @NonNull String name) {
         Objects.requireNonNull(category, "category must not be null");
         Objects.requireNonNull(name, "name must not be null");
         return metricMap.get(calculateMetricKey(category, name));
@@ -133,8 +130,9 @@ public class DefaultMetrics implements PlatformMetrics {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public Collection<Metric> findMetricsByCategory(final String category) {
+    public Collection<Metric> findMetricsByCategory(final @NonNull String category) {
         Objects.requireNonNull(category, "category must not be null");
         final String start = category + ".";
         // The character '/' is the successor of '.' in Unicode. We use it to define the first metric-key,
@@ -146,6 +144,7 @@ public class DefaultMetrics implements PlatformMetrics {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Collection<Metric> getAll() {
         return metricsView;
@@ -156,14 +155,13 @@ public class DefaultMetrics implements PlatformMetrics {
      * <p>
      * A new subscriber will immediately receive ADD-events for all metrics, that are already registered.
      * <p>
-     * If the list of metrics is modified while a new subscriber is added, it may happen, that the new subscriber
-     * gets two ADD-events for the same {@code Metric} or a REMOVE-event for a {@code Metric} that was not added before.
+     * If the list of metrics is modified while a new subscriber is added, it may happen, that the new subscriber gets
+     * two ADD-events for the same {@code Metric} or a REMOVE-event for a {@code Metric} that was not added before.
      *
-     * @param subscriber
-     * 		the new {@code subscriber}
+     * @param subscriber the new {@code subscriber}
      * @return a {@link Runnable} that, when called, unsubscribes the subscriber
      */
-    public Runnable subscribe(final Consumer<? super MetricsEvent> subscriber) {
+    public @NonNull Runnable subscribe(final @NonNull Consumer<? super MetricsEvent> subscriber) {
         final Supplier<Stream<MetricsEvent>> previousEventsSupplier =
                 () -> metricMap.values().stream().map(metric -> new MetricsEvent(ADDED, selfId, metric));
         return eventBus.subscribe(subscriber, previousEventsSupplier);
@@ -172,8 +170,9 @@ public class DefaultMetrics implements PlatformMetrics {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config) {
+    public <T extends Metric> T getOrCreate(final @NonNull MetricConfig<T, ?> config) {
         Objects.requireNonNull(config, "config must not be null");
 
         // first we check the happy path, if the metric is already registered
@@ -213,7 +212,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void remove(final String category, final String name) {
+    public void remove(final @NonNull String category, final @NonNull String name) {
         Objects.requireNonNull(category, "category must not be null");
         Objects.requireNonNull(name, "name must not be null");
         final String metricKey = calculateMetricKey(category, name);
@@ -230,7 +229,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void remove(final Metric metric) {
+    public void remove(final @NonNull Metric metric) {
         Objects.requireNonNull(metric, "metric must not be null");
         final String metricKey = calculateMetricKey(metric);
         throwIfGlobal(metricKey);
@@ -246,7 +245,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void remove(final MetricConfig<?, ?> config) {
+    public void remove(final @NonNull MetricConfig<?, ?> config) {
         Objects.requireNonNull(config, "config must not be null");
         final String metricKey = calculateMetricKey(config);
         throwIfGlobal(metricKey);
@@ -272,7 +271,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void addUpdater(final Runnable updater) {
+    public void addUpdater(final @NonNull Runnable updater) {
         Objects.requireNonNull(updater, "updater must not be null");
         if (updateService != null) {
             updateService.addUpdater(updater);
@@ -283,7 +282,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void removeUpdater(final Runnable updater) {
+    public void removeUpdater(final @NonNull Runnable updater) {
         Objects.requireNonNull(updater, "updater must not be null");
         if (updateService != null) {
             updateService.removeUpdater(updater);
@@ -304,8 +303,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * Shuts down the service
      *
      * @return {@code true} if the shutdown finished on time, {@code false} if the call ran into a timeout
-     * @throws InterruptedException
-     * 		if the current thread was interrupted while waiting
+     * @throws InterruptedException if the current thread was interrupted while waiting
      */
     public boolean shutdown() throws InterruptedException {
         metricMap.entrySet().stream()
@@ -321,13 +319,11 @@ public class DefaultMetrics implements PlatformMetrics {
      * The generated key is compatible with keys generated by {@link #calculateMetricKey(Metric)} and
      * {@link #calculateMetricKey(MetricConfig)}.
      *
-     * @param category
-     * 		the {@code category} used in the key
-     * @param name
-     * 		the {@code name} used in the key
+     * @param category the {@code category} used in the key
+     * @param name     the {@code name} used in the key
      * @return the calculated key
      */
-    public static String calculateMetricKey(final String category, final String name) {
+    public static String calculateMetricKey(final @NonNull String category, final @NonNull String name) {
         return category + "." + name;
     }
 
@@ -337,11 +333,10 @@ public class DefaultMetrics implements PlatformMetrics {
      * The generated key is compatible with keys generated by {@link #calculateMetricKey(String, String)} and
      * {@link #calculateMetricKey(MetricConfig)}.
      *
-     * @param metric
-     * 		the {@code Metric} for which the key should be calculated
+     * @param metric the {@code Metric} for which the key should be calculated
      * @return the calculated key
      */
-    public static String calculateMetricKey(final Metric metric) {
+    public static @NonNull String calculateMetricKey(final @NonNull Metric metric) {
         return calculateMetricKey(metric.getCategory(), metric.getName());
     }
 
@@ -351,21 +346,19 @@ public class DefaultMetrics implements PlatformMetrics {
      * The generated key is compatible with keys generated by {@link #calculateMetricKey(String, String)} and
      * {@link #calculateMetricKey(Metric)}.
      *
-     * @param config
-     * 		the {@code MetricConfig} for which the key should be calculated
+     * @param config the {@code MetricConfig} for which the key should be calculated
      * @return the calculated key
      */
-    public static String calculateMetricKey(final MetricConfig<?, ?> config) {
+    public static @NonNull String calculateMetricKey(final @NonNull MetricConfig<?, ?> config) {
         return calculateMetricKey(config.getCategory(), config.getName());
     }
 
     /**
      * Handles new and removed global metrics.
      *
-     * @param event
-     * 		The {@link MetricsEvent} with information about the change
+     * @param event The {@link MetricsEvent} with information about the change
      */
-    public void handleGlobalMetrics(final MetricsEvent event) {
+    public void handleGlobalMetrics(final @NonNull MetricsEvent event) {
         final Metric metric = event.metric();
         final String metricKey = calculateMetricKey(metric);
         switch (event.type()) {

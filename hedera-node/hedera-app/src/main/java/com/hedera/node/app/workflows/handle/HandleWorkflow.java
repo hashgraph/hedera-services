@@ -406,6 +406,7 @@ public class HandleWorkflow {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    networkUtilizationManager,
                     synchronizedThrottleAccumulator);
 
             // Calculate the fee

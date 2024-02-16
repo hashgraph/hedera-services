@@ -68,6 +68,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         System.arraycopy(sig, 32, s, 0, 32);
 
         BigInteger v;
+        // calulations originate from https://eips.ethereum.org/EIPS/eip-155
         if (ethTx.type() == LEGACY_ETHEREUM) {
             if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
                 v = BigInteger.valueOf(27L + recId.getValue());

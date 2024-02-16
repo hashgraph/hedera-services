@@ -33,6 +33,7 @@ public interface LongGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -41,6 +42,7 @@ public interface LongGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.INT;
@@ -49,6 +51,7 @@ public interface LongGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -57,9 +60,10 @@ public interface LongGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default Long get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -99,14 +103,32 @@ public interface LongGauge extends Metric {
          * 		the kind of metric (metrics are grouped or filtered by this)
          * @param name
          * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
             this.initialValue = 0L;
         }
 
+        /**
+         * Constructor of {@code LongGauge.Config}
+         *
+         *
+         * The {@link #getInitialValue() initialValue} is by default set to {@code 0L},
+         * the {@link #getFormat() format} is set to "%d".
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param description metric description
+         * @param unit        metric unit
+         * @param format format for metric
+         * @param initialValue initialValue for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -122,6 +144,7 @@ public interface LongGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public LongGauge.Config withDescription(@NonNull final String description) {
             return new LongGauge.Config(
@@ -131,6 +154,7 @@ public interface LongGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public LongGauge.Config withUnit(@NonNull final String unit) {
             return new LongGauge.Config(
@@ -143,8 +167,8 @@ public interface LongGauge extends Metric {
          * @param format
          * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if {@code format} is {@code null}
+         * @throws IllegalArgumentException if {@code format} consists only of whitespaces
          */
         @NonNull
         public LongGauge.Config withFormat(@NonNull final String format) {
@@ -177,6 +201,7 @@ public interface LongGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<LongGauge> getResultClass() {
             return LongGauge.class;

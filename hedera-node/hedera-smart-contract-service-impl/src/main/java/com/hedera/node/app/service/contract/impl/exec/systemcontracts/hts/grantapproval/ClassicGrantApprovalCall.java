@@ -62,7 +62,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
-        final var status = withMonoStandard(recordBuilder).status();
+        final var status = recordBuilder.status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != SUCCESS) {
             return reversionWith(gasRequirement, recordBuilder);
@@ -77,6 +77,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements(status.protoOrdinal(), true)
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
+
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
