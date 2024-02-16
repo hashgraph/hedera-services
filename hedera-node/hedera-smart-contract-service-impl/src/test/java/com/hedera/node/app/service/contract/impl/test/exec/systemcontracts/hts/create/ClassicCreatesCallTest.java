@@ -37,6 +37,7 @@ import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -50,6 +51,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -65,6 +67,9 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     @Mock
     private ContractCallRecordBuilder recordBuilder;
+
+    @Mock
+    private BlockValues blockValues;
 
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
             .tokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -326,7 +331,8 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                             eq(ContractCallRecordBuilder.class)))
                     .willReturn(recordBuilder);
         }
-
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(Timestamp.DEFAULT.seconds());
         subject = new ClassicCreatesCall(
                 gasCalculator,
                 mockEnhancement(),

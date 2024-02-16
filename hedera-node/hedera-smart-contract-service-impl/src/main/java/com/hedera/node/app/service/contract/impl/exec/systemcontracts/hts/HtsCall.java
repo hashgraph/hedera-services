@@ -52,6 +52,11 @@ public interface HtsCall {
             return new PricedResult(result, 0L, responseCode, isViewCall);
         }
 
+        public static PricedResult gasPlus(
+                FullResult result, ResponseCodeEnum responseCode, boolean isViewCall, long nonGasCost) {
+            return new PricedResult(result, nonGasCost, responseCode, isViewCall);
+        }
+
         public ContractFunctionResult asResultOfCall(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,
@@ -59,6 +64,7 @@ public interface HtsCall {
                 final long remainingGas) {
             return ContractFunctionResult.newBuilder()
                     .contractID(contractId)
+                    .amount(nonGasCost)
                     .contractCallResult(tuweniToPbjBytes(fullResult.output()))
                     .errorMessage(responseCode == SUCCESS ? null : responseCode.protoName())
                     .gasUsed(fullResult().gasRequirement())

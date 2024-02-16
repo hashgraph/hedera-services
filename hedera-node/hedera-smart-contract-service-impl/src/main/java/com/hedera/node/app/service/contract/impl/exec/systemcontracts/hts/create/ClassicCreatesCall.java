@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
@@ -45,7 +46,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
@@ -78,7 +81,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
-    private final long nonGasCost;
+    private long nonGasCost;
 
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -91,13 +94,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         this.syntheticCreate = syntheticCreate;
-        if (syntheticCreate != null) {
-            final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreate, spenderId);
-            // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
-            this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
-        } else {
-            this.nonGasCost = 0L;
-        }
     }
 
     private record LegacyActivation(long contractNum, Bytes pbjAddress, Address besuAddress) {}
@@ -112,6 +108,18 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                     INVALID_TRANSACTION_BODY,
                     false);
         }
+        final var timestampSeconds = frame.getBlockValues().getTimestamp();
+        final var timestamp = Timestamp.newBuilder().seconds(timestampSeconds).build();
+        final var syntheticCreateWithId = syntheticCreate
+                .copyBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.DEFAULT)
+                        .transactionValidStart(timestamp)
+                        .build())
+                .build();
+        final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreateWithId, spenderId);
+        // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
+        this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
             return completionWith(
                     FIXED_GAS_COST,
@@ -119,6 +127,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                     RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
         } else {
             operations().collectFee(spenderId, nonGasCost);
+            // (future) remove after differential testing
+            nonGasCost = frame.getValue().toLong();
         }
 
         final var validity = validityOfSynthOp();
@@ -134,7 +144,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder, FIXED_GAS_COST), status, false);
+            return gasPlus(revertResult(recordBuilder, FIXED_GAS_COST), status, false, nonGasCost);
         } else {
             ByteBuffer encodedOutput;
             final var op = syntheticCreate.tokenCreationOrThrow();
@@ -168,7 +178,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                                     headlongAddressOf(recordBuilder.tokenID()));
                 }
             }
-            return gasOnly(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false);
+            return gasPlus(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false, nonGasCost);
         }
     }
 
