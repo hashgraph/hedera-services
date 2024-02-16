@@ -23,6 +23,7 @@ import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
 import static com.hedera.node.app.bbm.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
+import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
@@ -450,7 +451,7 @@ public final class Hedera implements SwirldMain {
             final var blockInfo = blockRecordState
                     .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
                     .get();
-            if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+            if (isDefaultConsTimeOfLastHandledTxn(blockInfo)) {
                 createSynthRecords = true;
             }
         } else {

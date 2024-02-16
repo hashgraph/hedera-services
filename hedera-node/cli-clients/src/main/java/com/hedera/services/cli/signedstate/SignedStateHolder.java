@@ -19,6 +19,7 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -308,6 +309,15 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return rawContractStorage;
     }
 
+    /** Get all scheduled transactions */
+    @NonNull
+    public MerkleScheduledTransactions getScheduledTransactions() {
+        final var scheduledTransactions = servicesState.scheduleTxs();
+        assertSignedStateComponentExists(scheduledTransactions, "scheduledTransactions");
+        return scheduledTransactions;
+    }
+
+    // Returns the network context store from the state
     @NonNull
     public MerkleNetworkContext getNetworkContext() {
         final var networkContext = servicesState.networkCtx();
@@ -315,6 +325,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return networkContext;
     }
 
+    // Returns the staking info store from the state
     @NonNull
     public MerkleMapLike<EntityNum, MerkleStakingInfo> getStakingInfo() {
         final var stakingInfo = servicesState.stakingInfo();
