@@ -38,7 +38,7 @@ import java.lang.annotation.Target;
 public @interface ConstraintMethod {
 
     /**
-     * Defines the name of the method that will be executed to validate the annotated property
+     * Defines the name of the method that will be executed to validate the annotated property.
      *
      * @return name of the method that will be executed to validate the annotated property
      */
