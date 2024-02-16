@@ -232,7 +232,7 @@ jobs:
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} test jacocoTestReport --continue --scan
+        run: ${GRADLE_EXEC} test timingSensitive jacocoTestReport --continue --scan
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0

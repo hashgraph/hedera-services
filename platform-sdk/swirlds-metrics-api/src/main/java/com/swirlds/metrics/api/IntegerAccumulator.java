@@ -39,6 +39,7 @@ public interface IntegerAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.ACCUMULATOR;
@@ -47,6 +48,7 @@ public interface IntegerAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.INT;
@@ -55,6 +57,7 @@ public interface IntegerAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -63,9 +66,10 @@ public interface IntegerAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    default Integer get(final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+    default Integer get(@NonNull final ValueType valueType) {
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -103,8 +107,8 @@ public interface IntegerAccumulator extends Metric {
      */
     final class Config extends MetricConfig<IntegerAccumulator, IntegerAccumulator.Config> {
 
-        private final IntBinaryOperator accumulator;
-        private final IntSupplier initializer;
+        private final @NonNull IntBinaryOperator accumulator;
+        private final @Nullable IntSupplier initializer;
 
         private final int initialValue;
 
@@ -119,8 +123,8 @@ public interface IntegerAccumulator extends Metric {
          * 		the kind of metric (metrics are grouped or filtered by this)
          * @param name
          * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
@@ -129,6 +133,23 @@ public interface IntegerAccumulator extends Metric {
             this.initialValue = 0;
         }
 
+        /**
+         * Constructor of {@code IntegerGauge.Config}
+         *
+         * By default, the {@link #getAccumulator() accumulator} is set to {@code Integer::max},
+         * the {@link #getInitialValue() initialValue} is set to {@code 0},
+         * and {@link #getFormat() format} is set to {@code "%d"}.
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param description metric description
+         * @param unit        metric unit
+         * @param accumulator accumulator for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -140,7 +161,7 @@ public interface IntegerAccumulator extends Metric {
                 final int initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
+            this.accumulator = Objects.requireNonNull(accumulator, "accumulator must not be null");
             this.initializer = initializer;
             this.initialValue = initialValue;
         }
@@ -148,6 +169,7 @@ public interface IntegerAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerAccumulator.Config withDescription(@NonNull final String description) {
             return new IntegerAccumulator.Config(
@@ -164,6 +186,7 @@ public interface IntegerAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerAccumulator.Config withUnit(@NonNull final String unit) {
             return new IntegerAccumulator.Config(
@@ -183,8 +206,8 @@ public interface IntegerAccumulator extends Metric {
          * @param format
          * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if {@code format} is {@code null}
+         * @throws IllegalArgumentException if {@code format} consists only of whitespaces
          */
         @NonNull
         public IntegerAccumulator.Config withFormat(@NonNull final String format) {
@@ -295,6 +318,7 @@ public interface IntegerAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<IntegerAccumulator> getResultClass() {
             return IntegerAccumulator.class;

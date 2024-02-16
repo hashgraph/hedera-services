@@ -38,7 +38,6 @@ public class EventCreationManagerWiring {
 
     private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
     private final BindableInputWire<NonAncientEventWindow, GossipEvent> nonAncientEventWindowInput;
-    private final BindableInputWire<Boolean, GossipEvent> pauseInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
 
@@ -68,7 +67,6 @@ public class EventCreationManagerWiring {
 
         eventInput = taskScheduler.buildInputWire("possible parents");
         nonAncientEventWindowInput = taskScheduler.buildInputWire("non-ancient event window");
-        pauseInput = taskScheduler.buildInputWire("pause");
         newEventOutput = taskScheduler.getOutputWire();
 
         final double frequency = platformContext
@@ -86,7 +84,6 @@ public class EventCreationManagerWiring {
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
         eventInput.bind(eventCreationManager::registerEvent);
         nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
-        pauseInput.bind(eventCreationManager::setPauseStatus);
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
@@ -113,16 +110,6 @@ public class EventCreationManagerWiring {
     }
 
     /**
-     * Get the input wire for pause operations.
-     *
-     * @return the input wire for pause operations
-     */
-    @NonNull
-    public InputWire<Boolean> pauseInput() {
-        return pauseInput;
-    }
-
-    /**
      * Get the output wire where newly created events are sent.
      *
      * @return the output wire for new events
@@ -137,5 +124,19 @@ public class EventCreationManagerWiring {
      */
     public void flush() {
         taskScheduler.flush();
+    }
+
+    /**
+     * Start squelching the task scheduler.
+     */
+    public void startSquelching() {
+        taskScheduler.startSquelching();
+    }
+
+    /**
+     * Stop squelching the task scheduler.
+     */
+    public void stopSquelching() {
+        taskScheduler.stopSquelching();
     }
 }

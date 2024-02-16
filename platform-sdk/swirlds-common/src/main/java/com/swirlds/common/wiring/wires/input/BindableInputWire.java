@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * An input wire that can be bound to an implementation.
@@ -34,6 +35,13 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
     private final StandardWiringModel model;
+
+    /**
+     * Supplier for whether the task scheduler is currently squelching.
+     * <p>
+     * As long as this supplier returns true, the handler will be executed as a no-op, and no data will be forwarded.
+     */
+    private final Supplier<Boolean> currentlySquelching;
 
     /**
      * Constructor.
@@ -50,6 +58,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
         this.model = Objects.requireNonNull(model);
         taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         taskSchedulerName = taskScheduler.getName();
+        currentlySquelching = taskScheduler::currentlySquelching;
 
         model.registerInputWireCreation(taskSchedulerName, name);
     }
@@ -60,7 +69,13 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     @SuppressWarnings("unchecked")
     public void bind(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
-        setHandler((Consumer<Object>) handler);
+        setHandler(i -> {
+            if (currentlySquelching.get()) {
+                return;
+            }
+
+            handler.accept((IN) i);
+        });
         model.registerInputWireBinding(taskSchedulerName, getName());
     }
 
@@ -71,6 +86,10 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     public void bind(@NonNull final Function<IN, OUT> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
+            if (currentlySquelching.get()) {
+                return;
+            }
+
             final OUT output = handler.apply((IN) i);
             if (output != null) {
                 taskSchedulerInput.forward(output);

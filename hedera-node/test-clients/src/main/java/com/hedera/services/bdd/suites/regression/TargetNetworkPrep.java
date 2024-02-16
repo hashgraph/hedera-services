@@ -93,7 +93,7 @@ public class TargetNetworkPrep extends HapiSuite {
                             uploadDefaultFeeSchedules(GENESIS),
                             fileUpdate(API_PERMISSIONS)
                                     .payingWith(GENESIS)
-                                    .contents(serde.toValidatedRawFile(stylized121)),
+                                    .contents(serde.toValidatedRawFile(stylized121, null)),
                             overridingAllOf(Map.of(
                                     "scheduling.whitelist",
                                     "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance,CryptoUpdate",

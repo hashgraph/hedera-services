@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -37,6 +38,7 @@ import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.n
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -76,6 +78,7 @@ public class SelfDestructSuite extends HapiSuite {
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
                 selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(),
                 testSelfDestructForSystemAccounts());
     }
 
@@ -146,6 +149,18 @@ public class SelfDestructSuite extends HapiSuite {
                         getAccountInfo(BENEFICIARY).has(accountWith().balance(ONE_HUNDRED_HBARS)),
                         getContractInfo(SELF_DESTRUCT_CALLABLE_CONTRACT)
                                 .has(contractWith().balance(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
+        return defaultHapiSpec("selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed")
+                .given(
+                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
+                        contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
+                .when(contractCallLocal(
+                                SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
+                        .hasAnswerOnlyPrecheck(LOCAL_CALL_MODIFICATION_EXCEPTION))
+                .then();
     }
 
     @HapiTest
