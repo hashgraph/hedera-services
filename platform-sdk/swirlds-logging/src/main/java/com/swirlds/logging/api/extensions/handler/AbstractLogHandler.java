@@ -29,9 +29,8 @@ import java.util.Objects;
  */
 public abstract class AbstractLogHandler implements LogHandler {
 
-    private static final String PROPERTY_HANDLER = "logging.handler.%s";
+    public static final String PROPERTY_HANDLER = "logging.handler.%s";
     private static final String PROPERTY_HANDLER_ENABLED = PROPERTY_HANDLER + ".enabled";
-    private static final String PROPERTY_HANDLER_LEVEL = PROPERTY_HANDLER + ".level";
 
     /**
      * The configuration key of the log handler. This is used to create configuration keys for the log handler.
