@@ -427,19 +427,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input wire for saving a state to disk
-     * <p>
-     * Future work: this is a temporary hook to allow the components to save state a state to disk, prior to the whole
-     * system being migrated to the new framework.
-     *
-     * @return the input wire for saving a state to disk
-     */
-    @NonNull
-    public InputWire<ReservedSignedState> getSaveStateToDiskInput() {
-        return signedStateFileManagerWiring.saveStateToDisk();
-    }
-
-    /**
      * Get the input wire for dumping a state to disk
      * <p>
      * Future work: this is a temporary hook to allow the components to dump a state to disk, prior to the whole system
