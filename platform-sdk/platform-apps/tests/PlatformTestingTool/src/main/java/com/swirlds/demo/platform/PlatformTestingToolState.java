@@ -1120,7 +1120,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final ConsensusTransaction trans,
             final PlatformState platformState,
             final long roundNum) {
-        //final long countBefore = getTransactionCounter().sum();
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
@@ -1136,19 +1135,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         } catch (final ExecutionException e) {
             logger.error(EXCEPTION.getMarker(), "Exception while handling transaction", e);
         }
-//        final long countAfter = getTransactionCounter().sum();
-//        if (countAfter == countBefore) {
-//            try {
-//                logger.error(DEMO_INFO.getMarker(), "A transaction did not increment the counter\n{}",
-//                        TestTransaction.parseFrom(
-//                                TestTransactionWrapper.parseFrom(trans.getContents()).getTestTransactionRawBytes()
-//                        )
-//                );
-//            } catch (final InvalidProtocolBufferException e) {
-//                logger.error(DEMO_INFO.getMarker(),
-//                        "A transaction did not increment the counter but it could not be parsed", e);
-//            }
-//        }
     }
 
     private static void waitForSignatureValidation(final ConsensusTransaction transaction)
