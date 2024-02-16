@@ -128,6 +128,17 @@ public enum TokenOpsUsageUtils {
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
     }
 
+    public TokenBurnMeta tokenUpdateNftUsageFrom(final TransactionBody txn) {
+        final var op = txn.getTokenUpdateNft();
+        final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+        return tokenUpdateNftUsageFrom(txn, subType);
+    }
+
+    public TokenBurnMeta tokenUpdateNftUsageFrom(final TransactionBody txn, final SubType subType) {
+        final var op = txn.getTokenUpdateNft();
+        return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
+    }
+
     public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn) {
         final var op = txn.getTokenWipe();
         final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;

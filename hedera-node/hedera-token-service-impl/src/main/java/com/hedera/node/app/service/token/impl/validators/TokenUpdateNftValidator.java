@@ -41,6 +41,7 @@ public class TokenUpdateNftValidator {
     @NonNull
     public ValidationResult validateSemantics(
             @NonNull final HandleContext context, @NonNull final TokenUpdateNftTransactionBody op) {
+
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenId = op.tokenOrThrow();
         final var token = getIfUsable(tokenId, tokenStore);
@@ -51,12 +52,10 @@ public class TokenUpdateNftValidator {
             validator.validateTokenMetadata(op.metadata(), tokensConfig);
         }
 
-        //        In validateSemantics also validate if the Nft or list of Nfts given in the transaction body exist in
-        // state.
-        //        If not throw appropriate response code.
+        // In validateSemantics also validate if the Nft or list of Nfts given in the transaction body exist in state.
+        // If not throw appropriate response code.
         return new ValidationResult(token, OK);
-        //        return new ValidationResult(token, TOKEN_HAS_NO_METADATA_KEY);  // Might need to be
-        // TOKEN_DOESN_NOT_EXIST ?
+        // return new ValidationResult(token, TOKEN_HAS_NO_METADATA_KEY);  // Might need to be TOKEN_DOES_NOT_EXIST ?
 
     }
 }

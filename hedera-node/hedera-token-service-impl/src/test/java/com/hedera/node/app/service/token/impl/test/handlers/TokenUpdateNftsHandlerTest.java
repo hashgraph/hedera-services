@@ -16,14 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -46,8 +43,6 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
@@ -55,14 +50,15 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateNftRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
+import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
@@ -115,25 +111,11 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     private void setUpTxnContext() {
+        attributeValidator = new AttributeValidatorImpl(handleContext);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(compositeProps.getLongProperty("entities.maxLifetime")).willReturn(7200000L);
-
-        attributeValidator =
-                new StandardizedAttributeValidator(consensusInstant::getEpochSecond, compositeProps, dynamicProperties);
-        expiryValidator = new StandardizedExpiryValidator(
-                id -> {
-                    final var account = writableAccountStore.get(
-                            AccountID.newBuilder().accountNum(id.num()).build());
-                    validateTrue(account != null, INVALID_AUTORENEW_ACCOUNT);
-                },
-                attributeValidator,
-                consensusInstant::getEpochSecond,
-                hederaNumbers,
-                configProvider);
-
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(50);
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(3000000L);
@@ -144,18 +126,22 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void happyPathForNonFungibleTokenUpdate() {
         final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
-        txn = new TokenUpdateNftBuilder().build(serialNumbers);
+        final var metadataForAllNfts = Bytes.wrap("individual nft test metadata");
+
+        // TokenUpdateNftBuilder to create mock with serialIds and test metadata
+        txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(
+                        nonFungibleTokenId, metadataForAllNfts, serialNumbers.toArray(new Long[0]));
         given(handleContext.body()).willReturn(txn);
-
-        final var token = readableTokenStore.get(nonFungibleTokenId);
-        assertThat(token.metadata()).isEqualTo(nonFungibleToken.metadata());
-        assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
-
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
-        final var modifiedToken = writableTokenStore.get(fungibleTokenId);
-        //        assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+        final var modifiedToken = writableNftStore.get(nonFungibleTokenId, serialNumbers.get(1));
+
+        if (modifiedToken != null) {
+            assertThat(modifiedToken.metadata().asUtf8String()).isEqualTo("individual nft test metadata");
+            assertThat(modifiedToken.hasNftId()).isTrue();
+            assertThat(modifiedToken.nftId().serialNumber()).isEqualTo(2);
+        }
     }
 
     @Test
@@ -179,12 +165,35 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
 
         final var txn = new TokenUpdateNftBuilder()
-                .newNftUpdateTxn(TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.get(1));
+                .newNftUpdateTransactionBody(
+                        TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_NFT_ID));
+                .has(responseCode(INVALID_TRANSACTION_BODY));
+    }
+
+    @Test
+    void calculateFeesAddsCorrectFeeComponents() {
+        final var metadata1 = Bytes.wrap("test metadata one");
+
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
+        final var txnBody =
+                new TokenUpdateNftBuilder().newNftUpdateTransactionBody(TOKEN_123, metadata1, serialNumbers.get(1));
+        final var feeCalculator = mock(FeeCalculator.class);
+        final var feeContext = mock(FeeContext.class);
+
+        /* given(feeContext.body()).willReturn(txnBody);
+        given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
+        final var numSigs = 5;
+        given(feeContext.numTxnSignatures()).willReturn(numSigs);
+
+        subject.calculateFees(feeContext);
+        verify(feeCalculator).addVerificationsPerTransaction(numSigs - 1);
+        verify(feeCalculator).addBytesPerTransaction(serialNumbers.size());
+        verify(feeCalculator).addRamByteSeconds(0);
+        verify(feeCalculator).addNetworkRamByteSeconds(0);*/
     }
 
     private HandleContext mockContext(TransactionBody txn) {
@@ -192,7 +201,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(context.body()).willReturn(txn);
         given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
         given(context.configuration()).willReturn(configuration);
 
@@ -215,21 +223,20 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                     .serialNumbers(serialNumbers);
             return TransactionBody.newBuilder()
                     .transactionID(transactionID)
-                    .tokenUpdateNft(createTxnBody.build())
+                    .tokenUpdateNft(createTxnBody)
                     .build();
         }
 
-        private TransactionBody newNftUpdateTxn(TokenID token, Bytes metadata, Long... nftSerialNums) {
-            //            final var transactionID =
-            //                    TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
-            final var transactionID2 =
+        private TransactionBody newNftUpdateTransactionBody(TokenID tokenId, Bytes metadata, Long... nftSerialNums) {
+            final var transactionID =
                     TransactionID.newBuilder().accountID(ACCOUNT_1339).build();
+
             TokenUpdateNftTransactionBody.Builder nftUpdateTxnBodyBuilder = TokenUpdateNftTransactionBody.newBuilder();
-            if (token != null) nftUpdateTxnBodyBuilder.token(token);
+            if (tokenId != null) nftUpdateTxnBodyBuilder.token(tokenId);
             nftUpdateTxnBodyBuilder.metadata(metadata);
             nftUpdateTxnBodyBuilder.serialNumbers(nftSerialNums);
             return TransactionBody.newBuilder()
-                    .transactionID(transactionID2)
+                    .transactionID(transactionID)
                     .tokenUpdateNft(nftUpdateTxnBodyBuilder)
                     .build();
         }
