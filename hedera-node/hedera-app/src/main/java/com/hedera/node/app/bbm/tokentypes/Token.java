@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -173,9 +174,7 @@ record Token(
     private static List<FcCustomFee> customFeesFromMod(List<CustomFee> customFees) {
         List<FcCustomFee> fcCustomFees = new ArrayList<>();
         customFees.stream().forEach(fee -> {
-            // todo map custom fees
-            var fcCustomFee = new FcCustomFee();
-
+            var fcCustomFee = FcCustomFee.fromGrpc(PbjConverter.fromPbj(fee));
             fcCustomFees.add(fcCustomFee);
         });
         return fcCustomFees;
