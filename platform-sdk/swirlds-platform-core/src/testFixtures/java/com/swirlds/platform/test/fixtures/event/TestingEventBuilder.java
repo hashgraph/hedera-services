@@ -19,7 +19,6 @@ package com.swirlds.platform.test.fixtures.event;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -58,7 +57,7 @@ public class TestingEventBuilder {
     /** the event's other-parent, could be a GossipEvent or EventImpl */
     private Object otherParent;
     /** a fake generation to set for an event */
-    private long fakeGeneration;
+    private Long fakeGeneration;
     /** the event's consensus status */
     private boolean consensus;
 
@@ -86,7 +85,7 @@ public class TestingEventBuilder {
         transactions = null;
         selfParent = null;
         otherParent = null;
-        fakeGeneration = Long.MIN_VALUE;
+        fakeGeneration = null;
         consensus = false;
         return this;
     }
@@ -179,7 +178,8 @@ public class TestingEventBuilder {
     }
 
     /**
-     * Set the transactions of an event. If set to null, the default transactions will be used.
+     * Set the transactions of an event. If set to null, transactions will be generated based on setting set with
+     * {@link #setNumberOfTransactions(int)} and {@link #setTransactionSize(int)}.
      *
      * @param transactions the transactions
      * @return this instance
@@ -193,34 +193,61 @@ public class TestingEventBuilder {
      * Set the self-parent of an event. If set to null, no self-parent will be used unless a generation is set, in which
      * case, a self-parent descriptor will be created with the given generation.
      *
-     * @param selfParent
-     * @return
+     * @param selfParent the self-parent
+     * @return  this instance
      */
     public @NonNull TestingEventBuilder setSelfParent(@Nullable final GossipEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
+    /**
+     * Set the other-parent of an event. If set to null, no other-parent will be used unless a generation is set, in which
+     * case, a other-parent descriptor will be created with the given generation.
+     *
+     * @param otherParent the other-parent
+     * @return  this instance
+     */
     public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
+    /**
+     * Same as {@link #setSelfParent(GossipEvent)} but with a different event type.
+     */
     public @NonNull TestingEventBuilder setSelfParent(@Nullable final EventImpl selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
+    /**
+     * Same as {@link #setOtherParent(GossipEvent)} but with a different event type.
+     */
     public @NonNull TestingEventBuilder setOtherParent(@Nullable final EventImpl otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public @NonNull TestingEventBuilder setGeneration(final long generation) {
+    /**
+     * Set a generation to set for an event. Since the generation is based on the parents generation, this functionality
+     * creates parent descriptors for an event to get the desired generation. It does not work in conjunction with
+     * setting the parents for an event. If parents are set, then the generation will be based on the parents provided.
+     *
+     * @param generation the generation
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setGeneration(final Long generation) {
         fakeGeneration = generation;
         return this;
     }
 
+    /**
+     * Set the consensus status of an event. This is only applicable when building an EventImpl.
+     *
+     * @param consensus the consensus status
+     * @return this instance
+     */
     public @NonNull TestingEventBuilder setConsensus(final boolean consensus) {
         this.consensus = consensus;
         return this;
@@ -258,10 +285,18 @@ public class TestingEventBuilder {
         return sp.isAfter(op) ? sp : op;
     }
 
+    /**
+     * Same as {@link #buildGossipEvent()}
+     */
     public @NonNull GossipEvent buildEvent() {
         return buildGossipEvent();
     }
 
+    /**
+     * Build a GossipEvent instance.
+     *
+     * @return the GossipEvent instance
+     */
     public @NonNull GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr;
         if (transactions == null) {
@@ -275,12 +310,12 @@ public class TestingEventBuilder {
             tr = transactions;
         }
 
-        final long selfParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
+        final long selfParentGen = fakeGeneration != null
                 ? fakeGeneration - 1
                 : getSelfParentGossip() != null
                         ? getSelfParentGossip().getGeneration()
                         : EventConstants.GENERATION_UNDEFINED;
-        final long otherParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
+        final long otherParentGen = fakeGeneration != null
                 ? fakeGeneration - 1
                 : getOtherParentGossip() != null
                         ? getOtherParentGossip().getGeneration()
@@ -336,6 +371,11 @@ public class TestingEventBuilder {
         return gossipEvent;
     }
 
+    /**
+     * Build an EventImpl instance.
+     *
+     * @return the EventImpl instance
+     */
     public @NonNull EventImpl buildEventImpl() {
         final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
         event.setConsensus(consensus);
