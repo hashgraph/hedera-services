@@ -20,7 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
 import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
@@ -38,7 +40,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -417,14 +418,22 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(body));
         final var op = body.tokenCreationOrThrow();
         final var type = op.tokenType();
+
+        final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                        meta.getNumTokens(), meta.getFungibleNumTransfers(), meta.getNftsTransfers())
+                * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
         return feeContext
                 .feeCalculator(
                         tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
-                .legacyCalculate(sigValueObj ->
-                        new TokenCreateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, null));
+                .addBytesPerTransaction(meta.getBaseSize())
+                .addRamByteSeconds(tokenSizes)
+                .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .addRamByteSeconds((meta.getBaseSize() + meta.getCustomFeeScheduleSize()) * meta.getLifeTime())
+                .calculate();
     }
 
     public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {

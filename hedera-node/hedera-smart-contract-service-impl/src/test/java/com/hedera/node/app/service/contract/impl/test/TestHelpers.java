@@ -612,12 +612,16 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
+    public static final Account OWNER_ACCOUNT =
+            Account.newBuilder().accountId(OWNER_ID).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
+    public static final Account UNAUTHORIZED_SPENDER_ACCOUNT =
+            Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build();
     public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
             AccountID.newBuilder().accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");

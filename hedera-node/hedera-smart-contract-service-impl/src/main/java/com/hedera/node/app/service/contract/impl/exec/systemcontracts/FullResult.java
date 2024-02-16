@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -92,7 +93,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         final var reason = recordBuilder.status() == NOT_SUPPORTED
                 ? CustomExceptionalHaltReason.NOT_SUPPORTED
-                : CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+                : ERROR_DECODING_PRECOMPILE_INPUT;
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(reason)),
                 gasRequirement,
@@ -128,6 +129,9 @@ public record FullResult(
 
     public static FullResult haltResult(final long gasRequirement) {
         return new FullResult(
-                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.empty()), gasRequirement, null);
+                PrecompiledContract.PrecompileContractResult.halt(
+                        Bytes.EMPTY, Optional.of(ERROR_DECODING_PRECOMPILE_INPUT)),
+                gasRequirement,
+                null);
     }
 }
