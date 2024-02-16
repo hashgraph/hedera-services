@@ -31,7 +31,6 @@ import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -56,8 +55,6 @@ final class MapTest {
     @Tag(TIME_CONSUMING)
     @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-019")})
     @DisplayName("Insert one million elements with same key but different value")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11498
-    @Disabled
     void insertRemoveAndModifyOneMillion() throws InterruptedException {
         final int changesPerBatch = 15_432; // Some unexpected size just to be crazy
         final int max = 1_000_000;
