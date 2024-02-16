@@ -24,8 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
@@ -76,9 +74,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private final VirtualMapStatistics statistics;
 
-    public DummyVirtualRoot(final String label) {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        pipeline = new VirtualPipeline(configuration.getConfigData(VirtualMapConfig.class), label);
+    public DummyVirtualRoot(final String label, VirtualMapConfig config) {
+        pipeline = new VirtualPipeline(config, label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
         statistics = new VirtualMapStatistics(label);
@@ -110,6 +107,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         copyIndex = that.copyIndex + 1;
         shouldFlushPredicate = that.shouldFlushPredicate;
         statistics = that.statistics;
+        estimatedSize = that.estimatedSize;
 
         if (shouldFlushPredicate != null) {
             shouldBeFlushed = shouldFlushPredicate.test(copyIndex);
