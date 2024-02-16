@@ -48,7 +48,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -351,6 +353,10 @@ public class HandleWorkflow {
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
             payer = transactionInfo.payerID();
+
+            if (txBody.transactionID().equals(testTransactionID(1707812098, 882188019, 731789))) {
+                logger.info("txBody: {}", txBody);
+            }
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
@@ -835,5 +841,13 @@ public class HandleWorkflow {
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
                 previousResult);
+    }
+
+    private TransactionID testTransactionID(final long seconds, final int nanos, final long payerAccountNum) {
+        var toTxnValidStart = Timestamp.newBuilder().seconds(seconds).nanos(nanos);
+        return TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(payerAccountNum).build())
+                .transactionValidStart(toTxnValidStart)
+                .build();
     }
 }
