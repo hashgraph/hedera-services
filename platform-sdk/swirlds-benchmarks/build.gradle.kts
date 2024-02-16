@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import me.champeau.jmh.JMHTask
+
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
@@ -31,17 +33,23 @@ jmhModuleInfo {
     requires("com.swirlds.virtualmap")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
+    requiresStatic("com.github.spotbugs.annotations")
     runtimeOnly("com.swirlds.config.impl")
 }
 
 jmh {
     jvmArgs.set(listOf("-Xmx8g"))
     includes.set(listOf("transfer"))
-    warmupIterations.set(0)
-    iterations.set(1)
     benchmarkParameters.put("numFiles", listProperty("10"))
     benchmarkParameters.put("keySize", listProperty("16"))
     benchmarkParameters.put("recordSize", listProperty("128"))
 }
 
 fun listProperty(value: String) = objects.listProperty<String>().value(listOf(value))
+
+tasks.register<JMHTask>("jmhReconnect") {
+    includes.set(listOf("Reconnect.*"))
+    jvmArgs.set(listOf("-Xmx16g"))
+
+    resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
+}
