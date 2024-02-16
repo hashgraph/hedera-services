@@ -45,8 +45,7 @@ import java.util.TreeSet;
  * }
  * }</pre>
  *
- * <p>Note: This class is not thread-safe. External synchronization is required when accessing this class from multiple
- * threads.
+ * <p>Note: This class is thread-safe.
  */
 public class TaskCompletionWindow {
     /**
@@ -69,7 +68,7 @@ public class TaskCompletionWindow {
      * Getter for maxWindowSize.
      * @return The maximum size of the window.
      */
-    public long getMaxWindowSize() {
+    public synchronized long getMaxWindowSize() {
         return maxWindowSize;
     }
 
@@ -122,7 +121,7 @@ public class TaskCompletionWindow {
      *
      * @param taskId The ID of the task to mark as completed.
      */
-    public void completeTask(long taskId) {
+    public synchronized void completeTask(long taskId) {
         TaskRange newTaskRange = new TaskRange(taskId, taskId);
         // Add the task.
         completedTasks.add(newTaskRange);
@@ -195,7 +194,7 @@ public class TaskCompletionWindow {
      *
      * @return the highest completed task ID in the first TaskRange.
      */
-    public long getLowestCompletedTaskId() {
+    public synchronized long getLowestCompletedTaskId() {
         // If there are no completed tasks, indicate it with a special value.
         if (completedTasks.isEmpty()) return -1;
         // Return the end of the first range, as required.

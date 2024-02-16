@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +43,12 @@ public class StateSignatureTransactionCollector {
 
     private static final Logger logger = LogManager.getLogger(BlockRecordManagerImpl.class);
 
-    private static final int MAX_ROUNDS_TO_KEEP = 100;
+    /**
+     * The maximum number of rounds to keep in the window. This constant defines the maximum allowed difference between
+     * the highest and lowest round numbers within the window. The window size helps to constrict the size of the
+     * signatureQueues map and prevent it from growing indefinitely.
+     */
+    private static final int MAX_ROUND_WINDOW_SIZE = 100;
 
     private final AtomicLong lastProvenRound = new AtomicLong(-1);
 
@@ -50,6 +56,8 @@ public class StateSignatureTransactionCollector {
      * Maintain a list of queues that are used to store state signatures for a given round.
      */
     private final ConcurrentHashMap<Long, LinkedTransferQueue<QueuedStateSignatureTransaction>> signatureQueues;
+
+    private final TaskCompletionWindow taskCompletionWindow = new TaskCompletionWindow(MAX_ROUND_WINDOW_SIZE);
 
     /**
      * The singleton instance.
@@ -77,8 +85,6 @@ public class StateSignatureTransactionCollector {
      */
     public void putStateSignatureTransaction(long nodeId, @NonNull final StateSignatureTransaction sig) {
         final long roundNum = sig.getRound();
-        // Don't create queues for old rounds which we have already proven.
-
         final var q = getOrCreateQueue(roundNum);
         var t = new QueuedStateSignatureTransaction(nodeId, sig, null);
         // We can exploit LinkedTransferQueue to attempt a fast-path transfer. If and only if no consumers are blocked
@@ -93,9 +99,9 @@ public class StateSignatureTransactionCollector {
      * @param roundNum the round number to get the queue for
      * @return the queue for the given round number
      */
-    @NonNull
+    @Nullable
     public TransferQueue<QueuedStateSignatureTransaction> getQueueForRound(final long roundNum) {
-        // If there is no queue for this round, create one.
+        // See if there is a queue for this round.
         return getOrCreateQueue(roundNum);
     }
 
@@ -110,7 +116,8 @@ public class StateSignatureTransactionCollector {
         // waiting threads no longer block on them.
         final long roundNum = proof.round();
 
-        updateLastProvenRoundIfGreater(roundNum);
+        // Update the last proven round in our window.
+        taskCompletionWindow.completeTask(roundNum);
 
         // Remove the queue for this round.
         signatureQueues.remove(roundNum);
@@ -126,10 +133,11 @@ public class StateSignatureTransactionCollector {
 
         // If for some reason we can't finish a round after a certain point, we should clean up these queues. This
         // can happen if we don't get enough signatures to prove a round or if signatures come in later after we have
-        // already proven a round. lastProvenRound helps in that we don't allow new queues to be created for old
-        // rounds that we've already proven.
+        // already proven a round. lastProvenRound helps in that we can clean up these rounds that fall outside our
+        // window so that this map doesn't grow indefinitely.
+        final var lastProvenRound = this.taskCompletionWindow.getLowestCompletedTaskId();
         signatureQueues.forEach((k, v) -> {
-            if (k + MAX_ROUNDS_TO_KEEP <= roundNum) {
+            if (k <= lastProvenRound) {
                 v.offer(new QueuedStateSignatureTransaction(-1, new StateSignatureTransaction(), proof));
             }
             signatureQueues.remove(k);
