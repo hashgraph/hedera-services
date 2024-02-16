@@ -143,8 +143,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 recipientId = hevmTransaction.contractId();
             }
 
-            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), recipientId, e.getStatus());
-            
+            var result = HederaEvmTransactionResult.fromAborted(e.senderId(), recipientId, e.getStatus());
+
             if (context.body().hasEthereumTransaction()) {
                 final var sender = rootProxyWorldUpdater.getHederaAccount(e.senderId());
                 if (sender != null) {
