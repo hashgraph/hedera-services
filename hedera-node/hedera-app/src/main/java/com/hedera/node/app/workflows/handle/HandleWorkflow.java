@@ -130,7 +130,6 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
-
     private final NetworkInfo networkInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
