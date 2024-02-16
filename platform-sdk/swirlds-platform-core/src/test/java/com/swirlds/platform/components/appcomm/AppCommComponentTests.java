@@ -22,11 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.ResettableRandom;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
@@ -42,11 +40,6 @@ import org.junit.jupiter.api.Test;
  * Basic sanity check tests for the {@link AppCommunicationComponent} class
  */
 public class AppCommComponentTests {
-    private final PlatformContext context;
-
-    public AppCommComponentTests() {
-        context = TestPlatformContextBuilder.create().build();
-    }
 
     @Test
     @DisplayName("StateWriteToDiskCompleteNotification")
@@ -69,7 +62,8 @@ public class AppCommComponentTests {
             assertNull(n.getFolder(), "Deprecated field should be null");
         });
 
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
+        final AppCommunicationComponent component =
+                new AppCommunicationComponent(notificationEngine, offerToComms -> true);
         component.stateSavedToDisk(result);
 
         assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
@@ -99,7 +93,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
+        final AppCommunicationComponent component =
+                new AppCommunicationComponent(notificationEngine, offerToComms -> true);
         component.start();
         component.newLatestCompleteStateEvent(signedState.reserve("test"));
 

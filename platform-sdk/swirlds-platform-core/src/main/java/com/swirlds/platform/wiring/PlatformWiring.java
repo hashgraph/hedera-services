@@ -65,6 +65,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.components.AppCommunicationComponentWiring;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -124,6 +125,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
+    private final AppCommunicationComponentWiring appCommunicationComponentWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -208,6 +210,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
+        appCommunicationComponentWiring =
+                AppCommunicationComponentWiring.create(schedulers.appCommunicationComponentScheduler());
+
         wire();
     }
 
@@ -357,6 +362,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
+     * @param appCommsComponent       the app communication component to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -379,7 +385,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
-            @NonNull final IssDetector issDetector) {
+            @NonNull final IssDetector issDetector,
+            @NonNull final AppCommunicationComponent appCommsComponent) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -402,6 +409,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
+        appCommunicationComponentWiring.bind(appCommsComponent);
     }
 
     /**
@@ -499,6 +507,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
+    }
+
+    /**
+     * Get the input wire that the app communication component uses to accept its input.
+     *
+     * @return the input wire that the app communication component uses to accept its input
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getAppCommunicationComponentInput() {
+        return appCommunicationComponentWiring.appCommunicationComponentInputWire();
     }
 
     /**

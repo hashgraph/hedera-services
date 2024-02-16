@@ -371,13 +371,6 @@ public class SwirldsPlatform implements Platform {
 
         EventCounter.registerEventCounterMetrics(metrics);
 
-        final AppCommunicationComponent appCommunicationComponent =
-                new AppCommunicationComponent(notificationEngine, platformContext);
-
-        components.add(appCommunicationComponent);
-
-        metrics.addUpdater(appCommunicationComponent::updateLatestCompleteStateQueueSize);
-
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
             epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
@@ -489,6 +482,9 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
                 signedStateMetrics);
+
+        final AppCommunicationComponent appCommunicationComponent = new AppCommunicationComponent(
+                notificationEngine, platformWiring.getAppCommunicationComponentInput()::offer);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
@@ -652,7 +648,8 @@ public class SwirldsPlatform implements Platform {
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
-                issDetector);
+                issDetector,
+                appCommunicationComponent);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =

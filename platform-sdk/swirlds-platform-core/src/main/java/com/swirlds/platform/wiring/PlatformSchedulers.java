@@ -57,6 +57,7 @@ import java.util.List;
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
+ * @param appCommunicationComponentScheduler        the scheduler for the app communication component
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -81,7 +82,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
-        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
+        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
+        @NonNull TaskScheduler<Void> appCommunicationComponentScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -253,6 +255,11 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("issDetector")
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("appCommunicationComponent")
+                        .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());

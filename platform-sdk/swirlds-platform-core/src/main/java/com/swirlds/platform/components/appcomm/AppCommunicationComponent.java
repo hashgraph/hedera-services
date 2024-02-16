@@ -16,26 +16,19 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import com.swirlds.platform.stats.AverageAndMax;
-import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,40 +39,22 @@ public class AppCommunicationComponent implements PlatformComponent {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
-    /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
-    private final QueueThread<ReservedSignedState> asyncLatestCompleteStateQueue;
+    private final Predicate<ReservedSignedState> offerPredicate;
+
     /** The round of the latest state provided to the application */
     private long latestStateProvidedRound = ConsensusConstants.ROUND_UNDEFINED;
-    /**
-     * The size of the queue holding tasks for
-     * {@link com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer}s
-     */
-    private final AverageAndMax asyncLatestCompleteStateQueueSize;
 
     /**
      * Create a new instance
      *
-     * @param notificationEngine the notification engine
-     * @param context            the platform context
+     * @param notificationEngine    the notification engine
+     * @param offerPredicate        the offer to app communicator predicate
      */
     public AppCommunicationComponent(
-            @NonNull final NotificationEngine notificationEngine, @NonNull final PlatformContext context) {
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final Predicate<ReservedSignedState> offerPredicate) {
         this.notificationEngine = notificationEngine;
-        this.asyncLatestCompleteStateQueueSize = new AverageAndMax(
-                context.getMetrics(),
-                INTERNAL_CATEGORY,
-                "asyncLatestCompleteStateQueueSize",
-                "average number of new latest complete state occurrences waiting to be sent to consumers",
-                FORMAT_10_3,
-                AverageStat.WEIGHT_VOLATILE);
-        this.asyncLatestCompleteStateQueue = new QueueThreadConfiguration<ReservedSignedState>(getStaticThreadManager())
-                .setThreadName("new-latest-complete-state-consumer-queue")
-                .setComponent("wiring")
-                .setCapacity(context.getConfiguration()
-                        .getConfigData(WiringConfig.class)
-                        .newLatestCompleteStateConsumerQueueSize())
-                .setHandler(this::latestCompleteStateHandler)
-                .build();
+        this.offerPredicate = offerPredicate;
     }
 
     /**
@@ -98,24 +73,25 @@ public class AppCommunicationComponent implements PlatformComponent {
 
     public void newLatestCompleteStateEvent(@NonNull final ReservedSignedState reservedSignedState) {
         // the state is reserved by the caller
-        // it will be released by the notification engine after the app consumes it
-        // this is done by latestCompleteStateAppNotify()
-        // if the state does not make into the queue, it will be released below
-        final boolean success = asyncLatestCompleteStateQueue.offer(reservedSignedState);
-        if (!success) {
+        // it will be released by the notification engine after the app communicator consumes it
+        // if the state does not make into the task scheduler, it will be released below
+        final boolean reservedSignedStateOfferAccepted = offerPredicate.test(reservedSignedState);
+        if (!reservedSignedStateOfferAccepted) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Unable to add new latest complete state task (state round = {}) to {} because it is full",
+                    "Unable to add new latest complete state task (state round = {}) to {}",
                     reservedSignedState.get().getRound(),
-                    asyncLatestCompleteStateQueue.getName());
+                    "AppCommunicationComponentTaskScheduler");
             reservedSignedState.close();
         }
     }
 
     /**
-     * Handler for {@link #asyncLatestCompleteStateQueue}
+     * Handler for application communication task
+     *
+     * @param reservedSignedState the reserved signed state to retrieve hash information from and log.
      */
-    private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
+    public void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
         if (reservedSignedState.get().getRound() <= latestStateProvidedRound) {
             // this state is older than the latest state provided to the application, no need to notify
             reservedSignedState.close();
@@ -129,23 +105,5 @@ public class AppCommunicationComponent implements PlatformComponent {
                 reservedSignedState.get().getConsensusTimestamp());
 
         notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
-    }
-
-    /**
-     * Update the size of the task queue for
-     * {@link com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer}s
-     */
-    public void updateLatestCompleteStateQueueSize() {
-        asyncLatestCompleteStateQueueSize.update(asyncLatestCompleteStateQueue.size());
-    }
-
-    @Override
-    public void start() {
-        asyncLatestCompleteStateQueue.start();
-    }
-
-    @Override
-    public void stop() {
-        asyncLatestCompleteStateQueue.stop();
     }
 }
