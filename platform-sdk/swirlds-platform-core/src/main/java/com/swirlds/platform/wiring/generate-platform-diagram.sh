@@ -26,6 +26,4 @@ pcli diagram \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
-    -c 'Linked Event Intake' \
-    -c 'State Signature Collection' \
-    -c 'State File Management'
+    -c 'Linked Event Intake'
