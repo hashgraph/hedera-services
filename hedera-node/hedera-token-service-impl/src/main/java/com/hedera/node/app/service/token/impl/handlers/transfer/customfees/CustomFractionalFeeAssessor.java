@@ -188,7 +188,7 @@ public class CustomFractionalFeeAssessor {
                 filteredCredits.put(account, amount);
             }
         }
-        return !filteredCredits.isEmpty() ? filteredCredits : creditsForToken;
+        return filteredCredits;
     }
 
     /**
