@@ -51,11 +51,6 @@ public class TokenUpdateNftValidator {
         if (op.hasMetadata()) {
             validator.validateTokenMetadata(op.metadata(), tokensConfig);
         }
-
-        // In validateSemantics also validate if the Nft or list of Nfts given in the transaction body exist in state.
-        // If not throw appropriate response code.
         return new ValidationResult(token, OK);
-        // return new ValidationResult(token, TOKEN_HAS_NO_METADATA_KEY);  // Might need to be TOKEN_DOES_NOT_EXIST ?
-
     }
 }
