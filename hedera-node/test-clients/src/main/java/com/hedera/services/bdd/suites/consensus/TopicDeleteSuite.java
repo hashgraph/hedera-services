@@ -73,6 +73,9 @@ public class TopicDeleteSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec topicIdIsValidated() {
+        // Fully non-deterministic for fuzzy matching because the test uses an absolute entity number (i.e.
+        // 100.232.4534)
+        // but fuzzy matching compares relative entity numbers
         return defaultHapiSpec("topicIdIsValidated", FULLY_NONDETERMINISTIC)
                 .given()
                 .when()
