@@ -90,7 +90,7 @@ public class LoggersTest {
         logger.error("test");
 
         // then
-        Assertions.assertEquals(1, loggingMirror.getEvents().size());
+        Assertions.assertEquals(1, loggingMirror.getEventCount());
         final LogEvent event = loggingMirror.getEvents().get(0);
         Assertions.assertEquals(clazz.getName(), event.loggerName());
         Assertions.assertEquals(Thread.currentThread().getName(), event.threadName());
@@ -107,7 +107,7 @@ public class LoggersTest {
         logger.error("test");
 
         // then
-        Assertions.assertEquals(1, loggingMirror.getEvents().size());
+        Assertions.assertEquals(1, loggingMirror.getEventCount());
         final LogEvent event = loggingMirror.getEvents().get(0);
         Assertions.assertEquals(loggerName, event.loggerName());
         Assertions.assertEquals(Thread.currentThread().getName(), event.threadName());

@@ -146,7 +146,8 @@ logging.marker.CONFIG = ENABLED
 ### Handlers
 
 To further refine our logging system, we have incorporated handlers for more granular control over logging behavior. 
-Each handler can be distinctly named and configured using the prefix `logging.handler.NAME`, where `NAME` serves as a unique identifier. 
+Each handler can be distinctly named and configured using the prefix `logging.handler.NAME`, where `NAME` serves as a unique identifier.
+Two fields are required: `logging.handler.NAME.type`, to specify the type of the handler, and `logging.handler.NAME.enabled` must be set to `true` to activate the handler. The default value for all `logging.handler.NAME.enabled` properties is `false`.
 This structure allows for the application of handler-specific settings. 
 For instance, `logging.handler.NAME.level` is used to set the logging level for a specific handler, ensuring that all previously discussed features such as marker filters and log level settings are compatible. 
 This setup is instrumental in creating dedicated log files or outputs for specific types of log messages, offering a focused view that is particularly useful in complex systems or during targeted analyses. 
@@ -162,6 +163,8 @@ For example, if you need a handler that only logs entries marked with the `CRYPT
 
 ```properties
 # Handler specific for CRYPTO marker
+logging.handler.CRYPTO_FILE.enabled = true
+logging.handler.CRYPTO_FILE.type = file
 logging.handler.CRYPTO_FILE.inheritLevels = false
 logging.handler.CRYPTO_FILE.level = OFF
 logging.handler.CRYPTO_FILE.marker.CRYPTO = ENABLED

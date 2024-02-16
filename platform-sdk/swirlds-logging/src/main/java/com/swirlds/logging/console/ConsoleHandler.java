@@ -38,8 +38,8 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      *
      * @param configuration The configuration for this handler.
      */
-    public ConsoleHandler(@NonNull final Configuration configuration) {
-        super("console", configuration);
+    public ConsoleHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
+        super(configKey, configuration);
     }
 
     /**
