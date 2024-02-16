@@ -58,6 +58,10 @@ import java.util.stream.Collectors;
 
 public class ThingsToStrings {
 
+    private ThingsToStrings() {
+        // Utility class
+    }
+
     /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in RFC-4180
      * (https://datatracker.ietf.org/doc/html/rfc4180) _except_ that we allow the field separator to
      * be something other than "," (e.g., ";", if we have a lot of fields that contain embedded ",").
@@ -139,6 +143,15 @@ public class ThingsToStrings {
         sb.append(String.format(
                 "%d.%d.%s",
                 accountID.shardNum(), accountID.realmNum(), accountID.account().value()));
+        return true;
+    }
+
+    public static boolean toStringOfTokenId(StringBuilder sb, TokenID tokenID) {
+        if (tokenID == null) {
+            return false;
+        }
+
+        sb.append(String.format("%d.%d.%s", tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()));
         return true;
     }
 
@@ -255,23 +268,15 @@ public class ThingsToStrings {
 
     public static boolean toStringOfKey(
             @NonNull final StringBuilder sb, @Nullable final com.hedera.hapi.node.base.Key key) {
-        if (key == null || key.ed25519() == null) {
+        if (key == null) {
             return false;
         }
-
-        final var hash =
-                CryptographyHolder.get().digestSync(key.ed25519().toByteArray()).getValue();
-        toStringOfByteArray(sb, hash);
-        return true;
-    }
-
-    public static boolean toStringOfByes(@NonNull final StringBuilder sb, @Nullable final Bytes bytes) {
-        if (bytes == null) {
-            return false;
+        try {
+            return toStringOfJKey(sb, JKey.convertKey(key, 15 /*JKey.MAX_KEY_DEPTH*/));
+        } catch (final InvalidKeyException ignored) {
+            sb.append("<INVALID KEY>");
+            return true;
         }
-
-        sb.append(bytes);
-        return true;
     }
 
     public static boolean toStringOfFcTokenAllowanceId(
@@ -329,15 +334,6 @@ public class ThingsToStrings {
         sb.append(",");
         toStringOfAccountId(sb, approval.spenderId());
         sb.append(")");
-    }
-
-    public static boolean toStringOfTokenId(StringBuilder sb, TokenID tokenID) {
-        if (tokenID == null) {
-            return false;
-        }
-
-        sb.append(String.format("%d.%d.%s", tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()));
-        return true;
     }
 
     public static boolean toStringOfAccountCryptoAllowances(
@@ -562,5 +558,11 @@ public class ThingsToStrings {
         return bs -> toStringPossibleHumanReadableByteArray(fieldSeparator, bs);
     }
 
-    private ThingsToStrings() {}
+    public static boolean getMaybeStringifyByteString(@NonNull final StringBuilder sb, @Nullable final Bytes bytes) {
+        if (bytes == null) {
+            return false;
+        }
+        sb.append(toStringPossibleHumanReadableByteArray(";", bytes.toByteArray()));
+        return true;
+    }
 }

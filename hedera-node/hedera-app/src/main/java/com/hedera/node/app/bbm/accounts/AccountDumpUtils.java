@@ -154,7 +154,7 @@ public class AccountDumpUtils {
         r.addAll(getFieldNamesInOrder(booleanFieldsMapping));
         r.addAll(getFieldNamesInOrder(intFieldsMapping));
         r.addAll(getFieldNamesInOrder(longFieldsMapping));
-        r.addAll(getFieldNamesInOrder(getFieldAccessors(new StringBuilder(), HederaAccount.dummyAccount()), false));
+        r.addAll(getFieldNamesInOrder(getFieldAccessors(new StringBuilder(), HederaAccount.DUMMY_ACCOUNT), false));
         return r.stream().map(s -> fieldNameMap.getOrDefault(s, s)).toList();
     }
 
@@ -261,9 +261,9 @@ public class AccountDumpUtils {
     private static List<Field<?>> getFieldAccessors(@NonNull final StringBuilder sb, @NonNull final HederaAccount a) {
         return Stream.of(
             Field.of("1stContractStorageKey", a::firstContractStorageKey,
-                doWithBuilder(sb, ThingsToStrings::toStringOfByes)),
+                doWithBuilder(sb, ThingsToStrings::getMaybeStringifyByteString)),
             Field.of("accountKey", a::key, doWithBuilder(sb, ThingsToStrings::toStringOfKey)),
-            Field.of("alias", a::alias, doWithBuilder(sb, ThingsToStrings::toStringOfByes)),
+            Field.of("alias", a::alias, doWithBuilder(sb, ThingsToStrings::getMaybeStringifyByteString)),
             Field.of("approveForAllNfts", a::approveForAllNftAllowances,
                 doWithBuilder(sb, ThingsToStrings::toStringOfApprovalForAllAllowances)),
             Field.of("autoRenewAccount", a::autoRenewAccountId,
