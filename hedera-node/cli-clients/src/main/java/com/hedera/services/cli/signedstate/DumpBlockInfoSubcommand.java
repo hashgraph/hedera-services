@@ -16,7 +16,6 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
 
@@ -30,12 +29,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Dump all block info from a signed state file to a text file in a deterministic order  */
+/** Dump block info from a signed state file to a text file in a deterministic order  */
 public class DumpBlockInfoSubcommand {
 
     static void doit(@NonNull final SignedStateHolder state, @NonNull final Path blockInfoPath) {
@@ -60,7 +58,7 @@ public class DumpBlockInfoSubcommand {
         final var networkContext = state.getNetworkContext();
         System.out.printf("=== block info ===%n");
 
-        final var blockInfo = new BlockInfo(networkContext);
+        final var blockInfo = BlockInfo.fromMerkleNetworkContext(networkContext);
 
         int reportSize;
         try (@NonNull final var writer = new Writer(blockInfoPath)) {
@@ -81,14 +79,13 @@ public class DumpBlockInfoSubcommand {
             @Nullable RichInstant consTimeOfLastHandledTxn,
             boolean migrationRecordsStreamed,
             @Nullable RichInstant firstConsTimeOfCurrentBlock) {
-        BlockInfo(@NonNull final MerkleNetworkContext networkContext) {
-            this(
+        static BlockInfo fromMerkleNetworkContext(@NonNull final MerkleNetworkContext networkContext) {
+            return new BlockInfo(
                     networkContext.getAlignmentBlockNo(),
                     networkContext.stringifiedBlockHashes(),
-                    fromJava(networkContext.consensusTimeOfLastHandledTxn()),
+                    RichInstant.fromJava(networkContext.consensusTimeOfLastHandledTxn()),
                     networkContext.areMigrationRecordsStreamed(),
-                    fromJava(networkContext.firstConsTimeOfCurrentBlock()));
-            Objects.requireNonNull(blockHashes, "blockHashes");
+                    RichInstant.fromJava(networkContext.firstConsTimeOfCurrentBlock()));
         }
     }
 

@@ -342,11 +342,7 @@ public class DumpStateCommand extends AbstractCommand {
                             arity = "1",
                             description = "Output file for block info dump")
                     @NonNull
-                    final Path blockInfoPath,
-            @Option(
-                            names = {"-s", "--summary"},
-                            description = "Emit summary information")
-                    final boolean emitSummary) {
+                    final Path blockInfoPath) {
         Objects.requireNonNull(blockInfoPath);
         init();
         System.out.println("=== Block info ===");
@@ -372,6 +368,22 @@ public class DumpStateCommand extends AbstractCommand {
         System.out.println("=== Staking info ===");
         DumpStakingInfoSubcommand.doit(
                 parent.signedState, stakingInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "congestion", description = "Dump congestion")
+    void congestion(
+            @Option(
+                            names = {"--congestion"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for congestion dump")
+                    @NonNull
+                    final Path congestionPath) {
+        Objects.requireNonNull(congestionPath);
+        init();
+        System.out.println("=== Congestion ===");
+        DumpCongestionSubcommand.doit(parent.signedState, congestionPath);
         finish();
     }
 

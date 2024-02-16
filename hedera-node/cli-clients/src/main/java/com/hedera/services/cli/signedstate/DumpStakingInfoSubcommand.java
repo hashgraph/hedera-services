@@ -38,7 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Dump all staking info from a signed state file to a text file in a deterministic order  */
+/** Dump staking info from a signed state file to a text file in a deterministic order  */
 public class DumpStakingInfoSubcommand {
 
     static void doit(
