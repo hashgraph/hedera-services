@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging;
+package com.swirlds.logging.api.internal;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.base.context.Context;
 import com.swirlds.base.test.fixtures.context.WithContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.logging.LoggerApiSpecTest;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
-import com.swirlds.logging.api.internal.LoggerImpl;
-import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
@@ -548,7 +549,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals("info-error", event1.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event1.throwable().getClass());
         Assertions.assertTrue(event1.timestamp() > startTime);
-        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event1.timestamp() <= System.currentTimeMillis());
 
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("info-message2 ARG2", event2.message().getMessage());
@@ -561,7 +562,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals("info-error2", event2.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event2.throwable().getClass());
         Assertions.assertTrue(event1.timestamp() > startTime);
-        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event1.timestamp() <= System.currentTimeMillis());
 
         Assertions.assertTrue(event1.timestamp() <= event2.timestamp());
     }
@@ -672,6 +673,89 @@ public class LoggingSystemTest {
         final List<LogEvent> loggedErrorEvents = getLoggedEvents();
 
         Assertions.assertEquals(1, loggedErrorEvents.size(), "There should be 1 ERROR event");
+    }
+
+    @Test
+    @DisplayName("Test that empty configuration throws no exception")
+    void testHandler() {
+        // given
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Test that unknown handler type throws no exception")
+    void testUnknownTypeHandler() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.CRYPTO_FILE.type", "space")
+                .getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Test that installing handler with known type but not enabled throws no exception")
+    void testAddHandlerWithoutEnabled() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.CRYPTO_FILE.enabled", "false")
+                .withValue("logging.handler.CRYPTO_FILE.type", "console")
+                .getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Test that installing known handler type and enabled throws no exception")
+    void testAddHandler() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.CRYPTO_FILE.enabled", "true")
+                .withValue("logging.handler.CRYPTO_FILE.type", "console")
+                .getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Test that installing multiple known handler type and enabled throws no exception")
+    void testAddMultipleHandler() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.CRYPTO_FILE.enabled", "true")
+                .withValue("logging.handler.CRYPTO_FILE.type", "console")
+                .withValue("logging.handler.TRANSACTION_FILE.enabled", "true")
+                .withValue("logging.handler.TRANSACTION_FILE.type", "console")
+                .getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(2);
     }
 
     @Test

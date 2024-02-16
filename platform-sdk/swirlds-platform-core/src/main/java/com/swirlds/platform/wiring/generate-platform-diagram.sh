@@ -26,6 +26,4 @@ pcli diagram \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
-    -c 'Consensus Engine' \
-    -c 'State Signature Collection' \
-    -c 'State File Management'
+    -c 'Consensus Engine'

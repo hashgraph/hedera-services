@@ -173,7 +173,8 @@ public class EthereumSuite extends HapiSuite {
                                 transferHbarsViaEip2930TxSuccessfully(),
                                 callToTokenAddressViaEip2930TxSuccessfully(),
                                 transferTokensViaEip2930TxSuccessfully(),
-                                accountDeletionResetsTheAliasNonce()))
+                                accountDeletionResetsTheAliasNonce(),
+                                legacyUnprotectedEtxBeforeEIP155WithDefaultChainId()))
                 .toList();
     }
 
@@ -1126,6 +1127,48 @@ public class EthereumSuite extends HapiSuite {
 
                             allRunFor(spec, op1, op2);
                         }));
+    }
+
+    // test unprotected legacy ethereum transactions before EIP155,
+    // without changing `CHAIN_ID` bootstrap property
+    // this tests the behaviour when the `v` field
+    // is calculated -> v = {0,1} + 27
+    // source: https://eips.ethereum.org/EIPS/eip-155
+    @HapiTest
+    HapiSpec legacyUnprotectedEtxBeforeEIP155WithDefaultChainId() {
+        final String DEPOSIT = "deposit";
+        final long depositAmount = 20_000L;
+        final Integer chainId = 0;
+
+        return defaultHapiSpec(
+                        "legacyUnprotectedEtxBeforeEIP155WithDefaultChainId",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTransactionType.LEGACY_ETHEREUM)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("legacyBeforeEIP155")
+                        .nonce(0)
+                        .chainId(chainId)
+                        .gasPrice(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("legacyBeforeEIP155")
+                                .logged()
+                                .hasPriority(recordWith().status(SUCCESS)))));
     }
 
     @Override

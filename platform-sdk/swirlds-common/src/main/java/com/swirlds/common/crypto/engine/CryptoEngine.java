@@ -31,14 +31,12 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.legacy.LogMarker;
-import java.nio.ByteBuffer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -92,11 +90,6 @@ public class CryptoEngine implements Cryptography {
             verificationDispatcher;
 
     /**
-     * the {@link ConcurrentLinkedQueue} instance of {@link TransactionSignature} waiting for verification
-     */
-    private volatile Queue<List<TransactionSignature>> verificationQueue;
-
-    /**
      * the current configuration settings
      */
     private volatile CryptoConfig config;
@@ -147,64 +140,6 @@ public class CryptoEngine implements Cryptography {
             final OperationProvider<TransactionSignature, Void, Boolean, ?, SignatureType> provider,
             final List<TransactionSignature> workItems) {
         return new AsyncVerificationHandler(workItems, provider);
-    }
-
-    /**
-     * Efficiently builds a {@link TransactionSignature} instance from the supplied components.
-     *
-     * @param data          the original contents that the signature should be verified against
-     * @param signature     the signature to be verified
-     * @param publicKey     the public key required to validate the signature
-     * @param signatureType the type of signature to be verified
-     * @return a {@link TransactionSignature} containing the provided components
-     */
-    private static TransactionSignature wrap(
-            final byte[] data, final byte[] signature, final byte[] publicKey, final SignatureType signatureType) {
-        if (data == null || data.length == 0) {
-            throw new IllegalArgumentException("data");
-        }
-
-        if (signature == null || signature.length == 0) {
-            throw new IllegalArgumentException("signature");
-        }
-
-        if (publicKey == null || publicKey.length == 0) {
-            throw new IllegalArgumentException("publicKey");
-        }
-
-        final ByteBuffer buffer = ByteBuffer.allocate(data.length + signature.length + publicKey.length);
-        final int sigOffset = data.length;
-        final int pkOffset = sigOffset + signature.length;
-
-        buffer.put(data).put(signature).put(publicKey);
-
-        return new TransactionSignature(
-                buffer.array(), sigOffset, signature.length, pkOffset, publicKey.length, 0, data.length, signatureType);
-    }
-
-    /**
-     * Common private utility method for performing synchronous digest computations.
-     *
-     * @param message  the message contents to be hashed
-     * @param provider the underlying provider to be used
-     * @param future   the {@link Future} to be associated with the {@link Message}
-     * @return the cryptographic hash for the given message contents
-     */
-    private static Hash digestSyncInternal(
-            final Message message, final DigestProvider provider, final StandardFuture<Void> future) {
-        final Hash hash;
-
-        try {
-            hash = provider.compute(message, message.getDigestType());
-            message.setHash(hash);
-        } catch (final NoSuchAlgorithmException ex) {
-            message.setFuture(future);
-            throw new CryptographyException(ex, LogMarker.EXCEPTION);
-        }
-
-        message.setFuture(future);
-
-        return hash;
     }
 
     /**
@@ -312,12 +247,8 @@ public class CryptoEngine implements Cryptography {
      * {@inheritDoc}
      */
     @Override
-    public void verifyAsync(final List<TransactionSignature> signatures) {
-        final boolean added = verificationQueue.add(signatures);
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the verification queue");
-        }
+    public void verifyAsync(@NonNull final List<TransactionSignature> signatures) {
+        verificationDispatcher.submit(signatures);
     }
 
     /**
@@ -396,19 +327,10 @@ public class CryptoEngine implements Cryptography {
             this.verificationDispatcher = null;
         }
 
-        // Resize the dispatcher queues
-        final Queue<List<TransactionSignature>> oldVerifierQueue = this.verificationQueue;
-        this.verificationQueue = new ConcurrentLinkedQueue<>();
-
-        if (oldVerifierQueue != null && oldVerifierQueue.size() > 0) {
-            this.verificationQueue.addAll(oldVerifierQueue);
-        }
-
         // Launch new background threads with the new settings
         this.verificationDispatcher = new IntakeDispatcher<>(
                 threadManager,
                 TransactionSignature.class,
-                this.verificationQueue,
                 this.delegatingVerificationProvider,
                 config.computeCpuVerifierThreadCount(),
                 CryptoEngine::verificationHandler);
