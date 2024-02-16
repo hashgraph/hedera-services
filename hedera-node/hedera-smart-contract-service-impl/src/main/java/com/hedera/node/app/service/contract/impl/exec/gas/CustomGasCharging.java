@@ -131,6 +131,10 @@ public class CustomGasCharging {
         if (transaction.isEthereumTransaction()) {
             requireNonNull(relayer);
             final var allowanceUsed = chargeWithRelayer(sender, relayer, context, worldUpdater, transaction);
+
+            // Increment nonce right after the gas is charged
+            sender.incrementNonce();
+
             return new GasCharges(intrinsicGas, allowanceUsed);
         } else {
             chargeWithOnlySender(sender, context, worldUpdater, transaction);

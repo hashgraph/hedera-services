@@ -7,9 +7,167 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "Platform Status (new)",
+            "uid": "bdcky36wafe9se"
+          }
+        ]
+      }
     }
   ],
-  "__elements": {},
+  "__elements": {
+    "bdcky36wafe9se": {
+      "name": "Platform Status (new)",
+      "uid": "bdcky36wafe9se",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-GrYlRd"
+            },
+            "custom": {
+              "fillOpacity": 61,
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineWidth": 0,
+              "spanNulls": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "super-light-green",
+                    "index": 0,
+                    "text": "STARTING_UP"
+                  },
+                  "2": {
+                    "color": "green",
+                    "index": 1,
+                    "text": "ACTIVE"
+                  },
+                  "4": {
+                    "color": "red",
+                    "index": 2,
+                    "text": "BEHIND"
+                  },
+                  "5": {
+                    "color": "light-blue",
+                    "index": 3,
+                    "text": "FREEZING"
+                  },
+                  "6": {
+                    "color": "dark-blue",
+                    "index": 4,
+                    "text": "FREEZE_COMPLETE"
+                  },
+                  "7": {
+                    "color": "super-light-yellow",
+                    "index": 5,
+                    "text": "REPLAYING_EVENTS"
+                  },
+                  "8": {
+                    "color": "text",
+                    "index": 6,
+                    "text": "OBSERVING"
+                  },
+                  "9": {
+                    "color": "orange",
+                    "index": 7,
+                    "text": "CHECKING"
+                  },
+                  "10": {
+                    "color": "purple",
+                    "index": 8,
+                    "text": "RECONNECT_COMPLETE"
+                  },
+                  "11": {
+                    "color": "#250707",
+                    "index": 9,
+                    "text": "CATASTROPHIC_FAILURE"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unitScale": true
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "Platform Status (new)",
+          "uid": "bdcky36wafe9se"
+        },
+        "options": {
+          "alignValue": "left",
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "mergeValues": true,
+          "rowHeight": 0.9,
+          "showValue": "auto",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "platform_PlatformStatus{environment=\"$network\", node_id=~\"$NodeID\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Platform Status",
+        "type": "state-timeline"
+      }
+    }
+  },
   "__requires": [
     {
       "type": "panel",
@@ -21,7 +179,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.3.0-63588"
+      "version": "10.4.0-66955"
     },
     {
       "type": "datasource",
@@ -128,10 +286,11 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -152,6 +311,44 @@
       ],
       "title": "issCount",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 19,
+      "panels": [],
+      "title": "Platform Status",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 15,
+        "w": 16,
+        "x": 0,
+        "y": 7
+      },
+      "id": 18,
+      "libraryPanel": {
+        "uid": "bdcky36wafe9se",
+        "name": "Platform Status (new)"
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 21,
+      "panels": [],
+      "type": "row"
     },
     {
       "datasource": {
@@ -221,7 +418,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 6
+        "y": 23
       },
       "id": 1,
       "options": {
@@ -294,7 +491,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 6
+        "y": 23
       },
       "id": 3,
       "options": {
@@ -312,7 +509,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -402,7 +599,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 14
+        "y": 31
       },
       "id": 4,
       "options": {
@@ -474,7 +671,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 14
+        "y": 31
       },
       "id": 5,
       "options": {
@@ -492,7 +689,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -616,7 +813,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 22
+        "y": 39
       },
       "id": 6,
       "options": {
@@ -688,7 +885,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 22
+        "y": 39
       },
       "id": 7,
       "options": {
@@ -706,7 +903,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -830,7 +1027,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 30
+        "y": 47
       },
       "id": 8,
       "options": {
@@ -902,7 +1099,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 30
+        "y": 47
       },
       "id": 14,
       "options": {
@@ -920,7 +1117,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1010,7 +1207,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 38
+        "y": 55
       },
       "id": 10,
       "options": {
@@ -1082,7 +1279,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 38
+        "y": 55
       },
       "id": 11,
       "options": {
@@ -1100,7 +1297,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1220,7 +1417,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 46
+        "y": 63
       },
       "id": 15,
       "options": {
@@ -1292,7 +1489,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 46
+        "y": 63
       },
       "id": 16,
       "options": {
@@ -1310,7 +1507,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1367,7 +1564,6 @@
       "type": "gauge"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -1424,13 +1620,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2024-02-09T17:50:36.987Z",
+    "to": "2024-02-11T21:57:23.869Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Signed States",
   "uid": "b9dde471-a093-42b6-b633-1755b3fc18d3",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
