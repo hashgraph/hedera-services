@@ -37,6 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,7 +58,7 @@ public class BlockStateProofProducer {
     /* The round number provided by the Round */
     private final long roundNum;
 
-    private final LinkedList<StateSignatureTransaction> signatures = new LinkedList<>();
+    private final LinkedList<QueuedStateSignatureTransaction> signatures = new LinkedList<>();
     private final AtomicReference<BlockStateProof> proof = new AtomicReference<>();
     private final AddressBook consensusRoster;
     private final int requiredNumberOfSignatures;
@@ -195,14 +197,11 @@ public class BlockStateProofProducer {
     }
 
     @NonNull
-    private List<BlockSignature> buildBlockSignatures() {
-        // TODO(nickpoorman): Build the block signatures from the list of signatures.
-
-        List<BlockSignature> blockSignatures = new ArrayList<>(this.signatures.size());
-        signatures.forEach(s -> blockSignatures.add(
-                new BlockSignature(Bytes.wrap(s.getStateSignature().getSignatureBytes()), s.getClassId())));
-
-        return List.of();
+    private Stream<BlockSignature> buildBlockSignatures() {
+        return signatures.stream()
+                .filter(sst -> sst.sig() != null && sst.nodeId() != -1)
+                .map(sst -> new BlockSignature(
+                        Bytes.wrap(sst.sig().getStateSignature().getSignatureBytes()), sst.nodeId()));
     }
 
     /**
@@ -236,13 +235,10 @@ public class BlockStateProofProducer {
         //            blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
         //        }
 
-        final var sigs = buildBlockSignatures();
-        // Verify the signatures?
-
         return BlockStateProof.newBuilder()
                 .siblingHashes(siblingHashes)
                 .endRunningHashes(runningHashes)
-                .blockSignatures(sigs)
+                .blockSignatures(buildBlockSignatures().toList())
                 .build();
     }
 
@@ -300,25 +296,24 @@ public class BlockStateProofProducer {
 
     /**
      * If we were supplied a signature, we can verify it and add it to our list of signatures.
-     * @param e the queued state signature transaction
-     * @return the signature if it was supplied, otherwise null
+     * @param t the queued state signature transaction
+     * @return the queued state signature transaction if it was valid, otherwise null
      */
     @Nullable
-    private StateSignatureTransaction tryConsumeSignature(@NonNull final QueuedStateSignatureTransaction e) {
-        // If a signature was not provided we can't consume it.
-        final var s = e.sig();
-        if (s == null) return null;
+    private QueuedStateSignatureTransaction tryConsumeSignature(@NonNull final QueuedStateSignatureTransaction t) {
+        // If a signature was not provided or the nodeId is not set we can't consume it.
+        if (t.sig() == null || t.nodeId() == -1) return null;
 
         // If the signature is not null, we can verify and it and add it to our collected signatures.
-        if (!verifySignature(s)) logger.warn("Received a block signature that was not valid: {}", s);
+        if (!verifySignature(t.nodeId(), t.sig())) logger.warn("Received a block signature that was not valid: {}", e);
 
-        // Once we have a proof, set it.
-        signatures.add(s);
+        // Once have verified the signature, set it.
+        signatures.add(t);
 
-        return s;
+        return t;
     }
 
-    private boolean verifySignature(@NonNull final StateSignatureTransaction sig) {
+    private boolean verifySignature(final long nodeId, @NonNull final StateSignatureTransaction sig) {
         // TODO(nickpoorman): Implement this.
         return true;
     }

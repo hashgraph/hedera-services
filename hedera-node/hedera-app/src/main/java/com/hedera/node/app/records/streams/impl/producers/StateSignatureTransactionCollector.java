@@ -50,14 +50,12 @@ public class StateSignatureTransactionCollector {
      */
     private static final int MAX_ROUND_WINDOW_SIZE = 100;
 
-    private final AtomicLong lastProvenRound = new AtomicLong(-1);
+    private final TaskCompletionWindow taskCompletionWindow = new TaskCompletionWindow(MAX_ROUND_WINDOW_SIZE);
 
     /**
      * Maintain a list of queues that are used to store state signatures for a given round.
      */
     private final ConcurrentHashMap<Long, LinkedTransferQueue<QueuedStateSignatureTransaction>> signatureQueues;
-
-    private final TaskCompletionWindow taskCompletionWindow = new TaskCompletionWindow(MAX_ROUND_WINDOW_SIZE);
 
     /**
      * The singleton instance.
@@ -99,7 +97,7 @@ public class StateSignatureTransactionCollector {
      * @param roundNum the round number to get the queue for
      * @return the queue for the given round number
      */
-    @Nullable
+    @NonNull
     public TransferQueue<QueuedStateSignatureTransaction> getQueueForRound(final long roundNum) {
         // See if there is a queue for this round.
         return getOrCreateQueue(roundNum);
@@ -147,29 +145,5 @@ public class StateSignatureTransactionCollector {
     @NonNull
     private LinkedTransferQueue<QueuedStateSignatureTransaction> getOrCreateQueue(final long roundNum) {
         return signatureQueues.computeIfAbsent(roundNum, k -> new LinkedTransferQueue<>());
-    }
-
-    /**
-     * Attempts to set the given value to the provided AtomicLong if the given value is greater than the current value
-     * of the AtomicLong. This method uses a do-while loop to ensure the update is performed atomically and efficiently.
-     *
-     * @param newValue the new value to compare and potentially set
-     */
-    private void updateLastProvenRoundIfGreater(long newValue) {
-        long prevValue;
-        do {
-            prevValue = lastProvenRound.get();
-            // If the new value is not greater, exit the loop; no need to attempt an update.
-            if (newValue <= prevValue) {
-                return;
-            }
-            // Attempt to set the newValue. This operation will fail if the current value
-            // was changed by another thread since prevValue was read. In that case, the loop
-            // will retry the operation with the updated current value.
-        } while (!lastProvenRound.compareAndSet(prevValue, newValue));
-    }
-
-    private boolean roundProven(long roundNum) {
-        return false;
     }
 }
