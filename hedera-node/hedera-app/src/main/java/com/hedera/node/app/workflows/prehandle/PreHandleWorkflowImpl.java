@@ -39,6 +39,7 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -131,6 +132,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     @Override
     public void preHandle(
             @NonNull final ReadableStoreFactory readableStoreFactory,
+            final long nodeId,
             @NonNull final AccountID creator,
             @NonNull final Stream<Transaction> transactions) {
 
@@ -148,7 +150,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     if (tx instanceof StateSignatureTransaction txn) {
                         // TODO(nickpoorman): Revist this once we get an answer
                         //  https://swirldslabs.slack.com/archives/C040H9JPQT1/p1708029325884249
-                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(-1, txn);
+                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(nodeId, txn);
                     }
                 }
                 return;

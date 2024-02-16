@@ -75,9 +75,9 @@ public class AdaptedMonoEventExpansion {
         });
         if (!forWorkflows.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
-            final var creatorAccountID =
-                    PbjConverter.toPbj(nodeInfo.accountOf(event.getCreatorId().id()));
-            preHandleWorkflow.preHandle(readableStoreFactory, creatorAccountID, forWorkflows.stream());
+            final var nodeId = event.getCreatorId().id();
+            final var creatorAccountID = PbjConverter.toPbj(nodeInfo.accountOf(nodeId));
+            preHandleWorkflow.preHandle(readableStoreFactory, nodeId, creatorAccountID, forWorkflows.stream());
         }
     }
 }

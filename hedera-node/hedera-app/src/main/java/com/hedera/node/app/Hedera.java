@@ -910,7 +910,9 @@ public final class Hedera implements SwirldMain {
 
         final var transactions = new ArrayList<Transaction>(1000);
         event.forEachTransaction(transactions::add);
-        daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
+        daggerApp
+                .preHandleWorkflow()
+                .preHandle(readableStoreFactory, creator.nodeId(), creator.accountId(), transactions.stream());
     }
 
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
