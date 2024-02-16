@@ -210,31 +210,7 @@ public class BlockStateProofProducer {
      */
     @NonNull
     private BlockStateProof buildProof() {
-        // Construct everything we need for the block proof.
-
-        // Pass the RunningHashes to the BlockStreamProducer, so it can create the block proof.
-        //        final var states = state.getReadableStates(BlockRecordService.NAME);
-        //        final var runningHashState =
-        // states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
-        //
-        //        // TODO(nickpoorman): Fill in with the real hashes.
-        //        SecureRandom random = new SecureRandom();
-        //        List<Bytes> treeHashes = new ArrayList<>();
-        //        for (int i = 0; i < 20; i++) { // generate a good amount of sibling hashes
-        //            byte[] hash = new byte[48];
-        //            random.nextBytes(hash);
-        //            treeHashes.add(Bytes.wrap(hash));
-        //        }
-        //        SiblingHashes siblingHashes = new SiblingHashes(treeHashes);
-        //
-        //        // TODO(nickpoorman): Fill in with the real signatures.
-        //        List<BlockSignature> blockSignatures = new ArrayList<>();
-        //        for (int i = 0; i < 21; i++) { // 2/3 +1 nodes
-        //            byte[] signature = new byte[48];
-        //            random.nextBytes(signature);
-        //            blockSignatures.add(new BlockSignature(Bytes.wrap(signature), i));
-        //        }
-
+        // Construct the block proof with the information we gathered.
         return BlockStateProof.newBuilder()
                 .siblingHashes(siblingHashes)
                 .endRunningHashes(runningHashes)
