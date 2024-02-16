@@ -17,17 +17,22 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
+import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
+import com.swirlds.benchmark.reconnect.BenchmarkMerkleLeaf;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,6 +40,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
+
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Level;
@@ -126,6 +135,17 @@ public abstract class BaseBench {
             registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.benchmark");
             registry.registerConstructables("com.swirlds.common.crypto");
+            registry.registerConstructables("com.swirlds.common");
+            registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
+            registry.registerConstructable(
+                    new ClassConstructorPair(BenchmarkMerkleInternal.class, BenchmarkMerkleInternal::new));
+            registry.registerConstructable(new ClassConstructorPair(BenchmarkMerkleLeaf.class, BenchmarkMerkleLeaf::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+            registry.registerConstructable(new ClassConstructorPair(BenchmarkKey.class, BenchmarkKey::new));
+            registry.registerConstructable(new ClassConstructorPair(BenchmarkValue.class, BenchmarkValue::new));
         } catch (ConstructableRegistryException ex) {
             logger.error("Failed to construct registry", ex);
         }

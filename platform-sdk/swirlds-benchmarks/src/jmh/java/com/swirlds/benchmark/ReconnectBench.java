@@ -16,23 +16,15 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
-import com.swirlds.benchmark.reconnect.BenchmarkMerkleLeaf;
 import com.swirlds.benchmark.reconnect.ReconnectRunner;
 import com.swirlds.benchmark.reconnect.StateBuilder;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import java.nio.file.Path;
-import java.util.Random;
+import com.swirlds.virtualmap.VirtualValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -44,10 +36,14 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.nio.file.Path;
+import java.util.Random;
+import java.util.function.BiConsumer;
+
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
 @Warmup(iterations = 1)
-@Measurement(iterations = 3)
+@Measurement(iterations = 5)
 public class ReconnectBench extends VirtualMapBaseBench {
 
     /** A random seed for the StateBuilder. */
@@ -55,23 +51,27 @@ public class ReconnectBench extends VirtualMapBaseBench {
     public long randomSeed;
 
     /**
-     * The size of the state, aka the number of nodes in the teacher virtual map.
-     * The learner map will have the same number of nodes, or less than that
-     * depending on the {@code learnerMissingProbability} value.
+     * The size of the state, aka the number of nodes in the learner virtual map.
+     * The teacher map may have a slightly different number of nodes depending on
+     * the {@code teacherAddProbability} and {@code teacherRemoveProbability} values.
      */
     @Param({"5000000"})
     public long stateSize;
 
-    /** The probability of the learner map missing a key from the teacher map. */
+    /** The probability of the teacher map having an extra node. */
     @Param({"0.05"})
-    public double learnerMissingProbability;
+    public double teacherAddProbability;
+
+    /** The probability of the teacher map having removed a node, while the learner still having it. */
+    @Param({"0.05"})
+    public double teacherRemoveProbability;
 
     /**
-     * The probability of the learner map having a value under a key that differs
-     * from the value under the same key in the teacher map.
+     * The probability of the teacher map having a value under a key that differs
+     * from the value under the same key in the learner map.
      */
     @Param({"0.05"})
-    public double learnerDifferentProbability;
+    public double teacherModifyProbability;
 
     private VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap;
     private VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap;
@@ -80,24 +80,6 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     String benchmarkName() {
         return "ReconnectBench";
-    }
-
-    @Setup
-    public static void setupBenchmark() throws Exception {
-        final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.merkledb");
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.virtualmap");
-        registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(BenchmarkMerkleInternal.class, BenchmarkMerkleInternal::new));
-        registry.registerConstructable(new ClassConstructorPair(BenchmarkMerkleLeaf.class, BenchmarkMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
-        registry.registerConstructable(new ClassConstructorPair(BenchmarkKey.class, BenchmarkKey::new));
-        registry.registerConstructable(new ClassConstructorPair(BenchmarkValue.class, BenchmarkValue::new));
     }
 
     @Override
@@ -127,6 +109,26 @@ public class ReconnectBench extends VirtualMapBaseBench {
         return new VirtualMap<>(label, dataSourceBuilder);
     }
 
+    /**
+     * Builds a VirtualMap populator that is able to add/update, as well as remove nodes (when the value is null.)
+     * Note that it doesn't support explicitly adding null values under a key.
+     *
+     * @param map a VirtualMap instance
+     * @return a populator for the map
+     * @param <K> key type
+     * @param <V> value type
+     */
+    private static <K extends VirtualKey, V extends VirtualValue> BiConsumer<K, V> buildVMPopulator(
+            final VirtualMap<K, V> map) {
+        return (k, v) -> {
+            if (v == null) {
+                map.remove(k);
+            } else {
+                map.put(k, v);
+            }
+        };
+    }
+
     @Setup(Level.Invocation)
     public void setupInvocation() {
         beforeTest("reconnect");
@@ -139,10 +141,11 @@ public class ReconnectBench extends VirtualMapBaseBench {
                 .buildState(
                         random,
                         stateSize,
-                        learnerMissingProbability,
-                        learnerDifferentProbability,
-                        teacherMap::put,
-                        learnerMap::put);
+                        teacherAddProbability,
+                        teacherRemoveProbability,
+                        teacherModifyProbability,
+                        buildVMPopulator(teacherMap),
+                        buildVMPopulator(learnerMap));
 
         teacherMap = flushMap(teacherMap);
         learnerMap = flushMap(learnerMap);
