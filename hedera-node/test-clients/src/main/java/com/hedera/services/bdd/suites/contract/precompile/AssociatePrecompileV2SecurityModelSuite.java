@@ -102,7 +102,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
