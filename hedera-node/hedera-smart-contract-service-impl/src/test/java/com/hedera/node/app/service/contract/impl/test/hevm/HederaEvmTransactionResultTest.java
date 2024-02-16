@@ -40,7 +40,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TWO_STO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_NETWORK_GAS_PRICE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.givenConfigInFrame;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.givenDefaultConfigInFrame;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -135,27 +134,27 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void finalStatusFromWrongNonceAbortTranslated() {
-        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), WRONG_NONCE);
+        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, CALLED_CONTRACT_ID, WRONG_NONCE);
         assertEquals(WRONG_NONCE, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromInvalidAccountIdAbortTranslated() {
-        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INVALID_ACCOUNT_ID);
+        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, CALLED_CONTRACT_ID, INVALID_ACCOUNT_ID);
         assertEquals(INVALID_ACCOUNT_ID, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromExecutionExceptionAbortTranslated() {
         final var subject =
-                HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), CONTRACT_EXECUTION_EXCEPTION);
+                HederaEvmTransactionResult.fromAborted(SENDER_ID, CALLED_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION);
         assertEquals(CONTRACT_EXECUTION_EXCEPTION, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromIpbAbortTranslated() {
         final var subject =
-                HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INSUFFICIENT_PAYER_BALANCE);
+                HederaEvmTransactionResult.fromAborted(SENDER_ID, CALLED_CONTRACT_ID, INSUFFICIENT_PAYER_BALANCE);
         assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.finalStatus());
     }
 
