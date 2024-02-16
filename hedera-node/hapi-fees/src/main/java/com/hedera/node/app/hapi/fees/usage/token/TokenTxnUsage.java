@@ -37,8 +37,8 @@ public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage
                 tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
     }
 
-    public T novelRelsLasting(final int n, final long secs) {
-        usageEstimator.addRbs(n * tokenEntitySizes.bytesUsedPerAccountRelationship() * secs);
+    public T novelRelsLasting(final int numTokens, final long secs) {
+        usageEstimator.addRbs(numTokens * tokenEntitySizes.bytesUsedPerAccountRelationship() * secs);
         return self();
     }
 }

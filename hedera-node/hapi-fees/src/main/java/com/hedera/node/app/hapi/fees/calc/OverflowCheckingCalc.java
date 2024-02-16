@@ -124,52 +124,53 @@ public final class OverflowCheckingCalc {
     /* Prices in file 0.0.111 are actually set in units of 1/1000th of a tinycent,
      * so here we constrain the nominal price by the max/min and then divide by
      * 1000 (the value of FEE_DIVISOR_FACTOR). */
-    private long constrainedTinycentFee(long nominal, final long min, final long max) {
-        if (nominal < min) {
-            nominal = min;
-        } else if (nominal > max) {
-            nominal = max;
+    private long constrainedTinycentFee(final long nominal, final long min, final long max) {
+        long price = nominal;
+        if (price < min) {
+            price = min;
+        } else if (price > max) {
+            price = max;
         }
-        return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
+        return ESTIMATOR_UTILS.nonDegenerateDiv(price, FEE_DIVISOR_FACTOR);
     }
 
     /* These verbose accumulators signatures are to avoid any performance hit from varargs */
-    long safeAccumulateFour(final long base, final long a, final long b, final long c, final long d) {
-        if (d < 0) {
+    long safeAccumulateFour(final long base, final long aVal, final long bVal, final long cVal, final long dVal) {
+        if (dVal < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
-        var sum = safeAccumulateThree(base, a, b, c);
-        sum += d;
+        var sum = safeAccumulateThree(base, aVal, bVal, cVal);
+        sum += dVal;
         if (sum < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
         return sum;
     }
 
-    long safeAccumulateThree(final long base, final long a, final long b, final long c) {
-        if (c < 0) {
+    long safeAccumulateThree(final long base, final long aVal, final long bVal, final long cVal) {
+        if (cVal < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
-        var sum = safeAccumulateTwo(base, a, b);
-        sum += c;
+        var sum = safeAccumulateTwo(base, aVal, bVal);
+        sum += cVal;
         if (sum < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
         return sum;
     }
 
-    long safeAccumulateTwo(long base, final long a, final long b) {
-        if (base < 0 || a < 0 || b < 0) {
+    long safeAccumulateTwo(final long base, final long aVal, final long bVal) {
+        if (base < 0 || aVal < 0 || bVal < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
-        base += a;
-        if (base < 0) {
+        long computed = base + aVal;
+        if (computed < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
-        base += b;
-        if (base < 0) {
+        computed += bVal;
+        if (computed < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
-        return base;
+        return computed;
     }
 }

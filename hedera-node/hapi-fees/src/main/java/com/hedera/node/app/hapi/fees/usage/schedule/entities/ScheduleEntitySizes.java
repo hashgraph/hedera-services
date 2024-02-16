@@ -43,11 +43,11 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 public enum ScheduleEntitySizes {
     SCHEDULE_ENTITY_SIZES;
 
-    public int bytesUsedForSigningKeys(int n) {
-        return n * KEY_SIZE;
+    public int bytesUsedForSigningKeys(final int numKeys) {
+        return numKeys * KEY_SIZE;
     }
 
-    public int estimatedScheduleSigs(SigUsage sigUsage) {
+    public int estimatedScheduleSigs(final SigUsage sigUsage) {
         return Math.max(sigUsage.numSigs() - sigUsage.numPayerKeys(), 1);
     }
 }
