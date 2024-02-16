@@ -61,8 +61,7 @@ public class TestingEventBuilder {
     /** the event's consensus status */
     private boolean consensus;
 
-    private TestingEventBuilder() {
-    }
+    private TestingEventBuilder() {}
 
     /**
      * @return a new instance of the builder with default settings
@@ -323,29 +322,29 @@ public class TestingEventBuilder {
 
         final EventDescriptor selfParent = getSelfParentGossip() != null
                 ? new EventDescriptor(
-                getSelfParentGossip().getHashedData().getHash(),
-                creatorId,
-                selfParentGen,
-                EventConstants.BIRTH_ROUND_UNDEFINED)
-                : selfParentGen > EventConstants.GENERATION_UNDEFINED
-                        ? new EventDescriptor(
-                        RandomUtils.randomHash(random),
+                        getSelfParentGossip().getHashedData().getHash(),
                         creatorId,
                         selfParentGen,
                         EventConstants.BIRTH_ROUND_UNDEFINED)
+                : selfParentGen > EventConstants.GENERATION_UNDEFINED
+                        ? new EventDescriptor(
+                                RandomUtils.randomHash(random),
+                                creatorId,
+                                selfParentGen,
+                                EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final EventDescriptor otherParent = getOtherParentGossip() != null
                 ? new EventDescriptor(
-                getOtherParentGossip().getHashedData().getHash(),
-                getOtherParentGossip().getHashedData().getCreatorId(),
-                otherParentGen,
-                EventConstants.BIRTH_ROUND_UNDEFINED)
-                : otherParentGen > EventConstants.GENERATION_UNDEFINED
-                        ? new EventDescriptor(
-                        RandomUtils.randomHash(random),
-                        creatorId,
+                        getOtherParentGossip().getHashedData().getHash(),
+                        getOtherParentGossip().getHashedData().getCreatorId(),
                         otherParentGen,
                         EventConstants.BIRTH_ROUND_UNDEFINED)
+                : otherParentGen > EventConstants.GENERATION_UNDEFINED
+                        ? new EventDescriptor(
+                                RandomUtils.randomHash(random),
+                                creatorId,
+                                otherParentGen,
+                                EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),

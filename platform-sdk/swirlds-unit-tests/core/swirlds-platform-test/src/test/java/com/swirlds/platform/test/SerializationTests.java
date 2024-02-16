@@ -51,6 +51,7 @@ public class SerializationTests {
     }
 
     static Stream<Arguments> selfSerializableProvider() {
-        return Stream.of(arguments(TestingEventBuilder.builder().buildGossipEvent().getHashedData()));
+        return Stream.of(
+                arguments(TestingEventBuilder.builder().buildGossipEvent().getHashedData()));
     }
 }

@@ -59,7 +59,8 @@ public class EventImplTests {
     void testNoSystemTransaction() {
         final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
 
-        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(transactions).buildEventImpl();
+        final EventImpl event =
+                testingEventBuilder.setDefaults().setTransactions(transactions).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -74,7 +75,8 @@ public class EventImplTests {
     @Test
     @DisplayName("findSystemTransactions() no transactions")
     void testTransaction() {
-        final EventImpl event = testingEventBuilder.setDefaults().setNumberOfTransactions(0).buildEventImpl();
+        final EventImpl event =
+                testingEventBuilder.setDefaults().setNumberOfTransactions(0).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -89,7 +91,10 @@ public class EventImplTests {
     void testFindSystemTransactions(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         verifySystemIterator(data, event);
         assertEquals(
                 data.transactions.length - data.systemIndices.size(),
@@ -103,7 +108,10 @@ public class EventImplTests {
     void testConsensusTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
         final Set<ConsensusTransaction> transactionSet = new HashSet<>();
         while (iter.hasNext()) {
@@ -124,7 +132,10 @@ public class EventImplTests {
     void testTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(data.transactions()).buildEventImpl();
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         final Iterator<Transaction> iter = event.transactionIterator();
 
         final Set<Transaction> transactionSet = new HashSet<>();
@@ -217,7 +228,10 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event = testingEventBuilder.setDefaults().setTransactions(mixedTransactions).buildEventImpl();
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(mixedTransactions)
+                .buildEventImpl();
         event.setConsensusOrder(3L);
         event.setConsensusTimestamp(eventConsTime);
 

@@ -63,7 +63,7 @@ class TransactionHandlerTest {
         final Random r = RandomUtils.getRandomPrintSeed();
         final EventImpl event = TestingEventBuilder.builder()
                 .setTransactions(TransactionUtils.incrementingMixedTransactions(r))
-                        .buildEventImpl();
+                .buildEventImpl();
 
         handler.preHandle(event, swirldState);
 
