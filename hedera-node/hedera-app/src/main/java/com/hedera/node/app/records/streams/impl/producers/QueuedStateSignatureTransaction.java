@@ -21,7 +21,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public record QueuedStateSignatureTransaction(
-        @Nullable StateSignatureTransaction sig, @Nullable BlockStateProof proof) {
+        long nodeId, @Nullable StateSignatureTransaction sig, @Nullable BlockStateProof proof) {
     // Ensure that the signature is not null
     public QueuedStateSignatureTransaction {
         if (sig == null && proof == null) {

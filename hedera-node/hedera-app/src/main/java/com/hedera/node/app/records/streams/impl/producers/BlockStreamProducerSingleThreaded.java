@@ -39,9 +39,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A single threaded implementation of {@link BlockStreamProducer} where all operations happen in a blocking
- * manner on the calling "handle" thread. This implementation is useful for testing and for the "Hedera Local Node",
- * which is a version of a consensus node that may be run as a standalone application, useful for development.
+ * A single threaded implementation of {@link BlockStreamProducer} where operations may block the single calling thread.
+ * This simple implementation is also useful for testing and for the "Hedera Local Node", which is a version of a
+ * consensus node that may be run as a standalone application, useful for development. This class is not thread-safe. It
+ * is wrapped by {@link ConcurrentBlockStreamProducer} to make it thread-safe and asynchronous, so it does not block the
+ * "handle" thread.
  *
  * <p>A BlockStreamProducer is only responsible for delegating serialization of data it's passed from write methods and
  *    computing running hashes from the serialized data.
@@ -51,8 +53,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     private static final Logger logger = LogManager.getLogger(BlockStreamProducerSingleThreaded.class);
     /** Creates new {@link BlockStreamWriter} instances */
     private final BlockStreamWriterFactory writerFactory;
-    /** The HAPI protobuf version. Does not change during execution. */
-    private final SemanticVersion hapiVersion;
     /** The {@link BlockStreamFormat} used to serialize items for output. */
     private final BlockStreamFormat format;
     /**
@@ -62,8 +62,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     private BlockStreamWriter writer;
     /** The running hash at end of the last user transaction */
     private Bytes runningHash = null;
-    /** The previous block running hash */
-    private Bytes previousBlockRunningHash = null;
     /** The previous running hash */
     private Bytes runningHashNMinus1 = null;
     /** The previous, previous running hash */
@@ -73,7 +71,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     private long currentBlockNumber = -1;
 
-    private SoftwareVersion lastConsensusEventVersion;
+    //    private SoftwareVersion lastConsensusEventVersion;
 
     /**
      * Construct BlockStreamProducerSingleThreaded
@@ -89,7 +87,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             @NonNull final BlockStreamWriterFactory writerFactory) {
         this.writerFactory = requireNonNull(writerFactory);
         this.format = requireNonNull(format);
-        hapiVersion = nodeInfo.hapiVersion();
     }
 
     // =========================================================================================================================================================================
@@ -138,8 +135,9 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     @Override
     public void close() {
         // FUTURE: close() should wait until the block is completed, which cannot happen until the block proof is
-        // produced, and that cannot happen until the signatures have been gossiped. Today, this will going to close in
-        // unpredictable ways.
+        // produced, and that cannot happen until the signatures have been gossiped. Today, this will close in
+        // unpredictable ways, and will most likely result in the block being written incompletely without a block
+        // proof.
         final var lastRunningHash = getRunningHashObject();
         closeWriter(lastRunningHash, this.currentBlockNumber);
 
@@ -201,16 +199,18 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     // =================================================================================================================
     // private implementation
 
-    private boolean isFirstConsensusEventInBlock() {
-        return this.lastConsensusEventVersion == null;
-    }
+    // TODO(nickpoorman): The software version can change throughout an event.
+    //    private boolean isFirstConsensusEventInBlock() {
+    //        return this.lastConsensusEventVersion == null;
+    //    }
 
-    private boolean hasConsensusEventVersionChanged(@NonNull final ConsensusEvent newConsensusEvent) {
-        final var oldVersion = requireNonNull(this.lastConsensusEventVersion, "lastConsensusEventVersion is null");
-        // Check if the current consensus event version is different from newConsensusEvent.
-        var newVersion = newConsensusEvent.getSoftwareVersion();
-        return newVersion.compareTo(oldVersion) != 0;
-    }
+    //    private boolean hasConsensusEventVersionChanged(@NonNull final ConsensusEvent newConsensusEvent) {
+    //        final var oldVersion = requireNonNull(this.lastConsensusEventVersion, "lastConsensusEventVersion is
+    // null");
+    //        // Check if the current consensus event version is different from newConsensusEvent.
+    //        var newVersion = newConsensusEvent.getSoftwareVersion();
+    //        return newVersion.compareTo(oldVersion) != 0;
+    //    }
 
     @NonNull
     private HashObject asHashObject(@NonNull final Bytes hash) {

@@ -286,7 +286,7 @@ public class HandleWorkflow {
                 // Collect the state signature transaction. We have a singleton instance of the
                 // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
                 // network and sorting them into queues to later.
-                StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(txn);
+                StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(creator.nodeId(), txn);
             }
         }
 

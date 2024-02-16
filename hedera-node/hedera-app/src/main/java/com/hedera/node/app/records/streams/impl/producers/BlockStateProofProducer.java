@@ -24,10 +24,13 @@ import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +49,7 @@ public class BlockStateProofProducer {
     /** The logger */
     private static final Logger logger = LogManager.getLogger(BlockStateProofProducer.class);
 
-    private ExecutorService executor;
+    private final ExecutorService executor;
 
     /* The state of the ledger */
     private final HederaState state;
@@ -148,8 +151,9 @@ public class BlockStateProofProducer {
                 final var p = tryConsumeProof(e);
                 if (p != null) return p;
 
-                // Add the signature to the list of signatures.
-                signatures.add(e.sig());
+                // Verify and add the signature to the list of signatures.
+                final var sig = tryConsumeSignature(e);
+                if (sig != null) continue; // No signature was added, skip the following steps.
 
                 // See if we have a proof given the signature we just added.
                 final var p2 = constructProof();
@@ -193,6 +197,11 @@ public class BlockStateProofProducer {
     @NonNull
     private List<BlockSignature> buildBlockSignatures() {
         // TODO(nickpoorman): Build the block signatures from the list of signatures.
+
+        List<BlockSignature> blockSignatures = new ArrayList<>(this.signatures.size());
+        signatures.forEach(s -> blockSignatures.add(
+                new BlockSignature(Bytes.wrap(s.getStateSignature().getSignatureBytes()), s.getClassId())));
+
         return List.of();
     }
 
@@ -283,9 +292,34 @@ public class BlockStateProofProducer {
         if (p == null) return null;
 
         // If the proof is not null, we can verify and it and set it.
-        if (!verifyProof(p)) logger.warn("Received a block proof that was not correct: {}", e.proof());
+        if (!verifyProof(p)) logger.warn("Received a block proof that was not valid: {}", p);
 
         // Once we have a proof, set it.
         return setProof(p);
+    }
+
+    /**
+     * If we were supplied a signature, we can verify it and add it to our list of signatures.
+     * @param e the queued state signature transaction
+     * @return the signature if it was supplied, otherwise null
+     */
+    @Nullable
+    private StateSignatureTransaction tryConsumeSignature(@NonNull final QueuedStateSignatureTransaction e) {
+        // If a signature was not provided we can't consume it.
+        final var s = e.sig();
+        if (s == null) return null;
+
+        // If the signature is not null, we can verify and it and add it to our collected signatures.
+        if (!verifySignature(s)) logger.warn("Received a block signature that was not valid: {}", s);
+
+        // Once we have a proof, set it.
+        signatures.add(s);
+
+        return s;
+    }
+
+    private boolean verifySignature(@NonNull final StateSignatureTransaction sig) {
+        // TODO(nickpoorman): Implement this.
+        return true;
     }
 }

@@ -110,10 +110,12 @@ public class BlockEnder {
             writer.writeItem(serializedItem);
         } catch (final Exception e) {
             // This **may** prove fatal. The node should be able to carry on, but then fail when it comes to
-            // actually producing a valid record stream file. We need to have some way of letting all nodesknow
+            // actually producing a valid record stream file. We need to have some way of letting all nodes know
             // that this node has a problem, so we can make sure at least a minimal threshold of nodes is
             // successfully producing a blockchain.
             logger.error("Error writing block item to block stream writer for block {}", blockNumber, e);
+            // Best way to do this is to throw the exception and then propagate it to the blockPersisted future.
+            throw new RuntimeException(e);
         }
     }
 
@@ -138,6 +140,11 @@ public class BlockEnder {
         return new Builder();
     }
 
+    /**
+     * This is a mutable object that can be used to construct a {@link BlockEnder}. It is passed to different threads to
+     * construct a {@link BlockEnder} object, therefore we need the variables to be volatile to ensure that the changes
+     * made by one thread are visible to the other threads.
+     */
     public static class Builder {
         private volatile HashObject lastRunningHash;
         private volatile BlockStreamWriter writer;

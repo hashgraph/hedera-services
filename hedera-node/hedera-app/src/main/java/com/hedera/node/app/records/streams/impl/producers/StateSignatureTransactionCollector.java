@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,6 +41,10 @@ import org.apache.logging.log4j.Logger;
 public class StateSignatureTransactionCollector {
 
     private static final Logger logger = LogManager.getLogger(BlockRecordManagerImpl.class);
+
+    private static final int MAX_ROUNDS_TO_KEEP = 100;
+
+    private final AtomicLong lastProvenRound = new AtomicLong(-1);
 
     /**
      * Maintain a list of queues that are used to store state signatures for a given round.
@@ -66,12 +72,15 @@ public class StateSignatureTransactionCollector {
 
     /**
      * Add a state signature transaction to the collector. This will be added to the queue for the given round.
+     * @param nodeId the node id of the node that submitted the state signature transaction
      * @param sig the state signature transaction to submit
      */
-    public void putStateSignatureTransaction(@NonNull final StateSignatureTransaction sig) {
+    public void putStateSignatureTransaction(long nodeId, @NonNull final StateSignatureTransaction sig) {
         final long roundNum = sig.getRound();
+        // Don't create queues for old rounds which we have already proven.
+
         final var q = getOrCreateQueue(roundNum);
-        var t = new QueuedStateSignatureTransaction(sig, null);
+        var t = new QueuedStateSignatureTransaction(nodeId, sig, null);
         // We can exploit LinkedTransferQueue to attempt a fast-path transfer. If and only if no consumers are blocked
         // polling for the element, fall back to putting it in the queue.
         if (q.tryTransfer(t)) return;
@@ -96,17 +105,32 @@ public class StateSignatureTransactionCollector {
      * @param proof the completed BlockStateProof for a round
      */
     public void roundComplete(@NonNull final BlockStateProof proof) {
-        // TODO(nickpoorman): Need to update this implementation since we don't have an ordered queue a poison pill
-        //  no longer works.
-
         // Remove any buffered signatures for rounds equal to or less than this one. For each round we encounter that is
         // less than the most recently completed round, we should remove them and provide the most recent proof so
         // waiting threads no longer block on them.
-
         final long roundNum = proof.round();
+
+        updateLastProvenRoundIfGreater(roundNum);
+
+        // Remove the queue for this round.
+        signatureQueues.remove(roundNum);
+
+        // TODO(nickpoorman): We don't want to provide a proof for rounds that are less than this round. We
+        //  should instead rely on platform to guarantee that we will get a proof for round eventually.
+        //        signatureQueues.forEach((k, v) -> {
+        //            if (k <= roundNum) {
+        //                v.offer(new QueuedStateSignatureTransaction(-1, new StateSignatureTransaction(), proof));
+        //            }
+        //            signatureQueues.remove(k);
+        //        });
+
+        // If for some reason we can't finish a round after a certain point, we should clean up these queues. This
+        // can happen if we don't get enough signatures to prove a round or if signatures come in later after we have
+        // already proven a round. lastProvenRound helps in that we don't allow new queues to be created for old
+        // rounds that we've already proven.
         signatureQueues.forEach((k, v) -> {
-            if (k <= roundNum) {
-                v.offer(new QueuedStateSignatureTransaction(new StateSignatureTransaction(), proof));
+            if (k + MAX_ROUNDS_TO_KEEP <= roundNum) {
+                v.offer(new QueuedStateSignatureTransaction(-1, new StateSignatureTransaction(), proof));
             }
             signatureQueues.remove(k);
         });
@@ -115,5 +139,29 @@ public class StateSignatureTransactionCollector {
     @NonNull
     private LinkedTransferQueue<QueuedStateSignatureTransaction> getOrCreateQueue(final long roundNum) {
         return signatureQueues.computeIfAbsent(roundNum, k -> new LinkedTransferQueue<>());
+    }
+
+    /**
+     * Attempts to set the given value to the provided AtomicLong if the given value is greater than the current value
+     * of the AtomicLong. This method uses a do-while loop to ensure the update is performed atomically and efficiently.
+     *
+     * @param newValue the new value to compare and potentially set
+     */
+    private void updateLastProvenRoundIfGreater(long newValue) {
+        long prevValue;
+        do {
+            prevValue = lastProvenRound.get();
+            // If the new value is not greater, exit the loop; no need to attempt an update.
+            if (newValue <= prevValue) {
+                return;
+            }
+            // Attempt to set the newValue. This operation will fail if the current value
+            // was changed by another thread since prevValue was read. In that case, the loop
+            // will retry the operation with the updated current value.
+        } while (!lastProvenRound.compareAndSet(prevValue, newValue));
+    }
+
+    private boolean roundProven(long roundNum) {
+        return false;
     }
 }

@@ -371,14 +371,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
             @NonNull final Runnable runnable) {
 
-        // At the beginning of a round, we create a new StateProofProducer. The StateProofProducer is responsible for
-        // collecting system transaction asynchronously outside the single threaded handle workflow. It is also able to
-        // asynchronously produce a state proof, once enough signatures have been collected for the round. The
-        // production of the state proof triggers the end of the block by calling blockStreamProducer.endBlock.
-
-        final BlockStateProofProducer stateProofProducer =
-                new BlockStateProofProducer(executor, state, round.getRoundNum(), round.getConsensusRoster());
-
         try {
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
                 this.startRound();
@@ -390,6 +382,14 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
                 }
             });
         } finally {
+            // Create a new StateProofProducer. The StateProofProducer is responsible for collecting system transaction
+            // asynchronously outside the single threaded handle workflow. It is also able to asynchronously produce a
+            // state proof, once enough signatures have been collected for the round. The production of the state proof
+            // triggers the end of the block by calling blockStreamProducer.endBlock.
+
+            final BlockStateProofProducer stateProofProducer =
+                    new BlockStateProofProducer(executor, state, round.getRoundNum(), round.getConsensusRoster());
+
             // Regardless of what happens in the try block, attempt to close the block.
             // In order to close the block, we need to wait until the asynchronous tasks have completed. Once they
             // are finished, our endBlock task will run and provide us with a BlockEnder that can be used to complete

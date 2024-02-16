@@ -146,7 +146,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (tx.isSystem()) {
                 if (collectSignaturesEnabled()) {
                     if (tx instanceof StateSignatureTransaction txn) {
-                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(txn);
+                        // TODO(nickpoorman): Revist this once we get an answer
+                        //  https://swirldslabs.slack.com/archives/C040H9JPQT1/p1708029325884249
+                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(-1, txn);
                     }
                 }
                 return;
