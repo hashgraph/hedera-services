@@ -51,7 +51,7 @@ public class SyncTestUtils {
         return maxIndicator;
     }
 
-    public static long getMinIndicator(final Set<ShadowEvent> events, @NonNull final AncientMode ancientMode) {
+    public static long getMinIndicator(@NonNull final Set<ShadowEvent> events, @NonNull final AncientMode ancientMode) {
         long minIndicator = Long.MAX_VALUE;
         for (final ShadowEvent event : events) {
             minIndicator = Math.min(event.getEvent().getBaseEvent().getAncientIndicator(ancientMode), minIndicator);

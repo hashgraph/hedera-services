@@ -176,13 +176,30 @@ public class Shadowgraph implements Clearable {
     @NonNull
     public synchronized ReservedEventWindow reserve() {
         if (reservationList.isEmpty()) {
+            // If we are not currently holding any reservations, we need to create a new one.
             return new ReservedEventWindow(eventWindow, newReservation());
         }
+
+        // Check to see if an existing reservation is good enough.
+
         final ShadowgraphReservation lastReservation = reservationList.getLast();
-        if (lastReservation.getReservedThreshold() == eventWindow.getExpiredThreshold()) {
+
+        final long previouslyReservedThreshold = lastReservation.getReservedThreshold();
+        final long thresholdWeWantToReserve = eventWindow.getExpiredThreshold();
+
+        if (previouslyReservedThreshold == thresholdWeWantToReserve) {
+
+            // The latest reservation is against the same expired threshold that we currently want to reserve.
+            // We can reuse that reservation instead of creating a new one. We still need to package that
+            // reservation with the most recent eventWindow we know about.
+
             lastReservation.incrementReservations();
             return new ReservedEventWindow(eventWindow, lastReservation);
         } else {
+
+            // We want a reservation on an expired threshold that isn't currently reserved.
+            // Create a new reservation.
+
             return new ReservedEventWindow(eventWindow, newReservation());
         }
     }

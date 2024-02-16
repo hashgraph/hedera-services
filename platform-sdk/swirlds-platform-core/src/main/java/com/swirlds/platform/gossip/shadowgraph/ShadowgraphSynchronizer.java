@@ -132,14 +132,14 @@ public class ShadowgraphSynchronizer {
     /**
      * Constructs a new ShadowgraphSynchronizer.
      *
-     * @param platformContext        the platform context
-     * @param shadowGraph            stores events to sync
-     * @param numberOfNodes          number of nodes in the network
-     * @param syncMetrics            metrics for sync
-     * @param receivedEventHandler   events that are received are passed here
-     * @param fallenBehindManager    tracks if we have fallen behind
-     * @param intakeEventCounter     used for tracking events in the intake pipeline per peer
-     * @param executor               for executing read/write tasks in parallel
+     * @param platformContext      the platform context
+     * @param shadowGraph          stores events to sync
+     * @param numberOfNodes        number of nodes in the network
+     * @param syncMetrics          metrics for sync
+     * @param receivedEventHandler events that are received are passed here
+     * @param fallenBehindManager  tracks if we have fallen behind
+     * @param intakeEventCounter   used for tracking events in the intake pipeline per peer
+     * @param executor             for executing read/write tasks in parallel
      */
     public ShadowgraphSynchronizer(
             @NonNull final PlatformContext platformContext,
@@ -222,9 +222,9 @@ public class ShadowgraphSynchronizer {
                     connection);
             timing.setTimePoint(1);
 
-            syncMetrics.eventWindow(myWindow, theirTipsAndEventWindow.getEventWindow());
+            syncMetrics.eventWindow(myWindow, theirTipsAndEventWindow.eventWindow());
 
-            if (fallenBehind(myWindow, theirTipsAndEventWindow.getEventWindow(), connection)) {
+            if (fallenBehind(myWindow, theirTipsAndEventWindow.eventWindow(), connection)) {
                 // aborting the sync since someone has fallen behind
                 return false;
             }
@@ -233,7 +233,7 @@ public class ShadowgraphSynchronizer {
             final Set<ShadowEvent> eventsTheyHave = new HashSet<>();
 
             // process the hashes received
-            final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndEventWindow.getTips());
+            final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndEventWindow.tips());
 
             // For each tip they send us, determine if we have that event.
             // For each tip, send true if we have the event and false if we don't.
@@ -257,7 +257,7 @@ public class ShadowgraphSynchronizer {
 
             // create a send list based on the known set
             sendList = createSendList(
-                    connection.getSelfId(), eventsTheyHave, myWindow, theirTipsAndEventWindow.getEventWindow());
+                    connection.getSelfId(), eventsTheyHave, myWindow, theirTipsAndEventWindow.eventWindow());
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

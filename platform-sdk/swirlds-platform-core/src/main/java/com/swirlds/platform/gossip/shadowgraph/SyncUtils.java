@@ -131,7 +131,7 @@ public final class SyncUtils {
                     connection::getDescription,
                     () -> SyncLogging.toShortHashes(tips));
 
-            return TheirTipsAndEventWindow.create(eventWindow, tips);
+            return new TheirTipsAndEventWindow(eventWindow, tips);
         };
     }
 
@@ -444,6 +444,13 @@ public final class SyncUtils {
             @NonNull final NonAncientEventWindow myEventWindow,
             @NonNull final NonAncientEventWindow theirEventWindow,
             @NonNull final AncientMode ancientMode) {
+
+        // When searching for events, we don't want to send any events that are known to be ancient to the peer.
+        // We should never be syncing with a peer if their ancient threshold is less than our expired threshold
+        // (if this is the case, then the peer is "behind"), so in practice the minimumSearchThreshold will always
+        // be the same as the peer's ancient threshold. However, in an abundance of caution, we use the maximum of
+        // the two thresholds to ensure that we don't ever attempt to traverse over events that are expired to us,
+        // since those events may be unlinked and could cause race conditions if accessed.
 
         final long minimumSearchThreshold =
                 Math.max(myEventWindow.getExpiredThreshold(), theirEventWindow.getAncientThreshold());

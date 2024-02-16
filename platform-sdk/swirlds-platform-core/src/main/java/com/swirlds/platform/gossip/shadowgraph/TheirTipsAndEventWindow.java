@@ -20,36 +20,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * The tips and event window of the sync peer. This is the first thing sent/received during a sync (after protocol
  * negotiation).
  */
-public final class TheirTipsAndEventWindow {
-
-    private final NonAncientEventWindow eventWindow;
-    private final List<Hash> tips;
-
-    private TheirTipsAndEventWindow(@NonNull final NonAncientEventWindow eventWindow, @NonNull final List<Hash> tips) {
-        this.eventWindow = eventWindow;
-        this.tips = tips;
-    }
-
-    @NonNull
-    public static TheirTipsAndEventWindow create(
-            @NonNull final NonAncientEventWindow eventWindow, @NonNull final List<Hash> tips) {
-        Objects.requireNonNull(eventWindow);
-        Objects.requireNonNull(tips);
-        return new TheirTipsAndEventWindow(eventWindow, tips);
-    }
-
-    @NonNull
-    public NonAncientEventWindow getEventWindow() {
-        return eventWindow;
-    }
-
-    public List<Hash> getTips() {
-        return tips;
-    }
-}
+public record TheirTipsAndEventWindow(@NonNull NonAncientEventWindow eventWindow, @NonNull List<Hash> tips) {}
