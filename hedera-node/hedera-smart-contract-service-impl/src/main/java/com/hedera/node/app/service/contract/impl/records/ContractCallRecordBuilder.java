@@ -74,6 +74,13 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
     ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 
     /**
+     * Returns the in-progress {@link ContractFunctionResult}.
+     *
+     * @return the in-progress {@link ContractFunctionResult}
+     */
+    public ContractFunctionResult contractFunctionResult();
+
+    /**
      * Tracks the transaction contained in child records resulting from the contract call.
      *
      * @param txn the transaction

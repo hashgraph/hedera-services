@@ -340,8 +340,8 @@ public class ClassicTransfersDecoder {
             final long amount,
             final IsApproval isApproval) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        accountAmounts.add(debit(from, amount, isApproval));
         accountAmounts.add(credit(to, amount));
+        accountAmounts.add(debit(from, amount, isApproval));
         return TokenTransferList.newBuilder()
                 .token(tokenId)
                 .transfers(accountAmounts)

@@ -16,14 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.Test;
@@ -38,11 +43,17 @@ class FullResultTest {
 
     @Test
     void canRecordInsufficientGasWithBuilder() {
+        when(recordBuilder.contractFunctionResult()).thenReturn(ContractFunctionResult.DEFAULT);
         final var result = new PrecompiledContract.PrecompileContractResult(
                 Bytes.EMPTY, true, MessageFrame.State.CODE_SUCCESS, Optional.empty());
         final var subject = new FullResult(result, 123L, recordBuilder);
         subject.recordInsufficientGas();
         verify(recordBuilder).status(ResponseCodeEnum.INSUFFICIENT_GAS);
+        verify(recordBuilder)
+                .contractCallResult(ContractFunctionResult.newBuilder()
+                        .contractCallResult(
+                                tuweniToPbjBytes(Bytes.wrap(UInt256.valueOf(INSUFFICIENT_GAS.protoOrdinal()))))
+                        .build());
     }
 
     @Test
