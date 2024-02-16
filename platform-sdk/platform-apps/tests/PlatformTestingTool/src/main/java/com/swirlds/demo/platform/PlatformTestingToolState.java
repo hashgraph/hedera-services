@@ -240,6 +240,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handles quorum determinations for all {@link ControlTransaction} processed by the handle method.
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
+    private long transactionsIgnoredByExpectedMap = 0;
 
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
@@ -651,6 +652,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         throwIfImmutable();
         roundCounter++;
 
+        logger.info(
+                DEMO_INFO.getMarker(),
+                "Copying round {}, transactions ignored by expected map: {}."
+                +" This log is added to debug #11254",
+                roundCounter, transactionsIgnoredByExpectedMap);
+
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
         if (platform != null) {
@@ -883,8 +890,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!expectedFCMFamily.shouldHandleForKeys(
                         keys, transactionType, getConfig(), entityType, epochMillis, originId)
                 && entityType != EntityType.NFT) {
-            logger.error(DEMO_INFO.getMarker(),
-                    "Discarding transaction because of expected map");
+            transactionsIgnoredByExpectedMap++;
             return;
         }
 
