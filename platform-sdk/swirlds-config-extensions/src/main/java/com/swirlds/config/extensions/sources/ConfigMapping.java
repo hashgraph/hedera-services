@@ -34,7 +34,7 @@ public record ConfigMapping(@NonNull String mappedName, @NonNull String original
     private static final Logger logger = LogManager.getLogger(MappedConfigSource.class);
 
     /**
-     * Creates a new {@code ConfigMapping}
+     * Creates a new {@code ConfigMapping}.
      *
      * @param mappedName   new property name
      * @param originalName original property name
