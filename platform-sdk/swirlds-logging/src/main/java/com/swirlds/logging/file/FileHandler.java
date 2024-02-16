@@ -18,8 +18,6 @@ package com.swirlds.logging.file;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
@@ -30,17 +28,24 @@ import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * A file handler that writes log events to a file.
+ * <p>
+ * This handler use a {@link BufferedWriter} to write {@link LogEvent}s to a file.
+ * You can configure the following properties:
+ * <ul>
+ *     <li>{@code file} - the {@link Path} of the file</li>
+ *     <li>{@code bufferSize} - the buffer size of the {@link BufferedWriter}</li>
+ *     <li>{@code append} - whether to append to the file or not</li>
+ * </ul>
+ *
+ */
 public class FileHandler extends AbstractSyncedHandler {
 
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String BUFFER_SIZE_PROPERTY = "%s.bufferSize";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-
-    /**
-     * The emergency logger.
-     */
-    private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
     private final FileOutputStream fileOutputStream;
     private final OutputStreamWriter outputStreamWriter;
@@ -52,7 +57,7 @@ public class FileHandler extends AbstractSyncedHandler {
      * @param configKey     the configuration key
      * @param configuration the configuration
      */
-    public FileHandler(@NonNull String configKey, @NonNull Configuration configuration) {
+    public FileHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         super(configKey, configuration);
 
         final String propertyPrefix = PROPERTY_HANDLER.formatted(configKey);
@@ -81,13 +86,12 @@ public class FileHandler extends AbstractSyncedHandler {
     }
 
     /**
-     * Handles a log event by appending it to the file using the {@link LineBasedFormat},
-     * followed by flushing the console output.
+     * Handles a log event by appending it to the file using the {@link LineBasedFormat}.
      *
      * @param event The log event to be printed.
      */
     @Override
-    protected void handleEvent(@NonNull LogEvent event) {
+    protected void handleEvent(@NonNull final LogEvent event) {
         if (bufferedWriter != null) {
             LineBasedFormat.print(bufferedWriter, event);
         }

@@ -21,7 +21,19 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ServiceLoader;
 
+/**
+ * A factory for creating new {@link FileHandler} instances.
+ *
+ * This is a {@link LogHandlerFactory} and is discovered by the {@link ServiceLoader} at runtime.
+ * The factory creates new {@link FileHandler} instances with the specified {@link Configuration}.
+ *
+ * @see LogHandlerFactory
+ * @see FileHandler
+ * @see ServiceLoader
+ * @see Configuration
+ */
 @AutoService(LogHandlerFactory.class)
 public class FileHandlerFactory implements LogHandlerFactory {
 
