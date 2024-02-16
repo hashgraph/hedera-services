@@ -23,7 +23,11 @@ import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEnc
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
-import static picocli.CommandLine.*;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Model;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.ParameterException;
+import static picocli.CommandLine.Spec;
 
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
@@ -182,20 +186,17 @@ public class RcDiff implements Callable<Integer> {
         if (firstEncounteredDifference == CONSENSUS_TIME_MISMATCH) {
             sb.append("➡️  Expected ")
                     .append(Objects.requireNonNull(diff.firstEntry()).consensusTime())
-                    .append(" but was ")
+                    .append("\n\n")
+                    .append("➡️ but was ")
                     .append(Objects.requireNonNull(diff.secondEntry()).consensusTime());
         } else if (firstEncounteredDifference == TRANSACTION_RECORD_MISMATCH
                 || firstEncounteredDifference == TRANSACTION_MISMATCH) {
             sb.append("\nFor body,\n")
                     .append(Objects.requireNonNull(diff.firstEntry()).body());
-            sb.append("➡️  Expected Receipt ")
-                    .append(Objects.requireNonNull(diff.firstEntry())
-                            .transactionRecord()
-                            .getReceipt())
+            sb.append("➡️  Expected Record ")
+                    .append(Objects.requireNonNull(diff.firstEntry()).transactionRecord())
                     .append(" but was ")
-                    .append(Objects.requireNonNull(diff.secondEntry())
-                            .transactionRecord()
-                            .getReceipt());
+                    .append(Objects.requireNonNull(diff.secondEntry()).transactionRecord());
         }
         return sb.toString();
     }
