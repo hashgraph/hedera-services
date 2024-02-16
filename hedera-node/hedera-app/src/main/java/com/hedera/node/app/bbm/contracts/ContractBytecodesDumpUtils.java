@@ -19,37 +19,23 @@ package com.hedera.node.app.bbm.contracts;
 import static com.hedera.node.app.bbm.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.accounts.AccountDumpUtils;
 import com.hedera.node.app.bbm.accounts.HederaAccount;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryKey;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -60,8 +46,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class ContractBytecodesDumpUtils {
 
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
-
     private ContractBytecodesDumpUtils() {
         // Utility class
     }
@@ -71,69 +55,14 @@ public class ContractBytecodesDumpUtils {
             @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
             @NonNull final DumpCheckpoint checkpoint) {
         final var dumpableAccounts = AccountDumpUtils.gatherAccounts(accounts, HederaAccount::fromMod);
-        final var contracts = getModContracts(dumpableAccounts);
+        final var contracts = ContractUtils.getModContracts(dumpableAccounts);
         final var sb = generateReport(contracts);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln(sb.toString());
             System.out.printf(
-                    "=== mono contract bytecodes report is %d bytes at checkpoint %s%n",
+                    "=== contract bytecodes report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
-    }
-
-    private static Contracts getModContracts(HederaAccount[] dumpableAccounts) {
-        final var smartContracts = Arrays.stream(dumpableAccounts)
-                .filter(HederaAccount::smartContract)
-                .toList();
-        final var deletedSmartContract =
-                smartContracts.stream().filter(HederaAccount::deleted).toList();
-
-        final var extractedFiles = getContractStore();
-
-        final var contractContents = new ArrayList<Contract>(ESTIMATED_NUMBER_OF_CONTRACTS);
-        for (final var smartContract : smartContracts) {
-            final var contractId = getContractId(smartContract);
-            final var fileId = ContractID.newBuilder().contractNum(contractId).build();
-            if (extractedFiles.contains(fileId)) {
-                final var bytecode = extractedFiles.get(fileId);
-                if (null != bytecode) {
-                    final var c = new Contract(
-                            new TreeSet<>(),
-                            bytecode.code().toByteArray(),
-                            deletedSmartContract.contains(smartContract) ? Validity.DELETED : Validity.ACTIVE);
-                    c.ids().add(contractId);
-                    contractContents.add(c);
-                }
-            }
-        }
-
-        final var deletedContractIds = deletedSmartContract.stream()
-                .map(ContractBytecodesDumpUtils::getContractId)
-                .toList();
-        return new Contracts(contractContents, deletedContractIds, smartContracts.size());
-    }
-
-    private static int getContractId(HederaAccount contract) {
-        if (contract.accountId() == null || contract.accountId().accountNum() == null) {
-            return 0;
-        }
-        return contract.accountId().accountNum().intValue();
-    }
-
-    private static ReadableKVState<ContractID, Bytecode> getContractStore() {
-        final var contractSchema = new InitialModServiceContractSchema(CURRENT_VERSION);
-        final var contractSchemas = contractSchema.statesToCreate();
-        final StateDefinition<ContractID, Bytecode> contractStoreStateDefinition = contractSchemas.stream()
-                .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.BYTECODE_KEY))
-                .findFirst()
-                .orElseThrow();
-        final var contractStoreSchemaMetadata =
-                new StateMetadata<>(ContractService.NAME, contractSchema, contractStoreStateDefinition);
-        final var contractMerkleMap = new NonAtomicReference<
-                MerkleMap<InMemoryKey<ContractID>, InMemoryValue<ContractID, Bytecode>>>(new MerkleMap<>());
-        final var toStore = new NonAtomicReference<ReadableKVState<ContractID, Bytecode>>(
-                new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
-        return toStore.get();
     }
 
     public static void dumpMonoContractBytecodes(
@@ -142,12 +71,12 @@ public class ContractBytecodesDumpUtils {
             @NonNull final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> files,
             @NonNull final DumpCheckpoint checkpoint) {
         final var accountAdapter = AccountStorageAdapter.fromOnDisk(VirtualMapLike.from(accounts));
-        final var knownContracts = ContractUtils.getContracts(files, accountAdapter);
+        final var knownContracts = ContractUtils.getMonoContracts(files, accountAdapter);
         final var sb = generateReport(knownContracts);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln(sb.toString());
             System.out.printf(
-                    "=== mono contract bytecodes report is %d bytes at checkpoint %s%n",
+                    "=== contract bytecodes report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
     }
