@@ -61,7 +61,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
@@ -609,8 +609,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final LinkedEventIntake linkedEventIntake =
-                new LinkedEventIntake(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
+        final ConsensusEngine consensusEngine =
+                new ConsensusEngine(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
@@ -649,7 +649,7 @@ public class SwirldsPlatform implements Platform {
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
-                linkedEventIntake,
+                consensusEngine,
                 signedStateFileManager,
                 stateSigner,
                 pcesReplayer,

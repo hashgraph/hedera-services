@@ -32,9 +32,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * This class is responsible for adding events to {@link Consensus} and notifying event observers.
+ * This class is responsible for adding events to {@link Consensus}.
  */
-public class LinkedEventIntake {
+public class ConsensusEngine {
     /**
      * A functor that provides access to a {@code Consensus} instance.
      */
@@ -64,7 +64,7 @@ public class LinkedEventIntake {
      * @param intakeEventCounter tracks the number of events from each peer that have been received, but
      *                           aren't yet through the intake pipeline
      */
-    public LinkedEventIntake(
+    public ConsensusEngine(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Supplier<Consensus> consensusSupplier,
@@ -127,7 +127,7 @@ public class LinkedEventIntake {
         final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
                 previousGenerationNonAncient,
                 consensusSupplier.get().getMinGenerationNonAncient(),
-                LinkedEventIntake::isNotConsensus);
+                ConsensusEngine::isNotConsensus);
 
         for (final EventImpl staleEvent : staleEvents) {
             staleEvent.setStale(true);

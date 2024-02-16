@@ -15,15 +15,15 @@ pcli diagram \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
+    -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g,ʘ,Ξ' \
+    -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,g,ʘ,Ξ' \
     -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
     -g 'Gossip:gossip,shadowgraph' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
-    -c 'Linked Event Intake'
+    -c 'Consensus Engine'

@@ -20,14 +20,14 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Wiring for the {@link LinkedEventIntake}.
+ * Wiring for the {@link ConsensusEngine}.
  *
  * @param eventInput              the input wire for events to be added to the hashgraph
  * @param consensusRoundOutput    the output wire for consensus rounds
@@ -37,7 +37,7 @@ import java.util.List;
  * @param startSquelchingRunnable the runnable to start squelching
  * @param stopSquelchingRunnable  the runnable to stop squelching
  */
-public record LinkedEventIntakeWiring(
+public record ConsensusEngineWiring(
         @NonNull InputWire<EventImpl> eventInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<List<EventImpl>> consensusEventsOutput,
@@ -48,14 +48,14 @@ public record LinkedEventIntakeWiring(
     /**
      * Create a new instance of this wiring.
      *
-     * @param taskScheduler the task scheduler for this intake
+     * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
-    public static LinkedEventIntakeWiring create(@NonNull final TaskScheduler<List<ConsensusRound>> taskScheduler) {
+    public static ConsensusEngineWiring create(@NonNull final TaskScheduler<List<ConsensusRound>> taskScheduler) {
         final OutputWire<ConsensusRound> consensusRoundOutput =
-                taskScheduler.getOutputWire().buildSplitter("linkedEventIntakeSplitter", "round lists");
+                taskScheduler.getOutputWire().buildSplitter("consensusEngineSplitter", "round lists");
 
-        return new LinkedEventIntakeWiring(
+        return new ConsensusEngineWiring(
                 taskScheduler.buildInputWire("linked events"),
                 consensusRoundOutput,
                 consensusRoundOutput.buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents),
@@ -65,11 +65,11 @@ public record LinkedEventIntakeWiring(
     }
 
     /**
-     * Bind a linked event intake object to this scheduler.
+     * Bind a consensus engine object to this scheduler.
      *
-     * @param linkedEventIntake the linked event intake to bind
+     * @param consensusEngine the consensus engine to bind
      */
-    public void bind(@NonNull final LinkedEventIntake linkedEventIntake) {
-        ((BindableInputWire<EventImpl, List<ConsensusRound>>) eventInput).bind(linkedEventIntake::addEvent);
+    public void bind(@NonNull final ConsensusEngine consensusEngine) {
+        ((BindableInputWire<EventImpl, List<ConsensusRound>>) eventInput).bind(consensusEngine::addEvent);
     }
 }
