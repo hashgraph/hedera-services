@@ -14,4 +14,15 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+plugins {
+    id("application")
+    id("com.hedera.hashgraph.blocknode.conventions")
+}
+
+application { mainClass = "com.hedera.node.blocknode.core.BlockNode" }
+
+tasks.withType<JavaExec>().configureEach {
+    if (name.endsWith("main()")) {
+        notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
+    }
+}
