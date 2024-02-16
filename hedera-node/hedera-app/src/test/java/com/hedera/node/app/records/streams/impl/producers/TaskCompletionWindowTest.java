@@ -54,6 +54,48 @@ class TaskCompletionWindowTest {
     }
 
     @Test
+    void testSequentialTaskWithOldTask() {
+        TaskCompletionWindow window = new TaskCompletionWindow(100);
+        window.completeTask(1);
+        window.completeTask(2);
+        window.completeTask(3);
+
+        window.completeTask(5);
+        window.completeTask(6);
+        window.completeTask(7);
+
+        window.completeTask(11);
+        window.completeTask(12);
+
+        window.completeTask(4);
+        window.completeTask(1);
+
+        assertEquals(
+                7,
+                window.getLowestCompletedTaskId(),
+                "Lowest completed task ID should be 7 after sequential completion.");
+    }
+
+    @Test
+    void testSequentialTaskWithOldTaskGap() {
+        TaskCompletionWindow window = new TaskCompletionWindow(100);
+        window.completeTask(5);
+        window.completeTask(6);
+        window.completeTask(7);
+
+        window.completeTask(11);
+        window.completeTask(12);
+
+        window.completeTask(4);
+        window.completeTask(1);
+
+        assertEquals(
+                1,
+                window.getLowestCompletedTaskId(),
+                "Lowest completed task ID should be 1 after sequential completion.");
+    }
+
+    @Test
     void testNonSequentialTaskCompletion() {
         TaskCompletionWindow window = new TaskCompletionWindow(100);
         window.completeTask(3);

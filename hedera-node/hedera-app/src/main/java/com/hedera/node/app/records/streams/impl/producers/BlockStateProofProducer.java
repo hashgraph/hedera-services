@@ -125,14 +125,20 @@ public class BlockStateProofProducer {
      */
     @NonNull
     private Supplier<BlockStateProof> proofSupplier() {
+        final var c = StateSignatureTransactionCollector.getInstance();
+
         // Fast path if the proof has already been constructed.
         final var p = proof.get();
         if (p != null) {
+            // Mark the proof collected on the collector.
+            c.roundComplete(p);
             return () -> p;
         }
 
+        final var p2 = this.collectProof(c);
+        c.roundComplete(p2);
         // Return our function that supplies the proof.
-        return this::collectProof;
+        return () -> p2;
     }
 
     /**
@@ -140,8 +146,8 @@ public class BlockStateProofProducer {
      * @return the block state proof for the current round
      */
     @NonNull
-    private BlockStateProof collectProof() {
-        final var q = StateSignatureTransactionCollector.getInstance().getQueueForRound(roundNum);
+    private BlockStateProof collectProof(@NonNull final StateSignatureTransactionCollector c) {
+        final var q = c.getQueueForRound(roundNum);
 
         // Read from the queue to collect the signatures (or a proof if one is provided by the queue).
         while (!proofComplete()) {
@@ -281,7 +287,7 @@ public class BlockStateProofProducer {
         if (t.sig() == null || t.nodeId() == -1) return null;
 
         // If the signature is not null, we can verify and it and add it to our collected signatures.
-        if (!verifySignature(t.nodeId(), t.sig())) logger.warn("Received a block signature that was not valid: {}", e);
+        if (!verifySignature(t.nodeId(), t.sig())) logger.warn("Received a block signature that was not valid: {}", t);
 
         // Once have verified the signature, set it.
         signatures.add(t);
