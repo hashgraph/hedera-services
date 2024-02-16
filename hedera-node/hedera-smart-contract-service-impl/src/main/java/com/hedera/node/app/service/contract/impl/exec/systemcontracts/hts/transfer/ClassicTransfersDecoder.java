@@ -140,7 +140,8 @@ public class ClassicTransfersDecoder {
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 amount,
-                IsApproval.FALSE)));
+                IsApproval.FALSE,
+                TransferPrecedence.DEBIT)));
     }
 
     /**
@@ -201,7 +202,8 @@ public class ClassicTransfersDecoder {
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
-                IsApproval.TRUE)));
+                IsApproval.TRUE,
+                TransferPrecedence.CREDIT)));
     }
 
     /**
@@ -333,15 +335,33 @@ public class ClassicTransfersDecoder {
                 .build();
     }
 
+    /**
+     * In a case of transferring funds from one account to another, ideally the ordering of (debit, account1)
+     * and (credit, account2), or vice versa, would not produce different results. However, in order to match
+     * mono service behavior, the ordering must be specified in certain cases. Therefore, we define the
+     * following enum to indicate which of the debit or credit should be added first to the transfer list.
+     */
+    private enum TransferPrecedence {
+        // A value of DEBIT indicates that the debit account amount should be added first
+        DEBIT,
+        CREDIT
+    }
+
     private TokenTransferList sendingUnitsFromTo(
             @NonNull final TokenID tokenId,
             @NonNull final AccountID from,
             @NonNull final AccountID to,
             final long amount,
-            final IsApproval isApproval) {
+            final IsApproval isApproval,
+            @NonNull final TransferPrecedence precedence) {
         final var accountAmounts = new ArrayList<AccountAmount>();
-        accountAmounts.add(credit(to, amount));
-        accountAmounts.add(debit(from, amount, isApproval));
+        if (precedence == TransferPrecedence.DEBIT) {
+            accountAmounts.add(debit(from, amount, isApproval));
+            accountAmounts.add(credit(to, amount));
+        } else {
+            accountAmounts.add(credit(to, amount));
+            accountAmounts.add(debit(from, amount, isApproval));
+        }
         return TokenTransferList.newBuilder()
                 .token(tokenId)
                 .transfers(accountAmounts)
