@@ -78,6 +78,9 @@ public record HederaAccount(
 
     private static final AccountID MISSING_ACCOUNT_ID = AccountID.DEFAULT;
     public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
+    public static final HederaAccount DUMMY_ACCOUNT = new HederaAccount(
+            null, null, null, 0, 0, "", false, 0, 0, null, false, false, null, null, 0, 0, 0, 0, 0, false, 0, 0, 0,
+            null, 0, 0, null, null, null, 0, false, null, false, 0);
 
     public static HederaAccount fromMono(OnDiskAccount account) {
         return new HederaAccount(
@@ -224,15 +227,6 @@ public record HederaAccount(
 
     public AccountID getProxy() {
         return MISSING_ACCOUNT_ID;
-    }
-
-    /** For the purpose of getting the field names from the field accessors, via the existing method, I need a dummy
-     * account.
-     */
-    public static HederaAccount dummyAccount() {
-        return new HederaAccount(
-                null, null, null, 0, 0, "", false, 0, 0, null, false, false, null, null, 0, 0, 0, 0, 0, false, 0, 0, 0,
-                null, 0, 0, null, null, null, 0, false, null, false, 0);
     }
 
     public int[] getFirstUint256Key() {
