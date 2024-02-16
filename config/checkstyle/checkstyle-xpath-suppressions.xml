@@ -9,4 +9,11 @@
 
     <!-- Treat add* methods as if they are setters for the purposes of hidden field checks -->
     <suppress-xpath files="." checks="HiddenField" query="//METHOD_DEF[./IDENT[starts-with(@text,'add')]]//*" />
+
+    <!-- Treat nested Builder class methods as if they are setters for the purposes of hidden field checks -->
+    <suppress-xpath files="." checks="HiddenField" query="//CLASS_DEF//CLASS_DEF[./IDENT[ends-with(@text,'Builder')]]//METHOD_DEF//*" />
+
+    <!-- Allow abstract classes to have protected non-static fields and public/private/package visible static fields -->
+    <suppress-xpath files="." checks="VisibilityModifier" query="//CLASS_DEF[./MODIFIERS/ABSTRACT]//VARIABLE_DEF[./MODIFIERS/LITERAL_PROTECTED]//*" />
+    <suppress-xpath files="." checks="VisibilityModifier" query="//CLASS_DEF[./MODIFIERS/ABSTRACT]//VARIABLE_DEF[./MODIFIERS/LITERAL_STATIC]//*" />
 </suppressions>
