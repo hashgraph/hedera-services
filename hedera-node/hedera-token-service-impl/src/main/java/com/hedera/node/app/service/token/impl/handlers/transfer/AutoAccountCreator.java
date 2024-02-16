@@ -85,13 +85,15 @@ public class AutoAccountCreator {
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
-
-        var fee = autoCreationFeeFor(syntheticCreation);
-        if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee();
+        // match mono - If superuser is the payer don't charge fee
+        if (!handleContext.isSuperUser()) {
+            var fee = autoCreationFeeFor(syntheticCreation);
+            if (isAliasEVMAddress) {
+                fee += getLazyCreationFinalizationFee();
+            }
+            childRecord.transactionFee(fee);
         }
         childRecord.memo(memo);
-        childRecord.transactionFee(fee);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
