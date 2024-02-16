@@ -77,12 +77,12 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
-    /** the suffix for the debug address book */
+    /** the suffix for the debug address book. */
     private static final String DEBUG = "debug";
 
-    /** the suffix for the test address book */
+    /** the suffix for the test address book. */
     private AddressBookTestingToolConfig testingToolConfig;
-    /** the address book configuration */
+    /** the address book configuration. */
     private AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
     private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
