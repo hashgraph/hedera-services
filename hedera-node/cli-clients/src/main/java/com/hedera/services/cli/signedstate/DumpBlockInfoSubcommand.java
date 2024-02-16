@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.services.cli.signedstate.DumpTokensSubcommand.FieldBuilder;
+import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
