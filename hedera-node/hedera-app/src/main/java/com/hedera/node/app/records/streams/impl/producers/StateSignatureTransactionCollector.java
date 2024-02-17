@@ -84,11 +84,17 @@ public class StateSignatureTransactionCollector {
     public void putStateSignatureTransaction(long nodeId, @NonNull final StateSignatureTransaction sig) {
         final long roundNum = sig.getRound();
         final var q = getOrCreateQueue(roundNum);
-        var t = new QueuedStateSignatureTransaction(nodeId, sig, null);
+        final var t = new QueuedStateSignatureTransaction(nodeId, sig, null);
         // We can exploit LinkedTransferQueue to attempt a fast-path transfer. If and only if no consumers are blocked
         // polling for the element, fall back to putting it in the queue.
-        if (q.tryTransfer(t)) return;
+        if (q.tryTransfer(t)) {
+            System.out.println(
+                    "Round: " + sig.getRound() + " - StateSignatureTransaction transferred into: " + q.hashCode());
+            return;
+        }
+        System.out.println("Round: " + sig.getRound() + " - StateSignatureTransaction queuing into: " + q.hashCode());
         q.put(t);
+        System.out.println("Round: " + sig.getRound() + " - StateSignatureTransaction queued into: " + q.hashCode());
     }
 
     /**
@@ -128,8 +134,17 @@ public class StateSignatureTransactionCollector {
         signatureQueues.forEach((k, v) -> {
             if (k <= lastProvenRound) {
                 v.offer(new QueuedStateSignatureTransaction(-1, new StateSignatureTransaction(), proof));
+                System.out.println("Round: " + k + " - lastProvenRound: " + lastProvenRound + " - " + "Removing queue: "
+                        + v.hashCode());
+                final var q = signatureQueues.remove(k);
+                if (q != null) {
+                    System.out.println("Round: " + k + " - lastProvenRound: " + lastProvenRound + " - "
+                            + "Removed queue: " + q.hashCode());
+                } else {
+                    System.out.println(
+                            "Round: " + k + " - lastProvenRound: " + lastProvenRound + " - " + "No queue found");
+                }
             }
-            signatureQueues.remove(k);
         });
     }
 

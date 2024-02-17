@@ -280,7 +280,7 @@ public class HandleWorkflow {
         // ability to pull these from preHandle or handle.
         if (collectSignaturesEnabled()) {
             if (platformTxn instanceof StateSignatureTransaction txn) {
-                System.out.println("Collected signature from handle");
+                System.out.println("Collected signature from handle for round: " + txn.getRound());
                 // Collect the state signature transaction. We have a singleton instance of the
                 // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
                 // network and sorting them into queues to later.

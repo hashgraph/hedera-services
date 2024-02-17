@@ -147,37 +147,45 @@ public class BlockStateProofProducer {
 
         // Read from the queue to collect the signatures (or a proof if one is provided by the queue).
         while (!proofComplete()) {
-            log("Trying to collect proof for round: " + roundNum);
+            log("Trying to collect proof for round using queue: " + q.hashCode());
+
+            // Get the next signature from the queue.
+            log("Taking item from queue");
+
+            QueuedStateSignatureTransaction e;
             try {
-                // Get the next signature from the queue.
-                final var e = requireNonNull(q.take(), "Signature should not be null");
-                log("Processing signature from queue: " + e);
-
-                // If we are passed a proof, there is no reason to continue constructing one.
-                final var p = tryConsumeProof(e);
-                if (p != null) {
-                    log("Got a proof from a queued signature ignature");
-                    return p;
-                }
-
-                // Verify and add the signature to the list of signatures.
-                final var sig = tryConsumeSignature(e);
-                if (sig == null) {
-                    log("Signature was not valid. Skipping it.");
-                    continue; // No signature was added, skip the following steps.
-                }
-
-                // See if we have a proof given the signature we just added.
-                final var proof = constructProof();
-                log("proof: " + proof);
-                if (proof != null) return setProof(proof);
-
-            } catch (InterruptedException e) {
+                final var queueItem = q.take();
+                e = requireNonNull(queueItem, "Signature should not be null");
+                log("Took item from queue: " + e);
+            } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt(); // Restore the interrupt status.
-                logger.error("Interrupted while collecting proofs", e);
-                // We are interrupted, throw an exception.
-                throw new RuntimeException("Thread interrupted during proof collection", e);
+                log("Interrupted while taking from queue: " + ex);
+                throw new RuntimeException("Thread interrupted during take operation", ex);
+            } catch (Exception ex) {
+                log("Exception while taking from queue: " + ex);
+                throw new RuntimeException("Error during take operation", ex);
             }
+
+            log("Processing signature from queue: " + e);
+
+            // If we are passed a proof, there is no reason to continue constructing one.
+            final var p = tryConsumeProof(e);
+            if (p != null) {
+                log("Got a proof from a queued signature ignature");
+                return p;
+            }
+
+            // Verify and add the signature to the list of signatures.
+            final var sig = tryConsumeSignature(e);
+            if (sig == null) {
+                log("Signature was not valid. Skipping it.");
+                continue; // No signature was added, skip the following steps.
+            }
+
+            // See if we have a proof given the signature we just added.
+            final var proof = constructProof();
+            log("proof: " + proof);
+            if (proof != null) return setProof(proof);
         }
 
         // Return the completed proof.
