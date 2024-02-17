@@ -44,7 +44,7 @@ public class PlatformCoordinator {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final ConsensusEngineWiring consensusEngineWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
@@ -60,7 +60,7 @@ public class PlatformCoordinator {
      * @param orphanBufferWiring                     the orphan buffer wiring
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
-     * @param linkedEventIntakeWiring                the linked event intake wiring
+     * @param consensusEngineWiring                  the consensus engine wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
@@ -74,7 +74,7 @@ public class PlatformCoordinator {
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
-            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
+            @NonNull final ConsensusEngineWiring consensusEngineWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
@@ -87,7 +87,7 @@ public class PlatformCoordinator {
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
-        this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
+        this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
@@ -110,7 +110,7 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        consensusEngineWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
     }
 
@@ -121,8 +121,8 @@ public class PlatformCoordinator {
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
         // squelch is activated.
-        linkedEventIntakeWiring.startSquelchingRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        consensusEngineWiring.startSquelchingRunnable().run();
+        consensusEngineWiring.flushRunnable().run();
         eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
 
@@ -151,7 +151,7 @@ public class PlatformCoordinator {
 
         // Phase 4: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
-        linkedEventIntakeWiring.stopSquelchingRunnable().run();
+        consensusEngineWiring.stopSquelchingRunnable().run();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
     }

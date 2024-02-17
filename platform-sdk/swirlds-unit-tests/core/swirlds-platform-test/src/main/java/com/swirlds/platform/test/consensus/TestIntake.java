@@ -28,7 +28,7 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -47,8 +47,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.wiring.ConsensusEngineWiring;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
-import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
@@ -73,7 +73,7 @@ public class TestIntake implements LoadableFromSignedState {
     private final EventHasherWiring hasherWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final ConsensusEngineWiring consensusEngineWiring;
 
     private final BackpressureObjectCounter hashingObjectCounter;
 
@@ -124,21 +124,21 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkerWiring.bind(linker);
 
-        final LinkedEventIntake linkedEventIntake =
-                new LinkedEventIntake(platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter);
+        final ConsensusEngine consensusEngine =
+                new ConsensusEngine(platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter);
 
-        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-        linkedEventIntakeWiring.bind(linkedEventIntake);
+        consensusEngineWiring = ConsensusEngineWiring.create(schedulers.consensusEngineScheduler());
+        consensusEngineWiring.bind(consensusEngine);
 
         final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
-        linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        linkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
 
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo("consensusOutputTestTool", output::consensusRound);
+        consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusEngineWiring.consensusRoundOutput().solderTo("consensusOutputTestTool", output::consensusRound);
 
         eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
@@ -172,7 +172,7 @@ public class TestIntake implements LoadableFromSignedState {
      * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
      */
     public void addLinkedEvent(@NonNull final EventImpl event) {
-        linkedEventIntakeWiring.eventInput().put(event);
+        consensusEngineWiring.eventInput().put(event);
     }
 
     /**
@@ -235,7 +235,7 @@ public class TestIntake implements LoadableFromSignedState {
         hashingObjectCounter.waitUntilEmpty();
         orphanBufferWiring.flushRunnable().run();
         linkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        consensusEngineWiring.flushRunnable().run();
     }
 
     public @NonNull ConsensusOutput getOutput() {

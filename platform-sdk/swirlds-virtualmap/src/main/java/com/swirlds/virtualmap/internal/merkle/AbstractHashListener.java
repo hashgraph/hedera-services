@@ -178,7 +178,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                         lastLeafPath,
                         hashesToFlush.stream(),
                         leavesToFlush.stream(),
-                        findLeavesToRemove());
+                        findLeavesToRemove(),
+                        true);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
