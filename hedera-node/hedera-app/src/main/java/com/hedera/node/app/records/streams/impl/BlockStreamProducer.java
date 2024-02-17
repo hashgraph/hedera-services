@@ -51,9 +51,6 @@ public interface BlockStreamProducer extends AutoCloseable {
      * is added. Hence, any block items not yet committed via write methods called before
      * {@link BlockStreamProducer#endBlock} will not be included.
      *
-     * <p>TODO(nickpoorman): The comment above may not be correct for BlockStreamProducerConcurrent. We are treating
-     *     getRunningHash the same as getNMinus3RunningHash. We should verify this is ok to do.
-     *
      * @return The current running hash upto and including the last record stream item sent in writeRecordStreamItems().
      */
     @NonNull

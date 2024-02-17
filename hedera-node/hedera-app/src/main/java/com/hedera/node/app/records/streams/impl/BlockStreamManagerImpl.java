@@ -394,10 +394,13 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             // In order to close the block, we need to wait until the asynchronous tasks have completed. Once they
             // are finished, our endBlock task will run and provide us with a BlockEnder that can be used to complete
             // the block. Then asynchronously complete the block.
+            // TODO(nickpoorman): We should probably pass a Callable that returns the specific information we
+            //  want from state instead of passing the entire state object to the producer.
             final BlockEnder.Builder blockEnderBuilder = BlockEnder.newBuilder().setState(state);
             blockStreamProducer
-                    // TODO(nickpoorman): We should probably pass a Callable that returns the specific information we
-                    //  want from state instead of passing the entire state object to the producer.
+                    // Chain the calling of build() on the BlockEnder Builder to execute once this block has finished
+                    // being sequentially-asynchronously produced. We will get the state in the BlockEnder constructor
+                    // at that point in time and then pass the blockEnder to the future to be used below.
                     .endBlock(blockEnderBuilder)
                     .thenAcceptAsync(blockEnder -> blockEnder.endBlock(blockPersisted, stateProofProducer), executor);
         }

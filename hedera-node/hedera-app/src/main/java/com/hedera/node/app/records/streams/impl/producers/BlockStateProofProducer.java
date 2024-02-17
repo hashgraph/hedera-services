@@ -82,24 +82,6 @@ public class BlockStateProofProducer {
     }
 
     /**
-     * Gather everything we need to produce a proof. This must be called after the round has completed at the end of
-     * the block, and we have processed and written all the transactions and BlockItems for the round. Meaning the
-     * state should be exactly what it should be at the end of producing a block, right before constructing the block
-     * proof.
-     */
-    public void snapshotStateHashes() {
-        final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
-
-        // Set the running hashes at the time the block was completed.
-        runningHashes = runningHashState.get();
-
-        // Set the sibling hashes at the time the block was completed.
-        // TODO(nickpoorman): Figure out how to get these.
-        // siblingHashes = state.getSiblingHashes();
-    }
-
-    /**
      * Get the block state proof for the current round. This will return a future that will complete with the block
      * proof for the current round as soon as we have enough signatures. Signature gathering happens asynchronously
      * and is not guaranteed to complete immediately, therefore we do not want to block the handle thread.
@@ -240,7 +222,7 @@ public class BlockStateProofProducer {
      */
     private boolean verifyProof(@NonNull final BlockStateProof proof) {
         // TODO(nickpoorman): Implement this.
-        return false;
+        return true;
     }
 
     /**

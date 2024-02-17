@@ -120,15 +120,6 @@ public class StateSignatureTransactionCollector {
         // Remove the queue for this round.
         signatureQueues.remove(roundNum);
 
-        // TODO(nickpoorman): We don't want to provide a proof for rounds that are less than this round. We
-        //  should instead rely on platform to guarantee that we will get a proof for round eventually.
-        //        signatureQueues.forEach((k, v) -> {
-        //            if (k <= roundNum) {
-        //                v.offer(new QueuedStateSignatureTransaction(-1, new StateSignatureTransaction(), proof));
-        //            }
-        //            signatureQueues.remove(k);
-        //        });
-
         // If for some reason we can't finish a round after a certain point, we should clean up these queues. This
         // can happen if we don't get enough signatures to prove a round or if signatures come in later after we have
         // already proven a round. lastProvenRound helps in that we can clean up these rounds that fall outside our

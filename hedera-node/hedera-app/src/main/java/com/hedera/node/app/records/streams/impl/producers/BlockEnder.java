@@ -21,10 +21,15 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.v7.BlockStateProof;
+import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
@@ -40,13 +45,14 @@ public class BlockEnder {
     private final BlockStreamWriter writer;
     private final HederaState state;
     private final RunningHashes runningHashes;
+    private final SiblingHashes siblingHashes;
     private final long blockNumber;
 
     /**
-     * Gathers everything we need to produce a proof. This must be called after the round has completed at the end of
+     * Gather everything we need to produce a proof. This must be called after the round has completed at the end of
      * the block, and we have processed and written all the transactions and BlockItems for the round. Meaning the
      * state should be exactly what it should be at the end of producing a block, right before constructing the block
-     * proof.
+     * proof and before processing of the next block starts.
      */
     private BlockEnder(
             @NonNull final HashObject lastRunningHash,
@@ -67,7 +73,17 @@ public class BlockEnder {
         this.runningHashes = runningHashState.get();
 
         // We also need the sibling hashes at the time the block was completed.
+        // TODO(nickpoorman): Get the actual sibling hashes.
         // this.siblingHashes = state.getSiblingHashes();
+        // For now, we will just generate some random hashes.
+        List<Bytes> hashes = new ArrayList<>(10);
+        SecureRandom random = new SecureRandom();
+        for (int i = 0; i < 10; i++) {
+            byte[] bytes = new byte[48];
+            random.nextBytes(bytes);
+            hashes.add(Bytes.wrap(bytes));
+        }
+        this.siblingHashes = new SiblingHashes(hashes);
     }
 
     public void endBlock(

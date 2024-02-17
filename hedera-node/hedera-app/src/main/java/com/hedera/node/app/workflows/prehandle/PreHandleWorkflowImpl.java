@@ -50,6 +50,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -148,8 +149,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (tx.isSystem()) {
                 if (collectSignaturesEnabled()) {
                     if (tx instanceof StateSignatureTransaction txn) {
-                        // TODO(nickpoorman): Revist this once we get an answer
-                        //  https://swirldslabs.slack.com/archives/C040H9JPQT1/p1708029325884249
                         StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(nodeId, txn);
                     }
                 }
@@ -395,8 +394,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private boolean collectSignaturesEnabled() {
-        // TODO(nickpoorman): Get this from the configuration.
-        // return configProvider.getConfiguration().getCollectSignatures();
-        return false;
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        return blockStreamConfig.collectSignaturesInPreHandle();
     }
 }

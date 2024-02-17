@@ -80,6 +80,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -135,9 +136,6 @@ public class HandleWorkflow {
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final CacheWarmer cacheWarmer;
-    private final boolean useBlockStreams;
-
-    private final boolean collectSignaturesEnabled;
 
     @Inject
     public HandleWorkflow(
@@ -190,10 +188,6 @@ public class HandleWorkflow {
         ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
-
-        // TODO(nickpoorman): Grab these from a config property.
-        useBlockStreams = true;
-        collectSignaturesEnabled = true;
     }
 
     /**
@@ -901,11 +895,15 @@ public class HandleWorkflow {
     }
 
     private boolean usingBlockStreams() {
-        return useBlockStreams;
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        // If gathering signatures is not enabled for preHandle, then we must do it in handle.
+        return !blockStreamConfig.enabled() && blockStreamConfig.blockVersion() >= 7;
     }
 
     private boolean collectSignaturesEnabled() {
-        return collectSignaturesEnabled;
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        // If gathering signatures is not enabled for preHandle, then we must do it in handle.
+        return !blockStreamConfig.collectSignaturesInPreHandle();
     }
 
     private boolean isConsTimeFirstTransactionInBlock(Instant consensusTimestamp) {
