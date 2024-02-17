@@ -136,7 +136,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final long nodeId,
             @NonNull final AccountID creator,
             @NonNull final Stream<Transaction> transactions) {
-
         requireNonNull(readableStoreFactory);
         requireNonNull(creator);
         requireNonNull(transactions);
@@ -149,6 +148,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (tx.isSystem()) {
                 if (collectSignaturesEnabled()) {
                     if (tx instanceof StateSignatureTransaction txn) {
+                        System.out.println("Collected signature from preHandle");
                         StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(nodeId, txn);
                     }
                 }

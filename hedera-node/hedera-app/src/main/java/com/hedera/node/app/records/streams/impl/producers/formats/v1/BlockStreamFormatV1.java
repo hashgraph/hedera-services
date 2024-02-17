@@ -26,6 +26,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -33,6 +34,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -76,6 +78,11 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
         // These will be null on the first round for genesis.
         final var selfParent = eventImpl.getSelfParent();
+        // TODO(nickpoorman): There is something wrong when we try to collect signatures from preHandle. Need to
+        //  figure out what is happening.
+        //        if (selfParent != null && selfParent.getHash() == null) {
+        //            throw new RuntimeException("SelfParent hash is null");
+        //        }
         final var otherParent = eventImpl.getOtherParent();
 
         var blockItem = BlockItem.newBuilder()
@@ -148,7 +155,13 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                                 .equals(com.swirlds.common.crypto.SignatureType.RSA.signingAlgorithm())
                         : "SignatureType must be SHA384withRSA for BlockStreamFormatV1";
 
-                var epochHash = requireNonNull(stateSignatureTransaction.getEpochHash(), "EpochHash is null");
+                //                final var epochHash = requireNonNull(stateSignatureTransaction.getEpochHash(),
+                // "EpochHash is null");
+                // TODO(nickpoorman): Not sure why this is null, maybe platform doesn't populate it yet. Fake it for
+                //  now.
+                final byte[] bytes = new byte[48];
+                new SecureRandom().nextBytes(bytes);
+                final var epochHash = new Hash(bytes);
                 systemTxnBuilder.stateSignature(StateSignatureSystemTransaction.newBuilder()
                         .stateSignature(Bytes.wrap(
                                 stateSignatureTransaction.getStateSignature().getSignatureBytes()))

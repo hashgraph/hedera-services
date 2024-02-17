@@ -198,6 +198,10 @@ public class HandleWorkflow {
      */
     public void handleRound(
             @NonNull final HederaState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
+        // We should never join this future to the handle thread, or it will prevent us from making progress.
+        // Signatures are created at the end of a round. Therefore, handle must complete in order to create the
+        // signatures.
+        CompletableFuture<BlockStateProof> persistedBlock = new CompletableFuture<>();
 
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
@@ -215,7 +219,6 @@ public class HandleWorkflow {
         //
         // We also provide a CompletableFuture to the BlockRecordManager that will be completed when the block is
         // persisted. Should platform need this signal in the future, we will have it available.
-        CompletableFuture<BlockStateProof> persistedBlock = new CompletableFuture<>();
         blockRecordManager.processRound(state, round, persistedBlock, () -> {
 
             // handle each event in the round
@@ -277,6 +280,7 @@ public class HandleWorkflow {
         // ability to pull these from preHandle or handle.
         if (collectSignaturesEnabled()) {
             if (platformTxn instanceof StateSignatureTransaction txn) {
+                System.out.println("Collected signature from handle");
                 // Collect the state signature transaction. We have a singleton instance of the
                 // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
                 // network and sorting them into queues to later.
@@ -316,7 +320,6 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        System.out.print("called handleUserTransaction");
 
         // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
         // user transaction
@@ -897,7 +900,7 @@ public class HandleWorkflow {
     private boolean usingBlockStreams() {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         // If gathering signatures is not enabled for preHandle, then we must do it in handle.
-        return !blockStreamConfig.enabled() && blockStreamConfig.blockVersion() >= 7;
+        return blockStreamConfig.enabled() && blockStreamConfig.blockVersion() >= 7;
     }
 
     private boolean collectSignaturesEnabled() {
