@@ -22,6 +22,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
+import com.hedera.hapi.streams.v7.BlockHashAlgorithm;
+import com.hedera.hapi.streams.v7.BlockHeader;
+import com.hedera.hapi.streams.v7.BlockSignatureAlgorithm;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
@@ -118,6 +121,9 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
                 lastRunningHash);
 
         openWriter(this.currentBlockNumber, lastRunningHash);
+
+        // Write the block header to the block stream as the first item in the block.
+        writeBlockHeader(lastRunningHash);
     }
 
     /** {@inheritDoc} */
@@ -192,6 +198,30 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     /** {@inheritDoc} */
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         final var serializedBlockItem = format.serializeStateChanges(stateChanges);
+        updateRunningHashes(serializedBlockItem);
+        writeSerializedBlockItem(serializedBlockItem);
+    }
+
+    private void writeBlockHeader(@NonNull final HashObject lastRunningHash) {
+        final SemanticVersion blockVersion = new SemanticVersion(7, 0, 0, null, null);
+        final SemanticVersion hapiProtoVersion = new SemanticVersion(7, 0, 0, null, null);
+        final SemanticVersion servicesVersion = new SemanticVersion(7, 0, 0, null, null);
+        final SemanticVersion platformVersion = new SemanticVersion(7, 0, 0, null, null);
+        final long number = this.currentBlockNumber;
+        final Bytes startRunningHash = lastRunningHash.hash();
+        final BlockHashAlgorithm hashAlgorithm = BlockHashAlgorithm.BLOCKHASHALGORITHM_SHA_384;
+        final BlockSignatureAlgorithm signatureAlgorithm =
+                BlockSignatureAlgorithm.BLOCKSIGNATUREALGORITHM_SHA_384_WITH_RSA;
+        final var blockHeader = new BlockHeader(
+                blockVersion,
+                hapiProtoVersion,
+                servicesVersion,
+                platformVersion,
+                number,
+                startRunningHash,
+                hashAlgorithm,
+                signatureAlgorithm);
+        final var serializedBlockItem = format.serializeBlockHeader(blockHeader);
         updateRunningHashes(serializedBlockItem);
         writeSerializedBlockItem(serializedBlockItem);
     }

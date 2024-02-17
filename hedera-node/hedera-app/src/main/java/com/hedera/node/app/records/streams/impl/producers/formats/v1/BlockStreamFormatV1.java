@@ -66,6 +66,10 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         return BlockItem.PROTOBUF.toBytes(blockItem);
     }
 
+    public Bytes serializeBlockHeader(@NonNull final BlockHeader blockHeader) {
+        return serializeBlockItem(BlockItem.newBuilder().header(blockHeader).build());
+    }
+
     /** {@inheritDoc} */
     @Override
     @NonNull
@@ -85,7 +89,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         //        }
         final var otherParent = eventImpl.getOtherParent();
 
-        var blockItem = BlockItem.newBuilder()
+        final var blockItem = BlockItem.newBuilder()
                 .startEvent(EventMetadata.newBuilder()
                         //  This is the version of platform that created this event.
                         .softwareVersion(version)

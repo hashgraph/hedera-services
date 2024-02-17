@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
+import com.hedera.hapi.streams.v7.BlockHeader;
 import com.hedera.hapi.streams.v7.BlockItem;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.StateChanges;
@@ -35,6 +36,14 @@ import java.util.stream.Stream;
  * be reused across the different implementations of {@link BlockStreamWriter}.
  */
 public interface BlockStreamFormat {
+    /**
+     * Serialize the BlockHeader into an intermediary format that can be used for computing running hashes or writing
+     * to the file.
+     * @param blockHeader The {@link BlockHeader} to serialize.
+     * @return the serialized bytes of the block header.
+     */
+    Bytes serializeBlockHeader(@NonNull final BlockHeader blockHeader);
+
     /**
      * Serialize a ConsensusEvent into an intermediary format that can be used for computing running hashes or
      * writing to the file.

@@ -18,6 +18,10 @@ package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
 import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.streams.v7.BlockHashAlgorithm;
+import com.hedera.hapi.streams.v7.BlockHeader;
+import com.hedera.hapi.streams.v7.BlockSignatureAlgorithm;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -35,6 +39,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -140,8 +146,6 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
         this.outputStream = out;
 
         state = State.OPEN;
-
-        // TODO(nickpoorman): We need to make sure the header is written first. This should be done in format.
     }
 
     /**
