@@ -70,11 +70,11 @@ public class BlockEnder {
         final var states = state.getReadableStates(BlockRecordService.NAME);
         final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
         // Set the running hashes at the time the block was completed.
-        this.runningHashes = runningHashState.get();
+        this.runningHashes = requireNonNull(runningHashState.get(), "Running hashes must be present");
 
         // We also need the sibling hashes at the time the block was completed.
         // TODO(nickpoorman): Get the actual sibling hashes.
-        // this.siblingHashes = state.getSiblingHashes();
+        //         this.siblingHashes = requireNonNull(state.getSiblingHashes(), "Sibling hashes must be present");
         // For now, we will just generate some random hashes.
         List<Bytes> hashes = new ArrayList<>(10);
         SecureRandom random = new SecureRandom();
@@ -90,9 +90,15 @@ public class BlockEnder {
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
             @NonNull final BlockStateProofProducer stateProofProducer) {
         try {
+            // Supply the running and sibling hashes to the stateProofProducer.
+            stateProofProducer.setRunningHashes(runningHashes);
+            stateProofProducer.setSiblingHashes(siblingHashes);
+
             // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
             // until it is able to get the state proof.
+            System.out.println("Waiting for block state proof");
             BlockStateProof proof = stateProofProducer.getBlockStateProof().get();
+            System.out.println("Got block state proof");
 
             writeStateProof(proof);
             closeWriter(lastRunningHash, blockNumber);
