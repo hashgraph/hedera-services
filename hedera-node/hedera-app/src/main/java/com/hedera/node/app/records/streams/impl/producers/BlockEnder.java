@@ -96,9 +96,9 @@ public class BlockEnder {
 
             // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
             // until it is able to get the state proof.
-            System.out.println("Waiting for block state proof");
+            System.out.println("Block: " + this.blockNumber + " - Waiting for block state proof");
             BlockStateProof proof = stateProofProducer.getBlockStateProof().get();
-            System.out.println("Got block state proof");
+            System.out.println("Block: " + this.blockNumber + " - Got block state proof");
 
             writeStateProof(proof);
             closeWriter(lastRunningHash, blockNumber);

@@ -95,6 +95,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -220,9 +221,12 @@ public class HandleWorkflow {
         // We also provide a CompletableFuture to the BlockRecordManager that will be completed when the block is
         // persisted. Should platform need this signal in the future, we will have it available.
         blockRecordManager.processRound(state, round, persistedBlock, () -> {
+            System.out.println("Round: " + round.getRoundNum() + " - Number of events: " + round.getEventCount());
 
+            int i = 0;
             // handle each event in the round
             for (final ConsensusEvent event : round) {
+                i++;
                 final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
                 if (creator == null) {
                     // We were given an event for a node that *does not exist in the address book*. This will be logged
@@ -238,7 +242,12 @@ public class HandleWorkflow {
                 // log start of event to transaction state log
                 logStartEvent(event, creator);
 
+                final var eventNum = i;
                 blockRecordManager.processConsensusEvent(state, event, () -> {
+                    System.out.println("Round: " + round.getRoundNum() + " - Event: " + eventNum
+                            + " - Number of transactions in the event: "
+                            + countItems(event.unfilteredConsensusTransactionIterator()));
+
                     // handle each transaction of the event
                     for (final var it = event.unfilteredConsensusTransactionIterator(); it.hasNext(); ) {
                         final var platformTxn = it.next();
@@ -269,6 +278,15 @@ public class HandleWorkflow {
                 blockRecordManager.endRound(state); // Only implemented for v6
             }
         });
+    }
+
+    private int countItems(Iterator<?> iterator) {
+        int count = 0;
+        while (iterator.hasNext()) {
+            iterator.next(); // Move to the next element (important to call this to advance the iterator)
+            count++; // Increment the count for each element
+        }
+        return count;
     }
 
     private void handleSystemTransaction(

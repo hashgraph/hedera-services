@@ -196,7 +196,11 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     private void startConsensusEvent(@NonNull final ConsensusEvent platformEvent) {
+        System.out.println(
+                "Block: " + (lastBlockNo() + 1) + " - Writing event to block stream: " + platformEvent.hashCode());
         blockStreamProducer.writeConsensusEvent(platformEvent);
+        System.out.println(
+                "Block: " + (lastBlockNo() + 1) + " - Wrote event to block stream: " + platformEvent.hashCode());
     }
 
     private void endConsensusEvent() {}
@@ -372,6 +376,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final Runnable runnable) {
 
         try {
+            System.out.println("Round: " + round.getRoundNum() + " - Round started");
             BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
                 this.startRound();
                 try {
@@ -381,7 +386,9 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
                     this.endRound(state);
                 }
             });
+            System.out.println("Round: " + round.getRoundNum() + " - Round completed successfully");
         } finally {
+            System.out.println("Round: " + round.getRoundNum() + " - Round completed (finally)");
             // Create a new StateProofProducer. The StateProofProducer is responsible for collecting system transaction
             // asynchronously outside the single threaded handle workflow. It is also able to asynchronously produce a
             // state proof, once enough signatures have been collected for the round. The production of the state proof
@@ -473,6 +480,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      */
     private void beginBlock() {
         blockOpen = true;
+        System.out.println("Block: " + provisionalCurrentBlockNumber() + " - Beginning block");
         blockStreamProducer.beginBlock();
     }
 

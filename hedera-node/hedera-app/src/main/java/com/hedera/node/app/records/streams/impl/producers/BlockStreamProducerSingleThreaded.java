@@ -170,8 +170,11 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
+        System.out.println("Block: " + this.currentBlockNumber + " - Serializing event: " + consensusEvent.hashCode());
         final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
         updateRunningHashes(serializedBlockItem);
+        System.out.println("Block: " + this.currentBlockNumber + " - Serialized event: " + consensusEvent.hashCode()
+                + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -179,6 +182,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         final var serializedBlockItem = format.serializeSystemTransaction(systemTxn);
         updateRunningHashes(serializedBlockItem);
+        System.out.println("Block: " + this.currentBlockNumber + " - Serialized system transaction: "
+                + systemTxn.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -190,6 +195,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             final var serializedBlockItems = format.serializeUserTransaction(item);
             serializedBlockItems.forEach(serializedBlockItem -> {
                 updateRunningHashesWithMessageDigest(messageDigest, serializedBlockItem);
+                System.out.println("Block: " + this.currentBlockNumber + " - Serialized user transaction: "
+                        + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
                 writeSerializedBlockItem(serializedBlockItem);
             });
         });
@@ -199,6 +206,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         final var serializedBlockItem = format.serializeStateChanges(stateChanges);
         updateRunningHashes(serializedBlockItem);
+        System.out.println("Block: " + this.currentBlockNumber + " - Serialized state changes: "
+                + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -223,6 +232,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
                 signatureAlgorithm);
         final var serializedBlockItem = format.serializeBlockHeader(blockHeader);
         updateRunningHashes(serializedBlockItem);
+        System.out.println("Block: " + this.currentBlockNumber + " - Serialized block header: "
+                + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
