@@ -33,10 +33,10 @@ public interface CheckedConsumer<T, E extends Exception> {
     /**
      * Accept the value.
      *
-     * @param t the value to accept
+     * @param value the value to accept
      * @throws E the exception type thrown by the consumer
      */
-    void accept(@Nullable T t) throws E;
+    void accept(@Nullable T value) throws E;
 
     /**
      * Convert a {@link Consumer} to a {@link CheckedConsumer}.

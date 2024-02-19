@@ -23,8 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class LifecycleException extends IllegalStateException {
 
-    public LifecycleException(@NonNull final String s) {
-        super(s);
+    public LifecycleException(@NonNull final String message) {
+        super(message);
     }
 
     public LifecycleException(@NonNull final String message, @NonNull final Throwable cause) {

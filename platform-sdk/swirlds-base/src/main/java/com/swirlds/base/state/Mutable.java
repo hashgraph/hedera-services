@@ -40,8 +40,7 @@ public interface Mutable {
     }
 
     /**
-     * @throws MutabilityException
-     * 		if {@link #isImmutable()}} returns {@code true}
+     * @throws MutabilityException if {@link #isImmutable()}} returns {@code true}
      */
     default void throwIfImmutable() {
         throwIfImmutable("This operation is not permitted on an immutable object.");
@@ -58,8 +57,7 @@ public interface Mutable {
     }
 
     /**
-     * @throws MutabilityException
-     * 		if {@link #isMutable()} returns {@code true}
+     * @throws MutabilityException if {@link #isMutable()} returns {@code true}
      */
     default void throwIfMutable() {
         throwIfMutable("This operation is not permitted on a mutable object.");
