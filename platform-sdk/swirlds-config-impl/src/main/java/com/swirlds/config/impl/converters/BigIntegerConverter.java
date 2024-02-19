@@ -21,7 +21,7 @@ import java.math.BigInteger;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link BigInteger} values in the
- * configuration
+ * configuration.
  */
 public final class BigIntegerConverter implements ConfigConverter<BigInteger> {
 
