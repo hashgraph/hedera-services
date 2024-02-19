@@ -28,16 +28,12 @@ import java.util.Map;
 import java.util.function.BinaryOperator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A class to handle the metrics for the handle-workflow
  */
 @Singleton
 public class HandleWorkflowMetrics {
-
-    private static final Logger logger = LogManager.getLogger(HandleWorkflowMetrics.class);
 
     private static final BinaryOperator<Integer> AVERAGE = (sum, count) -> count == 0 ? 0 : sum / count;
 
@@ -68,8 +64,6 @@ public class HandleWorkflowMetrics {
                     .withUnit("ns");
             final var avgMetric = metrics.getOrCreate(avgConfig);
             transactionMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
-
-            logger.info("Registered metrics for {}", functionality);
         }
     }
 
