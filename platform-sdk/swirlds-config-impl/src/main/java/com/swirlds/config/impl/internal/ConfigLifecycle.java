@@ -18,7 +18,7 @@ package com.swirlds.config.impl.internal;
 
 /**
  * Basic lifecycle definition for the config. This will be replaced with a general interface once we have a platform
- * context API
+ * context API.
  */
 public interface ConfigLifecycle {
 
@@ -41,7 +41,7 @@ public interface ConfigLifecycle {
     boolean isInitialized();
 
     /**
-     * Throws a {@link IllegalStateException} if the component is initialized
+     * Throws a {@link IllegalStateException} if the component is initialized.
      */
     default void throwIfInitialized() {
         if (isInitialized()) {
@@ -50,7 +50,7 @@ public interface ConfigLifecycle {
     }
 
     /**
-     * Throws a {@link IllegalStateException} if the component is not initialized
+     * Throws a {@link IllegalStateException} if the component is not initialized.
      */
     default void throwIfNotInitialized() {
         if (!isInitialized()) {

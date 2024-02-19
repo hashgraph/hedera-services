@@ -38,37 +38,37 @@ import java.util.concurrent.locks.ReentrantLock;
 final class ConfigurationBuilderImpl implements ConfigurationBuilder {
 
     /**
-     * Internal lock to support a thread safe initialization
+     * Internal lock to support a thread safe initialization.
      */
     private final ReentrantLock initializationLock = new ReentrantLock();
 
     /**
-     * The configuration instance
+     * The configuration instance.
      */
     private final ConfigurationImpl configuration;
 
     /**
-     * The service that handles all {@link ConfigSource} instances
+     * The service that handles all {@link ConfigSource} instances.
      */
     private final ConfigSourceService configSourceService;
 
     /**
-     * The service that handles all {@link ConfigConverter} instances
+     * The service that handles all {@link ConfigConverter} instances.
      */
     private final ConverterService converterService;
 
     /**
-     * The service that handles all {@link ConfigValidator} instances
+     * The service that handles all {@link ConfigValidator} instances.
      */
     private final ConfigValidationService validationService;
 
     /**
-     * The service that holds all properties of the configuration
+     * The service that holds all properties of the configuration.
      */
     private final ConfigPropertiesService propertiesService;
 
     /**
-     * initialization flag
+     * initialization flag.
      */
     private final AtomicBoolean initialized = new AtomicBoolean();
 
@@ -78,9 +78,9 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     private final Map<String, String> properties = new HashMap<>();
 
     /**
-     * Default constructor that creates all internal services
+     * Default constructor that creates all internal services.
      */
-    public ConfigurationBuilderImpl() {
+    ConfigurationBuilderImpl() {
         configSourceService = new ConfigSourceService();
         converterService = new ConverterService();
         propertiesService = new ConfigPropertiesService(configSourceService);
@@ -139,10 +139,18 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
      */
     @NonNull
     @Override
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     @Deprecated(forRemoval = true)
     public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
         addConverter(getConverterType(converter.getClass()), converter);
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public <T> ConfigurationBuilder withConverter(
+            @NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
+        addConverter(converterType, converter);
         return this;
     }
 
@@ -155,14 +163,6 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     @Deprecated(forRemoval = true)
     public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
         Arrays.stream(converters).forEach(this::withConverter);
-        return this;
-    }
-
-    @NonNull
-    @Override
-    public <T> ConfigurationBuilder withConverter(
-            @NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
-        addConverter(converterType, converter);
         return this;
     }
 
@@ -234,7 +234,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     @NonNull
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     private static <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
         Objects.requireNonNull(converterClass, "converterClass must not be null");
         return Arrays.stream(converterClass.getGenericInterfaces())

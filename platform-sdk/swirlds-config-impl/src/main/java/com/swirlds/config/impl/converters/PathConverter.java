@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link Path} values in the
- * configuration
+ * configuration.
  */
 public final class PathConverter implements ConfigConverter<Path> {
 

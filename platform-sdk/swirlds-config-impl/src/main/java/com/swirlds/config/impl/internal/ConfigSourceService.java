@@ -25,17 +25,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 /**
- * Services that provides the config properties from sources (see {@link ConfigSource})
+ * Services that provides the config properties from sources (see {@link ConfigSource}).
  */
 class ConfigSourceService implements ConfigLifecycle {
 
     /**
-     * List of all sources that will be used to load config properties
+     * List of all sources that will be used to load config properties.
      */
     private final List<ConfigSource> sources;
 
     /**
-     * Defines if this service is initialized
+     * Defines if this service is initialized.
      */
     private boolean initialized = false;
 
