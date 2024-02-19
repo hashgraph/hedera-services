@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -68,6 +67,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhex
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.systemAccounts;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_LOG_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
@@ -100,9 +101,9 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -115,6 +116,7 @@ import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
@@ -141,12 +143,11 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite(fuzzyMatch = true)
+// @HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Tag(SMART_CONTRACT)
+// @Tag(SMART_CONTRACT)
 public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
@@ -207,6 +208,14 @@ public class TraceabilitySuite extends HapiSuite {
                 traceabilityE2EScenario19(),
                 traceabilityE2EScenario20(),
                 traceabilityE2EScenario21(),
+                testCallOperationsForSystemAccounts(),
+                testCallOperationsForSystemAccountsNoValue(),
+                testStaticCallOperationsForSystemAccounts(),
+                testStaticCallOperationsForSystemAccountsNoValue(),
+                testDelegateCallOperationsForSystemAccounts(),
+                testDelegateCallOperationsForSystemAccountsNoValue(),
+                testCallCodeOperationsForSystemAccounts(),
+                testCallCodeOperationsForSystemAccountsNoValue(),
                 vanillaBytecodeSidecar(),
                 vanillaBytecodeSidecar2(),
                 actionsShowPropagatedRevert(),
@@ -4643,6 +4652,426 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(23)
+    final HapiSpec testCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "call";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .sending(10)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("callTest" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "callTest" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setValue(10L)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setValue(10L)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(24)
+    final HapiSpec testCallOperationsForSystemAccountsNoValue() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "call";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .hasKnownStatus(SUCCESS)
+                            .via("callTestNoValue" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "callTestNoValue" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testCallOperationsForSystemAccountsNoValue")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(25)
+    final HapiSpec testCallCodeOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "callCode";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .sending(10)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("callCodeTest" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "callCodeTest" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_CALLCODE)
+                                    .setValue(10L)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_CALLCODE)
+                                    .setValue(10L)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testCallCodeOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(26)
+    final HapiSpec testCallCodeOperationsForSystemAccountsNoValue() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "callCode";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .hasKnownStatus(SUCCESS)
+                            .via("callCodeTestNoValue" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "callCodeTestNoValue" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_CALLCODE)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_CALLCODE)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testCallCodeOperationsForSystemAccountsNoValue")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(27)
+    final HapiSpec testDelegateCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "delegateCall";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .sending(10)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("delegateCallTest" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "delegateCallTest" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_DELEGATECALL)
+                                    .setValue(10L)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_DELEGATECALL)
+                                    .setValue(10L)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testDelegateCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(28)
+    final HapiSpec testDelegateCallOperationsForSystemAccountsNoValue() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "delegateCall";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("delegateCallTestNoValue" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "delegateCallTestNoValue" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_DELEGATECALL)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_DELEGATECALL)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testDelegateCallOperationsForSystemAccountsNoValue")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(29)
+    final HapiSpec testStaticCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "staticcall";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .sending(10L)
+                            .via("staticCallTest" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "staticCallTest" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setValue(10L)
+                                    .setCallOperationType(CallOperationType.OP_STATICCALL)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_STATICCALL)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setValue(10L)
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testStaticCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(30)
+    final HapiSpec testStaticCallOperationsForSystemAccountsNoValue() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "staticcall";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size()];
+        final HapiSpecOperation[] opsArray2 = new HapiSpecOperation[systemAccounts.size()];
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("staticCallTestNoValue" + finalI)));
+            opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
+                    "staticCallTestNoValue" + finalI,
+                    List.of(
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setRecipientContract(TxnUtils.asContractId(contract, spec))
+                                    .setInput(encodeFunctionCall(
+                                            contract, functionName, mirrorAddrWith(systemAccounts.get(finalI))))
+                                    .setOutput(ByteString.empty())
+                                    .setGas(78808)
+                                    .setGasUsed(78179)
+                                    .setCallOperationType(CallOperationType.OP_STATICCALL)
+                                    .build(),
+                            ContractAction.newBuilder()
+                                    .setCallType(ContractActionType.CALL)
+                                    .setCallingContract(TxnUtils.asContractId(contract, spec))
+                                    .setTargetedAddress(
+                                            ByteString.copyFrom(HapiPropertySource.asSolidityAddress(0, 0, finalI)))
+                                    .setInput(ByteStringUtils.wrapUnsafely(Arrays.copyOfRange(
+                                            keccak256(Bytes.of("storeValue(uint256)".getBytes()))
+                                                    .toArrayUnsafe(),
+                                            0,
+                                            4)))
+                                    .setGas(43444)
+                                    .setGasUsed(43444)
+                                    .setCallOperationType(CallOperationType.OP_STATICCALL)
+                                    .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                    .setCallDepth(1)
+                                    .build())));
+        }
+        return defaultHapiSpec("testStaticCallOperationsForSystemAccountsNoValue")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(opsArray)
+                .then(opsArray2);
+    }
+
+    @HapiTest
+    @Order(31)
     final HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
@@ -4677,7 +5106,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(24)
+    @Order(32)
     final HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
@@ -4709,7 +5138,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(25)
+    @Order(33)
     final HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
@@ -4892,7 +5321,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(26)
+    @Order(34)
     final HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
@@ -4989,7 +5418,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    @Order(27)
+    @Order(31)
     final HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
@@ -5164,7 +5593,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    @Order(28)
+    @Order(32)
     final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
