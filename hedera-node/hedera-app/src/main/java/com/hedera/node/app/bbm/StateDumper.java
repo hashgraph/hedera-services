@@ -22,10 +22,13 @@ import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
+import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpModTopics;
+import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpMonoTopics;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
@@ -38,14 +41,19 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,6 +69,7 @@ public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
     private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
     private static final String SEMANTIC_FILES = "files.txt";
+    private static final String SEMANTIC_TOPICS = "topics.txt";
 
     public static void dumpMonoChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
@@ -70,6 +79,7 @@ public class StateDumper {
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
+        dumpMonoTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), state.getChild(TOPICS), checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -94,6 +104,10 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+
+        final MerkleMap<EntityNum, MerkleTopic> topics = requireNonNull(
+                state.getChild(state.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
+        dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint);
     }
 
     private static String getExtantDumpLoc(
