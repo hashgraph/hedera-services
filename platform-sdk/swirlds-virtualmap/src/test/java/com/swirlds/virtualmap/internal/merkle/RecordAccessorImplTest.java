@@ -334,14 +334,16 @@ public class RecordAccessorImplTest {
                 final long lastLeafPath,
                 final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                final boolean isReconnectContext)
                 throws IOException {
             delegate.saveRecords(
                     firstLeafPath,
                     lastLeafPath,
                     pathHashRecordsToUpdate,
                     leafRecordsToAddOrUpdate,
-                    leafRecordsToDelete);
+                    leafRecordsToDelete,
+                    isReconnectContext);
         }
 
         @Override
