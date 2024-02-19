@@ -144,10 +144,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
-        // TODO make other config values configurable
         model = WiringModel.builder(platformContext)
                 .withDefaultPool(defaultPool)
-                .withHealthMonitoringEnabled(true)
+                .withHealthMonitoringEnabled(schedulersConfig.healthMonitoringEnabled())
+                .withHealthMonitoringFrequency(schedulersConfig.healthMonitoringFrequency())
+                .withHealthMonitoringRunningAverageSize(schedulersConfig.healthMonitoringRunningAverageSize())
                 .build();
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current

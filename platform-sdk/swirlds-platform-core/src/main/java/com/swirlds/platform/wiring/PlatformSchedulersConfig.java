@@ -32,6 +32,11 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          max(1, (defaultPoolMultipler * [number of processors] +
  *                                                          defaultPoolConstant)). It is legal for this constant to be a
  *                                                          negative number.
+ * @param healthMonitoringEnabled                           true if health monitoring is enabled
+ * @param healthMonitoringFrequency                         the frequency at which health monitoring is run, choosing a
+ *                                                          high frequency will result in more accurate health
+ *                                                          monitoring, but will also result in more overhead
+ * @param healthMonitoringRunningAverageSize                the size of the running average used in health monitoring
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
  * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
@@ -91,6 +96,9 @@ import com.swirlds.config.api.ConfigProperty;
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
+        @ConfigProperty(defaultValue = "true") boolean healthMonitoringEnabled,
+        @ConfigProperty(defaultValue = "10.0") double healthMonitoringFrequency,
+        @ConfigProperty(defaultValue = "10") int healthMonitoringRunningAverageSize,
         @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
