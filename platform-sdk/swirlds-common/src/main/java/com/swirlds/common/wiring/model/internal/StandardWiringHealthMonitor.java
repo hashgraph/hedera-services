@@ -126,7 +126,12 @@ public class StandardWiringHealthMonitor implements WiringHealthMonitor {
         final long size = monitoredScheduler.scheduler.getUnprocessedTaskCount();
         monitoredScheduler.runningAverage.add(size);
         final long averageSize = monitoredScheduler.runningAverage.getAverage();
-        return averageSize >= monitoredScheduler.stressedThreshold;
+
+        // We call a scheduler stressed if the current size exceeds the stress threshold and the average size exceeds
+        // the stress threshold. This is intended to avoid reporting stress in the presence of short-lived spikes.
+        // Once the current size drops below the stress threshold, we will want to immediately stop reporting stress.
+
+        return (size >= monitoredScheduler.stressedThreshold) && (averageSize >= monitoredScheduler.stressedThreshold);
     }
 
     /**
@@ -142,7 +147,7 @@ public class StandardWiringHealthMonitor implements WiringHealthMonitor {
      */
     @Nullable
     @Override
-    public Duration stressedDuration() {
+    public Duration getStressedDuration() {
         return stressedDuration.get();
     }
 }

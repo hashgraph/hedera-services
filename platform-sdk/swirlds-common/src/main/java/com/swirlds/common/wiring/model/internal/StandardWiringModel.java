@@ -394,8 +394,8 @@ public class StandardWiringModel implements WiringModel {
      */
     @Nullable
     @Override
-    public Duration stressedDuration() {
-        return healthMonitor.stressedDuration();
+    public Duration getStressedDuration() {
+        return healthMonitor.getStressedDuration();
     }
 
     /**

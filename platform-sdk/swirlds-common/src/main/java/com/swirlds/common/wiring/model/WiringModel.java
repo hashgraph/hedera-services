@@ -142,5 +142,5 @@ public interface WiringModel extends Startable, Stoppable {
      * @return the duration that the system has been stressed, or null if the system is not stressed
      */
     @Nullable
-    Duration stressedDuration();
+    Duration getStressedDuration();
 }

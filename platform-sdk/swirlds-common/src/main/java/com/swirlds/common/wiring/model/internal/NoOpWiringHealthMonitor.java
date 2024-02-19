@@ -56,7 +56,7 @@ public class NoOpWiringHealthMonitor implements WiringHealthMonitor {
      */
     @Nullable
     @Override
-    public Duration stressedDuration() {
+    public Duration getStressedDuration() {
         return null;
     }
 }

@@ -105,7 +105,7 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withMonitoringEnabled(true)
-                        .withStressedThreshold(500) // TODO use 1/2 the queue size
+                        .withStressedThreshold(config.eventHasherUnhandledCapacity() / 2)
                         .build()
                         .cast(),
                 // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
