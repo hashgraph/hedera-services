@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -42,6 +45,7 @@ import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -75,9 +79,11 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -93,6 +99,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -110,6 +117,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final TransactionBody txBody;
     private final HederaFunctionality functionality;
     private final AccountID payer;
+    private AccountID topLevelPayer;
     private final Key payerKey;
     private final NetworkInfo networkInfo;
     private final TransactionCategory category;
@@ -133,6 +141,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ChildRecordFinalizer childRecordFinalizer;
+    private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private ReadableStoreFactory readableStoreFactory;
@@ -164,7 +173,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
-     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage tracking of network utilization
+     * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
+     * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -190,10 +200,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Authorizer authorizer,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
+        this.topLevelPayer = requireNonNull(payer, "payer must not be null");
         this.payerKey = payerKey;
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.category = requireNonNull(category, "category must not be null");
@@ -212,6 +224,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
+        this.networkUtilizationManager =
+                requireNonNull(networkUtilizationManager, "networkUtilization must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
@@ -312,8 +326,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public Instant currentTime() {
-        return consensusNow();
+    public int numTxnSignatures() {
+        return verifier.numSignaturesVerified();
     }
 
     @Override
@@ -403,7 +417,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        return authorizer.isSuperUser(payer());
+        return authorizer.isSuperUser(topLevelPayer);
     }
 
     @Override
@@ -703,7 +717,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                networkUtilizationManager,
                 synchronizedThrottleAccumulator);
+
+        // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
+        childContext.setTopLevelPayer(topLevelPayer);
 
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
@@ -902,6 +920,63 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
+    public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
+        return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
+    }
+
+    public boolean shouldThrottleTxn(TransactionInfo txInfo) {
+        return networkUtilizationManager.shouldThrottle(txInfo, current(), userTransactionConsensusTime);
+    }
+
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+        return networkUtilizationManager.getUsageSnapshots();
+    }
+
+    @Override
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        networkUtilizationManager.resetUsageThrottlesTo(snapshots);
+    }
+
+    @Override
+    public boolean hasThrottleCapacityForChildTransactions() {
+        var isAllowed = true;
+        final var childRecords = recordListBuilder.childRecordBuilders();
+        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
+
+        for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
+            final var childRecord = childRecords.get(i);
+            if (Objects.equals(childRecord.status(), SUCCESS)) {
+                final var childTx = childRecord.transaction();
+                final var childTxBody = childRecord.transactionBody();
+                HederaFunctionality childTxFunctionality;
+                try {
+                    childTxFunctionality = functionOf(childTxBody);
+                } catch (UnknownHederaFunctionality e) {
+                    throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
+                }
+
+                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
+                    continue;
+                }
+                if (snapshotsIfNeeded == null) {
+                    snapshotsIfNeeded = getUsageSnapshots();
+                }
+
+                final var childTxInfo = TransactionInfo.from(
+                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
+                if (shouldThrottleTxn(childTxInfo)) {
+                    isAllowed = false;
+                }
+            }
+        }
+        if (!isAllowed) {
+            resetUsageThrottlesTo(snapshotsIfNeeded);
+        }
+        return isAllowed;
+    }
+
+    @Override
     public boolean isSelfSubmitted() {
         return Objects.equals(
                 body().nodeAccountID(), networkInfo().selfNodeInfo().accountId());
@@ -931,5 +1006,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         public DispatchValidationResult {
             requireNonNull(key);
         }
+    }
+
+    private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
+        this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
     }
 }

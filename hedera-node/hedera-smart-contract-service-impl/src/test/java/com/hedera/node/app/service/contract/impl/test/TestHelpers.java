@@ -479,6 +479,7 @@ public class TestHelpers {
     public static final PrecompileContractResult PRECOMPILE_CONTRACT_FAILED_RESULT =
             PrecompiledContract.PrecompileContractResult.halt(
                     org.apache.tuweni.bytes.Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+    public static final Long SIGNER_NONCE = 1L;
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
             SENDER_ID,
@@ -518,6 +519,19 @@ public class TestHelpers {
             null,
             null);
 
+    public static final HederaEvmTransactionResult SUCCESS_RESULT_WITH_SIGNER_NONCE =
+            HederaEvmTransactionResult.successFrom(
+                            GAS_LIMIT / 2,
+                            Wei.of(NETWORK_GAS_PRICE),
+                            SENDER_ID,
+                            CALLED_CONTRACT_ID,
+                            CALLED_CONTRACT_EVM_ADDRESS,
+                            pbjToTuweniBytes(CALL_DATA),
+                            List.of(BESU_LOG),
+                            null,
+                            null)
+                    .withSignerNonce(SIGNER_NONCE);
+
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
             NETWORK_GAS_PRICE,
@@ -528,6 +542,7 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
             null,
             null,
             null);
@@ -597,12 +612,16 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
+    public static final Account OWNER_ACCOUNT =
+            Account.newBuilder().accountId(OWNER_ID).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
+    public static final Account UNAUTHORIZED_SPENDER_ACCOUNT =
+            Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build();
     public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
             AccountID.newBuilder().accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");

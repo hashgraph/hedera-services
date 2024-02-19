@@ -71,14 +71,14 @@ module com.swirlds.platform.core {
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.observers to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
-            com.hedera.node.test.clients;
+            com.hedera.node.test.clients,
+            com.swirlds.platform.core.test.fixtures,
+            com.hedera.node.app.service.mono.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test;

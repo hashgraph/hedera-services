@@ -18,6 +18,7 @@ package com.swirlds.common.metrics;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An implementation of this class is responsible for creating {@link Metrics}-implementations.
@@ -35,6 +36,7 @@ public interface PlatformMetricsProvider {
      *
      * @return the new instance of {@code Metrics}
      */
+    @NonNull
     Metrics createGlobalMetrics();
 
     /**
@@ -44,5 +46,6 @@ public interface PlatformMetricsProvider {
      * 		the {@link NodeId} of the platform
      * @return the new instance of {@code Metrics}
      */
-    Metrics createPlatformMetrics(NodeId selfId);
+    @NonNull
+    Metrics createPlatformMetrics(final @NonNull NodeId selfId);
 }

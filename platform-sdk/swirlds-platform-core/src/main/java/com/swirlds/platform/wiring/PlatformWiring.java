@@ -30,11 +30,12 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.FutureEventBuffer;
@@ -83,6 +84,7 @@ import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -104,7 +106,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final ConsensusEngineWiring consensusEngineWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
@@ -166,7 +168,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+        consensusEngineWiring = ConsensusEngineWiring.create(schedulers.consensusEngineScheduler());
         eventCreationManagerWiring =
                 EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
         pcesSequencerWiring = PcesSequencerWiring.create(schedulers.pcesSequencerScheduler());
@@ -191,7 +193,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 orphanBufferWiring,
                 inOrderLinkerWiring,
                 shadowgraphWiring,
-                linkedEventIntakeWiring,
+                consensusEngineWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
@@ -249,7 +251,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
         pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
-        inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.eventInput());
         futureEventBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
@@ -264,10 +266,28 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
-        linkedEventIntakeWiring.keystoneEventSequenceNumberOutput().solderTo(pcesWriterWiring.flushRequestInputWire());
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo(consensusRoundHandlerWiring.roundInput());
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        linkedEventIntakeWiring.consensusEventsOutput().solderTo(eventStreamManagerWiring.eventsInput());
+
+        // Create the transformer that extracts keystone event sequence number from consensus rounds.
+        // This is done here instead of in ConsensusEngineWiring, since the transformer needs to be soldered with
+        // specified ordering, relative to the wire carrying consensus rounds to the round handler
+        final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
+                model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
+                        .getBaseEvent()
+                        .getStreamSequenceNumber());
+        keystoneEventSequenceNumberTransformer.getOutputWire().solderTo(pcesWriterWiring.flushRequestInputWire());
+
+        // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
+        // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
+        // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
+        // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
+        // necessary keystone event is *never* flushed.
+        consensusEngineWiring
+                .consensusRoundOutput()
+                .orderedSolderTo(List.of(
+                        keystoneEventSequenceNumberTransformer.getInputWire(),
+                        consensusRoundHandlerWiring.roundInput()));
+        consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusEngineWiring.consensusEventsOutput().solderTo(eventStreamManagerWiring.eventsInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
@@ -322,7 +342,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventSignatureValidator the event signature validator to bind
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
-     * @param linkedEventIntake       the linked event intake to bind
+     * @param consensusEngine         the consensus engine to bind
      * @param signedStateFileManager  the signed state file manager to bind
      * @param stateSigner             the state signer to bind
      * @param pcesReplayer            the PCES replayer to bind
@@ -345,7 +365,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
-            @NonNull final LinkedEventIntake linkedEventIntake,
+            @NonNull final ConsensusEngine consensusEngine,
             @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
@@ -367,7 +387,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.bind(eventSignatureValidator);
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
-        linkedEventIntakeWiring.bind(linkedEventIntake);
+        consensusEngineWiring.bind(consensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
@@ -404,19 +424,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<AddressBookUpdate> getAddressBookUpdateInput() {
         return eventSignatureValidatorWiring.addressBookUpdateInput();
-    }
-
-    /**
-     * Get the input wire for saving a state to disk
-     * <p>
-     * Future work: this is a temporary hook to allow the components to save state a state to disk, prior to the whole
-     * system being migrated to the new framework.
-     *
-     * @return the input wire for saving a state to disk
-     */
-    @NonNull
-    public InputWire<ReservedSignedState> getSaveStateToDiskInput() {
-        return signedStateFileManagerWiring.saveStateToDisk();
     }
 
     /**
@@ -513,17 +520,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public LongSupplier getIntakeQueueSizeSupplier() {
         return postHashCollectorWiring.unprocessedTaskCountSupplier();
-    }
-
-    /**
-     * Get the output wire that {@link LinkedEventIntake} uses to pass keystone event sequence numbers to the
-     * {@link PcesWriter}, to be flushed.
-     *
-     * @return the output wire for keystone event sequence numbers
-     */
-    @NonNull
-    public StandardOutputWire<Long> getKeystoneEventSequenceNumberOutput() {
-        return linkedEventIntakeWiring.keystoneEventSequenceNumberOutput();
     }
 
     /**
