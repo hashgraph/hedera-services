@@ -40,7 +40,6 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
@@ -1025,41 +1024,6 @@ public class SyncTests {
                 Exception.class,
                 executor::execute,
                 "the socket read should time out and an exception should be thrown");
-    }
-
-    /**
-     * Tests that events from a signed state are not gossiped and that such a sync is properly aborted
-     */
-    @Test
-    void signedStateEvents() throws Exception {
-        final SyncTestParams params = new SyncTestParams(10, 50, 2, 1);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
-
-        executor.setGraphCustomization((caller, listener) -> {
-            caller.setSaveGeneratedEvents(true);
-            listener.setSaveGeneratedEvents(true);
-        });
-        // the caller will have only signed state events
-        executor.setCustomPreSyncConfiguration((caller, listener) -> {
-            caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
-
-            // a signed sent event needs to be identified as needed by the peer
-            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
-        });
-
-        executor.execute();
-
-        // the caller should not have sent any events to the listener
-        SyncValidator.assertNoEventsReceived(executor.getListener());
-        SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
-
-        // both should be aware that the sync was aborted
-        assertFalse(executor.getCaller().getSynchronizerReturn());
-        assertFalse(executor.getListener().getSynchronizerReturn());
     }
 
     /**
