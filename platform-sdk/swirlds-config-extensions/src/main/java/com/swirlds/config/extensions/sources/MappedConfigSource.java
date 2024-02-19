@@ -76,7 +76,7 @@ public class MappedConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds the mappedName {@code 'mappedName'<->'originalName'}
+     * Adds the mappedName {@code 'mappedName'<->'originalName'}.
      *
      * @param mappedName   the mappedName name
      * @param originalName the original name
@@ -86,7 +86,7 @@ public class MappedConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds the mappedName {@code 'mappedName'<->'originalName'}
+     * Adds the mappedName {@code 'mappedName'<->'originalName'}.
      *
      * @param configMapping defined mapping
      */
