@@ -36,6 +36,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -115,9 +116,10 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        // The original sync tests are incompatible with event filtering.
+        // The original sync tests are incompatible with event filtering and reduced sync event counts.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(SyncConfig_.MAX_SYNC_EVENT_COUNT, 0)
                 .getOrCreateConfig();
 
         platformContext = TestPlatformContextBuilder.create()
@@ -222,9 +224,10 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
-        // The original sync tests are incompatible with event filtering.
+        // The original sync tests are incompatible with event filtering and reduced sync event counts.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(SyncConfig_.MAX_SYNC_EVENT_COUNT, 0)
                 .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()

@@ -141,6 +141,11 @@ public class ShadowgraphSynchronizer {
      */
     private final Duration nonAncestorFilterThreshold;
 
+    /**
+     * The maximum number of events to send in a single sync, or 0 if there is no limit.
+     */
+    private final int maximumEventsPerSync;
+
     public ShadowgraphSynchronizer(
             @NonNull final PlatformContext platformContext,
             @NonNull final Shadowgraph shadowGraph,
@@ -172,6 +177,7 @@ public class ShadowgraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+        this.maximumEventsPerSync = syncConfig.maxSyncEventCount();
     }
 
     /**
@@ -372,7 +378,7 @@ public class ShadowgraphSynchronizer {
 
         SyncUtils.sort(eventsTheyMayNeed);
 
-        final List<EventImpl> sendList;
+        List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
             sendList = filterLikelyDuplicates(selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
@@ -380,6 +386,10 @@ public class ShadowgraphSynchronizer {
             syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
+        }
+
+        if (maximumEventsPerSync > 0 && sendList.size() > maximumEventsPerSync) {
+            sendList = sendList.subList(0, maximumEventsPerSync);
         }
 
         return sendList;
@@ -416,7 +426,13 @@ public class ShadowgraphSynchronizer {
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
                 readEventsINeed(
-                        connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter, maxSyncTime),
+                        connection,
+                        eventHandler,
+                        maximumEventsPerSync,
+                        syncMetrics,
+                        eventReadingDone,
+                        intakeEventCounter,
+                        maxSyncTime),
                 sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted, syncKeepAlivePeriod),
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {
