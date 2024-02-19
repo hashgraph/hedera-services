@@ -70,8 +70,8 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -119,12 +119,15 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 topLevelSendToReceiverSigRequiredAccountReverts(),
                 internalBurnToZeroAddressReverts(),
                 ethereumCallWithCalldataBiggerThanMaxSucceeds(),
-                createWithSelfDestructInConstructorHasSaneRecord()
-        );
+                createWithSelfDestructInConstructorHasSaneRecord());
     }
 
     List<HapiSpec> ethereumCreates() {
-        return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate(), doesNotCreateChildRecordIfEthereumContractCreateFails());
+        return List.of(
+                smallContractCreate(),
+                contractCreateWithConstructorArgs(),
+                bigContractCreate(),
+                doesNotCreateChildRecordIfEthereumContractCreateFails());
     }
 
     @HapiTest
