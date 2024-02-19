@@ -65,7 +65,9 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
                 stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT,
                 false,
                 squelchingEnabled,
-                true);
+                true,
+                false,
+                0);
 
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);

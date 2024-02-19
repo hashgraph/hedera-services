@@ -18,13 +18,15 @@ package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.ModelGroup;
-import com.swirlds.common.wiring.model.ModelManualLink;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
@@ -32,9 +34,11 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -91,18 +95,44 @@ public class StandardWiringModel implements WiringModel {
     private final ForkJoinPool defaultPool;
 
     /**
+     * The health monitor.
+     */
+    private final WiringHealthMonitor healthMonitor;
+
+    /**
      * Constructor.
      *
-     * @param metrics     provides metrics
-     * @param time        provides wall clock time
+     * @param platformContext the platform context
      * @param defaultPool the default fork join pool, schedulers not explicitly assigned a pool will use this one
      */
     public StandardWiringModel(
-            @NonNull final Metrics metrics, @NonNull final Time time, @NonNull final ForkJoinPool defaultPool) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ForkJoinPool defaultPool,
+            final boolean enableHealthMonitoring,
+            final double healthMonitoringFrequency,
+            final int healthMonitoringRunningAverageSize) {
 
-        this.metrics = Objects.requireNonNull(metrics);
-        this.time = Objects.requireNonNull(time);
+        this.metrics = platformContext.getMetrics();
+        this.time = platformContext.getTime();
         this.defaultPool = Objects.requireNonNull(defaultPool);
+
+        if (enableHealthMonitoring) {
+            healthMonitor = new StandardWiringHealthMonitor(healthMonitoringRunningAverageSize);
+
+            final TaskScheduler<Void> healthMonitorScheduler = schedulerBuilder("healthMonitor")
+                    .withType(SEQUENTIAL)
+                    .build()
+                    .cast();
+
+            final BindableInputWire<Instant, Void> healthMonitorInput =
+                    healthMonitorScheduler.buildInputWire("heatbeat");
+            healthMonitorInput.bind(healthMonitor::checkHealth);
+
+            buildHeartbeatWire(healthMonitoringFrequency).solderTo(healthMonitorInput);
+            // TODO solder to clock wire
+        } else {
+            healthMonitor = new NoOpWiringHealthMonitor();
+        }
     }
 
     /**
@@ -198,6 +228,9 @@ public class StandardWiringModel implements WiringModel {
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
         if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
+        }
+        if (scheduler.isHealthMonitoringEnabled()) {
+            healthMonitor.registerScheduler(scheduler, scheduler.getStressedThreshold());
         }
     }
 
@@ -324,6 +357,23 @@ public class StandardWiringModel implements WiringModel {
         for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isStressed() {
+        return healthMonitor.isStressed();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public Duration stressedDuration() {
+        return healthMonitor.stressedDuration();
     }
 
     /**

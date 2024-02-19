@@ -58,6 +58,8 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     private final TaskSchedulerType type;
     private final StandardOutputWire<OUT> primaryOutputWire;
     private final boolean insertionIsBlocking;
+    private final boolean healthMonitoringEnabled;
+    private final long stressedThreshold;
 
     /**
      * Handles squelching for this task scheduler. Will be a valid object whether or not squelching is enabled for this
@@ -68,13 +70,16 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     /**
      * Constructor.
      *
-     * @param model               the wiring model containing this task scheduler
-     * @param name                the name of the task scheduler
-     * @param type                the type of task scheduler
-     * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param squelchingEnabled   if true, then squelching will be enabled, otherwise trying to squelch will throw.
-     * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
-     *                            available?
+     * @param model                   the wiring model containing this task scheduler
+     * @param name                    the name of the task scheduler
+     * @param type                    the type of task scheduler
+     * @param flushEnabled            if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled       if true, then squelching will be enabled, otherwise trying to squelch will throw.
+     * @param insertionIsBlocking     when data is inserted into this task scheduler, will it block until capacity is
+     *                                available?
+     * @param healthMonitoringEnabled if true, then health monitoring is enabled for this task scheduler
+     * @param stressedThreshold       the capacity threshold at which the scheduler is considered to be stressed,
+     *                                ignored if health monitoring is not enabled
      */
     protected TaskScheduler(
             @NonNull final StandardWiringModel model,
@@ -82,12 +87,16 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
             @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
-            final boolean insertionIsBlocking) {
+            final boolean insertionIsBlocking,
+            final boolean healthMonitoringEnabled,
+            final long stressedThreshold) {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
+        this.healthMonitoringEnabled = healthMonitoringEnabled;
+        this.stressedThreshold = stressedThreshold;
 
         if (squelchingEnabled) {
             this.squelcher = new DefaultSquelcher();
@@ -305,5 +314,23 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     @Override
     protected void forward(@NonNull final OUT data) {
         primaryOutputWire.forward(data);
+    }
+
+    /**
+     * Check if health monitoring is enabled for this task scheduler.
+     *
+     * @return true if health monitoring is enabled, false otherwise
+     */
+    public boolean isHealthMonitoringEnabled() {
+        return healthMonitoringEnabled;
+    }
+
+    /**
+     * Get the threshold at which the scheduler is considered to be stressed.
+     *
+     * @return the threshold at which the scheduler is considered to be stressed
+     */
+    public long getStressedThreshold() {
+        return stressedThreshold;
     }
 }

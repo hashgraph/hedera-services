@@ -60,7 +60,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
@@ -96,7 +95,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-        final WiringModel model = WiringModel.create(platformContext, time, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.builder(platformContext).build();
 
         hashingObjectCounter = new BackpressureObjectCounter(
                 "hashingObjectCounter",

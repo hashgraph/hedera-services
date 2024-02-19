@@ -51,6 +51,7 @@ public class TaskSchedulerBuilder<O> {
     private static final Logger logger = LogManager.getLogger(TaskSchedulerBuilder.class);
 
     public static final long UNLIMITED_CAPACITY = -1;
+    public static final int DEFAULT_STRESSED_THRESHOLD = 0;
 
     private final StandardWiringModel model;
 
@@ -60,6 +61,8 @@ public class TaskSchedulerBuilder<O> {
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
     private boolean squelchingEnabled = false;
+    private boolean monitoringEnabled = false;
+    private int stressedThreshold = DEFAULT_STRESSED_THRESHOLD;
     private boolean externalBackPressure = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
@@ -145,6 +148,38 @@ public class TaskSchedulerBuilder<O> {
     @NonNull
     public TaskSchedulerBuilder<O> withSquelchingEnabled(final boolean squelchingEnabled) {
         this.squelchingEnabled = squelchingEnabled;
+        return this;
+    }
+
+    /**
+     * Set whether the task scheduler should enable monitoring. Default false. Monitoring is different than metrics, in
+     * that the system may reactively use monitoring data to adjust its behavior. Enabling monitoring may add overhead.
+     *
+     * @param monitoringEnabled true if the scheduler should enable monitoring, false otherwise.
+     * @return this
+     */
+    @NonNull
+    public TaskSchedulerBuilder<O> withMonitoringEnabled(final boolean monitoringEnabled) {
+        this.monitoringEnabled = monitoringEnabled;
+        return this;
+    }
+
+    /**
+     * Set the threshold for the scheduler's intake queue size at which the scheduler should be considered stressed.
+     * Ignored if monitoring is not enabled. Default is 1/2 the maximum capacity (if set), or 500 if no maximum capacity
+     * is set. Scheduler will never be considered stressed if this is set to greater than the maximum capacity (such
+     * configuration will cause an error message to be logged, but will not crash anything).
+     *
+     * @param stressedThreshold the threshold at which the scheduler should be considered stressed
+     * @throws IllegalArgumentException if the threshold is negative
+     * @return this
+     */
+    @NonNull
+    public TaskSchedulerBuilder<O> withStressedThreshold(final int stressedThreshold) {
+        if (stressedThreshold < 0) {
+            throw new IllegalArgumentException("Stressed threshold must not be negative");
+        }
+        this.stressedThreshold = stressedThreshold;
         return this;
     }
 
@@ -306,7 +341,8 @@ public class TaskSchedulerBuilder<O> {
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
-                || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
+                || flushingEnabled
+                || monitoringEnabled) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {
             innerCounter = null;
@@ -347,6 +383,22 @@ public class TaskSchedulerBuilder<O> {
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
+        if (monitoringEnabled) {
+            if (stressedThreshold == DEFAULT_STRESSED_THRESHOLD) {
+                if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
+                    stressedThreshold = (int) (unhandledTaskCapacity / 2);
+                } else {
+                    stressedThreshold = 500;
+                }
+            } else if (unhandledTaskCapacity != UNLIMITED_CAPACITY && stressedThreshold > unhandledTaskCapacity) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Stressed threshold " + stressedThreshold + " for scheduler " + name
+                                + " is greater than the maximum capacity " + unhandledTaskCapacity + ".");
+                monitoringEnabled = false;
+            }
+        }
+
         final TaskScheduler<O> scheduler =
                 switch (type) {
                     case CONCURRENT -> new ConcurrentTaskScheduler<>(
@@ -358,7 +410,9 @@ public class TaskSchedulerBuilder<O> {
                             counters.offRamp(),
                             flushingEnabled,
                             squelchingEnabled,
-                            insertionIsBlocking);
+                            insertionIsBlocking,
+                            monitoringEnabled,
+                            stressedThreshold);
                     case SEQUENTIAL -> new SequentialTaskScheduler<>(
                             model,
                             name,
@@ -369,7 +423,9 @@ public class TaskSchedulerBuilder<O> {
                             busyFractionTimer,
                             flushingEnabled,
                             squelchingEnabled,
-                            insertionIsBlocking);
+                            insertionIsBlocking,
+                            monitoringEnabled,
+                            stressedThreshold);
                     case SEQUENTIAL_THREAD -> new SequentialThreadTaskScheduler<>(
                             model,
                             name,
@@ -380,7 +436,9 @@ public class TaskSchedulerBuilder<O> {
                             sleepDuration,
                             flushingEnabled,
                             squelchingEnabled,
-                            insertionIsBlocking);
+                            insertionIsBlocking,
+                            monitoringEnabled,
+                            stressedThreshold);
                     case DIRECT -> new DirectTaskScheduler<>(
                             model,
                             name,

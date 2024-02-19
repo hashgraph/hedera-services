@@ -72,6 +72,8 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
+     * @param healthMonitoringEnabled  if true, then health monitoring will be enabled
+     * @param stressedThreshold        the capacity threshold at which the scheduler is considered to be stressed
      */
     public SequentialThreadTaskScheduler(
             @NonNull final StandardWiringModel model,
@@ -83,8 +85,18 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             @NonNull final Duration sleepDuration,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
-            final boolean insertionIsBlocking) {
-        super(model, name, TaskSchedulerType.SEQUENTIAL_THREAD, flushEnabled, squelchingEnabled, insertionIsBlocking);
+            final boolean insertionIsBlocking,
+            final boolean healthMonitoringEnabled,
+            final long stressedThreshold) {
+        super(
+                model,
+                name,
+                TaskSchedulerType.SEQUENTIAL_THREAD,
+                flushEnabled,
+                squelchingEnabled,
+                insertionIsBlocking,
+                healthMonitoringEnabled,
+                stressedThreshold);
 
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);

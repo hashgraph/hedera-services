@@ -18,15 +18,17 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -35,19 +37,13 @@ import java.util.concurrent.ForkJoinPool;
 public interface WiringModel extends Startable, Stoppable {
 
     /**
-     * Build a new wiring model instance.
+     * Get a new wiring model builder.
      *
      * @param platformContext the platform context
-     * @param time            provides wall clock time
-     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
-     * @return a new wiring model instance
+     * @return a new wiring model builder
      */
-    @NonNull
-    static WiringModel create(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final ForkJoinPool defaultPool) {
-        return new StandardWiringModel(platformContext.getMetrics(), time, defaultPool);
+    static WiringModelBuilder builder(@NonNull final PlatformContext platformContext) {
+        return new WiringModelBuilder(platformContext);
     }
 
     /**
@@ -131,4 +127,20 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @Override
     void stop();
+
+    /**
+     * Check if the system is stressed. A system is considered to be stressed if any of the monitored schedulers are
+     * stressed.
+     *
+     * @return true if the system is stressed
+     */
+    boolean isStressed();
+
+    /**
+     * Get the duration that the system has been stressed. Returns null if the system is not stressed.
+     *
+     * @return the duration that the system has been stressed, or null if the system is not stressed
+     */
+    @Nullable
+    Duration stressedDuration();
 }
