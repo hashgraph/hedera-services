@@ -16,6 +16,11 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * A standard implementation of a {@link WiringHealthMonitor}.
  */
 public class StandardWiringHealthMonitor implements WiringHealthMonitor {
-
-    // TODO add some metrics
 
     /**
      * A scheduler that is being monitored.
@@ -54,8 +57,26 @@ public class StandardWiringHealthMonitor implements WiringHealthMonitor {
      *
      * @param runningAverageSize the number of measurements to average when deciding if the scheduler is stressed
      */
-    public StandardWiringHealthMonitor(final int runningAverageSize) {
+    public StandardWiringHealthMonitor(@NonNull final PlatformContext platformContext, final int runningAverageSize) {
         this.runningAverageSize = runningAverageSize;
+
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(PLATFORM_CATEGORY, "stressed", Boolean.class, this::isStressed)
+                        .withDescription("True if the system is currently stressed")
+                        .withUnit("status"));
+
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(PLATFORM_CATEGORY, "stressedDuration", Double.class, () -> {
+                            final Duration stressedDuration = this.stressedDuration.get();
+                            if (stressedDuration == null) {
+                                return 0.0;
+                            }
+                            return stressedDuration.toNanos() * NANOSECONDS_TO_SECONDS;
+                        })
+                        .withDescription("The length of time the system has been stressed")
+                        .withUnit("seconds"));
     }
 
     /**

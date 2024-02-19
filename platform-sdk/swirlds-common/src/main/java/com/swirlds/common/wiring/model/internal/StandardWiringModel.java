@@ -103,7 +103,7 @@ public class StandardWiringModel implements WiringModel {
      * Constructor.
      *
      * @param platformContext the platform context
-     * @param defaultPool the default fork join pool, schedulers not explicitly assigned a pool will use this one
+     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      */
     public StandardWiringModel(
             @NonNull final PlatformContext platformContext,
@@ -115,9 +115,30 @@ public class StandardWiringModel implements WiringModel {
         this.metrics = platformContext.getMetrics();
         this.time = platformContext.getTime();
         this.defaultPool = Objects.requireNonNull(defaultPool);
+        this.healthMonitor = buildHealthMonitor(
+                platformContext, enableHealthMonitoring, healthMonitoringFrequency, healthMonitoringRunningAverageSize);
+    }
+
+    /**
+     * Build a health monitor.
+     *
+     * @param platformContext                    the platform context
+     * @param enableHealthMonitoring             if health monitoring is enabled
+     * @param healthMonitoringFrequency          the frequency at which the health monitor should run
+     * @param healthMonitoringRunningAverageSize the number of measurements to average when deciding if the scheduler
+     *                                           is
+     * @return the health monitor
+     */
+    private WiringHealthMonitor buildHealthMonitor(
+            @NonNull final PlatformContext platformContext,
+            final boolean enableHealthMonitoring,
+            final double healthMonitoringFrequency,
+            final int healthMonitoringRunningAverageSize) {
+
+        final WiringHealthMonitor healthMonitor;
 
         if (enableHealthMonitoring) {
-            healthMonitor = new StandardWiringHealthMonitor(healthMonitoringRunningAverageSize);
+            healthMonitor = new StandardWiringHealthMonitor(platformContext, healthMonitoringRunningAverageSize);
 
             final TaskScheduler<Void> healthMonitorScheduler = schedulerBuilder("healthMonitor")
                     .withType(SEQUENTIAL)
@@ -129,10 +150,11 @@ public class StandardWiringModel implements WiringModel {
             healthMonitorInput.bind(healthMonitor::checkHealth);
 
             buildHeartbeatWire(healthMonitoringFrequency).solderTo(healthMonitorInput);
-            // TODO solder to clock wire
         } else {
             healthMonitor = new NoOpWiringHealthMonitor();
         }
+
+        return healthMonitor;
     }
 
     /**

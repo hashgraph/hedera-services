@@ -104,6 +104,8 @@ public record PlatformSchedulers(
                         .withOnRamp(hashingObjectCounter)
                         .withExternalBackPressure(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
+                        .withStressedThreshold(500) // TODO use 1/2 the queue size
                         .build()
                         .cast(),
                 // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
@@ -120,6 +122,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")
@@ -127,6 +130,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.eventDeduplicatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventSignatureValidator")
@@ -134,6 +138,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.eventSignatureValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")
@@ -141,6 +146,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
@@ -148,6 +154,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.inOrderLinkerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("consensusEngine")
@@ -156,6 +163,7 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventCreationManager")
@@ -164,18 +172,21 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("signedStateFileManager")
                         .withType(config.signedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesReplayer")
@@ -186,24 +197,28 @@ public record PlatformSchedulers(
                         .withType(config.pcesWriterSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesSequencer")
                         .withType(config.pcesSequencerSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesSequencerUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDurabilityNexus")
                         .withType(config.eventDurabilityNexusSchedulerType())
                         .withUnhandledTaskCapacity(config.eventDurabilityNexusUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("applicationTransactionPrehandler")
                         .withType(config.applicationTransactionPrehandlerSchedulerType())
                         .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -211,6 +226,7 @@ public record PlatformSchedulers(
                         .withType(config.stateSignatureCollectorSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -218,6 +234,7 @@ public record PlatformSchedulers(
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -229,6 +246,7 @@ public record PlatformSchedulers(
                         .withMetricsBuilder(model.metricsBuilder()
                                 .withUnhandledTaskMetricEnabled(true)
                                 .withBusyFractionMetricsEnabled(true))
+                        .withMonitoringEnabled(true)
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .build()
@@ -247,6 +265,7 @@ public record PlatformSchedulers(
                         .withType(config.futureEventBufferSchedulerType())
                         .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -254,6 +273,7 @@ public record PlatformSchedulers(
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMonitoringEnabled(true)
                         .build()
                         .cast());
     }
