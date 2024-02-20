@@ -938,7 +938,11 @@ public class HandleWorkflow {
 
     private boolean collectSignaturesEnabled() {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        // If gathering signatures is not enabled for preHandle, then we must do it in handle.
+
+        // If writing proofs is not enabled then this is not enabled.
+        if (!blockStreamConfig.writeBlockProof()) return false;
+
+        // If gathering signatures is not enabled for preHandle, then we are doing it in handle.
         return !blockStreamConfig.collectSignaturesInPreHandle();
     }
 
