@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
@@ -68,6 +69,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
@@ -182,6 +184,9 @@ public final class IngestChecker {
                             .toByteArray());
             validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
             validateTruePreCheck(requireNonNull(ethTxData.gasLimit()) >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
+
+            // Do not allow transactions to Burn Address
+            validateTruePreCheck(!Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
         }
 
         // 1a. Verify the transaction has been sent to *this* node
