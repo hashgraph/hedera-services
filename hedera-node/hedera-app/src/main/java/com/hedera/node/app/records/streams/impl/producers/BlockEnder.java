@@ -131,7 +131,7 @@ public class BlockEnder {
         try {
             // Depending on the configuration, this writeItem may be an asynchronous or synchronous operation. The
             // BlockStreamWriterFactory instantiated by dagger will determine this.
-            writer.writeItem(serializedItem);
+            writer.writeItem(serializedItem, lastRunningHash.hash());
         } catch (final Exception e) {
             // This **may** prove fatal. The node should be able to carry on, but then fail when it comes to
             // actually producing a valid record stream file. We need to have some way of letting all nodes know

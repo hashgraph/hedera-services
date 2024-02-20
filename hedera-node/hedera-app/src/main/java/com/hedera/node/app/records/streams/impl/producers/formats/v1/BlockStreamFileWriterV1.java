@@ -16,12 +16,8 @@
 
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
-import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
-
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.streams.v7.BlockHashAlgorithm;
-import com.hedera.hapi.streams.v7.BlockHeader;
-import com.hedera.hapi.streams.v7.BlockSignatureAlgorithm;
+import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -29,7 +25,11 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.stream.Signer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,9 +40,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static com.hedera.hapi.streams.v7.schema.BlockSchema.ITEMS;
+import static com.hedera.node.app.records.streams.impl.producers.formats.v1.SignatureWriterV1.writeSignatureFile;
+import static java.util.Objects.requireNonNull;
 
 public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
 
@@ -71,6 +71,33 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     /** The state of this writer */
     private State state;
 
+    /**
+     * The version of the HAPI protobuf schema used to record transactions. This never changes throughout the execution
+     * of the program.
+     */
+    private final SemanticVersion hapiProtoVersion;
+    /**
+     * The starting running hash before any items in this file. This was the end hash of the previous file. Once it is
+     * set in {@link #init}, it is never changed.
+     */
+    private HashObject startRunningHash;
+
+    /**
+     * The end running hash after any items in this file. This will be set on each call to {@link #writeItem}.
+     */
+    private Bytes endRunningHash;
+    /**
+     * The block number for the file we are writing. Each file corresponds to one, and only one, block. Once it is
+     * set in {@link #init}, it is never changed.
+     */
+    private long blockNumber;
+    /**
+     * The {@link Signer} used to sign the hashed bytes of the block file to write as the signature file.
+     * */
+    private final Signer signer;
+
+    private final boolean writeSignatureFileEnabled;
+
     private enum State {
         UNINITIALIZED,
         OPEN_WITHOUT_HEADER,
@@ -81,7 +108,9 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     public BlockStreamFileWriterV1(
             @NonNull final BlockStreamConfig config,
             @NonNull final NodeInfo nodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem,
+            @NonNull final SemanticVersion hapiProtoVersion,
+            @NonNull final Signer signer) {
 
         if (config.blockVersion() != 7) {
             logger.fatal(
@@ -90,7 +119,10 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
         }
 
         this.state = State.UNINITIALIZED;
+        this.hapiProtoVersion = requireNonNull(hapiProtoVersion);
+        this.signer = requireNonNull(signer);
         this.compressFiles = config.compressFilesOnCreation();
+        this.writeSignatureFileEnabled = config.writeSignatureFile();
 
         // Compute directories for record and sidecar files.
         final Path blockDir = fileSystem.getPath(config.logDir());
@@ -108,13 +140,19 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     // =================================================================================================================
     // Implementation of methods in BlockStreamWriter
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void init(final long blockNumber) {
+    public void init(final long blockNumber, @NonNull final HashObject startRunningHash) {
         logger.info("Initializing block stream writer {}", blockNumber);
         if (state != State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a BlockStreamFileWriterV1 twice");
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
+
+        this.blockNumber = blockNumber;
+        this.startRunningHash = requireNonNull(startRunningHash);
 
         // Create the chain of streams.
         this.blockFilePath = getBlockFilePath(blockNumber);
@@ -150,17 +188,18 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
     }
 
     /**
-     * writeItem writes each BlockItem to the output stream.
-     * @param item the serialized BlockItem to write
+     * {@inheritDoc}
      */
     @Override
-    public void writeItem(@NonNull final Bytes item) {
+    public void writeItem(@NonNull final Bytes item, @NonNull final Bytes endRunningHash) {
         System.out.println(
                 "Writing bytes to block stream - Bytes hash: " + item.hashCode() + " - File: " + this.blockFilePath);
         assert item.length() > 0 : "BlockItem must be non-empty";
         if (state != State.OPEN) {
             throw new IllegalStateException("Cannot write to a BlockStreamFileWriterV1 that is not open");
         }
+
+        this.endRunningHash = endRunningHash;
 
         // Write the ITEMS tag.
         ProtoWriterTools.writeTag(writableStreamingData, ITEMS, ProtoConstants.WIRE_TYPE_DELIMITED);
@@ -172,6 +211,9 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
                 "Wrote bytes to block stream - Bytes hash: " + item.hashCode() + " - File: " + this.blockFilePath);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() {
         if (state.ordinal() < State.OPEN.ordinal()) {
@@ -184,6 +226,20 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
             // on the writableStreamingData. https://github.com/hashgraph/pbj/issues/183
             outputStream.flush();
             writableStreamingData.close();
+
+            if (writeSignatureFileEnabled) {
+                // Write signature file, this tells the uploader that this block file is complete.
+                writeSignatureFile(
+                        blockFilePath,
+                        signer,
+                        true,
+                        7,
+                        hapiProtoVersion,
+                        blockNumber,
+                        startRunningHash.hash(),
+                        endRunningHash);
+            }
+
             state = State.CLOSED;
         } catch (final IOException e) {
             logger.error("Error closing the BlockStreamFileWriterV1 output stream", e);

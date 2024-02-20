@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
+import com.hedera.hapi.streams.HashObject;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CompletableFuture;
@@ -62,13 +63,13 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     }
 
     @Override
-    public void init(final long blockNumber) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber), executor));
+    public void init(final long blockNumber, @NonNull final HashObject startRunningHash) {
+        updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber, startRunningHash), executor));
     }
 
     @Override
-    public void writeItem(@NonNull final Bytes item) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item), executor));
+    public void writeItem(@NonNull final Bytes item, @NonNull final Bytes endRunningHash) {
+        updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item, endRunningHash), executor));
     }
 
     @Override

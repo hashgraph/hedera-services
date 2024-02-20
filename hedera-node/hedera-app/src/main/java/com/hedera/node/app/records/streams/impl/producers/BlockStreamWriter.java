@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
+import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,29 +44,31 @@ public interface BlockStreamWriter {
      * <p>The file implementation of this interface writes directly to a file.
      *
      * @param blockNumber the block number of the block
-     * @throws IllegalStateException if called after {@link #writeItem(Bytes)} or after
+     * @param startRunningHash the running hash of the last block
+     * @throws IllegalStateException if called after {@link #writeItem(Bytes, Bytes)} or after
      *                               {@link #close()}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
-    void init(final long blockNumber);
+    void init(final long blockNumber, @NonNull final HashObject startRunningHash);
 
     /**
      * Write a single item to the block stream output. This method may be called multiple times for different items,
-     * but must be called after {@link #init(long)} and before
+     * but must be called after {@link #init(long, HashObject)} and before
      * {@link #close()}.
      *
      * @param item the item to write
-     * @throws IllegalStateException if called before {@link #init(long)} or after
+     * @param endRunningHash the end running hash after this item is written
+     * @throws IllegalStateException if called before {@link #init(long, HashObject)} or after
      *                               {@link #close()}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
-    void writeItem(@NonNull final Bytes item);
+    void writeItem(@NonNull final Bytes item, @NonNull final Bytes endRunningHash);
 
     /**
      * Close the block that has been produced. Must be called after
-     * {@link #init(long)}.
+     * {@link #init(long, HashObject)}.
      *
-     * @throws IllegalStateException if called before {@link #init(long)}.
+     * @throws IllegalStateException if called before {@link #init(long, HashObject)}.
      * @throws UncheckedIOException if there is an error writing to the destination
      */
     void close();

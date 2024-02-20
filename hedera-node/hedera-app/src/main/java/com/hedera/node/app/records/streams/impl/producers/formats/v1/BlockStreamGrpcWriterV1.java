@@ -90,7 +90,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
      * {@inheritDoc}
      */
     @Override
-    public void init(final long blockNumber) {
+    public void init(final long blockNumber, @NonNull final HashObject startRunningHash) {
 
         if (state != State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a BlockStreamWriterV1 twice");
@@ -141,7 +141,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
      **/
     @Override
     @SuppressWarnings("java:S125")
-    public void writeItem(@NonNull final Bytes item) {
+    public void writeItem(@NonNull final Bytes item, @NonNull final Bytes endRunningHash) {
         if (state != State.OPEN) {
             throw new IllegalStateException("Cannot write to a BlockRecordWriterV6 that is not open");
         }

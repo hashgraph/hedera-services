@@ -27,6 +27,7 @@ import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStream
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.common.stream.Signer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,7 @@ import javax.inject.Singleton;
 @Singleton
 public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
     private final ConfigProvider configProvider;
+    private final Signer signer;
     private final SelfNodeInfo nodeInfo;
     private final FileSystem fileSystem;
     private final ExecutorService executor;
@@ -54,11 +56,13 @@ public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
             @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final SelfNodeInfo nodeInfo,
+            @NonNull final Signer signer,
             @NonNull final FileSystem fileSystem) {
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
         this.nodeInfo = requireNonNull(nodeInfo);
         this.fileSystem = requireNonNull(fileSystem);
+        this.signer = requireNonNull(signer);
     }
 
     @Override
@@ -87,7 +91,9 @@ public class BlockStreamWriterFactoryImpl implements BlockStreamWriterFactory {
                     new BlockStreamFileWriterV1(
                             configProvider.getConfiguration().getConfigData(BlockStreamConfig.class),
                             nodeInfo,
-                            fileSystem));
+                            fileSystem,
+                            nodeInfo.hapiVersion(),
+                            signer));
             case "grpc" -> new BlockStreamGrpcWriterV1(
                     configProvider.getConfiguration().getConfigData(BlockStreamConfig.class), nodeInfo);
             default -> throw new IllegalArgumentException("Unknown writer type: " + writer);

@@ -290,7 +290,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             // Depending on the configuration, this writer's methods may be asynchronous or synchronous. The
             // BlockStreamWriterFactory instantiated by dagger will determine this.
             writer = writerFactory.create();
-            writer.init(currentBlockNumber);
+            writer.init(currentBlockNumber, lastRunningHash);
         } catch (final Exception e) {
             // This represents an almost certainly fatal error. In the FUTURE we should look at dealing with this in a
             // more comprehensive and consistent way. Maybe we retry a bunch of times before giving up, then restart
@@ -318,7 +318,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
         try {
             // Depending on the configuration, this writeItem may be an asynchronous or synchronous operation. The
             // BlockStreamWriterFactory instantiated by dagger will determine this.
-            writer.writeItem(serializedItem);
+            writer.writeItem(serializedItem, runningHash);
         } catch (final Exception e) {
             // This **may** prove fatal. The node should be able to carry on, but then fail when it comes to
             // actually producing a valid record stream file. We need to have some way of letting all nodesknow
