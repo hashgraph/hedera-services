@@ -18,6 +18,8 @@ package com.swirlds.benchmark.reconnect;
 
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.connectivity.TcpFactory;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -44,9 +46,9 @@ public class PairedStreams implements AutoCloseable {
     protected Socket learnerSocket;
     protected ServerSocket server;
 
-    public PairedStreams() throws IOException {
+    public PairedStreams(final SocketConfig socketConfig) throws IOException {
 
-        server = new ServerSocket(0);
+        server = new TcpFactory(socketConfig).createServerSocket(new byte[] {127, 0, 0, 1}, 0);
         teacherSocket = new Socket("127.0.0.1", server.getLocalPort());
         learnerSocket = server.accept();
 

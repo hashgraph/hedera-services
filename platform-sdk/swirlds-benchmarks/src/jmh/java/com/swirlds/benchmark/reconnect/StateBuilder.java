@@ -75,17 +75,25 @@ public record StateBuilder<K, V>(
         });
 
         LongStream.range(1, size).forEach(i -> {
-            if (isRandomOutcome(random, teacherAddProbability)) {
+            // Make all random outcomes independent of each other:
+            final boolean teacherAdd = isRandomOutcome(random, teacherAddProbability);
+            final boolean teacherModify = isRandomOutcome(random, teacherModifyProbability);
+            final boolean teacherRemove = isRandomOutcome(random, teacherRemoveProbability);
+
+            if (teacherAdd) {
                 final K key = keyBuilder.apply(i + size);
                 final V value = valueBuilder.apply(i + size);
                 teacherPopulator.accept(key, value);
-            } else if (isRandomOutcome(random, teacherModifyProbability)) {
+            }
+
+            // Don't bother modifying if we're about to remove it
+            if (teacherRemove) {
+                final K key = keyBuilder.apply(i);
+                teacherPopulator.accept(key, null);
+            } else if (teacherModify) {
                 final K key = keyBuilder.apply(i);
                 final V value = valueBuilder.apply(i + size);
                 teacherPopulator.accept(key, value);
-            } else if (isRandomOutcome(random, teacherRemoveProbability)) {
-                final K key = keyBuilder.apply(i);
-                teacherPopulator.accept(key, null);
             }
         });
     }

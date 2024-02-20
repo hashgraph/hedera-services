@@ -31,6 +31,7 @@ jmhModuleInfo {
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
+    requires("com.swirlds.platform")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
     requiresStatic("com.github.spotbugs.annotations")
@@ -52,4 +53,6 @@ tasks.register<JMHTask>("jmhReconnect") {
     jvmArgs.set(listOf("-Xmx16g"))
 
     resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
+
+    benchmarkParameters.put("numRecords", listProperty("5000000"))
 }

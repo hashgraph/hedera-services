@@ -16,15 +16,12 @@
 
 package com.swirlds.benchmark.reconnect;
 
-import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -34,11 +31,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class BenchmarkPlatformContextBuilder {
 
     private static final Metrics defaultMetrics = new NoOpMetrics();
-    private static final Configuration defaultConfig =
-            scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
     private static final Cryptography defaultCryptography = CryptographyHolder.get();
 
-    private Configuration configuration;
     private Metrics metrics;
     private Cryptography cryptography;
     private Time time = Time.getCurrent();
@@ -60,10 +54,7 @@ public final class BenchmarkPlatformContextBuilder {
      *
      * @return a new {@link PlatformContext}
      */
-    public PlatformContext build() {
-        if (configuration == null) {
-            configuration = defaultConfig;
-        }
+    public PlatformContext build(final Configuration configuration) {
         if (metrics == null) {
             metrics = defaultMetrics; // FUTURE WORK: replace this with NoOp Metrics
         }

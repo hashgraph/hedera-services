@@ -19,6 +19,7 @@ package com.swirlds.benchmark;
 import com.swirlds.benchmark.reconnect.ReconnectRunner;
 import com.swirlds.benchmark.reconnect.StateBuilder;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
@@ -48,14 +49,6 @@ public class ReconnectBench extends VirtualMapBaseBench {
     /** A random seed for the StateBuilder. */
     @Param({"9823452658"})
     public long randomSeed;
-
-    /**
-     * The size of the state, aka the number of nodes in the learner virtual map.
-     * The teacher map may have a slightly different number of nodes depending on
-     * the {@code teacherAddProbability} and {@code teacherRemoveProbability} values.
-     */
-    @Param({"5000000"})
-    public long stateSize;
 
     /** The probability of the teacher map having an extra node. */
     @Param({"0.05"})
@@ -94,7 +87,8 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     @Override
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("ReconnectBench creates multiple maps with distinct labels in parallel"
+                + ", so it cannot default to the parameterless createEmptyMap().");
     }
 
     private VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
@@ -139,7 +133,7 @@ public class ReconnectBench extends VirtualMapBaseBench {
         new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
                 .buildState(
                         random,
-                        stateSize,
+                        numRecords,
                         teacherAddProbability,
                         teacherRemoveProbability,
                         teacherModifyProbability,
@@ -166,6 +160,6 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     @Benchmark
     public void reconnect() throws Exception {
-        ReconnectRunner.reconnect(teacherMap, learnerMap);
+        ReconnectRunner.reconnect(configuration, getConfig(ReconnectConfig.class), teacherMap, learnerMap);
     }
 }

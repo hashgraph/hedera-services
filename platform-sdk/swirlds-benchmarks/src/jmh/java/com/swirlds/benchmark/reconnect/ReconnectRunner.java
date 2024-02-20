@@ -29,9 +29,6 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
  * A runner for reconnect tests.
  */
 public class ReconnectRunner {
-    private static final Configuration configuration = new BenchmarkConfigBuilder().getOrCreateConfig();
-    private static final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
-
     /**
      * Run reconnect with the given teacher and learner maps.
      *
@@ -40,6 +37,8 @@ public class ReconnectRunner {
      * @throws Exception thrown if the reconnect code throws any exceptions
      */
     public static void reconnect(
+            final Configuration configuration,
+            final ReconnectConfig reconnectConfig,
             final VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap,
             final VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap)
             throws Exception {
@@ -48,8 +47,8 @@ public class ReconnectRunner {
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         try {
-            final MerkleNode node =
-                    MerkleBenchmarkUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+            final MerkleNode node = MerkleBenchmarkUtils.hashAndTestSynchronization(
+                    learnerTree, teacherTree, configuration, reconnectConfig);
             node.release();
             final VirtualRoot root = learnerMap.getRight();
             if (!root.isHashed()) {

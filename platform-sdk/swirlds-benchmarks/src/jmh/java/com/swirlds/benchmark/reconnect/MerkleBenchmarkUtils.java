@@ -30,6 +30,8 @@ import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.network.SocketConfig;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -49,7 +51,7 @@ public class MerkleBenchmarkUtils {
      *            B C D null
      * </pre>
      */
-    public static BenchmarkMerkleInternal buildLessSimpleTree() {
+    static BenchmarkMerkleInternal buildLessSimpleTree() {
         final BenchmarkMerkleInternal root = new BenchmarkMerkleInternal("root");
 
         final MerkleLeaf A = new BenchmarkMerkleLeaf("A");
@@ -72,8 +74,11 @@ public class MerkleBenchmarkUtils {
         return root;
     }
 
-    public static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree, final MerkleNode desiredTree, final ReconnectConfig reconnectConfig)
+    static <T extends MerkleNode> T hashAndTestSynchronization(
+            final MerkleNode startingTree,
+            final MerkleNode desiredTree,
+            final Configuration configuration,
+            final ReconnectConfig reconnectConfig)
             throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
@@ -85,17 +90,20 @@ public class MerkleBenchmarkUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree, reconnectConfig);
+        return testSynchronization(startingTree, desiredTree, configuration, reconnectConfig);
     }
 
     /**
      * Synchronize two trees and verify that the end result is the expected result.
      */
     @SuppressWarnings("unchecked")
-    public static <T extends MerkleNode> T testSynchronization(
-            final MerkleNode startingTree, final MerkleNode desiredTree, final ReconnectConfig reconnectConfig)
+    private static <T extends MerkleNode> T testSynchronization(
+            final MerkleNode startingTree,
+            final MerkleNode desiredTree,
+            final Configuration configuration,
+            final ReconnectConfig reconnectConfig)
             throws Exception {
-        try (PairedStreams streams = new PairedStreams()) {
+        try (PairedStreams streams = new PairedStreams(configuration.getConfigData(SocketConfig.class))) {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
@@ -114,7 +122,7 @@ public class MerkleBenchmarkUtils {
                     },
                     reconnectConfig);
             final PlatformContext platformContext =
-                    BenchmarkPlatformContextBuilder.create().build();
+                    BenchmarkPlatformContextBuilder.create().build(configuration);
             teacher = new TeachingSynchronizer(
                     platformContext.getConfiguration(),
                     Time.getCurrent(),
