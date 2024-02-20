@@ -24,19 +24,16 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.utils.EqualsVerifier;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,9 +48,7 @@ class GossipEventTest {
     @Test
     @DisplayName("Serialize and deserialize event")
     void serializeDeserialize() throws IOException, ConstructableRegistryException {
-        final IndexedEvent indexedEvent = RandomEventUtils.randomEvent(new Random(), new NodeId(0), null, null);
-        final GossipEvent gossipEvent =
-                new GossipEvent(indexedEvent.getBaseEventHashedData(), indexedEvent.getBaseEventUnhashedData());
+        final GossipEvent gossipEvent = TestingEventBuilder.builder().buildGossipEvent();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final GossipEvent copy = SerializationUtils.serializeDeserialize(gossipEvent);
         assertEquals(gossipEvent, copy, "deserialized version should be the same");
@@ -83,6 +78,7 @@ class GossipEventTest {
 
     @Test
     void validateEqualsHashCode() {
-        assertTrue(EqualsVerifier.verify(EqualsVerifier::randomGossipEvent));
+        assertTrue(EqualsVerifier.verify(
+                r -> TestingEventBuilder.builder().setRandom(r).buildGossipEvent()));
     }
 }

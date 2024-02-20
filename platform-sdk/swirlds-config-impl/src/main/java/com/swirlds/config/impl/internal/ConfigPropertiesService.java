@@ -26,22 +26,22 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * Service that provides all loaded config properties
+ * Service that provides all loaded config properties.
  */
 class ConfigPropertiesService implements ConfigLifecycle {
 
     /**
-     * stores all config properties
+     * stores all config properties.
      */
     private final Map<String, String> internalProperties;
 
     /**
-     * The services that is used to load all properties in the correct order
+     * The services that is used to load all properties in the correct order.
      */
     private final ConfigSourceService configSourceService;
 
     /**
-     * Defines if this service is initialized
+     * Defines if this service is initialized.
      */
     private boolean initialized = false;
 
