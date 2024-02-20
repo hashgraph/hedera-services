@@ -25,19 +25,13 @@ import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
-import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
-import com.swirlds.logging.api.extensions.provider.LogProvider;
-import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.ServiceLoader.Provider;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -82,8 +76,8 @@ public class DefaultLoggingSystem {
         try {
             final Configuration configuration = createConfiguration();
             this.internalLoggingSystem = new LoggingSystem(configuration);
-            installHandlers(configuration);
-            installProviders(configuration);
+            this.internalLoggingSystem.installHandlers();
+            this.internalLoggingSystem.installProviders();
 
             EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
                     .map(event -> this.internalLoggingSystem
@@ -124,40 +118,6 @@ public class DefaultLoggingSystem {
                             .formatted(configFilePath));
             return ConfigurationBuilder.create().build();
         }
-    }
-
-    /**
-     * Loads all {@link LogHandlerFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
-     * system.
-     *
-     * @param configuration The configuration.
-     */
-    private void installHandlers(@NonNull final Configuration configuration) {
-        final ServiceLoader<LogHandlerFactory> serviceLoader = ServiceLoader.load(LogHandlerFactory.class);
-        final List<LogHandler> handlers = serviceLoader.stream()
-                .map(Provider::get)
-                .map(factory -> factory.create(configuration))
-                .filter(LogHandler::isActive)
-                .toList();
-        handlers.forEach(internalLoggingSystem::addHandler);
-        EMERGENCY_LOGGER.log(Level.DEBUG, handlers.size() + " logging handlers installed: " + handlers);
-    }
-
-    /**
-     * Loads all {@link LogProviderFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
-     * system.
-     *
-     * @param configuration The configuration.
-     */
-    private void installProviders(@NonNull final Configuration configuration) {
-        final ServiceLoader<LogProviderFactory> serviceLoader = ServiceLoader.load(LogProviderFactory.class);
-        final List<LogProvider> providers = serviceLoader.stream()
-                .map(Provider::get)
-                .map(factory -> factory.create(configuration))
-                .filter(LogProvider::isActive)
-                .toList();
-        providers.forEach(p -> p.install(internalLoggingSystem.getLogEventFactory(), internalLoggingSystem));
-        EMERGENCY_LOGGER.log(Level.DEBUG, providers.size() + " logging providers installed: " + providers);
     }
 
     /**

@@ -46,9 +46,9 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
             final long lastLeafPath,
             final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+            final boolean isReconnectContext)
             throws IOException {
-
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {

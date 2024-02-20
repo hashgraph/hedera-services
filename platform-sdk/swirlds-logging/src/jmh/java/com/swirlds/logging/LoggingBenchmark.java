@@ -167,11 +167,11 @@ public class LoggingBenchmark {
                     .withConverter(new ConfigLevelConverter())
                     .withConverter(new MarkerStateConverter())
                     .withValue("logging.level", "trace")
-                    .withValue("logging.handlers.console.active", "true")
-                    .withValue("logging.handlers.console.level", "trace")
+                    .withValue("logging.handler.console.active", "true")
+                    .withValue("logging.handler.console.level", "trace")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
-            loggingSystem.addHandler(new ConsoleHandler(configuration));
+            loggingSystem.addHandler(new ConsoleHandler("console", configuration));
         } else if (Objects.equals(setup, "NOOP_HANDLER")) {
             final Configuration configuration = ConfigurationBuilder.create()
                     .withConverter(new ConfigLevelConverter())

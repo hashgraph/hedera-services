@@ -26,4 +26,14 @@
 
     <!-- Generated code should not be subjected to checkstyle. -->
     <suppress files="[/\\].*[/\\]generated.*[/\\]" checks="." />
+
+    <!-- Static imports are preferred by the SL Code Style -->
+    <suppress files="." checks="AvoidStaticImport" />
+
+    <!-- Temporarily suppress DesignForExtension check due to the very large number of violations -->
+    <!-- This check is not covered by the SL Code Style in all cases. -->
+    <suppress files="." checks="DesignForExtension" />
+
+    <!-- Permit use of System.out in OrderedComparison.java -->
+    <suppress files=".*OrderedComparison.java" id="BanSystemOut" />
 </suppressions>
