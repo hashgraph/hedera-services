@@ -23,6 +23,7 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.console.ConsoleHandler;
 import com.swirlds.logging.file.FileHandlerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;

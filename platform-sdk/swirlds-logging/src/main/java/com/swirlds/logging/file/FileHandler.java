@@ -66,9 +66,15 @@ public class FileHandler extends AbstractSyncedHandler {
         try {
             if (!Files.exists(filePath) || Files.isWritable(filePath)) {
                 if (append) {
-                    bufferedWriter = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+                    bufferedWriter = Files.newBufferedWriter(
+                            filePath,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.APPEND,
+                            StandardOpenOption.WRITE,
+                            StandardOpenOption.DSYNC);
                 } else {
-                    bufferedWriter = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+                    bufferedWriter = Files.newBufferedWriter(
+                            filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
                 }
             } else {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
