@@ -44,7 +44,8 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean logEveryTransaction,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation, // NOT SURE
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) @NetworkProperty int numOfBlockHashesInState,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean writeSignatureFile,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean writeSignatureFile,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean writeBlockProof,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean collectSignaturesInPreHandle,
         /* [serial|concurrent] */
         @ConfigProperty(defaultValue = "concurrent") @NetworkProperty

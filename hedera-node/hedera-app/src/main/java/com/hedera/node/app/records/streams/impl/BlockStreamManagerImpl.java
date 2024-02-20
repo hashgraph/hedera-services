@@ -114,6 +114,11 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     private int roundsUntilNextBlock;
     /** True when we have completed event recovery. This is not yet implemented properly. */
     private boolean eventRecoveryCompleted = false;
+    /**
+     * When set to true, will enable the asynchronous process for collecting block signatures and producing a block
+     * proof.
+     */
+    private final boolean writeBlockProof;
 
     @Inject
     public BlockStreamManagerImpl(
@@ -133,6 +138,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
         // Get static configuration that is assumed not to change while the node is running
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        this.writeBlockProof = blockStreamConfig.writeBlockProof();
         this.numRoundsInBlock = blockStreamConfig.numRoundsInBlock();
         if (this.numRoundsInBlock <= 0) {
             throw new IllegalArgumentException("numRoundsInBlock must be greater than 0");
@@ -375,42 +381,62 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
             @NonNull final Runnable runnable) {
 
-        try {
-            System.out.println("Round: " + round.getRoundNum() + " - Round started");
-            BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
-                this.startRound();
-                try {
-                    runnable.run();
-                } finally {
-                    // Ensure any opened rounds are closed.
-                    this.endRound(state);
+        System.out.println("Round: " + round.getRoundNum() + " - Round started");
+        BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
+            this.startRound();
+            try {
+                runnable.run();
+                if (!writeBlockProof) {
+                    // If we are not writing a block proof, we can close the block now.
+                    blockStreamProducer.endBlock();
+                } else {
+                    // Create a new StateProofProducer. The StateProofProducer is responsible for collecting system
+                    // transaction asynchronously outside the single threaded handle workflow. It is also able to
+                    // asynchronously produce a state proof, once enough signatures have been collected for the round.
+                    // The production of the state proof triggers the end of the block by calling
+                    // blockStreamProducer.endBlock.
+                    final BlockStateProofProducer stateProofProducer = new BlockStateProofProducer(
+                            executor, state, round.getRoundNum(), round.getConsensusRoster());
+
+                    // In order to close the block, we need to wait until the asynchronous tasks have completed. Once
+                    // they are finished, our endBlock task will run and provide us with a BlockEnder that can be used
+                    // to complete the block. Then asynchronously complete the block.
+                    //
+                    // TODO(nickpoorman): We should probably pass a Callable that returns the specific information we
+                    // want from state instead of passing the entire state object to the producer.
+                    final BlockEnder.Builder blockEnderBuilder =
+                            BlockEnder.newBuilder().setState(state);
+                    blockStreamProducer
+                            // Chain the calling of build() on the BlockEnder Builder to execute once this block has
+                            // finished being sequentially-asynchronously produced. We will get the state in the
+                            // BlockEnder constructor at that point in time and then pass the blockEnder to the future
+                            // to be used below.
+                            .blockEnder(blockEnderBuilder)
+                            .thenAcceptAsync(
+                                    blockEnder -> blockEnder.endBlock(blockPersisted, stateProofProducer), executor);
                 }
-            });
-            System.out.println("Round: " + round.getRoundNum() + " - Round completed successfully");
-        } finally {
-            System.out.println("Round: " + round.getRoundNum() + " - Round completed (finally)");
-            // Create a new StateProofProducer. The StateProofProducer is responsible for collecting system transaction
-            // asynchronously outside the single threaded handle workflow. It is also able to asynchronously produce a
-            // state proof, once enough signatures have been collected for the round. The production of the state proof
-            // triggers the end of the block by calling blockStreamProducer.endBlock.
+                System.out.println("Round: " + round.getRoundNum() + " - Round completed (successfully)");
+            } catch (Exception e) {
+                // At the very least we should try to close the block resource that may have been opened.
+                try {
+                    blockStreamProducer.endBlock();
+                    // If we are in async mode we want to wait for the close to complete. This blocking call
+                    // will do that for us.
+                    final var runningHash = blockStreamProducer.getRunningHash();
+                    logger.error("Prematurely closed block on running hash: {}", runningHash);
+                } catch (Exception e2) {
+                    logger.error("Failed to close blockStreamProducer properly", e2);
+                    // Add e2 message to e and throw.
+                    e.addSuppressed(e2);
+                }
+                throw new RuntimeException("Round: " + round.getRoundNum() + " - Round failed", e);
+            } finally {
+                // Ensure any opened rounds are closed.
+                this.endRound(state);
 
-            final BlockStateProofProducer stateProofProducer =
-                    new BlockStateProofProducer(executor, state, round.getRoundNum(), round.getConsensusRoster());
-
-            // Regardless of what happens in the try block, attempt to close the block.
-            // In order to close the block, we need to wait until the asynchronous tasks have completed. Once they
-            // are finished, our endBlock task will run and provide us with a BlockEnder that can be used to complete
-            // the block. Then asynchronously complete the block.
-            // TODO(nickpoorman): We should probably pass a Callable that returns the specific information we
-            //  want from state instead of passing the entire state object to the producer.
-            final BlockEnder.Builder blockEnderBuilder = BlockEnder.newBuilder().setState(state);
-            blockStreamProducer
-                    // Chain the calling of build() on the BlockEnder Builder to execute once this block has finished
-                    // being sequentially-asynchronously produced. We will get the state in the BlockEnder constructor
-                    // at that point in time and then pass the blockEnder to the future to be used below.
-                    .endBlock(blockEnderBuilder)
-                    .thenAcceptAsync(blockEnder -> blockEnder.endBlock(blockPersisted, stateProofProducer), executor);
-        }
+                System.out.println("Round: " + round.getRoundNum() + " - Round completed (finally)");
+            }
+        });
     }
 
     /** {@inheritDoc} */

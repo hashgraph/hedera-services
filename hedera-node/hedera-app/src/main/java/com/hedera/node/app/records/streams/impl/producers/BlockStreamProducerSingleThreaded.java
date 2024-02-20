@@ -128,8 +128,17 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     @Override
+    public void endBlock() {
+        if (writer == null) return;
+        logger.debug("Closing block record writer for block {}", this.currentBlockNumber);
+        final var lastRunningHash = getRunningHashObject();
+        closeWriter(lastRunningHash, this.currentBlockNumber);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     @NonNull
-    public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
+    public CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder) {
         return CompletableFuture.completedFuture(builder.setLastRunningHash(getRunningHashObject())
                 .setWriter(writer)
                 .setFormat(format)
@@ -275,6 +284,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
                 writer.close();
             } catch (final Exception e) {
                 logger.error("Error closing block record writer for block {}", lastBlockNumber, e);
+                throw e;
             }
         }
     }

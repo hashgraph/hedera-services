@@ -73,6 +73,12 @@ public interface BlockStreamProducer extends AutoCloseable {
     void beginBlock();
 
     /**
+     * Called to close the current open block. This may be called when an error occurs, and we need to clean up
+     * resources or when we are not asynchronously closing the block via a {@link BlockEnder}.
+     */
+    void endBlock();
+
+    /**
      * Called at the end of a block. Since the gathering of the signatures and closing the block is an asynchronous
      * process, this method returns a CompletableFuture completed with a BlockEnder to hand off the responsibility of
      * closing the block to the caller. Then BlockStreamProducer can continue making progress on the next block while
@@ -82,7 +88,7 @@ public interface BlockStreamProducer extends AutoCloseable {
      * @return a future that will complete with the BlockEnder instance once the block has been ended
      */
     @NonNull
-    CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder);
+    CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder);
 
     /**
      * Write ConsensusEvent to the block stream. It must be in exact consensus time order! This must only be called

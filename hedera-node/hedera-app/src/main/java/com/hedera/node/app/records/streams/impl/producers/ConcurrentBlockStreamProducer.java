@@ -119,15 +119,21 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
 
     /** {@inheritDoc} */
     @Override
+    public void endBlock() {
+        doAsync(CompletableFuture.runAsync(producer::beginBlock, executor));
+    }
+
+    /** {@inheritDoc} */
+    @Override
     @NonNull
-    public CompletableFuture<BlockEnder> endBlock(@NonNull final BlockEnder.Builder builder) {
+    public CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder) {
         // We want to end the block after the previous lastFuture has completed. Only this time, we also must return a
         // future with the result of the endBlock call.
         CompletableFuture<BlockEnder> enderFuture = new CompletableFuture<>();
 
         // Chain the operation such that enderFuture is completed with the BlockEnder instance
         // once producer.endBlock() completes.
-        doAsync(producer.endBlock(builder).thenAccept(enderFuture::complete).exceptionally(ex -> {
+        doAsync(producer.blockEnder(builder).thenAccept(enderFuture::complete).exceptionally(ex -> {
             // Handle exceptions by completing enderFuture exceptionally.
             enderFuture.completeExceptionally(ex);
             return null; // CompletableFuture's exceptionally function requires a return value.
