@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
@@ -119,9 +120,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
         context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+            outcome.addCallDetailsTo(
+                    context.recordBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
         } else {
-            outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class));
+            outcome.addCreateDetailsTo(
+                    context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.YES);
         }
 
         throwIfUnsuccessful(outcome.status());
