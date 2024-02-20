@@ -527,28 +527,33 @@ class TokenServiceApiImplTest {
                     AccountID.newBuilder().accountNum(12345678L).build();
             assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Payer account does not exist");
+                    .hasMessage("Payer account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingFundingAccount() {
             // Given a configuration that refers to a funding account that DOES NOT EXIST
-            final var config =
-                    configBuilder.withValue("ledger.fundingAccount", 12345678L).getOrCreateConfig();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+            final var config = configBuilder
+                    .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
+                    .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Funding account does not exist");
+                    .hasMessage("Funding account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingStakingRewardAccount() {
             // Given a configuration that refers to a staking reward account that DOES NOT EXIST
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
             final var config = configBuilder
-                    .withValue("accounts.stakingRewardAccount", 12345678L)
+                    .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
@@ -556,14 +561,16 @@ class TokenServiceApiImplTest {
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Staking reward account does not exist");
+                    .hasMessage("Staking reward account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingNodeRewardAccount() {
             // Given a configuration that refers to a node reward account that DOES NOT EXIST
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
             final var config = configBuilder
-                    .withValue("accounts.nodeRewardAccount", 12345678L)
+                    .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
@@ -571,7 +578,7 @@ class TokenServiceApiImplTest {
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Node reward account does not exist");
+                    .hasMessage("Node reward account %s does not exist", unknownAccountId);
         }
 
         @Test
