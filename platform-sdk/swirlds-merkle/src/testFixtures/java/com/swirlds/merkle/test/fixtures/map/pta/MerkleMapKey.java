@@ -27,7 +27,7 @@ import java.io.IOException;
  */
 public class MerkleMapKey extends PartialMerkleLeaf implements MerkleLeaf {
 
-    public static final long CLASS_ID = 0x66ff4872c3ae8c5eL;
+    public static final long CLASS_ID = 0x66ff4872c3ae8c5fL;
 
     private static final class ClassVersion {
 

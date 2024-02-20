@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.api.validation;
+package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.config.api.Configuration;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.stream.Stream;
+import java.util.List;
 
 /**
- * A validator to validate the configuration at initialization.
+ * The tips and event window of the sync peer. This is the first thing sent/received during a sync (after protocol
+ * negotiation).
  */
-@FunctionalInterface
-public interface ConfigValidator {
-
-    /**
-     * Returns a {@link Stream} of possible violations as a result of the validation. If no violation happens the stream
-     * will be empty
-     *
-     * @param configuration the configuration
-     * @return the violations
-     */
-    @NonNull
-    Stream<ConfigViolation> validate(@NonNull Configuration configuration);
-}
+public record TheirTipsAndEventWindow(@NonNull NonAncientEventWindow eventWindow, @NonNull List<Hash> tips) {}
