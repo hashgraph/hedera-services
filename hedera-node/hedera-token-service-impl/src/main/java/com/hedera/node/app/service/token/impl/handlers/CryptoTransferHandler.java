@@ -521,7 +521,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
@@ -561,7 +560,6 @@ public class CryptoTransferHandler implements TransactionHandler {
                     || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             assessedCustomFees = new ArrayList<>();
         }
-        totalXfers += assessedCustomFees.size();
         for (final var fee : assessedCustomFees) {
             if (!fee.hasTokenId()) {
                 customFeeHbarTransfers++;
@@ -570,6 +568,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 involvedTokens.add(fee.tokenId());
             }
         }
+        totalXfers += customFeeHbarTransfers;
         weightedTokenXfers += tokenMultiplier * customFeeTokenTransfers;
         weightedTokensInvolved += tokenMultiplier * involvedTokens.size();
         long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)
@@ -583,12 +582,11 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeHbarTransfers,
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
-        final var ans = feeContext
+        return feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
-        return ans;
     }
 
     /**
