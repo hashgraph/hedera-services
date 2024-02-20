@@ -58,7 +58,7 @@ public final class ConfigurationProvider {
     }
 
     /**
-     * Access to this class that is defined by a singleton
+     * Access to this class that is defined by a singleton.
      *
      * @return the singleton instance of this class
      */

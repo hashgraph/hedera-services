@@ -251,9 +251,9 @@ public abstract class VirtualMapReconnectTestBase {
                 final long lastLeafPath,
                 final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                final boolean isReconnectContext)
                 throws IOException {
-
             final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                     leafRecordsToAddOrUpdate.collect(Collectors.toList());
 
