@@ -26,6 +26,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -38,6 +39,7 @@ public class EventCreationManagerWiring {
 
     private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
     private final BindableInputWire<NonAncientEventWindow, GossipEvent> nonAncientEventWindowInput;
+    private final BindableInputWire<ClearTrigger, GossipEvent> clearInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
 
@@ -67,6 +69,7 @@ public class EventCreationManagerWiring {
 
         eventInput = taskScheduler.buildInputWire("possible parents");
         nonAncientEventWindowInput = taskScheduler.buildInputWire("non-ancient event window");
+        clearInput = taskScheduler.buildInputWire("clear");
         newEventOutput = taskScheduler.getOutputWire();
 
         final double frequency = platformContext
@@ -84,6 +87,7 @@ public class EventCreationManagerWiring {
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
         eventInput.bind(eventCreationManager::registerEvent);
         nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
+        clearInput.bind(eventCreationManager::clear);
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
@@ -107,6 +111,16 @@ public class EventCreationManagerWiring {
     @NonNull
     public InputWire<NonAncientEventWindow> nonAncientEventWindowInput() {
         return nonAncientEventWindowInput;
+    }
+
+    /**
+     * Get the input wire to clear the internal state of the event creation manager.
+     *
+     * @return the input wire to clear the internal state of the event creation manager
+     */
+    @NonNull
+    public InputWire<ClearTrigger> clearInput() {
+        return clearInput;
     }
 
     /**

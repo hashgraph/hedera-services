@@ -133,26 +133,23 @@ public class PlatformCoordinator {
         consensusRoundHandlerWiring.flushRunnable().run();
 
         // Phase 2: flush
-        // All cycles have been broken via squelching, so now it's time to flush everything out of the system
+        // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
 
-        // Phase 3: clear
-        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
-        eventDeduplicatorWiring.flushRunnable().run();
-        orphanBufferWiring.clearInput().inject(new ClearTrigger());
-        orphanBufferWiring.flushRunnable().run();
-        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        inOrderLinkerWiring.flushRunnable().run();
-        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        stateSignatureCollectorWiring.flush();
-
-        // Phase 4: stop squelching
+        // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         consensusEngineWiring.stopSquelchingRunnable().run();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+
+        // Phase 4: clear
+        // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
+        eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
+        orphanBufferWiring.clearInput().inject(new ClearTrigger());
+        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
+        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
+        eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
     }
 }

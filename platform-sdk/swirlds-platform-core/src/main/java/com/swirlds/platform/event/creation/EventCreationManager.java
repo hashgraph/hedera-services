@@ -21,13 +21,13 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.IDLE;
 import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBLE_PARENTS;
 import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -58,20 +58,19 @@ public class EventCreationManager {
      * Constructor.
      *
      * @param platformContext    the platform context
-     * @param time               provides wall clock time
      * @param creator            creates events
      * @param eventCreationRules rules for deciding when it is permitted to create events
      */
     public EventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final EventCreator creator,
             @NonNull final EventCreationRule eventCreationRules) {
 
         this.creator = Objects.requireNonNull(creator);
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
 
-        phase = new PhaseTimerBuilder<>(platformContext, time, "platform", EventCreationStatus.class)
+        phase = new PhaseTimerBuilder<>(
+                        platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)
                 .enableFractionalMetrics()
                 .setInitialPhase(IDLE)
                 .setMetricsNamePrefix("eventCreation")
@@ -122,5 +121,15 @@ public class EventCreationManager {
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         creator.setNonAncientEventWindow(nonAncientEventWindow);
+    }
+
+    /**
+     * Clear the internal state of the event creation manager.
+     *
+     * @param ignored the trigger on the wire that causes us to clear, ignored
+     */
+    public void clear(@NonNull final ClearTrigger ignored) {
+        creator.clear();
+        phase.activatePhase(IDLE);
     }
 }

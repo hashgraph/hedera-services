@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.creation;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
@@ -47,7 +46,6 @@ public final class EventCreationManagerFactory {
      * Create a new event creation manager.
      *
      * @param platformContext        the platform's context
-     * @param time                   provides the wall clock time
      * @param signer                 can sign with this node's key
      * @param addressBook            the current address book
      * @param selfId                 the ID of this node
@@ -61,7 +59,6 @@ public final class EventCreationManagerFactory {
     @NonNull
     public static EventCreationManager buildEventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -72,7 +69,6 @@ public final class EventCreationManagerFactory {
             @NonNull final Supplier<Long> latestReconnectRound) {
 
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(time);
         Objects.requireNonNull(signer);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
@@ -83,7 +79,6 @@ public final class EventCreationManagerFactory {
 
         final EventCreator eventCreator = new TipsetEventCreator(
                 platformContext,
-                time,
                 new Random() /* does not need to be cryptographically secure */,
                 signer,
                 addressBook,
@@ -92,10 +87,10 @@ public final class EventCreationManagerFactory {
                 transactionPool);
 
         final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
-                new MaximumRateRule(platformContext, time),
+                new MaximumRateRule(platformContext),
                 new BackpressureRule(platformContext, getIntakeQueueSize),
                 new PlatformStatusRule(platformStatusSupplier, transactionPool));
 
-        return new EventCreationManager(platformContext, time, eventCreator, eventCreationRules);
+        return new EventCreationManager(platformContext, eventCreator, eventCreationRules);
     }
 }

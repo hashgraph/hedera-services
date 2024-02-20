@@ -48,4 +48,9 @@ public interface EventCreator {
      */
     @Nullable
     GossipEvent maybeCreateEvent();
+
+    /**
+     * Reset the event creator to its initial state.
+     */
+    void clear();
 }

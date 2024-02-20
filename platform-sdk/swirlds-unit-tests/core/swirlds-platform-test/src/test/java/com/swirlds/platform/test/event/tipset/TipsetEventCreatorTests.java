@@ -106,7 +106,7 @@ class TipsetEventCreatorTests {
             @NonNull final TransactionSupplier transactionSupplier) {
 
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         final Signer signer = mock(Signer.class);
         when(signer.sign(any())).thenAnswer(invocation -> randomSignature(random));
@@ -114,7 +114,7 @@ class TipsetEventCreatorTests {
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
         return new TipsetEventCreator(
-                platformContext, time, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
+                platformContext, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
     }
 
     /**
@@ -130,7 +130,7 @@ class TipsetEventCreatorTests {
 
         final Map<NodeId, SimulatedNode> eventCreators = new HashMap<>();
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         for (final Address address : addressBook) {
 
@@ -141,7 +141,7 @@ class TipsetEventCreatorTests {
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -404,6 +404,82 @@ class TipsetEventCreatorTests {
             }
 
             assertTrue(atLeastOneEventCreated);
+        }
+    }
+
+    /**
+     * This test is very similar to the {@link #randomOrderTest(boolean, boolean)}, except that we repeat the test
+     * several times using the same event creator. This fails when we do not clear the event creator in between runs,
+     * but should not fail if we have cleared the vent creator.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Clear Test")
+    void clearTest(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 10;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
+
+        for (int i = 0; i < 5; i++) {
+            final Map<Hash, EventImpl> events = new HashMap<>();
+
+            for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+
+                final List<Address> addresses = new ArrayList<>();
+                addressBook.iterator().forEachRemaining(addresses::add);
+                Collections.shuffle(addresses, random);
+
+                boolean atLeastOneEventCreated = false;
+
+                for (final Address address : addresses) {
+                    if (advancingClock) {
+                        time.tick(Duration.ofMillis(10));
+                    }
+
+                    transactionSupplier.set(generateRandomTransactions(random));
+
+                    final NodeId nodeId = address.getNodeId();
+                    final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
+
+                    final GossipEvent event = eventCreator.maybeCreateEvent();
+
+                    // It's possible a node may not be able to create an event. But we are guaranteed
+                    // to be able to create at least one event per cycle.
+                    if (event == null) {
+                        continue;
+                    }
+                    atLeastOneEventCreated = true;
+
+                    linkAndDistributeEvent(nodes, events, event);
+
+                    if (advancingClock) {
+                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    }
+                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
+                }
+
+                assertTrue(atLeastOneEventCreated);
+            }
+            // Reset the test by calling clear. This test fails in the second iteration if we don't clear things out.
+            for (final SimulatedNode node : nodes.values()) {
+                node.eventCreator.clear();
+
+                // There are copies of these data structures inside the event creator. We maintain these ones
+                // to sanity check the behavior of the event creator.
+                node.tipsetTracker.clear();
+                node.tipsetWeightCalculator.clear();
+            }
+            transactionSupplier.set(null);
         }
     }
 
