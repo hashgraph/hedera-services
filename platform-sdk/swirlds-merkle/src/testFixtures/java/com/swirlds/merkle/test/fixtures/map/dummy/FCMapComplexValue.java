@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class FCMapComplexValue extends PartialNaryMerkleInternal implements Keyed<SerializableLong>, MerkleInternal {
 
-    private static final long CLASS_ID = 0xea7f1d984a6b3d22L;
+    private static final long CLASS_ID = 0xea7f1d984a6b3d23L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
