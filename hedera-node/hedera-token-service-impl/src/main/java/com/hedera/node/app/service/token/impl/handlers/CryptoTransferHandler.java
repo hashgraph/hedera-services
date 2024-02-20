@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -304,7 +305,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
         steps.add(new AssociateTokenRecipientsStep(op));
-        // Step 2: Charge custom fees for token transfers. yet to be implemented
+        // Step 2: Charge custom fees for token transfers
         final var customFeeStep = new CustomFeeAssessmentStep(op);
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
@@ -556,8 +557,9 @@ public class CryptoTransferHandler implements TransactionHandler {
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
             // This is used to charge a different canonical fees.
-            triedAndFailedToUseCustomFees = (status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
-                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+            triedAndFailedToUseCustomFees = status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
+                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE
+                    || status == CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
             assessedCustomFees = new ArrayList<>();
         }
         for (final var fee : assessedCustomFees) {
