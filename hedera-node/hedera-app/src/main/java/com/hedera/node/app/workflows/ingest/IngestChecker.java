@@ -68,6 +68,7 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -185,8 +186,10 @@ public final class IngestChecker {
             validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
             validateTruePreCheck(requireNonNull(ethTxData.gasLimit()) >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
 
-            // Do not allow transactions to Burn Address
-            validateTruePreCheck(!Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+            // Do not allow sending HBars to Burn Address
+            if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
+                validateTruePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+            }
         }
 
         // 1a. Verify the transaction has been sent to *this* node
