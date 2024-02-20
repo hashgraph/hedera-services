@@ -319,18 +319,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
-                .solderTo("status manager", statusManager::submitStatusAction);
+                .solderTo("status manager", "state written to disk notification", statusManager::submitStatusAction);
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
-                .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
-        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+                .solderTo("app communication", "state saving result", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring
+                .stateSignature()
+                .solderTo("transaction pool", "state signature transaction", transactionPool::submitSystemTransaction);
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
-                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
+                .solderTo("app comm", "complete state", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
-                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
+                .solderTo("latestCompleteStateNexus", "complete state", latestCompleteStateNexus::setStateIfNewer);
     }
 
     /**
