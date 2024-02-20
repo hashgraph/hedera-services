@@ -28,7 +28,9 @@ If the contract address of the current call is determined to be the contract add
 function signature to a signature known by the translator.  In the case of atomic crypto transfer calls, the `ClassicTransferTranslator` class will be responsible for processing  the calls which has the following function signature: \
 ```cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])```
 4.  The `ClassicTransferTranslator` class will call the `ClassicTransferDecoder` class to decode the parameters of the call and translating the encoded parameter into a `TransactionBody` object.
-5.  The `ClassicTransferCall` class then takes the created `TransactionBody` object and dispatches a new transaction to the Token Service Module for processing.  It is also responsible for checking for sufficient gas and encoding the response.
+5.  A new class called  `AtomicTransferCall` will then take the created `TransactionBody` object and dispatches a new transaction to the Token Service Module for processing.  It is also responsible for checking for sufficient gas and encoding the response.
+
+![image info](./class_diagram.drawio.png)
 
 ### Token Service Module
 

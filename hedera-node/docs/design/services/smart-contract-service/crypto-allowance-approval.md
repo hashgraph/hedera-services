@@ -54,6 +54,8 @@ Most of the implementation can be found int the `CryptoApproveAllowanceHandler` 
 
 ## Acceptance Tests
 
+![image info](./crypto_approve.drawio.png)
+
 ### XTests
 
 #### Positive Tests

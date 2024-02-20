@@ -139,6 +139,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
 
     // This test is failing against mono-service.
     // There is an open issue to investigate this. - #11103
+    @HapiTest
     final HapiSpec cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
@@ -302,10 +303,10 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 cryptoTransferRevertNoKeyTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                                        .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))),
                         childRecordsCheck(
                                 cryptoTransferRevertBalanceTooLowTxn,
                                 CONTRACT_REVERT_EXECUTED,
@@ -330,6 +331,69 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(INVALID_ACCOUNT_AMOUNTS)))));
+    }
+
+    @HapiTest
+    final HapiSpec cryptoTransferTest() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
+        final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
+        final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
+        final var cryptoTransferRevertBalanceTooLowTxn = "cryptoTransferRevertBalanceTooLowTxn";
+
+        return propertyPreservingHapiSpec("cryptoTransferForHbarOnly")
+                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .given(
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER2).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                        getContractInfo(CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            final var sender = spec.registry().getAccountID(SENDER);
+                            final var sender2 = spec.registry().getAccountID(SENDER2);
+                            final var receiver = spec.registry().getAccountID(RECEIVER);
+                            final var amountToBeSent = 50 * ONE_HBAR;
+
+                            allRunFor(
+                                    spec,
+                                    newKeyNamed(DELEGATE_KEY)
+                                            .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
+                                    cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                    cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
+                                    contractCall(
+                                            CONTRACT,
+                                            TRANSFER_MULTIPLE_TOKENS,
+                                            transferList()
+                                                    .withAccountAmounts(
+                                                            accountAmount(sender, -amountToBeSent, false),
+                                                            accountAmount(receiver, amountToBeSent, false))
+                                                    .build(),
+                                            EMPTY_TUPLE_ARRAY)
+                                            .payingWith(SENDER2)
+                                            .via(cryptoTransferTxn)
+                                            .gas(GAS_TO_OFFER));
+                        }),
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                .then(
+                        getAccountBalance(RECEIVER).hasTinyBars(250 * ONE_HBAR),
+                        childRecordsCheck(
+                                cryptoTransferTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .transfers(including(tinyBarsFromTo(SENDER, RECEIVER, 50 * ONE_HBAR)))));
     }
 
     @HapiTest
