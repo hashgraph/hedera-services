@@ -25,10 +25,8 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -169,7 +167,19 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     }
 
     private void doAsync(@NonNull final CompletableFuture<Void> updater) {
-        lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
+        lastFutureRef.updateAndGet(lastFuture -> {
+            // Check if the lastFuture completed exceptionally
+            if (lastFuture.isCompletedExceptionally()) {
+                lastFuture
+                        .exceptionally(ex -> {
+                            // Throw a RuntimeException with the original exception
+                            throw new CompletionException(ex);
+                        })
+                        .join(); // This forces the exception to be thrown if present
+            }
+            // If lastFuture did not complete exceptionally, chain the future as before
+            return lastFuture.thenCompose(v -> updater);
+        });
     }
 
     private void awaitFutureCompletion(@NonNull final Future<?> future) {
@@ -180,7 +190,7 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
             logger.error("Interrupted while waiting for task to complete", e);
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            logger.error("Error occurred during task execution", e.getCause());
+            logger.error("Error occurred during asynchronous task execution", e.getCause());
             throw new RuntimeException(e);
         }
     }

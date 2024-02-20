@@ -100,6 +100,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -110,6 +111,8 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class HandleWorkflow {
+
+    private static final AtomicReference<Throwable> roundException = new AtomicReference<>(null);
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
@@ -202,7 +205,19 @@ public class HandleWorkflow {
         // We should never join this future to the handle thread, or it will prevent us from making progress.
         // Signatures are created at the end of a round. Therefore, handle must complete in order to create the
         // signatures.
+        // If we get an error from here then we weren't able to persist the block. We should do something with this
+        // error. The platform call here isn't asynchronous, so best we can do right now is throw the exception for a
+        // previous round.
+        final var asyncException = roundException.get();
+        if (asyncException != null) {
+            throw new RuntimeException("Error persisting block", roundException.get());
+        }
         CompletableFuture<BlockStateProof> persistedBlock = new CompletableFuture<>();
+        persistedBlock.exceptionally(ex -> {
+            logger.error("Error persisting block for round {}", round.getRoundNum(), ex);
+            roundException.compareAndSet(null, ex);
+            return null;
+        });
 
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.

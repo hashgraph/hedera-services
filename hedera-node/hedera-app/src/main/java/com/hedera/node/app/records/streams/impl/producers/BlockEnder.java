@@ -106,12 +106,14 @@ public class BlockEnder {
             // If operations complete successfully, complete blockPersisted with the proof.
             blockPersisted.complete(proof);
         } catch (InterruptedException e) {
+            logger.error("Interrupted while getting block state proof for block {}", blockNumber, e);
             // Re-interrupt the current thread when InterruptedException is caught.
             Thread.currentThread().interrupt();
 
             // Exceptionally complete blockPersisted with the caught exception.
             blockPersisted.completeExceptionally(e);
         } catch (ExecutionException e) {
+            logger.error("Error getting block state proof for block {}", blockNumber, e);
             // Exceptionally complete blockPersisted with the cause of the ExecutionException.
             // ExecutionException wraps the actual exception that caused the problem, so unwrap it.
             blockPersisted.completeExceptionally(e.getCause());

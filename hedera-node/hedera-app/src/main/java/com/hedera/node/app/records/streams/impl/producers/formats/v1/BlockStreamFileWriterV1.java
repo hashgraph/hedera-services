@@ -110,6 +110,7 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
 
     @Override
     public void init(final long blockNumber) {
+        logger.info("Initializing block stream writer {}", blockNumber);
         if (state != State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a BlockStreamFileWriterV1 twice");
 
@@ -158,11 +159,6 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
                 "Writing bytes to block stream - Bytes hash: " + item.hashCode() + " - File: " + this.blockFilePath);
         assert item.length() > 0 : "BlockItem must be non-empty";
         if (state != State.OPEN) {
-            System.out.println("Cannot write to a BlockStreamFileWriterV1 that is not open");
-            System.exit(1);
-        }
-        assert state == State.OPEN : "Cannot write to a BlockStreamFileWriterV1 that is not open";
-        if (state.ordinal() < State.OPEN.ordinal()) {
             throw new IllegalStateException("Cannot write to a BlockStreamFileWriterV1 that is not open");
         }
 

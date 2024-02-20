@@ -325,6 +325,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             // that this node has a problem, so we can make sure at least a minimal threshold of nodes is
             // successfully producing a blockchain.
             logger.error("Error writing block item to block stream writer for block {}", currentBlockNumber, e);
+            throw new RuntimeException(e);
         }
     }
 }

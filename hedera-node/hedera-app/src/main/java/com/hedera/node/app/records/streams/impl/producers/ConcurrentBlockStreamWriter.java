@@ -19,6 +19,7 @@ package com.hedera.node.app.records.streams.impl.producers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -76,6 +77,18 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     }
 
     private void updateLastFuture(@NonNull final CompletableFuture<Void> updater) {
-        lastFutureRef.updateAndGet(lastFuture -> lastFuture.thenCompose(v -> updater));
+        lastFutureRef.updateAndGet(lastFuture -> {
+            // Check if the lastFuture completed exceptionally
+            if (lastFuture.isCompletedExceptionally()) {
+                lastFuture
+                        .exceptionally(ex -> {
+                            // Throw a RuntimeException with the original exception
+                            throw new CompletionException(ex);
+                        })
+                        .join(); // This forces the exception to be thrown if present
+            }
+            // If lastFuture did not complete exceptionally, chain the future as before
+            return lastFuture.thenCompose(v -> updater);
+        });
     }
 }
