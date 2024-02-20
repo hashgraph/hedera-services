@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Implementation of {@code ConfigConverter} specifically for converting enums
+ * Implementation of {@code ConfigConverter} specifically for converting enums.
  */
 public class EnumConverter<T extends Enum<T>> implements ConfigConverter<T> {
 
@@ -40,7 +40,7 @@ public class EnumConverter<T extends Enum<T>> implements ConfigConverter<T> {
      * @param value String value to be converted to a valid enum instance
      * @return the enum instance associated with {@code value}
      * @throws IllegalArgumentException if value is not a valid enum value for {@code valueType}
-     * @throws NullPointerException if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code value} is {@code null}
      */
     @Nullable
     @Override

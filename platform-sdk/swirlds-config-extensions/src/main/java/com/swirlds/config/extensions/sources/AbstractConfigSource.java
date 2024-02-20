@@ -24,12 +24,12 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * Abstract implementation of {@link ConfigSource}
+ * Abstract implementation of {@link ConfigSource}.
  */
 public abstract class AbstractConfigSource implements ConfigSource {
 
     /**
-     * Provides all properties of this config source as {@link Map} instance
+     * Provides all properties of this config source as {@link Map} instance.
      *
      * @return all properties of this config
      */

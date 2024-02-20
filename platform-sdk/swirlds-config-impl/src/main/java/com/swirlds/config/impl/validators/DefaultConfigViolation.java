@@ -24,26 +24,20 @@ import java.util.Objects;
 /**
  * An immutable default implementation of {@link ConfigViolation}.
  *
- * @param propertyName
- * 		the name of the property that causes the violation
- * @param value
- * 		the value of the property that causes the violation
- * @param exists
- * 		definies of the property that causes the violation exists
- * @param message
- * 		message of the violation
+ * @param propertyName the name of the property that causes the violation
+ * @param value        the value of the property that causes the violation
+ * @param exists       defines whether the property that caused the violation exists
+ * @param message      message of the violation
  */
 public record DefaultConfigViolation(String propertyName, String value, boolean exists, String message)
         implements ConfigViolation {
 
     /**
-     * Factory method to create a {@link ConfigViolation}
+     * Factory method to create a {@link ConfigViolation}.
      *
-     * @param metadata
-     * 		the metadata of the property that causes the violation
-     * @param message
-     * 		the violation message
-     * @return
+     * @param metadata the metadata of the property that causes the violation
+     * @param message  the violation message
+     * @return a new {@link ConfigViolation} instance
      */
     public static ConfigViolation of(@NonNull final PropertyMetadata<?> metadata, final String message) {
         Objects.requireNonNull(metadata, "metadata must not be null");
