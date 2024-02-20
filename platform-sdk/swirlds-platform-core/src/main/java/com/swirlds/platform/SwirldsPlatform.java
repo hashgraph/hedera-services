@@ -625,7 +625,7 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getIssDetectorWiring().issNotificationOutput();
         issOutput.solderTo(
                 "issNotificationEngine", "ISS notification", n -> notificationEngine.dispatch(IssListener.class, n));
-        issOutput.solderTo("statusManager", "ISS notification", n -> {
+        issOutput.solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
             if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
                 platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
             }
