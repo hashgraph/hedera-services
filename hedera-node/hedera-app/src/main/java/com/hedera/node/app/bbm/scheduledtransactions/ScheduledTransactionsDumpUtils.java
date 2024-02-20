@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ScheduledTransactionsDumpUtils {
+
     public static void dumpModScheduledTransactions(
             @NonNull final Path path,
             @NonNull
@@ -164,7 +165,6 @@ public class ScheduledTransactionsDumpUtils {
     @NonNull
     private static final List<Pair<String, BiConsumer<FieldBuilder, ScheduledTransaction>>> fieldFormatters = List.of(
             Pair.of("number", getFieldFormatter(ScheduledTransaction::number, Object::toString)),
-            Pair.of("grpcAdminKey", getFieldFormatter(ScheduledTransaction::grpcAdminKey, csvQuote)),
             Pair.of(
                     "adminKey",
                     getFieldFormatter(

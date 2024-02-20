@@ -108,8 +108,7 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
 
-        final MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>>
-                scheduledTransactions = // TODO: is it OK to use inMemory?
+        final MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>> scheduledTransactions =
                 requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
         dumpModScheduledTransactions(
                 Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), scheduledTransactions, checkpoint);

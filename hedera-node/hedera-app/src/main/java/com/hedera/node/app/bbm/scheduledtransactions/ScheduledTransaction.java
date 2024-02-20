@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.bbm.scheduledtransactions;
 
-import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +34,6 @@ import java.util.Optional;
 @SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
 record ScheduledTransaction(
         long number,
-        @Nullable Key grpcAdminKey,
         @NonNull Optional<JKey> adminKey,
         @Nullable String memo,
         boolean deleted,
@@ -51,18 +49,18 @@ record ScheduledTransaction(
         byte[] bodyBytes,
         @Nullable TransactionBody ordinaryScheduledTxn,
         @Nullable SchedulableTransactionBody scheduledTxn,
-        @Nullable List<byte[]> signatories,
-        @Nullable List<byte[]> notary) {
-    static ScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException { // TODO: Throw?
+        @Nullable List<byte[]> signatories) {
+
+    static ScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
         return new ScheduledTransaction(
                 value.scheduleId().scheduleNum(),
-                null, // TODO: both fields are the same; see `ScheduleVirtualValue::initFromBodyBytes`; remove?
-                Optional.of(JKey.mapKey(value.adminKey())),
+                value.adminKey() != null ? Optional.of(JKey.mapKey(value.adminKey())) : Optional.empty(),
                 value.memo(),
                 value.deleted(),
                 value.executed(),
-                value.waitForExpiry(), // TODO: calculatedWaitForExpiry is the same as waitForExpiryProvided; see
-                // `ScheduleVirtualValue::from`; remove?
+                // calculatedWaitForExpiry is the same as waitForExpiryProvided;
+                // see ScheduleVirtualValue::from` - to.calculatedWaitForExpiry = to.waitForExpiryProvided;
+                value.waitForExpiry(),
                 value.waitForExpiry(),
                 entityIdFrom(value.payerAccountId().accountNum()),
                 entityIdFrom(value.schedulerAccountId().accountNum()),
@@ -73,22 +71,17 @@ record ScheduledTransaction(
                 RichInstant.fromJava(Instant.ofEpochSecond(value.calculatedExpirationSecond())),
                 RichInstant.fromJava(Instant.ofEpochSecond(
                         value.resolutionTime().seconds(), value.resolutionTime().nanos())),
-                value.originalCreateTransaction()
-                        .toString()
-                        .getBytes(), // TODO: same as ordinaryScheduledTxn.toByteString()
-                null, // value.originalCreateTransaction(),  // TODO: we have to convert from hapi.TransactionBody to
-                // proto.TransactionBody???
-                null, // value.scheduledTransaction(),       // TODO: same as above???
+                PbjConverter.fromPbj(value.originalCreateTransaction()).toByteArray(),
+                PbjConverter.fromPbj(value.originalCreateTransaction()),
+                PbjConverter.fromPbj(value.scheduledTransaction()),
                 value.signatories().stream()
                         .map(ScheduledTransaction::toPrimitiveKey)
-                        .toList(),
-                null); // TODO: no notary in mod; remove?
+                        .toList());
     }
 
     static ScheduledTransaction fromMono(@NonNull final ScheduleVirtualValue scheduleVirtualValue) {
         return new ScheduledTransaction(
                 scheduleVirtualValue.getKey().getKeyAsLong(),
-                scheduleVirtualValue.grpcAdminKey(),
                 scheduleVirtualValue.adminKey(),
                 scheduleVirtualValue.memo().orElse(""),
                 scheduleVirtualValue.isDeleted(),
@@ -104,10 +97,7 @@ record ScheduledTransaction(
                 scheduleVirtualValue.bodyBytes(),
                 scheduleVirtualValue.ordinaryViewOfScheduledTxn(),
                 scheduleVirtualValue.scheduledTxn(),
-                scheduleVirtualValue.signatories(),
-                scheduleVirtualValue.notary().stream()
-                        .map(ByteString::toByteArray)
-                        .toList());
+                scheduleVirtualValue.signatories());
     }
 
     static EntityId entityIdFrom(long num) {
