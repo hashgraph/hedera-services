@@ -34,6 +34,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Counter.Config;
 import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.IntegerGauge;
@@ -695,21 +696,58 @@ class LegacyCsvWriterTest {
                                 """);
     }
 
+    @Test
+    void testAddedMetricsAfterFirstSnapshotAreIgnored() throws IOException {
+        // given
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
+        final Path csvFilePath = writer.getCsvFilePath();
+        final List<Metric> metrics = createSimpleList();
+
+        // when
+        final List<Snapshot> snapshots1 = metrics.stream()
+                .map(DefaultMetric.class::cast)
+                .map(Snapshot::of)
+                .toList();
+        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots1));
+
+        final List<Snapshot> snapshots =
+                List.of(Snapshot.of((DefaultMetric) this.metrics.getOrCreate(new Config("NewCategory", "NewCounter"))));
+        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots));
+
+        // then
+        final String content = Files.readString(csvFilePath);
+        assertThat(content).matches(
+                """
+                        filename:,.*,
+                        Counter 1:,Counter 1,
+                        Counter 2:,Counter 2,
+                        Counter 3:,Counter 3,
+                        Counter 4:,Counter 4,
+                        Counter 5:,Counter 5,
+
+                        ,,platform,platform,platform,platform,platform,
+                        ,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
+                        ,,0,0,0,0,0,
+                        ,,,,,,,
+                        """);
+
+    }
+
     private List<Metric> createCompleteList() {
         return List.of(
                 metrics.getOrCreate(new Counter.Config(Metrics.PLATFORM_CATEGORY, "Counter")),
                 metrics.getOrCreate(
                         new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge").withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new FunctionGauge.Config<>(
-                                Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
+                        Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
                         .withFormat("%s")),
                 metrics.getOrCreate(new IntegerAccumulator.Config(Metrics.PLATFORM_CATEGORY, "IntegerAccumulator")),
                 metrics.getOrCreate(new IntegerGauge.Config(Metrics.PLATFORM_CATEGORY, "IntegerGauge")),
                 metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                                Metrics.PLATFORM_CATEGORY,
-                                "IntegerPairAccumulator",
-                                Double.class,
-                                IntegerPairAccumulator.AVERAGE)
+                        Metrics.PLATFORM_CATEGORY,
+                        "IntegerPairAccumulator",
+                        Double.class,
+                        IntegerPairAccumulator.AVERAGE)
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "LongAccumulator")),
                 metrics.getOrCreate(new LongGauge.Config(Metrics.PLATFORM_CATEGORY, "LongGauge")),
@@ -718,7 +756,7 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new StatEntry.Config(
-                                Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
+                        Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
                         .withFormat("%s")));
     }
 
