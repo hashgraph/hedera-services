@@ -823,6 +823,9 @@ public class LoggingSystemTest {
 
         // then
         assertThat(loggingSystem.getHandlers()).hasSize(2);
+        tempFiles.forEach(path -> {
+            assertThat(path.toFile()).exists();
+        });
     }
 
     static void testSpec(LoggingSystem system) {

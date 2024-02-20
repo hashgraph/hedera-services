@@ -181,13 +181,11 @@ Configure your file handlers with these properties to control logging behavior:
 
 - **File Path (`logging.handler.NAME.file`)**: Specifies the file to write logs to.
 - **Append Mode (`logging.handler.NAME.append`)**: If `true` (default), logs are appended to the file; if `false`, the file is overwritten on new logs.
-- **Buffer Size (`logging.handler.NAME.bufferSize`)**: Sets the buffer size for log writing in bytes. Default is `8192` bytes (8 KB).
 
 **Examples:**
 ```yaml
 logging.handler.NAME.file: /path/to/logfile.log
 logging.handler.NAME.append: true
-logging.handler.NAME.bufferSize: 8192
 ```
 > [!NOTE]  
 > Adjust `NAME` to your handler's name. The default settings are optimized for general use.

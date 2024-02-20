@@ -23,9 +23,9 @@ import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 /**
@@ -35,7 +35,6 @@ import java.util.Objects;
  * You can configure the following properties:
  * <ul>
  *     <li>{@code file} - the {@link Path} of the file</li>
- *     <li>{@code bufferSize} - the buffer size of the {@link BufferedWriter}</li>
  *     <li>{@code append} - whether to append to the file or not</li>
  * </ul>
  *
@@ -43,12 +42,8 @@ import java.util.Objects;
 public class FileHandler extends AbstractSyncedHandler {
 
     private static final String FILE_NAME_PROPERTY = "%s.file";
-    private static final String BUFFER_SIZE_PROPERTY = "%s.bufferSize";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-
-    private final FileOutputStream fileOutputStream;
-    private final OutputStreamWriter outputStreamWriter;
     private final BufferedWriter bufferedWriter;
 
     /**
@@ -64,24 +59,23 @@ public class FileHandler extends AbstractSyncedHandler {
         final Path filePath = Objects.requireNonNullElse(
                 configuration.getValue(FILE_NAME_PROPERTY.formatted(propertyPrefix), Path.class, null),
                 Path.of(DEFAULT_FILE_NAME));
-        final int bufferSize = Objects.requireNonNullElse(
-                configuration.getValue(BUFFER_SIZE_PROPERTY.formatted(propertyPrefix), Integer.class, null), 8 * 1024);
         final boolean append = Objects.requireNonNullElse(
                 configuration.getValue(APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, null), true);
 
-        FileOutputStream fileOutputStream = null;
-        OutputStreamWriter outputStreamWriter = null;
         BufferedWriter bufferedWriter = null;
         try {
-            fileOutputStream = new FileOutputStream(filePath.toFile(), append);
-            outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-            bufferedWriter = new BufferedWriter(outputStreamWriter, bufferSize);
+            if (!Files.exists(filePath) || Files.isWritable(filePath)) {
+                if (append) {
+                    bufferedWriter = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+                } else {
+                    bufferedWriter = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+                }
+            } else {
+                EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
+            }
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to create FileHandler", exception);
         }
-
-        this.fileOutputStream = fileOutputStream;
-        this.outputStreamWriter = outputStreamWriter;
         this.bufferedWriter = bufferedWriter;
     }
 
@@ -104,12 +98,6 @@ public class FileHandler extends AbstractSyncedHandler {
             if (bufferedWriter != null) {
                 bufferedWriter.flush();
                 bufferedWriter.close();
-            }
-            if (outputStreamWriter != null) {
-                outputStreamWriter.close();
-            }
-            if (fileOutputStream != null) {
-                fileOutputStream.close();
             }
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
