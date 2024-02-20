@@ -241,6 +241,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
+    private long transactionsIgnoredByExpectedMap = 0;
+
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
 
@@ -538,7 +540,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         setChild(ChildIndices.FCM_FAMILY, fcmFamily);
     }
 
-    public List<TransactionCounter> getTransactionCounter() {
+    public TransactionCounterList getTransactionCounter() {
         return getChild(ChildIndices.TRANSACTION_COUNTER);
     }
 
@@ -650,6 +652,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public synchronized PlatformTestingToolState copy() {
         throwIfImmutable();
         roundCounter++;
+
+        logger.info(
+                DEMO_INFO.getMarker(),
+                "Copying round {}, transactions ignored by expected map: {}." + " This log is added to debug #11254",
+                roundCounter,
+                transactionsIgnoredByExpectedMap);
 
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
@@ -883,6 +891,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!expectedFCMFamily.shouldHandleForKeys(
                         keys, transactionType, getConfig(), entityType, epochMillis, originId)
                 && entityType != EntityType.NFT) {
+            transactionsIgnoredByExpectedMap++;
             return;
         }
 
