@@ -46,7 +46,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     private final int ordinal;
 
     /**
-     * Creates an instance that provides the config properties from the legacy settings.txt file
+     * Creates an instance that provides the config properties from the legacy {@code settings.txt} file.
      *
      * @param settingsPath the path to the settings.txt file
      * @return config source for the settings.txt file
@@ -59,7 +59,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates a new instance based on a file
+     * Creates a new instance based on a file.
      *
      * @param filePath the file that contains the config properties
      * @throws IOException if the file can not be loaded or parsed
@@ -69,7 +69,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates a new instance based on a file
+     * Creates a new instance based on a file.
      *
      * @param ordinal  the ordinal of the source (see {@link #getOrdinal()})
      * @param filePath the file that contains the config properties
@@ -83,7 +83,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates a new instance based on a file
+     * Creates a new instance based on a file.
      *
      * @param filePath the path of the file that contains the config properties
      * @throws IOException if the file can not be loaded or parsed
