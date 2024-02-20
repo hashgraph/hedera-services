@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event.source;
 
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
@@ -228,10 +229,12 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
         // work for consensus, and we will have to upgrade our simulation framework prior to converting
         // consensus to use the birth round.
         final IndexedEvent latestSelfEvent = getLatestEvent(random);
-        final long birthRound = Math.max(
-                        otherParentEvent == null ? 0 : otherParentEvent.getGeneration(),
-                        latestSelfEvent == null ? 0 : latestSelfEvent.getGeneration())
+        final long generation = Math.max(
+                        otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
+                        latestSelfEvent == null ? (FIRST_GENERATION - 1) : latestSelfEvent.getGeneration())
                 + 1;
+        // First generation is 0, but first birth round is 1.
+        final long birthRound = generation + 1;
 
         event = RandomEventUtils.randomEventWithTimestamp(
                 random,

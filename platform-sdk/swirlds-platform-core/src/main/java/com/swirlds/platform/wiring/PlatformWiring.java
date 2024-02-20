@@ -234,7 +234,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.nonExpiredEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(futureEventBufferWiring.eventWindowInput(), INJECT);
     }
 
@@ -545,6 +545,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
+
+        // Since there is asynchronous access to the shadowgraph, it's important to ensure that
+        // it has fully ingested the new event window before continuing.
+        shadowgraphWiring.flushRunnable().run();
     }
 
     /**

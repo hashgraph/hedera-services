@@ -67,18 +67,11 @@ public class Synchronizer {
                     return null;
                 },
                 () -> {
-                    if (listener.isSendRecInitBytes()) {
-                        // Read the COMM_SYNC_REQUEST byte on the listener prior to calling synchronize to match the
-                        // production code and align the streams
-                        listener.getConnection().getDis().readByte();
-                    }
                     try {
                         if (listener.isCanAcceptSync()) {
                             final boolean synchronize =
                                     listener.getSynchronizer().synchronize(platformContext, listener.getConnection());
                             listener.setSynchronizerReturn(synchronize);
-                        } else {
-                            listener.getSynchronizer().rejectSync(listener.getConnection());
                         }
                     } catch (final Exception e) {
                         listener.setSynchronizerReturn(null);
