@@ -603,7 +603,6 @@ public class SwirldsPlatform implements Platform {
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
-                time,
                 this,
                 currentAddressBook,
                 selfId,
