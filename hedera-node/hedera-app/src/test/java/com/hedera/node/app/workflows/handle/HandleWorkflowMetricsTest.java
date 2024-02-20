@@ -42,7 +42,7 @@ class HandleWorkflowMetricsTest {
         new HandleWorkflowMetrics(metrics);
 
         // then
-        assertThat(metrics.findMetricsByCategory("app")).hasSize(HederaFunctionality.values().length * 2);
+        assertThat(metrics.findMetricsByCategory("app")).hasSize((HederaFunctionality.values().length - 1) * 2);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -61,9 +61,9 @@ class HandleWorkflowMetricsTest {
         new HandleWorkflowMetrics(metrics);
 
         // then
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationMax").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationMax").get(VALUE))
                 .isEqualTo(0);
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationAvg").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(0);
     }
 
@@ -76,9 +76,9 @@ class HandleWorkflowMetricsTest {
         handleWorkflowMetrics.update(HederaFunctionality.CRYPTO_CREATE, 42);
 
         // then
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationMax").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationMax").get(VALUE))
                 .isEqualTo(42);
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationAvg").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(42);
     }
 
@@ -92,9 +92,9 @@ class HandleWorkflowMetricsTest {
         handleWorkflowMetrics.update(HederaFunctionality.CRYPTO_CREATE, 22);
 
         // then
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationMax").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationMax").get(VALUE))
                 .isEqualTo(22);
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationAvg").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(16);
     }
 
@@ -109,9 +109,9 @@ class HandleWorkflowMetricsTest {
         handleWorkflowMetrics.update(HederaFunctionality.CRYPTO_CREATE, 3);
 
         // then
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationMax").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationMax").get(VALUE))
                 .isEqualTo(13);
-        assertThat(metrics.getMetric("app", "CryptoCreateDurationAvg").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(7);
     }
 }
