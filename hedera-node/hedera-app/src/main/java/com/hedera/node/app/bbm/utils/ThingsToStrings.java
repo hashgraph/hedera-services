@@ -17,6 +17,7 @@
 package com.hedera.node.app.bbm.utils;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -389,6 +390,10 @@ public class ThingsToStrings {
     @NonNull
     public static String toStringOfRichInstant(@NonNull final RichInstant instant) {
         return "%d.%d".formatted(instant.getSeconds(), instant.getNanos());
+    }
+
+    public static String toStringOfTimestamp(@NonNull final Timestamp timestamp) {
+        return "%d.%d".formatted(timestamp.seconds(), timestamp.nanos());
     }
 
     public static boolean is7BitAscii(@NonNull final byte[] bs) {

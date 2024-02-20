@@ -22,8 +22,12 @@ import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
+import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpModBlockInfo;
+import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpMonoBlockInfo;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
@@ -61,6 +65,7 @@ public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
     private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
     private static final String SEMANTIC_FILES = "files.txt";
+    private static final String SEMANTIC_BLOCK = "blockInfo.txt";
 
     public static void dumpMonoChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
@@ -70,6 +75,7 @@ public class StateDumper {
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
+        dumpMonoBlockInfo(Paths.get(dumpLoc, SEMANTIC_BLOCK), networkContext, state.getChild(RECORD_STREAM_RUNNING_HASH), checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -94,6 +100,10 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+        //Dump block info and running hashes
+        final SingletonNode<RunningHashes> runningHash = requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
+        final SingletonNode<BlockInfo> blocksState = requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
+        dumpModBlockInfo(Paths.get(dumpLoc, SEMANTIC_BLOCK), runningHash.getValue(), blocksState.getValue(), checkpoint);
     }
 
     private static String getExtantDumpLoc(
