@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -79,16 +78,12 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenUpdateOrThrow();
+        final var op = context.body().tokenUpdateNftOrThrow();
         pureChecks(context.body());
         final var tokenId = op.tokenOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (op.hasMetadataKey()) {
-            context.requireKeyOrThrow(op.metadataKeyOrThrow(), INVALID_METADATA_KEY);
-        }
-        // TOKEN_HAS_NO_METADATA_KEY
     }
 
     @Override

@@ -61,7 +61,6 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -161,31 +160,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
             assertThat(modifiedToken.hasNftId()).isTrue();
             assertThat(modifiedToken.nftId().serialNumber()).isEqualTo(2);
         }
-    }
-
-    @Test
-    public void testPreHandleWithMetadataKey() throws PreCheckException {
-        // Arrange
-        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
-        final var metadataForAllNfts = Bytes.wrap("NFT test metadata");
-
-        // TokenUpdateNftBuilder to create mock with serialIds and test metadata
-        txn = new TokenUpdateNftBuilder()
-                .newNftUpdateTransactionBody(
-                        nonFungibleTokenId, metadataForAllNfts, serialNumbers.toArray(new Long[0]));
-
-        given(preHandleContext.body()).willReturn(txn);
-
-        //        ReadableTokenStore tokenStore = mock(ReadableTokenStore.class);
-        //        when(op.tokenOrThrow()).thenReturn(new TokenId(1L));
-        //        when(op.hasMetadataKey()).thenReturn(true);
-        //        when(op.metadataKeyOrThrow()).thenReturn(new Key("metadataKey"));
-        //        when(context.createStore(ReadableTokenStore.class)).thenReturn(tokenStore);
-        //        when(tokenStore.getTokenMeta(any(TokenId.class))).thenReturn(tokenMetadata);
-        //        final var context = mockContext(txn);
-        //        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-        //                .isInstanceOf(HandleException.class)
-        //                .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
 
     @Test
