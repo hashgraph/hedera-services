@@ -106,7 +106,7 @@ public class TokenTypesDumpUtils {
             @NonNull final MerkleMap<EntityNum, MerkleToken> tokens,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var allTokens = gatherTokensFromMono(tokens, Token::fromMono);
+            final var allTokens = gatherTokensFromMono(tokens);
             dump(writer, allTokens);
             System.out.printf(
                     "=== mono tokens report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
@@ -115,8 +115,7 @@ public class TokenTypesDumpUtils {
 
     @NonNull
     private static Map<TokenType, Map<Long, Token>> gatherTokensFromMono(
-            @NonNull final MerkleMap<EntityNum, MerkleToken> source,
-            @NonNull final Function<MerkleToken, Token> valueMapper) {
+            @NonNull final MerkleMap<EntityNum, MerkleToken> source) {
 
         final var allTokens = new HashMap<TokenType, Map<Long, Token>>();
 
@@ -126,7 +125,7 @@ public class TokenTypesDumpUtils {
         // todo check if it is possible to use multi threading with MerkleMaps like VirtualMaps
         MerkleMapLike.from(source).forEachNode((en, mt) -> allTokens
                 .get(TokenType.fromProtobufOrdinal(mt.tokenType().ordinal()))
-                .put(en.longValue(), valueMapper.apply(mt)));
+                .put(en.longValue(), Token.fromMono(mt)));
         return allTokens;
     }
 
