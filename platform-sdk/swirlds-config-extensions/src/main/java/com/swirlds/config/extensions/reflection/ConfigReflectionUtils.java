@@ -41,10 +41,9 @@ public final class ConfigReflectionUtils {
 
     /**
      * Returns the generic type of the class or throws an {@link IllegalArgumentException} if the given class has not
-     * exactly one generic type
+     * exactly one generic type.
      *
-     * @param parameterizedType
-     * 		the class
+     * @param parameterizedType the class
      * @return the generic type of the class
      */
     public static Type getSingleGenericTypeArgument(final ParameterizedType parameterizedType) {
@@ -55,10 +54,9 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Returns true if the given class is public
+     * Returns true if the given class is public.
      *
-     * @param type
-     * 		the class
+     * @param type the class
      * @return true if the given class is public
      */
     public static boolean isPublic(final Class<?> type) {
@@ -66,12 +64,10 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Returns the config property name for a property of a config data object (see {@link ConfigData})
+     * Returns the config property name for a property of a config data object (see {@link ConfigData}).
      *
-     * @param prefix
-     * 		the prefix of the  config data type
-     * @param component
-     * 		the record component thatd efines the property
+     * @param prefix    the prefix of the  config data type
+     * @param component the record component thatd efines the property
      * @return the config property name for a property
      */
     public static String getPropertyNameForConfigDataProperty(final String prefix, final RecordComponent component) {
@@ -87,12 +83,10 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Returns the config property name for a property of a config data object (see {@link ConfigData})
+     * Returns the config property name for a property of a config data object (see {@link ConfigData}).
      *
-     * @param prefix
-     * 		the prefix of the  config data type
-     * @param name
-     * 		the name of the property
+     * @param prefix the prefix of the  config data type
+     * @param name   the name of the property
      * @return the config property name
      */
     public static String getPropertyNameForConfigDataProperty(final String prefix, final String name) {
@@ -103,10 +97,9 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Returns the name of a config data type (see {@link ConfigData})
+     * Returns the name of a config data type (see {@link ConfigData}).
      *
-     * @param type
-     * 		the config data type
+     * @param type the config data type
      * @return the name of a config data type
      */
     public static String getNamePrefixForConfigDataRecord(final AnnotatedElement type) {
@@ -116,16 +109,12 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Returns all {@link AnnotatedProperty} that can be found for the given constraint annotation
+     * Returns all {@link AnnotatedProperty} that can be found for the given constraint annotation.
      *
-     * @param constraintAnnotationType
-     * 		the type of the constraint annotation
-     * @param configuration
-     * 		the configuration that should be used for the search
-     * @param <A>
-     * 		the annotation type
-     * @param <V>
-     * 		the type of possible values
+     * @param constraintAnnotationType the type of the constraint annotation
+     * @param configuration            the configuration that should be used for the search
+     * @param <A>                      the annotation type
+     * @param <V>                      the type of possible values
      * @return all {@link AnnotatedProperty} that can be found for the given constraint annotation
      */
     public static <A extends Annotation, V>
@@ -142,18 +131,13 @@ public final class ConfigReflectionUtils {
     }
 
     /**
-     * Creates a {@link AnnotatedProperty} for the given values
+     * Creates a {@link AnnotatedProperty} for the given values.
      *
-     * @param annotationType
-     * 		the type of the annotation
-     * @param configuration
-     * 		the configuration
-     * @param component
-     * 		the component
-     * @param <A>
-     * 		type of the annotation
-     * @param <V>
-     * 		type of the value
+     * @param annotationType the type of the annotation
+     * @param configuration  the configuration
+     * @param component      the component
+     * @param <A>            type of the annotation
+     * @param <V>            type of the value
      * @return the AnnotatedProperty
      */
     private static <A extends Annotation, V> AnnotatedProperty<A, V> createData(

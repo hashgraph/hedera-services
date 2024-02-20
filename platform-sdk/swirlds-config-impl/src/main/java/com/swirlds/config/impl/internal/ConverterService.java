@@ -56,7 +56,7 @@ class ConverterService implements ConfigLifecycle {
     private boolean initialized = false;
 
     /**
-     * constant converter for strings
+     * constant converter for strings.
      */
     private static final ConfigConverter<String> STRING_CONVERTER = new StringConverter();
 
@@ -119,7 +119,8 @@ class ConverterService implements ConfigLifecycle {
     }
 
     /**
-     * Associates a {@code ConfigConverter} to a {@code Class} so each conversion of that type is performed by the converter.
+     * Associates a {@code ConfigConverter} to a {@code Class} so each conversion of that type is performed by the
+     * converter.
      *
      * @throws IllegalStateException if {@code ConverterService} instance is already initialized
      * @throws NullPointerException if any of the following parameters are {@code null}.

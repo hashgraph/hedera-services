@@ -20,20 +20,14 @@ import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.validation.PropertyMetadata;
 
 /**
- * Implementation of the {@link PropertyMetadata} interface
+ * Implementation of the {@link PropertyMetadata} interface.
  *
- * @param name
- * 		the property name
- * @param value
- * 		the property value
- * @param valueType
- * 		the property type
- * @param present
- * 		true if the property is present
- * @param converter
- * 		the converter for the property
- * @param <T>
- * 		the type
+ * @param name      the property name
+ * @param value     the property value
+ * @param valueType the property type
+ * @param present   true if the property is present
+ * @param converter the converter for the property
+ * @param <T>       the type
  */
 public record PropertyMetadataImpl<T>(
         String name, String value, Class<T> valueType, boolean present, ConfigConverter<T> converter)
