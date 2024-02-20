@@ -31,6 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Collections.emptyList;
@@ -188,7 +189,7 @@ public final class IngestChecker {
 
             // Do not allow sending HBars to Burn Address
             if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-                validateTruePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+                validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
             }
         }
 
