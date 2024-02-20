@@ -41,8 +41,11 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Application {
-    private static final Logger log = LogManager.getLogger(AbstractMetricAdapter.class);
+/**
+ * This application serves as a testing environment for platform-base module behavior without the need for platform and services layers.
+ */
+public class BaseSampleMain {
+    private static final Logger logger = LogManager.getLogger(AbstractMetricAdapter.class);
     private static final String SWIRLDS_CONFIG_PACKAGE = "com.swirlds";
     public static final String APPLICATION_PROPERTIES = "application.properties";
     public static final Path EXTERNAL_PROPERTIES = Path.of("./config/application.properties");
@@ -74,12 +77,12 @@ public class Application {
             metricsProvider.start();
 
             final BaseApiConfig baseApiConfig = context.getConfiguration().getConfigData(BaseApiConfig.class);
-            log.trace("Loaded configuration {}", baseApiConfig);
+            logger.trace("Loaded configuration {}", baseApiConfig);
             InitialData.populate();
             ServerUtils.createServer(baseApiConfig, context);
 
         } catch (Exception e) {
-            log.error("Error starting up", e);
+            logger.error("Error starting up", e);
         }
     }
 }

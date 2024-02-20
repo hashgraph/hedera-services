@@ -39,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  * Adapts a CrudService into an HttpHandler for undertow
  */
 public class AdapterHandler<T> implements HttpHandler {
-    private static final Logger log = LogManager.getLogger(AdapterHandler.class);
+    private static final Logger logger = LogManager.getLogger(AdapterHandler.class);
     private @NonNull final PlatformContext context;
     private @NonNull final CrudService<T> delegatedService;
     private @NonNull final String path;
@@ -130,7 +130,7 @@ public class AdapterHandler<T> implements HttpHandler {
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
         exchange.getResponseSender().send(response);
 
-        log.trace(
+        logger.trace(
                 "Received Request to:{}{} took:{}ns answered status:{} body:{}",
                 requestMethod,
                 exchange.getRequestURL(),

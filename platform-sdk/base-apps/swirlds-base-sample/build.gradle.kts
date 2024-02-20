@@ -24,7 +24,7 @@ mainModuleInfo {
     runtimeOnly("com.swirlds.config.impl")
 }
 
-application.mainClass.set("com.swirlds.base.sample.Application")
+application.mainClass.set("com.swirlds.base.sample.BaseSampleMain")
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
 tasks.withType<JavaExec> {

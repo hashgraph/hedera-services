@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * Creates Operations
  */
 public class OperationService extends CrudService<Operation> {
-    private static final Logger log = LogManager.getLogger(OperationService.class);
+    private static final Logger logger = LogManager.getLogger(OperationService.class);
     private final @NonNull OperationDao operationDao;
     private final @NonNull InventoryDao inventoryDao;
     private final @NonNull StockDao stockDao;
@@ -109,7 +109,7 @@ public class OperationService extends CrudService<Operation> {
                     .filter(e -> e.getValue() != null)
                     .map(Entry::getKey)
                     .forEach(inventoryDao::release);
-            log.error("item not found:{}", notFoundItem);
+            logger.error("item not found:{}", notFoundItem);
             throw new IllegalArgumentException("Item " + notFoundItem + " not found in the system");
         }
         if (Objects.nonNull(notEnoughStockItem)) {
@@ -117,7 +117,7 @@ public class OperationService extends CrudService<Operation> {
                     .filter(e -> e.getValue() != null)
                     .map(Entry::getKey)
                     .forEach(inventoryDao::release);
-            log.error("item with not enough stock: {}", notEnoughStockItem);
+            logger.error("item with not enough stock: {}", notEnoughStockItem);
             throw new IllegalArgumentException("Item " + notEnoughStockItem + " has not enough stock");
         }
 
@@ -155,7 +155,7 @@ public class OperationService extends CrudService<Operation> {
         final Duration duration = Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS);
         context.getMetrics().getOrCreate(ApplicationMetrics.OPERATION_TIME).set(duration);
         context.getMetrics().getOrCreate(ApplicationMetrics.OPERATION_TOTAL).increment();
-        log.debug("Executed operation {} in {}", saved, duration);
+        logger.debug("Executed operation {} in {}", saved, duration);
         return saved;
     }
 

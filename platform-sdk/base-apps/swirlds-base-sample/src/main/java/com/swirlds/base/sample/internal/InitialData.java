@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 public class InitialData {
 
-    private static final Logger log = LogManager.getLogger(InitialData.class);
+    private static final Logger logger = LogManager.getLogger(InitialData.class);
 
     /**
      * Populates seed data
@@ -60,6 +60,6 @@ public class InitialData {
         service.create(new Item("Bluetooth Earphones", "SKU-E-10", 20, "Electronics", null));
         service.create(new Item("External Monitor", "SKU-C-10", 15, "Computers", null));
         service.create(new Item("Stapler", "SKU-O-10", 25, "Office Equipment", null));
-        log.debug("Seed data added");
+        logger.debug("Seed data added");
     }
 }

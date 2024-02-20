@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * Http Server manager utils
  */
 public class ServerUtils {
-    private static final Logger log = LogManager.getLogger(ServerUtils.class);
+    private static final Logger logger = LogManager.getLogger(ServerUtils.class);
 
     /**
      * Creates and starts a Http server with a set of defined handlers
@@ -64,7 +64,7 @@ public class ServerUtils {
         server.start();
 
         if (config.banner()) {
-            log.info("\n              _      _     _           _                    \n"
+            logger.info("\n              _      _     _           _                    \n"
                     + " _____      _(_)_ __| | __| |___      | |__   __ _ ___  ___ \n"
                     + "/ __\\ \\ /\\ / / | '__| |/ _` / __|_____| '_ \\ / _` / __|/ _ \\\n"
                     + "\\__ \\\\ V  V /| | |  | | (_| \\__ \\_____| |_) | (_| \\__ \\  __/\n"
@@ -74,7 +74,7 @@ public class ServerUtils {
                     + "\\__ \\ (_| | | | | | | |_) | |  __/_|                        \n"
                     + "|___/\\__,_|_| |_| |_| .__/|_|\\___(_) ");
         }
-        log.info("Server started on {}:{}", config.host(), config.port());
-        log.debug("All registered paths {}", pathHandler);
+        logger.info("Server started on {}:{}", config.host(), config.port());
+        logger.debug("All registered paths {}", pathHandler);
     }
 }

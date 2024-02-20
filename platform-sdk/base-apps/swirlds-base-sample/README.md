@@ -49,7 +49,7 @@ The project provides a Docker Compose file that enables the following services:
 
 To run the application is through docker-compose & intelliJ:
 1. Build the application using `gradlew assemble`.
-2. Build the application using `gradlew run` or hit play in `com.swirlds.base.sample.Application` main method.
+2. Build the application using `gradlew run` or hit play in [BaseSampleMain.java](src%2Fmain%2Fjava%2Fcom%2Fswirlds%2Fbase%2Fsample%2FBaseSampleMain.java) main method.
 3. inside `./docker` folder run `docker-compose up`
 4. Access the Swagger UI for interacting with the REST API. The Swagger UI runs on `http://localhost:8080/`.
 5. Monitor metrics using the Prometheus server running on `http://localhost:9090/`.
@@ -77,4 +77,16 @@ To run the application is through docker-compose & intelliJ:
 
 ## License
 
-Licensed under the Apache License, Version 2.0
+Copyright Hedera Hashgraph, LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+[https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
