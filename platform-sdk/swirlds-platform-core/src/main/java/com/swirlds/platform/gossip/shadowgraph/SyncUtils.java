@@ -20,8 +20,11 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
@@ -31,11 +34,9 @@ import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -67,48 +68,32 @@ public final class SyncUtils {
      */
     private SyncUtils() {}
 
-    public static void writeFirstByte(final Connection conn) throws IOException {
-        if (conn.isOutbound()) { // caller WRITE sync request
-            // try to initiate a sync
-            conn.getDos().requestSync();
-        } else { // listener WRITE sync request response
-            conn.getDos().acceptSync();
-        }
-        // no need to flush, since we will write more data right after
-    }
-
-    public static void rejectSync(final Connection conn, final int numberOfNodes) throws IOException {
-        // respond with a nack
-        conn.getDos().rejectSync();
-        conn.getDos().flush();
-
-        // read data and ignore since we rejected the sync
-        conn.getDis().readGenerations();
-        conn.getDis().readTipHashes(numberOfNodes);
-    }
-
     /**
-     * Write the tips and generations to the peer. This is the first data exchanged during a sync (after protocol
-     * negotiation). The complementary function to {@link #readTheirTipsAndGenerations(Connection, int, boolean)}.
+     * Send the tips and event window to the peer. This is the first data exchanged during a sync (after protocol
+     * negotiation). The complementary function to {@link #readTheirTipsAndEventWindow(Connection, int, AncientMode)}.
      *
      * @param connection  the connection to write to
-     * @param generations the generations to write
+     * @param eventWindow the event window to write
      * @param tips        the tips to write
-     * @return a {@link Callable} that writes the tips and generations
+     * @return a {@link Callable} that writes the tips and event window
      */
-    public static Callable<Void> writeMyTipsAndGenerations(
-            final Connection connection, final Generations generations, final List<ShadowEvent> tips) {
+    public static Callable<Void> writeMyTipsAndEventWindow(
+            @NonNull final Connection connection,
+            @NonNull final NonAncientEventWindow eventWindow,
+            @NonNull final List<ShadowEvent> tips) {
         return () -> {
             final List<Hash> tipHashes =
                     tips.stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());
-            connection.getDos().writeGenerations(generations);
+
+            serializeEventWindow(connection.getDos(), eventWindow);
+
             connection.getDos().writeTipHashes(tipHashes);
             connection.getDos().flush();
             logger.info(
                     SYNC_INFO.getMarker(),
-                    "{} sent generations: {}",
+                    "{} sent event window: {}",
                     connection::getDescription,
-                    generations::toString);
+                    eventWindow::toString);
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} sent tips: {}",
@@ -119,49 +104,34 @@ public final class SyncUtils {
     }
 
     /**
-     * Read the tips and generations from the peer. This is the first data exchanged during a sync (after protocol
-     * negotiation). The complementary function to {@link #writeMyTipsAndGenerations(Connection, Generations, List)}.
+     * Read the tips and event window from the peer. This is the first data exchanged during a sync (after protocol
+     * negotiation). The complementary function to
+     * {@link #writeMyTipsAndEventWindow(Connection, NonAncientEventWindow, List)}.
      *
      * @param connection    the connection to read from
      * @param numberOfNodes the number of nodes in the network
-     * @param readInitByte  if true, read the first byte of the sync request response
-     * @return a {@link Callable} that reads the tips and generations
+     * @param ancientMode   the current ancient mode
+     * @return a {@link Callable} that reads the tips and event window
      */
-    public static Callable<TheirTipsAndGenerations> readTheirTipsAndGenerations(
-            final Connection connection, final int numberOfNodes, final boolean readInitByte) {
+    public static Callable<TheirTipsAndEventWindow> readTheirTipsAndEventWindow(
+            final Connection connection, final int numberOfNodes, @NonNull final AncientMode ancientMode) {
         return () -> {
-            // Caller thread requested a sync, so now caller thread reads if its request was accepted.
-            if (connection.isOutbound() && readInitByte) {
-                try {
-                    if (!connection.getDis().readSyncRequestResponse()) {
-                        // sync rejected
-                        return TheirTipsAndGenerations.syncRejected();
-                    }
-                } catch (final SyncException | IOException e) {
-                    final Instant sentTime = connection.getDos().getRequestSentTime();
-                    final long inMs = sentTime == null ? -1 : sentTime.until(Instant.now(), ChronoUnit.MILLIS);
-                    throw new SyncException(
-                            connection,
-                            "Problem while reading sync request response. Request was sent " + inMs + "ms ago",
-                            e);
-                }
-            }
+            final NonAncientEventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
 
-            final Generations generations = connection.getDis().readGenerations();
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
             logger.info(
                     SYNC_INFO.getMarker(),
-                    "{} received generations: {}",
+                    "{} received event window: {}",
                     connection::getDescription,
-                    generations::toString);
+                    eventWindow::toString);
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} received tips: {}",
                     connection::getDescription,
                     () -> SyncLogging.toShortHashes(tips));
 
-            return TheirTipsAndGenerations.create(generations, tips);
+            return new TheirTipsAndEventWindow(eventWindow, tips);
         };
     }
 
@@ -380,26 +350,6 @@ public final class SyncUtils {
     }
 
     /**
-     * Get the latest self event in the shadowgraph.
-     *
-     * @param shadowGraph the shadow graph
-     * @param selfId      the id of the node
-     * @return the latest self event in the shadowgraph, or null if there is none
-     */
-    @Nullable
-    private static ShadowEvent getLatestSelfEventInShadowgraph(
-            @NonNull final Shadowgraph shadowGraph, @NonNull final NodeId selfId) {
-
-        final List<ShadowEvent> tips = shadowGraph.getTips();
-        for (final ShadowEvent tip : tips) {
-            if (tip.getEvent().getCreatorId().equals(selfId)) {
-                return tip;
-            }
-        }
-        return null;
-    }
-
-    /**
      * Given a list of events we think the other node may not have, reduce that list to events that we think they do not
      * have and that are unlikely to end up being duplicate events.
      *
@@ -478,22 +428,34 @@ public final class SyncUtils {
     }
 
     /**
-     * Returns a predicate that determines if a {@link ShadowEvent}'s generation is non-ancient for the peer and greater
-     * than this node's minimum non-expired generation, and is not already known.
+     * Returns a predicate that determines if a {@link ShadowEvent}'s ancient indicator is non-ancient for the peer and
+     * greater than this node's minimum non-expired threshold, and is not already known.
      *
      * @param knownShadows     the {@link ShadowEvent}s that are already known and should therefore be rejected by the
      *                         predicate
-     * @param myGenerations    the generations of this node
-     * @param theirGenerations the generations of the peer node
+     * @param myEventWindow    the event window of this node
+     * @param theirEventWindow the event window of the peer node
+     * @param ancientMode      the current ancient mode
      * @return the predicate
      */
+    @NonNull
     public static Predicate<ShadowEvent> unknownNonAncient(
-            final Collection<ShadowEvent> knownShadows,
-            final GraphGenerations myGenerations,
-            final GraphGenerations theirGenerations) {
-        long minSearchGen =
-                Math.max(myGenerations.getMinRoundGeneration(), theirGenerations.getMinGenerationNonAncient());
-        return s -> s.getEvent().getGeneration() >= minSearchGen && !knownShadows.contains(s);
+            @NonNull final Collection<ShadowEvent> knownShadows,
+            @NonNull final NonAncientEventWindow myEventWindow,
+            @NonNull final NonAncientEventWindow theirEventWindow,
+            @NonNull final AncientMode ancientMode) {
+
+        // When searching for events, we don't want to send any events that are known to be ancient to the peer.
+        // We should never be syncing with a peer if their ancient threshold is less than our expired threshold
+        // (if this is the case, then the peer is "behind"), so in practice the minimumSearchThreshold will always
+        // be the same as the peer's ancient threshold. However, in an abundance of caution, we use the maximum of
+        // the two thresholds to ensure that we don't ever attempt to traverse over events that are expired to us,
+        // since those events may be unlinked and could cause race conditions if accessed.
+
+        final long minimumSearchThreshold =
+                Math.max(myEventWindow.getExpiredThreshold(), theirEventWindow.getAncientThreshold());
+        return s -> s.getEvent().getBaseEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold
+                && !knownShadows.contains(s);
     }
 
     /**
@@ -530,9 +492,13 @@ public final class SyncUtils {
     }
 
     /**
+     * Performs a topological sort on the given list of events (i.e. where parents always come before their children).
+     *
      * @param sendList The list of events to sort.
      */
-    static void sort(final List<EventImpl> sendList) {
+    static void sort(@NonNull final List<EventImpl> sendList) {
+        // Note: regardless of ancient mode, sorting uses generations and not birth rounds.
+        //       Sorting by generations yields a list in topological order, sorting by birth rounds does not.
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
@@ -588,5 +554,40 @@ public final class SyncUtils {
         }
 
         return knownTips;
+    }
+
+    /**
+     * Serialize an event window to the given output stream.
+     *
+     * @param out         the output stream
+     * @param eventWindow the event window
+     */
+    public static void serializeEventWindow(
+            @NonNull final SerializableDataOutputStream out, @NonNull final NonAncientEventWindow eventWindow)
+            throws IOException {
+
+        out.writeLong(eventWindow.getLatestConsensusRound());
+        out.writeLong(eventWindow.getAncientThreshold());
+        out.writeLong(eventWindow.getExpiredThreshold());
+
+        // Intentionally don't bother writing ancient mode, the peer will always be using the same ancient mode as us
+    }
+
+    /**
+     * Deserialize an event window from the given input stream.
+     *
+     * @param in          the input stream
+     * @param ancientMode the currently configured ancient mode
+     * @return the deserialized event window
+     */
+    @NonNull
+    public static NonAncientEventWindow deserializeEventWindow(
+            @NonNull final SerializableDataInputStream in, @NonNull final AncientMode ancientMode) throws IOException {
+
+        final long latestConsensusRound = in.readLong();
+        final long ancientThreshold = in.readLong();
+        final long expiredThreshold = in.readLong();
+
+        return new NonAncientEventWindow(latestConsensusRound, ancientThreshold, expiredThreshold, ancientMode);
     }
 }

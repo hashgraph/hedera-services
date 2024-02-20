@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.common.merkle.hash.MerkleHashChecker.checkHashAndLog;
 import static com.swirlds.common.merkle.hash.MerkleHashChecker.getNodesWithInvalidHashes;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static java.lang.System.identityHashCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,6 +60,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for merkle tree hashing
  */
 @DisplayName("Merkle Hash Tests")
+@Tag(TIMING_SENSITIVE)
 class MerkleHashTests {
 
     private static MerkleCryptography cryptography;

@@ -44,7 +44,7 @@ public record Pair<L, R>(L left, R right) {
     }
 
     /**
-     * Convenience method to reference the left site as key
+     * Convenience method to reference the left site as key.
      *
      * @return the left side of the pair
      */
@@ -53,7 +53,7 @@ public record Pair<L, R>(L left, R right) {
     }
 
     /**
-     * Convenience method to reference the right site as value
+     * Convenience method to reference the right site as value.
      *
      * @return the right side of the pair
      */

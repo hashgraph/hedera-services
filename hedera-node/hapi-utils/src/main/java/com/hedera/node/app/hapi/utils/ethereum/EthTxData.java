@@ -56,6 +56,10 @@ public record EthTxData(
     static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
     static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
 
+    // EIP155 note support for v = 27|28 cases in unprotected transaction cases
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
     public static EthTxData populateEthTxData(byte[] data) {
         try {
             var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(data);
@@ -205,7 +209,7 @@ public record EthTxData(
      * @return the effective offered gas price
      */
     public long effectiveOfferedGasPriceInTinybars() {
-        return BigInteger.valueOf(Long.MAX_VALUE / gasLimit)
+        return BigInteger.valueOf(Long.MAX_VALUE)
                 .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
                 .longValueExact();
     }
@@ -312,7 +316,9 @@ public record EthTxData(
     }
 
     public boolean matchesChainId(final byte[] hederaChainId) {
-        return Arrays.compare(chainId, hederaChainId) == 0;
+        // first two checks handle the unprotected ethereum transactions
+        // before EIP155 - source: https://eips.ethereum.org/EIPS/eip-155
+        return chainId == null || chainId.length == 0 || Arrays.compare(chainId, hederaChainId) == 0;
     }
 
     @VisibleForTesting
@@ -351,8 +357,14 @@ public record EthTxData(
         byte[] v = rlpList.get(6).asBytes();
         BigInteger vBI = new BigInteger(1, v);
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
+        // https://eips.ethereum.org/EIPS/eip-155
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
+            // after EIP155 the chain id is equal to
+            // CHAIN_ID = (v - {0,1} - 35) / 2
             chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+        } else if (isLegacyUnprotectedEtx(vBI)) {
+            // before EIP155 the chain id is considered equal to 0
+            chainId = new byte[0];
         }
 
         return new EthTxData(
@@ -443,5 +455,11 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
+    }
+
+    // before EIP155 the value of v in
+    // (unprotected) ethereum transactions is either 27 or 28
+    private static boolean isLegacyUnprotectedEtx(@NonNull BigInteger vBI) {
+        return vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_0) == 0 || vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_1) == 0;
     }
 }
