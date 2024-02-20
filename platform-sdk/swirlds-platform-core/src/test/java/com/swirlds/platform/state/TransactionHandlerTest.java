@@ -21,21 +21,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import java.time.Instant;
-import java.util.Collections;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -69,29 +61,13 @@ class TransactionHandlerTest {
     @DisplayName("preHandle() invokes SwirldState.preHandle() with the correct arguments")
     void testSwirldStatePreHandle() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event = TestingEventBuilder.builder()
+                .setTransactions(TransactionUtils.incrementingMixedTransactions(r))
+                .buildEventImpl();
 
         handler.preHandle(event, swirldState);
 
         verify(swirldState, times(1).description("preHandle() invoked incorrect number of times"))
                 .preHandle(event);
-    }
-
-    private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
-
-        final EventDescriptor selfDescriptor = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherDescriptor = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        return new EventImpl(
-                new BaseEventHashedData(
-                        new BasicSoftwareVersion(1),
-                        new NodeId(0L),
-                        selfDescriptor,
-                        Collections.singletonList(otherDescriptor),
-                        EventConstants.BIRTH_ROUND_UNDEFINED,
-                        Instant.now(),
-                        transactions),
-                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 }

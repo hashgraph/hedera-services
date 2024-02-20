@@ -22,24 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +46,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class EventImplTests {
+    private final TestingEventBuilder testingEventBuilder = TestingEventBuilder.builder();
 
     private static Stream<Arguments> params() {
         return Stream.of(
@@ -65,7 +59,8 @@ public class EventImplTests {
     void testNoSystemTransaction() {
         final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
 
-        final EventImpl event = newEvent(transactions);
+        final EventImpl event =
+                testingEventBuilder.setDefaults().setTransactions(transactions).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -80,7 +75,8 @@ public class EventImplTests {
     @Test
     @DisplayName("findSystemTransactions() no transactions")
     void testTransaction() {
-        final EventImpl event = newEvent(new ConsensusTransactionImpl[0]);
+        final EventImpl event =
+                testingEventBuilder.setDefaults().setNumberOfTransactions(0).buildEventImpl();
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -95,7 +91,10 @@ public class EventImplTests {
     void testFindSystemTransactions(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = newEvent(data.transactions);
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         verifySystemIterator(data, event);
         assertEquals(
                 data.transactions.length - data.systemIndices.size(),
@@ -109,7 +108,10 @@ public class EventImplTests {
     void testConsensusTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = newEvent(data.transactions);
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
         final Set<ConsensusTransaction> transactionSet = new HashSet<>();
         while (iter.hasNext()) {
@@ -130,7 +132,10 @@ public class EventImplTests {
     void testTransactionIterator(final Long seed, final int numTransactions) {
         final TransactionData data = mixedTransactions(seed, numTransactions);
 
-        final EventImpl event = newEvent(data.transactions);
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(data.transactions())
+                .buildEventImpl();
         final Iterator<Transaction> iter = event.transactionIterator();
 
         final Set<Transaction> transactionSet = new HashSet<>();
@@ -223,7 +228,10 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event = newEvent(mixedTransactions);
+        final EventImpl event = testingEventBuilder
+                .setDefaults()
+                .setTransactions(mixedTransactions)
+                .buildEventImpl();
         event.setConsensusOrder(3L);
         event.setConsensusTimestamp(eventConsTime);
 
@@ -238,23 +246,6 @@ public class EventImplTests {
                     "Consensus timestamp does not match the expected value based on transaction index and event "
                             + "consensus time.");
         }
-    }
-
-    private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
-
-        final EventDescriptor selfDescriptor = new EventDescriptor(new Hash(), new NodeId(0), -1, -1);
-        final EventDescriptor otherDescriptor = new EventDescriptor(new Hash(), new NodeId(0), -1, -1);
-
-        return new EventImpl(
-                new BaseEventHashedData(
-                        new BasicSoftwareVersion(1),
-                        new NodeId(0L),
-                        selfDescriptor,
-                        Collections.singletonList(otherDescriptor),
-                        EventConstants.BIRTH_ROUND_UNDEFINED,
-                        Instant.now(),
-                        transactions),
-                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 
     private record TransactionData(ConsensusTransactionImpl[] transactions, List<Integer> systemIndices) {}

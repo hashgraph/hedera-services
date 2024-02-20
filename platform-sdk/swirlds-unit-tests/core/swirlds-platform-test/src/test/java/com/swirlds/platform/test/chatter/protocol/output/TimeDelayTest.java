@@ -20,7 +20,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.output.SendAction;
 import com.swirlds.platform.gossip.chatter.protocol.output.TimeDelay;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,21 +35,21 @@ class TimeDelayTest {
 
     @Test
     void testPeerKnows() {
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEvent event = TestingEventBuilder.builder().buildEvent();
         state.setPeerKnows(event.getDescriptor());
         Assertions.assertEquals(SendAction.DISCARD, eventTimeDelay.shouldSend(event));
     }
 
     @Test
     void testDelay() {
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEvent event = TestingEventBuilder.builder().buildEvent();
         now.set(event.getTimeReceived().plus(Duration.ofMillis(50)));
         Assertions.assertEquals(SendAction.WAIT, eventTimeDelay.shouldSend(event));
     }
 
     @Test
     void testSend() {
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEvent event = TestingEventBuilder.builder().buildEvent();
         now.set(event.getTimeReceived().plus(Duration.ofMillis(200)));
         Assertions.assertEquals(SendAction.SEND, eventTimeDelay.shouldSend(event));
     }
