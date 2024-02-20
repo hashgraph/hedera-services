@@ -225,12 +225,27 @@ public class VirtualPipeline {
      * Slow down the fast copy operation if there are too many copies that need to be flushed.
      */
     private void applyFlushBackpressure() {
+        final Duration sleepTime = calculateFlushBackpressurePause();
+        if (sleepTime == null) {
+            // no backpressure needed
+            return;
+        }
+
+        try {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush backpressure: {} ms", sleepTime.toMillis());
+            MILLISECONDS.sleep(sleepTime.toMillis());
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    Duration calculateFlushBackpressurePause() {
         final int backlogSize = flushBacklog.size();
         statistics.recordFlushBacklogSize(backlogSize);
 
         final int backlogExcess = backlogSize - config.preferredFlushQueueSize();
         if (backlogExcess <= 0) {
-            return;
+            return null;
         }
 
         // Sleep time grows quadratically.
@@ -241,13 +256,7 @@ public class VirtualPipeline {
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
         final int sleepTimeMillis = (int) sleepTime.toMillis();
         statistics.recordFlushBackpressureMs(sleepTimeMillis);
-
-        try {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush backpressure: {} ms", sleepTime.toMillis());
-            MILLISECONDS.sleep(sleepTime.toMillis());
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
+        return sleepTime;
     }
 
     /**
@@ -255,26 +264,31 @@ public class VirtualPipeline {
      * in this pipeline exceeds {@link VirtualMapConfig#familyThrottleThreshold()}.
      */
     private void applyFamilySizeBackpressure() {
-        final long sizeThreshold = config.familyThrottleThreshold();
-        if (sizeThreshold <= 0) {
-            return;
-        }
-        final long totalSize = currentTotalSize();
-        final double ratio = (double) totalSize / sizeThreshold;
-        final int over100percentExcess = (int) ((ratio - 1.0) * 100);
-        if (over100percentExcess < 0) {
-            return;
-        }
-        final Duration sleepTime = Duration.ofMillis((long) over100percentExcess * over100percentExcess);
-        final int sleepTimeMillis = (int) sleepTime.toMillis();
-        statistics.recordFamilySizeBackpressureMs(sleepTimeMillis);
+        final Duration sleepTime = calculateFamilySizeBackpressurePause();
+        if (sleepTime == null) return;
 
         try {
             logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Total size backpressure: {} ms", sleepTime.toMillis());
-            MILLISECONDS.sleep(sleepTimeMillis);
+            MILLISECONDS.sleep(sleepTime.toMillis());
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    Duration calculateFamilySizeBackpressurePause() {
+        final long sizeThreshold = config.familyThrottleThreshold();
+        if (sizeThreshold <= 0) {
+            return null;
+        }
+        final long totalSize = currentTotalSize();
+        final double ratio = (double) totalSize / sizeThreshold;
+        final int over100percentExcess = (int) Math.round((ratio - 1.0) * 100);
+        if (over100percentExcess <= 0) {
+            return null;
+        }
+        final Duration sleepTime = Duration.ofMillis((long) over100percentExcess * over100percentExcess);
+        statistics.recordFamilySizeBackpressureMs((int) sleepTime.toMillis());
+        return sleepTime;
     }
 
     /**
