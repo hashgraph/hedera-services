@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.records.BlockRecordService;
@@ -75,7 +76,11 @@ public class StateDumper {
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
-        dumpMonoBlockInfo(Paths.get(dumpLoc, SEMANTIC_BLOCK), networkContext, state.getChild(RECORD_STREAM_RUNNING_HASH), checkpoint);
+        dumpMonoBlockInfo(
+                Paths.get(dumpLoc, SEMANTIC_BLOCK),
+                networkContext,
+                state.getChild(RECORD_STREAM_RUNNING_HASH),
+                checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -100,10 +105,13 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
-        //Dump block info and running hashes
-        final SingletonNode<RunningHashes> runningHash = requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
-        final SingletonNode<BlockInfo> blocksState = requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
-        dumpModBlockInfo(Paths.get(dumpLoc, SEMANTIC_BLOCK), runningHash.getValue(), blocksState.getValue(), checkpoint);
+        // Dump block info and running hashes
+        final SingletonNode<RunningHashes> runningHash =
+                requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
+        final SingletonNode<BlockInfo> blocksState =
+                requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
+        dumpModBlockInfo(
+                Paths.get(dumpLoc, SEMANTIC_BLOCK), runningHash.getValue(), blocksState.getValue(), checkpoint);
     }
 
     private static String getExtantDumpLoc(

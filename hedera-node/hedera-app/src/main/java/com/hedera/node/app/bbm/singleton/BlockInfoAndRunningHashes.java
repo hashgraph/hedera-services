@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.bbm.singleton;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -26,12 +28,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 record BlockInfoAndRunningHashes(
         long lastBlockNumber,
@@ -45,33 +44,33 @@ record BlockInfoAndRunningHashes(
         @NonNull Bytes nMinus2RunningHash,
         @NonNull Bytes nMinus3RunningHash) {
 
-    public static BlockInfoAndRunningHashes combineFromMono (
+    public static BlockInfoAndRunningHashes combineFromMono(
             @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf) throws IOException {
+            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf)
+            throws IOException {
         requireNonNull(merkleNetworkContext);
         requireNonNull(recordsRunningHashLeaf);
 
+        // build block info
+        final var blockInfoBuilder = new BlockInfo.Builder()
+                .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
+                .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
+        if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
+            blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
+                    .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
+                    .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
+                    .build());
+        }
+        if (merkleNetworkContext.consensusTimeOfLastHandledTxn() != null) {
+            final var lastHandledTxn = merkleNetworkContext.consensusTimeOfLastHandledTxn();
+            blockInfoBuilder.consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                    .seconds(lastHandledTxn.getEpochSecond())
+                    .nanos(lastHandledTxn.getNano())
+                    .build());
+        }
+        blockInfoBuilder.migrationRecordsStreamed(merkleNetworkContext.areMigrationRecordsStreamed());
 
-            //build block info
-            final var blockInfoBuilder = new BlockInfo.Builder()
-                    .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
-                    .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
-            if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
-                blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
-                        .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
-                        .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
-                        .build());
-            }
-            if (merkleNetworkContext.consensusTimeOfLastHandledTxn() != null) {
-                final var lastHandledTxn = merkleNetworkContext.consensusTimeOfLastHandledTxn();
-                blockInfoBuilder.consTimeOfLastHandledTxn(Timestamp.newBuilder()
-                        .seconds(lastHandledTxn.getEpochSecond())
-                        .nanos(lastHandledTxn.getNano())
-                        .build());
-            }
-            blockInfoBuilder.migrationRecordsStreamed(merkleNetworkContext.areMigrationRecordsStreamed());
-
-        //build running hashes
+        // build running hashes
         var runningHashesBuilder = new RunningHashes.Builder()
                 .runningHash(Bytes.wrap(
                         recordsRunningHashLeaf.getRunningHash().getHash().getValue()))
@@ -85,7 +84,8 @@ record BlockInfoAndRunningHashes(
         return combineFromMod(blockInfoBuilder.build(), runningHashesBuilder.build());
     }
 
-    public static BlockInfoAndRunningHashes combineFromMod(@NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes) {
+    public static BlockInfoAndRunningHashes combineFromMod(
+            @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes) {
         return new BlockInfoAndRunningHashes(
                 blockInfo.lastBlockNumber(),
                 blockInfo.firstConsTimeOfLastBlock(),
