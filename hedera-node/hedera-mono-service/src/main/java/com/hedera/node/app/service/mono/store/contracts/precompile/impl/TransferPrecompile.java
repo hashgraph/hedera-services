@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.*;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.contracts.ContractsModule.SYSTEM_ACCOUNT_BOUNDARY;
@@ -255,8 +256,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var isDebit = units < 0;
             final var isCredit = units > 0;
 
-            if (change.hasAlias()) {
-                replaceAliasWithId(change, changes, completedLazyCreates);
+            try {
+                if (change.hasAlias()) {
+                    replaceAliasWithId(change, changes, completedLazyCreates);
+                }
+            } catch (final InvalidTransactionException е) {
+                revertIfReceiverIsSystemAccount(change);
+                throw new InvalidTransactionException(INVALID_ALIAS_KEY, true);
             }
 
             // Checks whether the balance modification targets the receiver account (i.e. credit operation).
@@ -340,8 +346,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final List<BalanceChange> changes,
             final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
-        validateTrueOrRevert(
-                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))), INVALID_ALIAS_KEY);
+        final var isMirrorAddr = updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray())));
+        validateTrueOrRevert(!isMirrorAddr, INVALID_ALIAS_KEY);
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
@@ -846,6 +852,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     private void revertIfReceiverIsSystemAccount(final BalanceChange change) {
+        final var accountNum = change.counterPartyAccountId() != null
+                ? change.counterPartyAccountId().getAccountNum()
+                : change.getAccount().num();
+
+        validateTrueOrRevert(accountNum > SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
+    }
+
+    private void immediateRevertIfReceiverIsSystemAccount(final BalanceChange change) {
         final var accountNum = change.counterPartyAccountId() != null
                 ? change.counterPartyAccountId().getAccountNum()
                 : change.getAccount().num();
