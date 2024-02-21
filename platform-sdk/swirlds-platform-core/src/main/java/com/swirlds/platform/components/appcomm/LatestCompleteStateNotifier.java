@@ -17,7 +17,6 @@
 package com.swirlds.platform.components.appcomm;
 
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
@@ -30,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * This component responsible for notifying the application of latest complete state
  */
-public class LatestCompleteStateNotifier implements PlatformComponent {
+public class LatestCompleteStateNotifier {
     private final NotificationEngine notificationEngine;
 
     /** The round of the latest state provided to the application */
@@ -57,7 +56,6 @@ public class LatestCompleteStateNotifier implements PlatformComponent {
                         stateSavingResult.round(),
                         stateSavingResult.consensusTimestamp(),
                         stateSavingResult.freezeState()));
-        // put this in a lambda so caller just calls the lambda instead
     }
 
     /**
