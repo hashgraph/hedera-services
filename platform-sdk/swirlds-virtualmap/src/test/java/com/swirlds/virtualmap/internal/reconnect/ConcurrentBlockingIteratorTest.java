@@ -239,7 +239,7 @@ public class ConcurrentBlockingIteratorTest {
         assertEquals(1, iterator.next());
         assertTrue(iterator.hasNext(), "Iterator must have more than one element");
         assertEquals(2, iterator.next());
-        assertFalse(iterator.hasNext(), "Iterator must not have more than one elements");
+        assertFalse(iterator.hasNext(), "Iterator must not have more than two elements");
         supplier.join();
     }
 
