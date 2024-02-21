@@ -25,6 +25,7 @@ import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * This component responsible for notifying the application of latest complete state
@@ -41,7 +42,7 @@ public class LatestCompleteStateNotifier {
      * @param notificationEngine the notification engine
      */
     public LatestCompleteStateNotifier(@NonNull final NotificationEngine notificationEngine) {
-        this.notificationEngine = notificationEngine;
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
     }
 
     /**
