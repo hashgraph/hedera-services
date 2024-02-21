@@ -205,7 +205,7 @@ public final class CommonUtils {
     }
 
     /**
-     *get the EVM address from the long number
+     * get the EVM address from the long number.
      *
      * @param num the input long number
      * @return evm address
