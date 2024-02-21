@@ -493,6 +493,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
      * @param leafRecordsToDelete stream of new leaf nodes to delete, The leaf record's key and path
      *     have to be populated, all other data can be null.
+     * @param isReconnectContext if true, the method called in the context of reconnect
      * @throws IOException If there was a problem saving changes to data source
      */
     @Override
@@ -501,7 +502,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final long lastLeafPath,
             final Stream<VirtualHashRecord> hashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            final boolean isReconnectContext)
             throws IOException {
         try {
             validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
@@ -522,7 +524,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             }
 
             // we might as well do this in the archive thread rather than leaving it waiting
-            writeLeavesToPathToKeyValue(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate, leafRecordsToDelete);
+            writeLeavesToPathToKeyValue(
+                    firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate, leafRecordsToDelete, isReconnectContext);
             // wait for the other threads in the rare case they are not finished yet. We need to
             // have all writing
             // done before we return as when we return the state version we are writing is deleted
@@ -610,18 +613,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         // Go ahead and lookup the value.
         VirtualLeafRecord<K, V> leafRecord = pathToKeyValue.get(path);
 
-        // FUTURE WORK: once the reconnect key leak bug is fixed, this block should be removed
-        if (!leafRecord.getKey().equals(key)) {
-            if (database.getConfig().reconnectKeyLeakMitigationEnabled()) {
-                logger.warn(MERKLE_DB.getMarker(), "leaked key {} encountered, mitigation is enabled", key);
-                return null;
-            } else {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "leaked key {} encountered, mitigation is disabled, expect problems",
-                        key);
-            }
-        }
+        assert leafRecord != null && leafRecord.getKey().equals(key);
 
         if (leafRecordCache != null) {
             // No synchronization is needed here, see the comment above
@@ -1170,7 +1162,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final long firstLeafPath,
             final long lastLeafPath,
             final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
-            final Stream<VirtualLeafRecord<K, V>> deletedLeaves)
+            final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
+            boolean isReconnect)
             throws IOException {
         if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
             // nothing to do
@@ -1218,7 +1211,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // dirtyLeaves stream above
             if (isLongKeyMode) {
                 final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-                longKeyToPath.putIfEqual(key, path, INVALID_PATH);
+                if (isReconnect) {
+                    longKeyToPath.putIfEqual(key, path, INVALID_PATH);
+                } else {
+                    longKeyToPath.put(key, INVALID_PATH);
+                }
             } else {
                 objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
             }

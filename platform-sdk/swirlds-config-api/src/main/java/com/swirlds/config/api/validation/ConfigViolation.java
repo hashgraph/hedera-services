@@ -25,21 +25,21 @@ import java.io.Serializable;
 public interface ConfigViolation extends Serializable {
 
     /**
-     * Returns the name of the property that caused the violation
+     * Returns the name of the property that caused the violation.
      *
      * @return name of the property
      */
     String getPropertyName();
 
     /**
-     * Returns the message of the violation
+     * Returns the message of the violation.
      *
      * @return the message of the violation
      */
     String getMessage();
 
     /**
-     * Returns the value of the property that caused the violation
+     * Returns the value of the property that caused the violation.
      *
      * @return the value of the property
      */
@@ -47,7 +47,7 @@ public interface ConfigViolation extends Serializable {
 
     /**
      * Returns true if the property exists (is defined by a {@link com.swirlds.config.api.source.ConfigSource}), false
-     * otherwise
+     * otherwise.
      *
      * @return true if the property exists
      */

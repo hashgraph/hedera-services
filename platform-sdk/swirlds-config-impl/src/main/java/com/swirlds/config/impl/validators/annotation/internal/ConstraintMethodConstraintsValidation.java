@@ -26,8 +26,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * A {@link ConfigValidator} implementation taht checks all config data objects for the constraints annotation
- * {@link ConstraintMethod}
+ * A {@link ConfigValidator} implementation which checks all config data objects for the constraints annotation
+ * {@link ConstraintMethod}.
  */
 public class ConstraintMethodConstraintsValidation implements ConfigValidator {
 

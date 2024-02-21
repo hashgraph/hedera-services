@@ -459,8 +459,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private Account lookupAccount(String logName, AccountID id) {
         var account = accountStore.get(id);
         if (account == null) {
-            logger.fatal("{} account {} does not exist", logName, id);
-            throw new IllegalStateException(logName + " account does not exist");
+            throw new IllegalStateException(logName + " account " + id + " does not exist");
         }
         return account;
     }

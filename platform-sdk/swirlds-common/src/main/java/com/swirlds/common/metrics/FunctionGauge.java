@@ -41,6 +41,7 @@ public interface FunctionGauge<T> extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -49,6 +50,7 @@ public interface FunctionGauge<T> extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -57,9 +59,10 @@ public interface FunctionGauge<T> extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    default T get(final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+    default T get(@NonNull final ValueType valueType) {
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -94,8 +97,8 @@ public interface FunctionGauge<T> extends Metric {
          * 		the type of the values this {@code FunctionGauge} returns
          * @param supplier
          * 		the {@code Supplier} of the value of this {@code Gauge}
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(
                 @NonNull final String category,
@@ -103,10 +106,26 @@ public interface FunctionGauge<T> extends Metric {
                 @NonNull final Class<T> type,
                 @NonNull final Supplier<T> supplier) {
             super(category, name, "%s");
-            this.type = Objects.requireNonNull(type, "type");
-            this.supplier = Objects.requireNonNull(supplier, "supplier");
+            this.type = Objects.requireNonNull(type, "type must not be null");
+            this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
         }
 
+        /**
+         * Constructor of {@code FunctionGauge.Config}
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param description metric description
+         * @param unit the unit for metric
+         * @param format the format for metric
+         * @param type
+         * 		the type of the values this {@code FunctionGauge} returns
+         * @param supplier the format for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -116,13 +135,14 @@ public interface FunctionGauge<T> extends Metric {
                 @NonNull final Class<T> type,
                 @NonNull final Supplier<T> supplier) {
             super(category, name, description, unit, format);
-            this.type = Objects.requireNonNull(type, "type");
-            this.supplier = Objects.requireNonNull(supplier, "supplier");
+            this.type = Objects.requireNonNull(type, "type must not be null");
+            this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
         }
 
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public FunctionGauge.Config<T> withDescription(@NonNull final String description) {
             return new FunctionGauge.Config<>(
@@ -132,6 +152,7 @@ public interface FunctionGauge<T> extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public FunctionGauge.Config<T> withUnit(@NonNull final String unit) {
             return new FunctionGauge.Config<>(
@@ -176,6 +197,7 @@ public interface FunctionGauge<T> extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @SuppressWarnings("unchecked")
         @Override
         public Class<FunctionGauge<T>> getResultClass() {
