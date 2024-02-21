@@ -50,6 +50,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
@@ -509,6 +510,15 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 
+        final QueueThread<GossipEvent> oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(
+                        AdHocThreadManager.getStaticThreadManager())
+                .setCapacity(10_000)
+                .setThreadName("old_style_intake_queue")
+                .setComponent("platform")
+                .setHandler(event -> platformWiring.getGossipEventInput().put(event))
+                .build();
+        components.add(oldStyleIntakeQueue);
+
         savedStateController = new SavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
@@ -664,7 +674,7 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 appVersion,
                 transactionPool,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                oldStyleIntakeQueue::size,
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
@@ -724,8 +734,16 @@ public class SwirldsPlatform implements Platform {
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,
-                platformWiring.getGossipEventInput()::put,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                event -> {
+                    try {
+                        oldStyleIntakeQueue.put(event);
+                    } catch (final InterruptedException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
+                        Thread.currentThread().interrupt();
+                    }
+                },
+                oldStyleIntakeQueue::size,
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
