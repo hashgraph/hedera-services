@@ -18,9 +18,8 @@ package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.merkledb.MerkleDb;
-import org.openjdk.jmh.annotations.Setup;
-
 import java.nio.file.Path;
+import org.openjdk.jmh.annotations.Setup;
 
 public class CryptoBenchMerkleDb extends CryptoBench {
 

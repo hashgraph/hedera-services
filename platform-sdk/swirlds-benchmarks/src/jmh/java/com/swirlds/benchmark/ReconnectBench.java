@@ -23,6 +23,9 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import java.nio.file.Path;
+import java.util.Random;
+import java.util.function.BiConsumer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -33,10 +36,6 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-
-import java.nio.file.Path;
-import java.util.Random;
-import java.util.function.BiConsumer;
 
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
@@ -143,7 +142,10 @@ public class ReconnectBench extends VirtualMapBaseBench {
             // Add a short sleep to help prevent irrelevant warning messages from being printed
             // when the BaseBench.afterTest() deletes test files recursively right after
             // this current runnable finishes executing.
-            try { Thread.sleep(1000); } catch (InterruptedException ignore) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignore) {
+            }
         });
     }
 
