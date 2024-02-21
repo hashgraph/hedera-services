@@ -4,12 +4,12 @@ module com.hedera.node.blocknode.core.test {
             org.junit.platform.commons;
 
     // Require other modules needed for the unit tests to compile.
-    requires com.hedera.node.blocknode.core;
+    requires static com.hedera.node.blocknode.core.spi;
+    requires static com.hedera.node.blocknode.core;
+    requires static com.hedera.node.blocknode.filesystem.api;
+    requires static com.hedera.node.blocknode.grpc.api;
+    requires static com.hedera.node.blocknode.state;
+    requires static com.hedera.node.hapi;
     requires com.swirlds.platform.core;
     requires org.junit.jupiter.api;
-    requires com.hedera.node.hapi;
-    requires com.hedera.node.blocknode.state;
-    requires com.hedera.node.blocknode.core.spi;
-    requires com.hedera.node.blocknode.grpc.api;
-    requires com.hedera.node.blocknode.filesystem.api;
 }
