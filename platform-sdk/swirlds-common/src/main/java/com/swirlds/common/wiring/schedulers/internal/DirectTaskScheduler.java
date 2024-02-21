@@ -48,7 +48,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param offRamp                  an object counter that is decremented when data is removed from the task
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param busyTimer                a timer that tracks the amount of time the task scheduler is busy
-     * @param stateless                true if the work scheduled by this object is stateless
+     * @param threadsafe               true if the work scheduled by this object is threadsafe
      */
     public DirectTaskScheduler(
             @NonNull final StandardWiringModel model,
@@ -58,11 +58,11 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter offRamp,
             final boolean squelchingEnabled,
             @NonNull final FractionalTimer busyTimer,
-            final boolean stateless) {
+            final boolean threadsafe) {
         super(
                 model,
                 name,
-                stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT,
+                threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT,
                 false,
                 squelchingEnabled,
                 true);
