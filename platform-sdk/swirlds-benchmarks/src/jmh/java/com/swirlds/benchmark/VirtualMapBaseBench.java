@@ -18,9 +18,12 @@ package com.swirlds.benchmark;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
@@ -74,7 +77,16 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         return createMap(null);
     }
 
-    protected abstract VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap();
+    protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
+        MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
+                (short) 1, DigestType.SHA_384,
+                (short) 1, new BenchmarkKeySerializer(),
+                (short) 1, new BenchmarkValueSerializer())
+                .preferDiskIndices(false);
+        MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
+                new MerkleDbDataSourceBuilder<>(tableConfig);
+        return new VirtualMap<>(label, dataSourceBuilder);
+    }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createMap(final long[] map) {
         final long start = System.currentTimeMillis();
@@ -100,7 +112,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
                 logger.info("Loaded map in {} ms", System.currentTimeMillis() - start);
             }
         } else {
-            virtualMap = createEmptyMap();
+            virtualMap = createEmptyMap(LABEL);
         }
         BenchmarkMetrics.register(virtualMap::registerMetrics);
         return virtualMap;

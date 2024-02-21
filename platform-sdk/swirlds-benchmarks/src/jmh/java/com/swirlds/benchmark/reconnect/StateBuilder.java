@@ -27,7 +27,7 @@ import java.util.stream.LongStream;
 public record StateBuilder<K, V>(
         /** Build a key for index 1..size. */
         Function<Long, K> keyBuilder,
-        /** Build a teacher value for key index 1..size, or a learner value for key index -1..-size. */
+        /** Build a value for key index 1..size. */
         Function<Long, V> valueBuilder) {
 
     /** Return {@code true} with the given probability. */
@@ -38,7 +38,7 @@ public record StateBuilder<K, V>(
     /**
      * Build a random state and pass it to the provided teacher and learner populators.
      * <p>
-     * The process starts by creating an identical state with the specified size for both the teacher and the learner.
+     * The process starts by creating two identical states with the specified size for both the teacher and the learner.
      * It then uses the provided probabilities to modify the teacher state in order to emulate a scenario
      * where the learner has disconnected from the network and hasn't updated its map with the latest changes:
      * <ul>
