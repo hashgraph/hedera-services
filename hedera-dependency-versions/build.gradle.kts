@@ -38,6 +38,9 @@ val tuweniVersion = "2.4.2"
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
 
+    // Force commons compress version to close a security vulnerability
+    api(javaModuleDependencies.gav("org.apache.commons.compress"))
+
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
     runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j"))
 }
@@ -81,9 +84,10 @@ moduleInfo {
     version("org.antlr.antlr4.runtime", "4.11.1")
     version("org.apache.commons.codec", "1.15")
     version("org.apache.commons.collections4", "4.4")
-    version("org.apache.commons.io", "2.11.0")
-    version("org.apache.commons.lang3", "3.12.0")
+    version("org.apache.commons.io", "2.15.1")
+    version("org.apache.commons.lang3", "3.14.0")
     version("org.apache.commons.math3", "3.2")
+    version("org.apache.commons.compress", "1.26.0")
     version("org.apache.logging.log4j", log4jVersion)
     version("org.apache.logging.log4j.core", log4jVersion)
     version("org.apache.logging.log4j.slf4j", log4jVersion)
