@@ -17,12 +17,11 @@
 package com.hedera.node.app.bbm.contracts;
 
 import static com.hedera.node.app.bbm.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.node.app.bbm.DumpCheckpoint;
-import com.hedera.node.app.bbm.accounts.AccountDumpUtils;
-import com.hedera.node.app.bbm.accounts.HederaAccount;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -41,6 +40,8 @@ import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -52,17 +53,41 @@ public class ContractBytecodesDumpUtils {
 
     public static void dumpModContractBytecodes(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            @NonNull final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
             @NonNull final DumpCheckpoint checkpoint) {
-        final var dumpableAccounts = AccountDumpUtils.gatherAccounts(accounts, HederaAccount::fromMod);
-        final var contracts = ContractUtils.getModContracts(dumpableAccounts);
-        final var sb = generateReport(contracts);
+        final var dumpableAccounts = gatherModContracts(contracts);
+        final var sb = generateReport(dumpableAccounts);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln(sb.toString());
             System.out.printf(
                     "=== contract bytecodes report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
+    }
+
+    @NonNull
+    public static Contracts gatherModContracts(VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts) {
+        final var contractsToReturn = new ConcurrentLinkedQueue<Contract>();
+        final var threadCount = 8;
+        final var processed = new AtomicInteger();
+
+        try {
+            VirtualMapLike.from(contracts)
+                    .extractVirtualMapData(
+                            getStaticThreadManager(),
+                            p -> {
+                                processed.incrementAndGet();
+                                contractsToReturn.add(Contract.fromMod(p.left(), p.right()));
+                            },
+                            threadCount);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of contracts virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+
+        final var contractArr = contractsToReturn.toArray(new Contract[0]);
+        System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
+        return new Contracts(List.of(contractArr), List.of(), contractArr.length);
     }
 
     public static void dumpMonoContractBytecodes(
@@ -82,6 +107,10 @@ public class ContractBytecodesDumpUtils {
     }
 
     private static StringBuilder generateReport(Contracts knownContracts) {
+        if (knownContracts.contracts().isEmpty()) {
+            return new StringBuilder();
+        }
+
         var r = getNonTrivialContracts(knownContracts);
         var contractsWithBytecode = r.getLeft();
         var zeroLengthContracts = r.getRight();
