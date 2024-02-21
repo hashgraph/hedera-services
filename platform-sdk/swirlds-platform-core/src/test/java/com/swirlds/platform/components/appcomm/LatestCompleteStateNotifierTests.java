@@ -93,7 +93,7 @@ public class LatestCompleteStateNotifierTests {
         });
 
         final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
-        component.start();
+        component.latestCompleteStateHandler(signedState.reserve("testNewLatestCompleteStateEventNotification"));
 
         // Allow the notification callback to execute
         senderLatch.countDown();
