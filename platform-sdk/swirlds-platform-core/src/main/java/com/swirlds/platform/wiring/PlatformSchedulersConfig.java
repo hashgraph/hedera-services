@@ -86,7 +86,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          buffer
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
-*  @param hashLoggerSchedulerType                           the hash logger scheduler type
+ *  @param hashLoggerSchedulerType                           the hash logger scheduler type
  * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
  *                                                          task scheduler
  */
