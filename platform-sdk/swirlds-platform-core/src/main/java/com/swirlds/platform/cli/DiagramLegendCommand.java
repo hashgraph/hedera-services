@@ -76,8 +76,8 @@ public final class DiagramLegendCommand extends AbstractCommand {
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
                 .cast();
-        final TaskScheduler<Void> directStatelessScheduler = model.schedulerBuilder("DirectStatelessScheduler")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+        final TaskScheduler<Void> directThreadsafeScheduler = model.schedulerBuilder("DirectThreadsafeScheduler")
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final TaskScheduler<Void> concurrentScheduler = model.schedulerBuilder("ConcurrentScheduler")
@@ -87,7 +87,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
 
         final String wireSubstitutionString = "wire substitution (for readability)";
         sequentialScheduler.getOutputWire().solderTo(sequentialThreadScheduler.buildInputWire(wireSubstitutionString));
-        directScheduler.getOutputWire().solderTo(directStatelessScheduler.buildInputWire("wire with backpressure"));
+        directScheduler.getOutputWire().solderTo(directThreadsafeScheduler.buildInputWire("wire with backpressure"));
         sequentialThreadScheduler
                 .getOutputWire()
                 .solderTo(directScheduler.buildInputWire("wire without backpressure"), SolderType.OFFER);
@@ -99,7 +99,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
                                 sequentialScheduler.getName(),
                                 sequentialThreadScheduler.getName(),
                                 directScheduler.getName(),
-                                directStatelessScheduler.getName(),
+                                directThreadsafeScheduler.getName(),
                                 concurrentScheduler.getName()),
                         false)),
                 List.of(new ModelEdgeSubstitution(sequentialScheduler.getName(), wireSubstitutionString, "✩")),

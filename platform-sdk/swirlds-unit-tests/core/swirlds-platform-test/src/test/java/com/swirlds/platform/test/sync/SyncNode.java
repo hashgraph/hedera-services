@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
@@ -29,21 +28,25 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,15 +72,14 @@ public class SyncNode {
     private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final Shadowgraph shadowGraph;
-    private final Consensus consensus;
     private ParallelExecutor executor;
     private Connection connection;
     private boolean saveGeneratedEvents;
     private boolean shouldAcceptSync = true;
     private boolean reconnected = false;
-    private boolean sendRecInitBytes = true;
+    private final AncientMode ancientMode;
 
-    private long oldestGeneration;
+    private long expirationThreshold;
 
     private Exception syncException;
     private final AtomicInteger sleepAfterEventReadMillis = new AtomicInteger(0);
@@ -89,20 +91,32 @@ public class SyncNode {
 
     private final PlatformContext platformContext;
 
-    public SyncNode(final int numNodes, final long nodeId, final EventEmitter<?> eventEmitter) {
-        this(numNodes, nodeId, eventEmitter, new CachedPoolParallelExecutor(getStaticThreadManager(), "sync-node"));
+    public SyncNode(
+            final int numNodes,
+            final long nodeId,
+            final EventEmitter<?> eventEmitter,
+            @NonNull final AncientMode ancientMode) {
+
+        this(
+                numNodes,
+                nodeId,
+                eventEmitter,
+                new CachedPoolParallelExecutor(getStaticThreadManager(), "sync-node"),
+                ancientMode);
     }
 
     public SyncNode(
             final int numNodes,
             final long nodeId,
             final EventEmitter<?> eventEmitter,
-            final ParallelExecutor executor) {
+            final ParallelExecutor executor,
+            @NonNull final AncientMode ancientMode) {
 
         if (executor.isMutable()) {
             executor.start();
         }
 
+        this.ancientMode = Objects.requireNonNull(ancientMode);
         this.numNodes = numNodes;
         this.nodeId = new NodeId(nodeId);
         this.eventEmitter = eventEmitter;
@@ -117,7 +131,10 @@ public class SyncNode {
 
         // The original sync tests are incompatible with event filtering.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(
+                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                        ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
         platformContext = TestPlatformContextBuilder.create()
@@ -125,7 +142,6 @@ public class SyncNode {
                 .build();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
-        consensus = mock(Consensus.class);
         this.executor = executor;
     }
 
@@ -224,7 +240,10 @@ public class SyncNode {
 
         // The original sync tests are incompatible with event filtering.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.filterLikelyDuplicates", false)
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(
+                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                        ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
@@ -237,33 +256,33 @@ public class SyncNode {
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
-                this::getConsensus,
                 eventHandler,
                 syncManager,
                 mock(IntakeEventCounter.class),
-                executor,
-                sendRecInitBytes,
-                () -> {});
+                executor);
     }
 
     /**
      * <p>Calls the
-     * {@link Shadowgraph#updateNonExpiredEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and
-     * saves the {@code expireBelow} value for use in validation. For the purposes of these tests, the
-     * {@code expireBelow} value becomes the oldest non-expired generation in the shadow graph returned by
-     * {@link SyncNode#getOldestGeneration()} . In order words, these tests assume there are no generation reservations
-     * prior to the sync that occurs in the test.</p>
+     * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
+     * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
+     * becomes the oldest non-expired ancient indicator in the shadow graph returned by
+     * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior
+     * to the sync that occurs in the test.</p>
      *
-     * <p>The {@link SyncNode#getOldestGeneration()} value is used to determine which events should not be send to the
-     * peer because they are expired.</p>
+     * <p>The {@link SyncNode#getExpirationThreshold()} value is used to determine which events should not be send
+     * to
+     * the peer because they are expired.</p>
      */
-    public void expireBelow(final long expireBelow) {
-        this.oldestGeneration = expireBelow;
+    public void expireBelow(final long expirationThreshold) {
+        this.expirationThreshold = expirationThreshold;
+
+        final long ancientThreshold = shadowGraph.getEventWindow().getAncientThreshold();
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelow, GENERATION_THRESHOLD);
+                0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
 
-        shadowGraph.updateNonExpiredEventWindow(eventWindow);
+        updateEventWindow(eventWindow);
     }
 
     public NodeId getNodeId() {
@@ -280,6 +299,13 @@ public class SyncNode {
 
     public Shadowgraph getShadowGraph() {
         return shadowGraph;
+    }
+
+    /**
+     * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
+     */
+    public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+        shadowGraph.updateEventWindow(eventWindow);
     }
 
     public TestingSyncManager getSyncManager() {
@@ -326,12 +352,12 @@ public class SyncNode {
         this.executor = executor;
     }
 
-    public Consensus getConsensus() {
-        return consensus;
+    public long getCurrentAncientThreshold() {
+        return shadowGraph.getEventWindow().getAncientThreshold();
     }
 
-    public long getOldestGeneration() {
-        return oldestGeneration;
+    public long getExpirationThreshold() {
+        return expirationThreshold;
     }
 
     public int getSleepAfterEventReadMillis() {
@@ -340,14 +366,6 @@ public class SyncNode {
 
     public void setSleepAfterEventReadMillis(final int sleepAfterEventReadMillis) {
         this.sleepAfterEventReadMillis.set(sleepAfterEventReadMillis);
-    }
-
-    public boolean isSendRecInitBytes() {
-        return sendRecInitBytes;
-    }
-
-    public void setSendRecInitBytes(final boolean sendRecInitBytes) {
-        this.sendRecInitBytes = sendRecInitBytes;
     }
 
     public void setSynchronizerReturn(final Boolean value) {
