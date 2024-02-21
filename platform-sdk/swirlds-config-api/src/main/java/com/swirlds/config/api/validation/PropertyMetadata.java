@@ -19,22 +19,21 @@ package com.swirlds.config.api.validation;
 import com.swirlds.config.api.converter.ConfigConverter;
 
 /**
- * Interface that provides metadata for a property
+ * Interface that provides metadata for a property.
  *
- * @param <T>
- * 		type of the property value
+ * @param <T> type of the property value
  */
 public interface PropertyMetadata<T> {
 
     /**
-     * Returns the raw value of the property
+     * Returns the raw value of the property.
      *
      * @return the raw value of the property
      */
     String getRawValue();
 
     /**
-     * Returns the value of the property
+     * Returns the value of the property.
      *
      * @return the value of the property
      */
@@ -43,7 +42,7 @@ public interface PropertyMetadata<T> {
     }
 
     /**
-     * Returns the type of the property value
+     * Returns the type of the property value.
      *
      * @return the type of the property value
      */
@@ -58,14 +57,14 @@ public interface PropertyMetadata<T> {
     ConfigConverter<T> getConverter();
 
     /**
-     * Returns true if the property exists (is defined by a {@link com.swirlds.config.api.source.ConfigSource})
+     * Returns true if the property exists (is defined by a {@link com.swirlds.config.api.source.ConfigSource}).
      *
      * @return true if the property exists, false otherwise
      */
     boolean exists();
 
     /**
-     * Returns the name of the property
+     * Returns the name of the property.
      *
      * @return the names
      */

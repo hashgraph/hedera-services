@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -40,6 +39,7 @@ import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
@@ -47,7 +47,6 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -62,7 +61,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -75,6 +73,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class VirtualPipelineTests {
 
     private Metrics metrics;
+    private VirtualMapConfig config =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
 
     /**
      * Run an operation on a thread, interrupt and throw an exception if the thread does not complete before timeout.
@@ -213,7 +213,7 @@ class VirtualPipelineTests {
         DummyVirtualRoot mutableCopy = null;
         for (int index = 0; index < copyCount; index++) {
             if (mutableCopy == null) {
-                mutableCopy = new DummyVirtualRoot("VirtualPipelineTests");
+                mutableCopy = new DummyVirtualRoot("VirtualPipelineTests", config);
                 mutableCopy.setShouldFlushPredicate(shouldBeFlushed);
                 mutableCopy.registerMetrics(metrics);
             } else {
@@ -271,7 +271,7 @@ class VirtualPipelineTests {
     @Tag(TIMING_SENSITIVE)
     @DisplayName("registerCopy rejects nulls")
     void registerCopyRejectsNull() {
-        final DummyVirtualRoot root = new DummyVirtualRoot("registerCopyRejectsNull");
+        final DummyVirtualRoot root = new DummyVirtualRoot("registerCopyRejectsNull", config);
         final VirtualPipeline pipeline = root.getPipeline();
         assertNotNull(pipeline, "Pipeline should never be null");
         assertThrows(NullPointerException.class, () -> pipeline.registerCopy(null), "Should have thrown NPE");
@@ -421,7 +421,7 @@ class VirtualPipelineTests {
     @Tag(TIMING_SENSITIVE)
     @DisplayName("Terminate waits for jobs to complete")
     void terminateWaitsForJobs() {
-        final SlowVirtualRoot root = new SlowVirtualRoot("terminateWaitsForJobs");
+        final SlowVirtualRoot root = new SlowVirtualRoot("terminateWaitsForJobs", config);
         final SlowVirtualRoot copy1 = root.copy();
         final SlowVirtualRoot copy2 = copy1.copy();
         final SlowVirtualRoot copy3 = copy2.copy();
@@ -599,8 +599,8 @@ class VirtualPipelineTests {
         private final CountDownLatch flushFinishedLatch = new CountDownLatch(1);
         private final CountDownLatch mergeFinishedLatch = new CountDownLatch(1);
 
-        private SlowVirtualRoot(final String label) {
-            super(label);
+        private SlowVirtualRoot(final String label, final VirtualMapConfig config) {
+            super(label, config);
         }
 
         private SlowVirtualRoot(SlowVirtualRoot other) {
@@ -812,57 +812,68 @@ class VirtualPipelineTests {
     }
 
     /**
-     * Measure the time that it takes to make another copy, assert that it is within 10ms of the expected time.
+     * Make a copy and calculate the flush backpressure pause, assert that the value equals to the expected time.
      */
-    private static void copyAndMeasureTime(final Deque<DummyVirtualRoot> copies, final int expectedTimeMs) {
-        final Instant start = Instant.now();
-
+    private static void copyAndAssertFlushBackpressurePause(
+            final Deque<DummyVirtualRoot> copies, final int expectedTimeMs) {
         final DummyVirtualRoot copy = copies.getLast().copy();
         copies.add(copy);
+        final Duration duration = copy.getPipeline().calculateFlushBackpressurePause();
+        if (duration == null) {
+            // no backpressure applied
+            return;
+        }
 
-        final Instant end = Instant.now();
-        final Duration duration = Duration.between(start, end);
+        assertEquals(expectedTimeMs, duration.toMillis());
+    }
 
-        final int ms = (int) duration.toMillis();
+    /**
+     * Measure the time that it takes to make another copy, assert that it is within 10ms of the expected time.
+     */
+    private static void copyAndAssertFamilySizeBackpressurePause(
+            final Deque<DummyVirtualRoot> copies, final int expectedTimeMs) {
+        final DummyVirtualRoot copy = copies.getLast().copy();
+        copies.add(copy);
+        final Duration duration = copy.getPipeline().calculateFamilySizeBackpressurePause();
+        if (duration == null) {
+            // no backpressure applied
+            return;
+        }
 
-        final int min = expectedTimeMs - 11;
-        final int max = expectedTimeMs + 11;
-
-        assertTrue(
-                ms > min && ms < max,
-                "unexpected duration " + ms + " ms, should be between " + min + " ms and " + max + " ms");
+        assertEquals(expectedTimeMs, duration.toMillis());
     }
 
     @Test
     @Tag(TestQualifierTags.TIME_CONSUMING)
-    @DisplayName("Flush Throttle")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/pull/11497
-    @Disabled
-    void flushThrottle() throws InterruptedException {
+    @DisplayName("Test Flush Backpressure")
+    void testFlushBackpressure() throws InterruptedException {
 
         final int preferredQueueSize = 2;
         final int throttleStepSize = 10;
         final int maxThrottle = 100; // For the purposes of this test, this should be a multiple of throttleStepSize
 
         final Configuration config = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.FLUSH_THROTTLE_STEP_SIZE, throttleStepSize + "ms")
-                .withValue(VirtualMapConfig_.MAXIMUM_FLUSH_THROTTLE_PERIOD, maxThrottle + "ms")
+                .withSource(new SimpleConfigSource()
+                        .withValue(VirtualMapConfig_.PREFERRED_FLUSH_QUEUE_SIZE, preferredQueueSize + "")
+                        .withValue(VirtualMapConfig_.FLUSH_THROTTLE_STEP_SIZE, throttleStepSize + "ms")
+                        .withValue(VirtualMapConfig_.MAXIMUM_FLUSH_THROTTLE_PERIOD, maxThrottle + "ms"))
+                .withConfigDataType(VirtualMapConfig.class)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(config);
 
         final Deque<DummyVirtualRoot> copies = new LinkedList<>();
 
-        final DummyVirtualRoot originalCopy = new DummyVirtualRoot("flushThrottle");
+        final DummyVirtualRoot originalCopy =
+                new DummyVirtualRoot("flushThrottle", config.getConfigData(VirtualMapConfig.class));
         originalCopy.setShouldFlushPredicate(i -> i % 2 == 1); // flush odd copies
         copies.add(originalCopy);
 
         // Create some copies, but not so many that the flush throttle becomes engaged.
         for (int i = 0; i < preferredQueueSize; i++) {
             // flushable copy
-            copyAndMeasureTime(copies, 0);
+            copyAndAssertFlushBackpressurePause(copies, 0);
 
             // mergable copy
-            copyAndMeasureTime(copies, 0);
+            copyAndAssertFlushBackpressurePause(copies, 0);
         }
 
         // Creation of additional copies should become increasingly slower and slower
@@ -871,20 +882,20 @@ class VirtualPipelineTests {
             final int expectedDelayMs = Math.min(maxThrottle, throttleStepSize * (i + 1) * (i + 1));
 
             // flushable copy
-            copyAndMeasureTime(copies, expectedDelayMs);
+            copyAndAssertFlushBackpressurePause(copies, expectedDelayMs);
 
             // mergable copy
-            copyAndMeasureTime(copies, expectedDelayMs);
+            copyAndAssertFlushBackpressurePause(copies, expectedDelayMs);
         }
 
         // Additional copies should be slow, but should not exceed the maximum throttle period
         final int cyclesAfterMaxThrottle = 5;
         for (int i = 0; i < cyclesAfterMaxThrottle; i++) {
             // flushable copy
-            copyAndMeasureTime(copies, maxThrottle);
+            copyAndAssertFlushBackpressurePause(copies, maxThrottle);
 
             // mergable copy
-            copyAndMeasureTime(copies, maxThrottle);
+            copyAndAssertFlushBackpressurePause(copies, maxThrottle);
         }
 
         // Flush and delete copies, time to copy should decrease
@@ -907,11 +918,60 @@ class VirtualPipelineTests {
         MILLISECONDS.sleep(100);
 
         // flushable copy
-        copyAndMeasureTime(copies, 0);
+        copyAndAssertFlushBackpressurePause(copies, 0);
 
         // mergable copy
-        copyAndMeasureTime(copies, 0);
+        copyAndAssertFlushBackpressurePause(copies, 0);
 
+        // Release remaining copies so that the background thread dies.
+        while (!copies.isEmpty()) {
+            copies.removeFirst().release();
+        }
+    }
+
+    @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
+    @DisplayName("Test Family Size Backpressure")
+    void testFamilySizeBackpressure() throws InterruptedException {
+
+        final int familyThrottleThreshold = 10000;
+        final int estimatedSize = 100;
+
+        final Configuration config = new TestConfigBuilder()
+                .withSource(new SimpleConfigSource()
+                        .withValue(VirtualMapConfig_.FAMILY_THROTTLE_THRESHOLD, familyThrottleThreshold + ""))
+                .withConfigDataType(VirtualMapConfig.class)
+                .getOrCreateConfig();
+
+        final Deque<DummyVirtualRoot> copies = new LinkedList<>();
+
+        final DummyVirtualRoot originalCopy =
+                new DummyVirtualRoot("flushThrottle", config.getConfigData(VirtualMapConfig.class));
+        originalCopy.setEstimatedSize(100);
+        originalCopy.setShouldFlushPredicate(i -> i % 2 == 1); // flush odd copies
+        copies.add(originalCopy);
+
+        // Create some copies, but not so many that the flush throttle becomes engaged.
+        for (int i = 0; i < familyThrottleThreshold / estimatedSize; i++) {
+            copyAndAssertFamilySizeBackpressurePause(copies, 0);
+        }
+
+        // Creation of additional copies should become increasingly slower and slower
+        int copiesOverThreshold = 10;
+
+        for (int i = 0; i < copiesOverThreshold; i++) {
+            final int expectedDelayMs = (i + 1) * (i + 1);
+            copyAndAssertFamilySizeBackpressurePause(copies, expectedDelayMs);
+        }
+
+        for (int i = 0; i < copiesOverThreshold + 2; i++) {
+            copies.removeFirst().release();
+        }
+
+        // Give some time for the background thread to catch up.
+        MILLISECONDS.sleep(100);
+
+        copyAndAssertFamilySizeBackpressurePause(copies, 0);
         // Release remaining copies so that the background thread dies.
         while (!copies.isEmpty()) {
             copies.removeFirst().release();

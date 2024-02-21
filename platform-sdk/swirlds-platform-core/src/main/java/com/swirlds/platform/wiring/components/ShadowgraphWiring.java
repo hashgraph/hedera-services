@@ -27,13 +27,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link Shadowgraph}.
  *
- * @param eventInput                 the input wire for events to be added to the shadow graph
- * @param nonExpiredEventWindowInput the input wire for the non-expired event window
- * @param flushRunnable              the runnable to flush the task scheduler
+ * @param eventInput       the input wire for events to be added to the shadow graph
+ * @param eventWindowInput the input wire for the non-expired event window
+ * @param flushRunnable    the runnable to flush the task scheduler
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<NonAncientEventWindow> nonExpiredEventWindowInput,
+        @NonNull InputWire<NonAncientEventWindow> eventWindowInput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -57,7 +57,6 @@ public record ShadowgraphWiring(
      */
     public void bind(@NonNull final Shadowgraph shadowgraph) {
         ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, Void>) nonExpiredEventWindowInput)
-                .bind(shadowgraph::updateNonExpiredEventWindow);
+        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput).bind(shadowgraph::updateEventWindow);
     }
 }

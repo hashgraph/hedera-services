@@ -24,7 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -65,7 +65,7 @@ class PlatformWiringTests {
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
-                mock(LinkedEventIntake.class),
+                mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),

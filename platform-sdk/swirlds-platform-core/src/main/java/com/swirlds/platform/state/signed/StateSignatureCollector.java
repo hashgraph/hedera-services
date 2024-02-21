@@ -109,7 +109,9 @@ public class StateSignatureCollector {
         lastStateRound = Math.max(lastStateRound, signedState.getRound());
         adjustSavedSignaturesWindow(signedState.getRound());
 
-        if (!signedState.isComplete()) {
+        // complete states and freeze states will be written immediately to disk
+        // incomplete non-freeze states will be kept until they are complete or too old
+        if (!signedState.isComplete() && !signedState.isFreezeState()) {
             final ReservedSignedState previousState = incompleteStates.put(signedState.getRound(), reservedSignedState);
             if (previousState != null) {
                 previousState.close();

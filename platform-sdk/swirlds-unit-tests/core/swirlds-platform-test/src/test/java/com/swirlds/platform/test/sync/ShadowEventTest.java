@@ -26,43 +26,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("shadow event tests")
 class ShadowEventTest {
+    private final TestingEventBuilder builder = TestingEventBuilder.builder();
 
     @Test
     @DisplayName("toString")
     void testToString() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
-        final EventImpl esp = EventFactory.makeEventWithRandomHash();
-        final EventImpl eop = EventFactory.makeEventWithRandomHash();
-        final EventImpl esc = EventFactory.makeEventWithRandomHash();
-        final EventImpl eoc = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
+        final EventImpl esp = builder.buildEventImpl();
+        final EventImpl eop = builder.buildEventImpl();
 
         final ShadowEvent ssp = new ShadowEvent(esp);
         final ShadowEvent sop = new ShadowEvent(eop);
-        final ShadowEvent ssc = new ShadowEvent(esc);
-        final ShadowEvent soc = new ShadowEvent(eoc);
 
         final ShadowEvent s = new ShadowEvent(e, ssp, sop);
-        String str;
+        final String str;
 
         str = s.toString();
 
         assertTrue(str.contains("sp"), "a shadow event string should annotate its self-parent");
         assertTrue(str.contains("op"), "a shadow event string should annotate its other-parent");
-
-        final EventImpl esc2 = EventFactory.makeEventWithRandomHash();
-        final ShadowEvent ssc2 = new ShadowEvent(esc2, s, sop);
     }
 
     @Test
     @DisplayName("equals")
     void testEquals() {
-        final EventImpl e0 = EventFactory.makeEventWithRandomHash();
-        final EventImpl e1 = EventFactory.makeEventWithRandomHash();
+        final EventImpl e0 = builder.buildEventImpl();
+        final EventImpl e1 = builder.buildEventImpl();
 
         final ShadowEvent s0 = new ShadowEvent(e0);
         final ShadowEvent s1 = new ShadowEvent(e1);
@@ -82,16 +77,12 @@ class ShadowEventTest {
     @Test
     @DisplayName("parent and children getters")
     void testGetters() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
-        final EventImpl esp = EventFactory.makeEventWithRandomHash();
-        final EventImpl eop = EventFactory.makeEventWithRandomHash();
-        final EventImpl esc = EventFactory.makeEventWithRandomHash();
-        final EventImpl eoc = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
+        final EventImpl esp = builder.buildEventImpl();
+        final EventImpl eop = builder.buildEventImpl();
 
         final ShadowEvent ssp = new ShadowEvent(esp);
         final ShadowEvent sop = new ShadowEvent(eop);
-        final ShadowEvent ssc = new ShadowEvent(esc);
-        final ShadowEvent soc = new ShadowEvent(eoc);
 
         final ShadowEvent s = new ShadowEvent(e, ssp, sop);
 
@@ -104,9 +95,9 @@ class ShadowEventTest {
     @Test
     @DisplayName("disconnect an event")
     void testDisconnect() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
-        final EventImpl esp = EventFactory.makeEventWithRandomHash();
-        final EventImpl eop = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
+        final EventImpl esp = builder.buildEventImpl();
+        final EventImpl eop = builder.buildEventImpl();
 
         final ShadowEvent ssp = new ShadowEvent(esp);
         final ShadowEvent sop = new ShadowEvent(eop);
@@ -127,9 +118,9 @@ class ShadowEventTest {
     @Test
     @DisplayName("the hash of a shadow event is the hash of the referenced hashgraph event")
     void testHash() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
-        final EventImpl esp = EventFactory.makeEventWithRandomHash();
-        final EventImpl eop = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
+        final EventImpl esp = builder.buildEventImpl();
+        final EventImpl eop = builder.buildEventImpl();
 
         // Parents, unlinked
         final ShadowEvent ssp = new ShadowEvent(esp);
@@ -145,9 +136,9 @@ class ShadowEventTest {
     @Test
     @DisplayName("parents linked by construction")
     void testLinkedConstruction() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
-        final EventImpl esp = EventFactory.makeEventWithRandomHash();
-        final EventImpl eop = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
+        final EventImpl esp = builder.buildEventImpl();
+        final EventImpl eop = builder.buildEventImpl();
 
         // Parents, unlinked
         final ShadowEvent ssp = new ShadowEvent(esp);
@@ -167,7 +158,7 @@ class ShadowEventTest {
     @Test
     @DisplayName("no links when constructed without other events")
     void testUnlinkedConstruction() {
-        final EventImpl e = EventFactory.makeEventWithRandomHash();
+        final EventImpl e = builder.buildEventImpl();
         final ShadowEvent s = new ShadowEvent(e);
 
         testUnlinkedConstruction(s);
