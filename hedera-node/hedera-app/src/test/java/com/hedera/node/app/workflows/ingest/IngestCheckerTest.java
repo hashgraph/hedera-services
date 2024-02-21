@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -76,6 +77,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Instant;
@@ -310,6 +312,37 @@ class IngestCheckerTest extends AppTestBase {
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
+        }
+    }
+
+    @Nested
+    @DisplayName("4. Check payer accountID")
+    class PayerAccountIDTests {
+        @Test
+        @DisplayName("Aliased Payer accountID should be rejected")
+        void testThrottleFails() throws PreCheckException {
+            final var id = txBody.transactionIDOrThrow();
+            final Key aPrimitiveKey = Key.newBuilder()
+                    .ed25519(Bytes.wrap("01234567890123456789012345678901"))
+                    .build();
+            final Bytes edKeyAlias = asBytes(Key.PROTOBUF, aPrimitiveKey);
+            final AccountID alias = AccountID.newBuilder().alias(edKeyAlias).build();
+            txBody = txBody.copyBuilder()
+                    .transactionID(id.copyBuilder().accountID(alias).build())
+                    .build();
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
+                    .build();
+            tx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+            transactionInfo = new TransactionInfo(
+                    tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(tx)).thenReturn(transactionInfo);
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", INVALID_PAYER_ACCOUNT_ID);
         }
     }
 
