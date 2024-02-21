@@ -7,4 +7,9 @@ module com.hedera.node.blocknode.core.test {
     requires com.hedera.node.blocknode.core;
     requires com.swirlds.platform.core;
     requires org.junit.jupiter.api;
+    requires com.hedera.node.hapi;
+    requires com.hedera.node.blocknode.state;
+    requires com.hedera.node.blocknode.core.spi;
+    requires com.hedera.node.blocknode.grpc.api;
+    requires com.hedera.node.blocknode.filesystem.api;
 }
