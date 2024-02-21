@@ -82,7 +82,7 @@ public class HashLogger {
     }
 
     /**
-     * Queues the provided signed state for extracting hashes and logging.
+     * Delegates extraction and logging of the signed state's hashes
      *
      * @param signedState the signed state to retrieve hash information from and log.
      */

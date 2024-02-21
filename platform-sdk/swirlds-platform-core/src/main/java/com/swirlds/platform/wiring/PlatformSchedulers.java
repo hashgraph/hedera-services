@@ -259,7 +259,7 @@ public record PlatformSchedulers(
                         .build()
                         .cast(),
                 model.schedulerBuilder("hashLogger")
-                        .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
+                        .withType(config.hashLoggerSchedulerType())
                         .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
