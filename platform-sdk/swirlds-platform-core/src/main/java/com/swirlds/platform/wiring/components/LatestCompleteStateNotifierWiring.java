@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring for the {@link LatestCompleteStateNotifier}.
  *
  * @param completeStateNotificationInputWire  the input wire for the latest complete state notifier
- * @param stateSavingResultInputWire          the output wire for app latest completion state notifier
+ * @param stateSavingResultInputWire          the input wire for state saving result to disk
  */
 public record LatestCompleteStateNotifierWiring(
         @NonNull InputWire<ReservedSignedState> completeStateNotificationInputWire,
@@ -41,7 +41,7 @@ public record LatestCompleteStateNotifierWiring(
      */
     public static LatestCompleteStateNotifierWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new LatestCompleteStateNotifierWiring(
-                taskScheduler.buildInputWire("completed rss to notify"),
+                taskScheduler.buildInputWire("completed reserved signed state to notify"),
                 taskScheduler.buildInputWire("state saving result to notify"));
     }
 
