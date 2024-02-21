@@ -80,7 +80,8 @@ public class OrderedComparison {
         if (secondEntries.isEmpty()) {
             return ret;
         }
-        RecordStreamEntry firstEntry, secondEntry;
+        RecordStreamEntry firstEntry;
+        RecordStreamEntry secondEntry;
         int secondIndex = 0;
         for (RecordStreamEntry entry : firstEntries) {
             firstEntry = entry;
@@ -98,7 +99,7 @@ public class OrderedComparison {
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
 
     private static class UnmatchableException extends Exception {
-        public UnmatchableException(@NonNull final String message) {
+        UnmatchableException(@NonNull final String message) {
             super(message);
         }
     }
@@ -171,18 +172,20 @@ public class OrderedComparison {
      * transaction than the entry at the given index.
      *
      * @param entries a list of entries
-     * @param i the index of the entry to match
+     * @param index the index of the entry to match
      * @param entryToMatch the entry to match
      * @return the entry at the given index
      */
     @NonNull
     private static RecordStreamEntry entryWithMatchableRecord(
-            @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
+            @NonNull final List<RecordStreamEntry> entries,
+            final int index,
+            @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
-        final var secondEntry = entries.get(i);
+        final var secondEntry = entries.get(index);
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
             throw new UnmatchableException("Entries at position "
-                    + i
+                    + index
                     + " had different consensus times ("
                     + entryToMatch.consensusTime()
                     + " vs "
@@ -191,7 +194,7 @@ public class OrderedComparison {
         }
         if (!entryToMatch.submittedTransaction().equals(secondEntry.submittedTransaction())) {
             throw new UnmatchableException("Entries at position "
-                    + i
+                    + index
                     + " had different transactions ("
                     + entryToMatch.submittedTransaction()
                     + " vs "

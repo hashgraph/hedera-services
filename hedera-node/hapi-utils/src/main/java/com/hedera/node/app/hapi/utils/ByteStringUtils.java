@@ -91,13 +91,13 @@ public final class ByteStringUtils {
         }
 
         @Override
-        public void writeLazy(final byte[] bytes, final int offset, final int length) {
-            this.bytes = bytes;
+        public void write(final ByteBuffer value) throws IOException {
+            throw new UnsupportedOperationException();
         }
 
         @Override
-        public void write(final ByteBuffer value) throws IOException {
-            throw new UnsupportedOperationException();
+        public void writeLazy(final byte[] bytes, final int offset, final int length) {
+            this.bytes = bytes;
         }
 
         @Override

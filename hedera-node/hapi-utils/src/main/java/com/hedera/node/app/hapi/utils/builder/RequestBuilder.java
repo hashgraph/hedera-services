@@ -118,6 +118,52 @@ public final class RequestBuilder {
                 autoRenew);
     }
 
+    public static Transaction getCreateAccountBuilder(
+            Long payerAccountNum,
+            Long payerRealmNum,
+            Long payerShardNum,
+            Long nodeAccountNum,
+            Long nodeRealmNum,
+            Long nodeShardNum,
+            long transactionFee,
+            Timestamp startTime,
+            Duration transactionDuration,
+            boolean generateRecord,
+            String memo,
+            Key key,
+            long initBal,
+            long sendRecordThreshold,
+            long receiveRecordThreshold,
+            boolean receiverSign,
+            Duration autoRenew) {
+        CryptoCreateTransactionBody createAccount = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setInitialBalance(initBal)
+                .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
+                .setReceiveRecordThreshold(receiveRecordThreshold)
+                .setSendRecordThreshold(sendRecordThreshold)
+                .setReceiverSigRequired(receiverSign)
+                .setAutoRenewPeriod(autoRenew)
+                .build();
+
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo);
+        body.setCryptoCreateAccount(createAccount);
+        byte[] bodyBytesArr = body.build().toByteArray();
+        ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
+        return getAsTransaction(bodyBytes);
+    }
+
     public static Transaction getAccountUpdateRequest(
             AccountID accountID,
             Long payerAccountNum,
@@ -153,7 +199,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Generates a transaction with a CryptoUpdateTransactionBody object pre-built by caller
+     * Generates a transaction with a CryptoUpdateTransactionBody object pre-built by caller.
      *
      * @param payerAccountNum payer account number
      * @param payerRealmNum payer realm number
@@ -386,7 +432,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Builds a file create transaction
+     * Builds a file create transaction.
      *
      * @param payerAccountNum payer account number
      * @param payerRealmNum payer realm number
@@ -444,7 +490,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Builds a file append transaction
+     * Builds a file append transaction.
      *
      * @param payerAccountNum payer account number
      * @param payerRealmNum payer realm number
@@ -497,7 +543,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Builds a file update transaction
+     * Builds a file update transaction.
      *
      * @param payerAccountNum payer account number
      * @param payerRealmNum payer realm number
@@ -557,7 +603,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Builds a file deletion transaction
+     * Builds a file deletion transaction.
      *
      * @param payerAccountNum payer account number
      * @param payerRealmNum payer realm number
@@ -622,7 +668,7 @@ public final class RequestBuilder {
     }
 
     /**
-     * Get file get info builder
+     * Get file get info builder.
      *
      * @param payment payment
      * @param fileID file ID
@@ -723,50 +769,6 @@ public final class RequestBuilder {
         return getAsTransaction(bodyBytes);
     }
 
-    public static Transaction getCryptoTransferRequest(
-            Long payerAccountNum,
-            Long payerRealmNum,
-            Long payerShardNum,
-            Long nodeAccountNum,
-            Long nodeRealmNum,
-            Long nodeShardNum,
-            long transactionFee,
-            Timestamp timestamp,
-            Duration transactionDuration,
-            boolean generateRecord,
-            String memo,
-            Long senderActNum,
-            Long amountSend,
-            Long receiverAcctNum,
-            Long amountReceived) {
-
-        AccountAmount a1 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-                .setAmount(amountSend)
-                .build();
-        AccountAmount a2 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(receiverAcctNum, 0l, 0l))
-                .setAmount(amountReceived)
-                .build();
-        TransferList transferList = TransferList.newBuilder()
-                .addAccountAmounts(a1)
-                .addAccountAmounts(a2)
-                .build();
-        return getCryptoTransferRequest(
-                payerAccountNum,
-                payerRealmNum,
-                payerShardNum,
-                nodeAccountNum,
-                nodeRealmNum,
-                nodeShardNum,
-                transactionFee,
-                timestamp,
-                transactionDuration,
-                generateRecord,
-                memo,
-                transferList);
-    }
-
     public static Transaction getHbarCryptoTransferRequestToAlias(
             Long payerAccountNum,
             Long payerRealmNum,
@@ -785,11 +787,11 @@ public final class RequestBuilder {
             Long amountReceived) {
 
         AccountAmount a1 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setAccountID(getAccountIdBuild(senderActNum, 0L, 0L))
                 .setAmount(amountSend)
                 .build();
         AccountAmount a2 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
+                .setAccountID(getAccountIdBuild(receivingAlias, 0L, 0L))
                 .setAmount(amountReceived)
                 .build();
         TransferList transferList = TransferList.newBuilder()
@@ -830,17 +832,17 @@ public final class RequestBuilder {
             Long amountReceived) {
 
         AccountAmount a1 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setAccountID(getAccountIdBuild(senderActNum, 0L, 0L))
                 .setAmount(amountSend)
                 .build();
         AccountAmount a2 = AccountAmount.newBuilder()
-                .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
+                .setAccountID(getAccountIdBuild(receivingAlias, 0L, 0L))
                 .setAmount(amountReceived)
                 .build();
         NftTransfer a3 = NftTransfer.newBuilder()
                 .setReceiverAccountID(
                         AccountID.newBuilder().setAlias(receivingAlias).build())
-                .setSenderAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setSenderAccountID(getAccountIdBuild(senderActNum, 0L, 0L))
                 .setSerialNumber(1)
                 .build();
         TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
@@ -897,6 +899,50 @@ public final class RequestBuilder {
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
         return getAsTransaction(bodyBytes);
+    }
+
+    public static Transaction getCryptoTransferRequest(
+            Long payerAccountNum,
+            Long payerRealmNum,
+            Long payerShardNum,
+            Long nodeAccountNum,
+            Long nodeRealmNum,
+            Long nodeShardNum,
+            long transactionFee,
+            Timestamp timestamp,
+            Duration transactionDuration,
+            boolean generateRecord,
+            String memo,
+            Long senderActNum,
+            Long amountSend,
+            Long receiverAcctNum,
+            Long amountReceived) {
+
+        AccountAmount a1 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(senderActNum, 0L, 0L))
+                .setAmount(amountSend)
+                .build();
+        AccountAmount a2 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(receiverAcctNum, 0L, 0L))
+                .setAmount(amountReceived)
+                .build();
+        TransferList transferList = TransferList.newBuilder()
+                .addAccountAmounts(a1)
+                .addAccountAmounts(a2)
+                .build();
+        return getCryptoTransferRequest(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo,
+                transferList);
     }
 
     public static Transaction getTokenTransferRequest(
@@ -1142,62 +1188,17 @@ public final class RequestBuilder {
         return getAsTransaction(bodyBytes);
     }
 
-    public static Query getBySolidityIDQuery(String solidityID, Transaction transaction, ResponseType responseType) {
+    public static Query getBySolidityIdQuery(
+            final String solidityId, final Transaction transaction, final ResponseType responseType) {
         QueryHeader queryHeader = QueryHeader.newBuilder()
                 .setResponseType(responseType)
                 .setPayment(transaction)
                 .build();
         return Query.newBuilder()
                 .setGetBySolidityID(GetBySolidityIDQuery.newBuilder()
-                        .setSolidityID(solidityID)
+                        .setSolidityID(solidityId)
                         .setHeader(queryHeader))
                 .build();
-    }
-
-    public static Transaction getCreateAccountBuilder(
-            Long payerAccountNum,
-            Long payerRealmNum,
-            Long payerShardNum,
-            Long nodeAccountNum,
-            Long nodeRealmNum,
-            Long nodeShardNum,
-            long transactionFee,
-            Timestamp startTime,
-            Duration transactionDuration,
-            boolean generateRecord,
-            String memo,
-            Key key,
-            long initBal,
-            long sendRecordThreshold,
-            long receiveRecordThreshold,
-            boolean receiverSign,
-            Duration autoRenew) {
-        CryptoCreateTransactionBody createAccount = CryptoCreateTransactionBody.newBuilder()
-                .setKey(key)
-                .setInitialBalance(initBal)
-                .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
-                .setReceiveRecordThreshold(receiveRecordThreshold)
-                .setSendRecordThreshold(sendRecordThreshold)
-                .setReceiverSigRequired(receiverSign)
-                .setAutoRenewPeriod(autoRenew)
-                .build();
-
-        TransactionBody.Builder body = getTransactionBody(
-                payerAccountNum,
-                payerRealmNum,
-                payerShardNum,
-                nodeAccountNum,
-                nodeRealmNum,
-                nodeShardNum,
-                transactionFee,
-                startTime,
-                transactionDuration,
-                generateRecord,
-                memo);
-        body.setCryptoCreateAccount(createAccount);
-        byte[] bodyBytesArr = body.build().toByteArray();
-        ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return getAsTransaction(bodyBytes);
     }
 
     public static ExchangeRate getExchangeRateBuilder(int hbarEquivalent, int centEquivalent, long expirationSeconds) {

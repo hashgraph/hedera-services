@@ -150,7 +150,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
-        return spec.fees().forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIdOnly());
     }
 
     @Override
