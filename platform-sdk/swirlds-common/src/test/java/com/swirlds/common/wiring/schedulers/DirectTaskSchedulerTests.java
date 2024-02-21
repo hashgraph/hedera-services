@@ -41,13 +41,13 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void basicOperationTest(final boolean stateless) {
+    void basicOperationTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
         final Random random = getRandomPrintSeed();
         final Thread mainThread = Thread.currentThread();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
 
         final StandardObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 
@@ -118,10 +118,10 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void exceptionHandlerTest(final boolean stateless) {
+    void exceptionHandlerTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
         final Thread mainThread = Thread.currentThread();
 
         final AtomicInteger exceptionHandlerCount = new AtomicInteger(0);
@@ -171,10 +171,10 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void squelching(final boolean stateless) {
+    void squelching(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
         final Thread mainThread = Thread.currentThread();
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
 
         final TaskScheduler<Integer> scheduler = model.schedulerBuilder("A")
                 .withType(type)

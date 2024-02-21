@@ -58,7 +58,7 @@ public class AdvancedWireTransformer<A, B> implements Consumer<A> {
             @Nullable final Consumer<A> inputCleanup,
             @Nullable final Consumer<B> outputCleanup) {
 
-        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_THREADSAFE, true);
         outputWire = new TransformingOutputWire<>(model, name, transformer, inputCleanup, outputCleanup);
     }
 

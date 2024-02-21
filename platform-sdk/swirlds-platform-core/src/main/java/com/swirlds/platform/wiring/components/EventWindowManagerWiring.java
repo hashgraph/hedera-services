@@ -47,7 +47,7 @@ public record EventWindowManagerWiring(
     @NonNull
     public static EventWindowManagerWiring create(@NonNull final WiringModel model) {
         final TaskScheduler<NonAncientEventWindow> scheduler = model.schedulerBuilder("eventWindowManager")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 

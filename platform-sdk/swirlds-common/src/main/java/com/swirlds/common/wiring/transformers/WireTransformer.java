@@ -56,7 +56,7 @@ public class WireTransformer<A, B> {
         Objects.requireNonNull(transformer);
 
         final TaskScheduler<B> taskScheduler = model.schedulerBuilder(transformerName)
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 

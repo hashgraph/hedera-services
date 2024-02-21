@@ -42,7 +42,7 @@ public record GossipWiring(@NonNull InputWire<GossipEvent> eventInput, @NonNull 
     @NonNull
     public static GossipWiring create(@NonNull final WiringModel model) {
         final TaskScheduler<GossipEvent> scheduler = model.schedulerBuilder("gossip")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 
