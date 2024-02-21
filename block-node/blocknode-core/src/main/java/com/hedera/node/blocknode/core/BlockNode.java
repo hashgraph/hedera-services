@@ -16,8 +16,13 @@
 
 package com.hedera.node.blocknode.core;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class BlockNode {
+    private static final Logger logger = LogManager.getLogger(BlockNode.class);
+
     public static void main(final String... args) {
-        System.out.println("Starting Block Node");
+        logger.info("Initializing Block Node...");
     }
 }
