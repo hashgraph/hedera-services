@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;

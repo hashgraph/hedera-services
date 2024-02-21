@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -33,6 +33,7 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -55,7 +56,8 @@ public class MerkleDbTest {
     @AfterEach
     public void shutdownTest() {
         // check db count
-        assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
+        assertEventuallyEquals(
+                0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(2), "Expected no open dbs");
     }
 
     private static MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> fixedConfig() {

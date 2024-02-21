@@ -16,15 +16,19 @@
 
 package com.hedera.node.app.hapi.utils.forensics;
 
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 
 /**
  * Represents a single {@code (Transaction, TransactionRecord)} entry from a record stream,
  * including the consensus time as a {@link Instant} for convenience.
  *
- * @param parts the transaction parts
- * @param txnRecord the resolved record the transaction
+ * @param parts         the transaction parts
+ * @param txnRecord     the resolved record the transaction
  * @param consensusTime the consensus time
  */
 public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime) {
