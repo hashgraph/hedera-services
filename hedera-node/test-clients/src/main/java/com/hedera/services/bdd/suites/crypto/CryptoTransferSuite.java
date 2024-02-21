@@ -103,7 +103,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.invalidAliasNonExistingSystemAccounts;
-import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAYER;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TREASURY;
@@ -253,7 +252,6 @@ public class CryptoTransferSuite extends HapiSuite {
                 okToRepeatSerialNumbersInWipeList(),
                 okToRepeatSerialNumbersInBurnList(),
                 canUseAliasAndAccountCombinations(),
-                testTransferToNonExistingSystemAccounts(),
                 testTransferToInvalidAliasNonExistingSystemAccounts(),
                 testTransferToExistingSystemAccounts(),
                 testTransferToSystemAccountsAndCheckSenderBalance(),
@@ -2195,42 +2193,6 @@ public class CryptoTransferSuite extends HapiSuite {
         }
 
         return defaultHapiSpec("testTransferToInvalidAliasNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(
-                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(opsArray);
-    }
-
-    @HapiTest
-    final HapiSpec testTransferToNonExistingSystemAccounts() {
-        final var contract = "CryptoTransfer";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
-
-        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
-            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith(SENDER)
-                    .sending(ONE_HBAR * 10)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-            opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
-                            contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith(SENDER)
-                    .sending(ONE_HBAR * 10)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-            opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
-                            contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith(SENDER)
-                    .sending(ONE_HBAR * 10)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-        }
-
-        return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),

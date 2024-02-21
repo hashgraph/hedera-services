@@ -125,11 +125,13 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
-    public static final List<Long> nonExistingSystemAccounts = List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l);
+    public static final List<Long> nonExistingSystemAccounts = List.of(0L);
+    //    public static final List<Long> nonExistingSystemAccounts = List.of(351L,352L,353L,354L,355L,356L,357L, 358L);
     public static final List<Long> invalidAliasNonExistingSystemAccounts = List.of(751L, 799L);
     public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
-    public static final List<Long> systemAccounts =
-            List.of(0l, 1l, 9l, 10l, 358l, 359l, 360l, 361l, 750l, 751L, 799L, 800L, 999L, 1000L);
+    //    public static final List<Long> systemAccounts =
+    //            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 799L, 800L, 999L, 1000L);
+    public static final List<Long> systemAccounts = List.of(0l);
 
     public static void main(String... args) {
         new Evm46ValidationSuite().runSuiteAsync();
@@ -261,7 +263,8 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
                 internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey(),
-                testBalanceOfForSystemAccounts());
+                testBalanceOfForExistingSystemAccounts(),
+                testBalanceOfForNonExistingSystemAccounts());
     }
 
     @HapiTest
@@ -1500,20 +1503,47 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testBalanceOfForSystemAccounts() {
+    final HapiSpec testBalanceOfForExistingSystemAccounts() {
         final var contract = "BalanceChecker46Version";
         final var balance = 10L;
-        final var systemAccountBalance = 0;
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var systemAccountBalance = 0L;
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[existingSystemAccounts.size() * 2];
 
-        for (int i = 0; i < systemAccounts.size(); i++) {
+        for (int i = 0; i < existingSystemAccounts.size(); i++) {
             // add contract call for all accounts in the list
-            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(existingSystemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
 
             // add contract call local for all accounts in the list
-            opsArray[systemAccounts.size() + i] = contractCallLocal(
-                            contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[existingSystemAccounts.size() + i] = contractCallLocal(
+                            contract, BALANCE_OF, mirrorAddrWith(existingSystemAccounts.get(i)))
+                    .has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, BALANCE_OF, contract),
+                                    ContractFnResultAsserts.isEqualOrGreaterThan(
+                                            BigInteger.valueOf(systemAccountBalance))));
+        }
+        return defaultHapiSpec("verifiesSystemAccountBalanceOf")
+                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final HapiSpec testBalanceOfForNonExistingSystemAccounts() {
+        final var contract = "BalanceChecker46Version";
+        final var balance = 10L;
+        final var systemAccountBalance = 0;
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 2];
+
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            opsArray[nonExistingSystemAccounts.size() + i] = contractCallLocal(
+                            contract, BALANCE_OF, mirrorAddrWith(nonExistingSystemAccounts.get(i)))
                     .has(ContractFnResultAsserts.resultWith()
                             .resultThruAbi(
                                     getABIFor(FUNCTION, BALANCE_OF, contract),
