@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -169,12 +168,10 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
-        final var numberOfNfts = op.tokenUpdateNft().serialNumbers().size();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenUpdateNftUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                .addBytesPerTransaction((long) meta.getBpt() * numberOfNfts)
-                .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .addBytesPerTransaction(meta.getBpt())
                 .calculate();
     }
 }
