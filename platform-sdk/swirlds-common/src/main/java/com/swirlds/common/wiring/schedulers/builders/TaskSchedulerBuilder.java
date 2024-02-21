@@ -390,7 +390,7 @@ public class TaskSchedulerBuilder<O> {
                             squelchingEnabled,
                             busyFractionTimer,
                             false);
-                    case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                    case DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
                             model,
                             name,
                             buildUncaughtExceptionHandler(),
