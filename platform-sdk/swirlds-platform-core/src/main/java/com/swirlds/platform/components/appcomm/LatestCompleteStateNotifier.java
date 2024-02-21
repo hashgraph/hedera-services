@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -28,18 +26,12 @@ import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * This component responsible for notifying the application of various platform events
+ * This component responsible for notifying the application of latest complete state
  */
-public class AppCommunicationComponent implements PlatformComponent {
-    private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
-
+public class LatestCompleteStateNotifier implements PlatformComponent {
     private final NotificationEngine notificationEngine;
-    private final Predicate<ReservedSignedState> offerPredicate;
 
     /** The round of the latest state provided to the application */
     private long latestStateProvidedRound = ConsensusConstants.ROUND_UNDEFINED;
@@ -47,14 +39,10 @@ public class AppCommunicationComponent implements PlatformComponent {
     /**
      * Create a new instance
      *
-     * @param notificationEngine    the notification engine
-     * @param offerPredicate        the offer to app communicator predicate
+     * @param notificationEngine the notification engine
      */
-    public AppCommunicationComponent(
-            @NonNull final NotificationEngine notificationEngine,
-            @NonNull final Predicate<ReservedSignedState> offerPredicate) {
+    public LatestCompleteStateNotifier(@NonNull final NotificationEngine notificationEngine) {
         this.notificationEngine = notificationEngine;
-        this.offerPredicate = offerPredicate;
     }
 
     /**
@@ -69,25 +57,11 @@ public class AppCommunicationComponent implements PlatformComponent {
                         stateSavingResult.round(),
                         stateSavingResult.consensusTimestamp(),
                         stateSavingResult.freezeState()));
-    }
-
-    public void newLatestCompleteStateEvent(@NonNull final ReservedSignedState reservedSignedState) {
-        // the state is reserved by the caller
-        // it will be released by the notification engine after the app communicator consumes it
-        // if the state does not make into the task scheduler, it will be released below
-        final boolean reservedSignedStateOfferAccepted = offerPredicate.test(reservedSignedState);
-        if (!reservedSignedStateOfferAccepted) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Unable to add new latest complete state task (state round = {}) to {}",
-                    reservedSignedState.get().getRound(),
-                    "AppCommunicationComponentTaskScheduler");
-            reservedSignedState.close();
-        }
+        // put this in a lambda so caller just calls the lambda instead
     }
 
     /**
-     * Handler for application communication task
+     * Handler for latest completion notification task
      *
      * @param reservedSignedState the reserved signed state to retrieve hash information from and log.
      */

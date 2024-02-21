@@ -37,9 +37,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Basic sanity check tests for the {@link AppCommunicationComponent} class
+ * Basic sanity check tests for the {@link LatestCompleteStateNotifier} class
  */
-public class AppCommComponentTests {
+public class LatestCompleteStateNotifierTests {
 
     @Test
     @DisplayName("StateWriteToDiskCompleteNotification")
@@ -62,8 +62,7 @@ public class AppCommComponentTests {
             assertNull(n.getFolder(), "Deprecated field should be null");
         });
 
-        final AppCommunicationComponent component =
-                new AppCommunicationComponent(notificationEngine, offerToComms -> true);
+        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
         component.stateSavedToDisk(result);
 
         assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
@@ -93,10 +92,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final AppCommunicationComponent component =
-                new AppCommunicationComponent(notificationEngine, offerToComms -> true);
+        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
         component.start();
-        component.newLatestCompleteStateEvent(signedState.reserve("test"));
 
         // Allow the notification callback to execute
         senderLatch.countDown();

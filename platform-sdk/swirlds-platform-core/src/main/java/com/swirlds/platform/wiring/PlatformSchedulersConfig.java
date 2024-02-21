@@ -86,6 +86,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          buffer
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
+ * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion notifier
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -127,4 +128,5 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
         @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity) {}

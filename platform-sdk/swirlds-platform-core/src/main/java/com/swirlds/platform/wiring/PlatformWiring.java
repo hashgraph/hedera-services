@@ -36,7 +36,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
@@ -65,7 +65,6 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
-import com.swirlds.platform.wiring.components.AppCommunicationComponentWiring;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -76,6 +75,7 @@ import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
+import com.swirlds.platform.wiring.components.LatestCompleteStateNotifierWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -125,7 +125,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
-    private final AppCommunicationComponentWiring appCommunicationComponentWiring;
+    private final LatestCompleteStateNotifierWiring latestCompleteStateNotifierWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -210,8 +210,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
-        appCommunicationComponentWiring =
-                AppCommunicationComponentWiring.create(schedulers.appCommunicationComponentScheduler());
+        latestCompleteStateNotifierWiring =
+                LatestCompleteStateNotifierWiring.create(schedulers.latestCompleteStateScheduler());
 
         wire();
     }
@@ -304,6 +304,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .runningHashUpdateOutput()
                 .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
         runningHashUpdaterWiring.runningHashUpdateOutput().solderTo(eventStreamManagerWiring.runningHashUpdateInput());
+
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
+        signedStateFileManagerWiring
+                .stateSavingResultOutputWire()
+                .solderTo(latestCompleteStateNotifierWiring.stateSavingResultInputWire());
     }
 
     /**
@@ -312,27 +319,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param statusManager             the status manager to wire
-     * @param appCommunicationComponent the app communication component to wire
-     * @param transactionPool           the transaction pool to wire
+     * @param statusManager     the status manager to wire
+     * @param transactionPool   the transaction pool to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
-            @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final TransactionPool transactionPool,
             @NonNull final LatestCompleteStateNexus latestCompleteStateNexus) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
                 .solderTo("status manager", statusManager::submitStatusAction);
-        signedStateFileManagerWiring
-                .stateSavingResultOutputWire()
-                .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
 
-        stateSignatureCollectorWiring
-                .getCompleteStatesOutput()
-                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
@@ -362,7 +361,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
-     * @param appCommsComponent       the app communication component to bind
+     * @param completeStateNotifier   the latest complete state notifier to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -386,7 +385,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
-            @NonNull final AppCommunicationComponent appCommsComponent) {
+            @NonNull final LatestCompleteStateNotifier completeStateNotifier) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -409,7 +408,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
-        appCommunicationComponentWiring.bind(appCommsComponent);
+        latestCompleteStateNotifierWiring.bind(completeStateNotifier);
     }
 
     /**
@@ -494,16 +493,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
-    }
-
-    /**
-     * Get the input wire that the app communication component uses to accept its input.
-     *
-     * @return the input wire that the app communication component uses to accept its input
-     */
-    @NonNull
-    public InputWire<ReservedSignedState> getAppCommunicationComponentInput() {
-        return appCommunicationComponentWiring.appCommunicationComponentInputWire();
     }
 
     /**
