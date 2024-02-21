@@ -9,9 +9,10 @@ module com.hedera.node.blocknode.core {
 
     // Require modules which are needed for compilation and should be available to all modules that depend on this
     // module (including tests and other source sets).
-    requires transitive com.hedera.node.blocknode.core.spi;
-    requires transitive com.hedera.node.blocknode.filesystem.api;
-    requires transitive com.hedera.node.blocknode.grpc.api;
-    requires transitive com.hedera.node.blocknode.state;
-    requires transitive com.hedera.node.hapi;
+    requires com.hedera.node.blocknode.core.spi;
+    requires com.hedera.node.blocknode.filesystem.api;
+    requires com.hedera.node.blocknode.grpc.api;
+    requires com.hedera.node.blocknode.state;
+    requires com.hedera.node.hapi;
+    requires org.apache.logging.log4j;
 }
