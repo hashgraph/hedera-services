@@ -135,7 +135,6 @@ public class SystemFileUpdateFacility {
             @NonNull final ConfigType configType,
             @NonNull final HederaState state) {
         observePropertiesAndPermissions(state, configuration, (properties, permissions) -> {
-            System.out.println("In facility, provider is: " + System.identityHashCode(configProvider));
             configProvider.update(properties, permissions);
             if (configType == ConfigType.NETWORK_PROPERTIES) {
                 logContentsOf("Network properties", properties);

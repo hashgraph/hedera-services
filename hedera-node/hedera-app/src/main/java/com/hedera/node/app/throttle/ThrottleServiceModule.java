@@ -91,13 +91,10 @@ public interface ThrottleServiceModule {
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
                         .minCongestionPeriod(),
-                () -> {
-                    System.out.println("In supplier, provider is: " + System.identityHashCode(configProvider));
-                    return configProvider
-                            .getConfiguration()
-                            .getConfigData(FeesConfig.class)
-                            .percentCongestionMultipliers();
-                },
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .percentCongestionMultipliers(),
                 () -> List.of(backendThrottle.gasLimitThrottle()));
     }
 }
