@@ -146,7 +146,7 @@ class TaskSchedulerTransformersTests {
         final OutputWire<Integer> filter =
                 taskSchedulerA.getOutputWire().buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0);
         filter.solderTo(inC);
-        filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
+        filter.solderTo("lambda", "lambda input", x -> countLambda.set(hash32(countLambda.get(), x)));
 
         inA.bind(x -> {
             countA.set(hash32(countA.get(), x));
@@ -403,7 +403,7 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new AdvancedTransformationHelper<>(
-                "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
+                "reserveFooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -512,8 +512,8 @@ class TaskSchedulerTransformersTests {
      *                      forwarded to all destinations. The original data is passed to this method. Ignored if null.
      * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
      *                      possible if offer soldering is used and the destination declines to take the data.
-     * @param <A>     the input type of the transformer
-     * @param <B>     the output type of the transformer
+     * @param <A>           the input type of the transformer
+     * @param <B>           the output type of the transformer
      */
     private record AdvancedTransformationHelper<A, B>(
             @NonNull String name,
@@ -540,8 +540,14 @@ class TaskSchedulerTransformersTests {
 
         @NonNull
         @Override
-        public String getName() {
+        public String getTransformerName() {
             return name;
+        }
+
+        @NonNull
+        @Override
+        public String getTransformerInputName() {
+            return "transformer input";
         }
     }
 }
