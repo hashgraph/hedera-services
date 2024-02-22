@@ -143,7 +143,9 @@ logging.level.com.hashgraph = WARN
 logging.marker.CONFIG = ENABLED
 ```
 
-### Handlers
+## Handlers
+
+### Introduction
 
 To further refine our logging system, we have incorporated handlers for more granular control over logging behavior. 
 Each handler can be distinctly named and configured using the prefix `logging.handler.NAME`, where `NAME` serves as a unique identifier.
@@ -171,6 +173,22 @@ logging.handler.CRYPTO_FILE.marker.CRYPTO = ENABLED
 ```
 
 In this configuration, the `CRYPTO_FILE` handler is set to ignore the global log level settings (`level = OFF`) but is specifically enabled to log messages tagged with the `CRYPTO` marker (`marker.CRYPTO = ENABLED`). 
+
+
+### File Handler
+
+Configure your file handlers with these properties to control logging behavior:
+
+- **File Path (`logging.handler.NAME.file`)**: Specifies the file to write logs to.
+- **Append Mode (`logging.handler.NAME.append`)**: If `true` (default), logs are appended to the file; if `false`, the file is overwritten on new logs.
+
+**Examples:**
+```yaml
+logging.handler.NAME.file: /path/to/logfile.log
+logging.handler.NAME.append: true
+```
+> [!NOTE]  
+> Adjust `NAME` to your handler's name. The default settings are optimized for general use.
 
 ---
 

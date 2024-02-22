@@ -19,10 +19,12 @@ package com.swirlds.logging;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.console.ConsoleHandler;
+import com.swirlds.logging.file.FileHandlerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Objects;
@@ -149,7 +151,7 @@ public class LoggingBenchmark {
 
     private Exception exceptionWithDeepStackTraceAndDeepCause;
 
-    @Param({"ONLY_EMERGENCY", "CONSOLE_HANDLER", "NOOP_HANDLER", "LEVEL_OFF"})
+    @Param({"ONLY_EMERGENCY", "CONSOLE_HANDLER", "NOOP_HANDLER", "LEVEL_OFF", "FILE_HANDLER"})
     public String setup;
 
     @Setup(Level.Iteration)
@@ -167,6 +169,7 @@ public class LoggingBenchmark {
                     .withConverter(new ConfigLevelConverter())
                     .withConverter(new MarkerStateConverter())
                     .withValue("logging.level", "trace")
+                    .withValue("logging.handler.console.type", "console")
                     .withValue("logging.handler.console.active", "true")
                     .withValue("logging.handler.console.level", "trace")
                     .build();
@@ -182,6 +185,19 @@ public class LoggingBenchmark {
             loggingSystem.addHandler(logEvent -> {
                 // NOOP
             });
+        } else if (Objects.equals(setup, "FILE_HANDLER")) {
+            final Configuration configuration = ConfigurationBuilder.create()
+                    .withConverter(new ConfigLevelConverter())
+                    .withConverter(new MarkerStateConverter())
+                    .withValue("logging.level", "trace")
+                    .withValue("logging.handler.file.type", "file")
+                    .withValue("logging.handler.file.active", "true")
+                    .withValue("logging.handler.file.level", "trace")
+                    .withValue("logging.handler.file.file", "benchmark.log")
+                    .build();
+            final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);
+            loggingSystem = new LoggingSystem(configuration);
+            loggingSystem.addHandler(fileHandler);
         } else {
             final Configuration configuration = ConfigurationBuilder.create()
                     .withConverter(new ConfigLevelConverter())
@@ -190,7 +206,7 @@ public class LoggingBenchmark {
                     .build();
             loggingSystem = new LoggingSystem(configuration);
         }
-        logger = loggingSystem.getLogger(LoggingBenchmark.class.getName());
+        logger = loggingSystem.getLogger(LoggingBenchmark.class.getName() + "." + setup.substring(0, 9));
         exceptionWithNormalStackTrace = new RuntimeException(EXCEPTION_MESSAGE);
         exceptionWithNormalStackTraceAndLongMessage = new RuntimeException(LONG_MESSAGE);
         try {
