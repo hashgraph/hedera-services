@@ -97,12 +97,12 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
 
     public static void main(String... args) {
-        new AssociatePrecompileV1SecurityModelSuite().runSuiteAsync();
+        new AssociatePrecompileV2SecurityModelSuite().runSuiteSync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
