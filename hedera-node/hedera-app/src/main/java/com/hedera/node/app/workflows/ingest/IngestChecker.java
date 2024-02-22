@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
@@ -203,10 +202,7 @@ public final class IngestChecker {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
 
-        // 4. Check payer accountID
-        validateTruePreCheck(txInfo.payerID().hasAccountNum(), INVALID_PAYER_ACCOUNT_ID);
-
-        // 5. Check throttles
+        // 4. Check throttles
         if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
             throw new PreCheckException(BUSY);
         }
