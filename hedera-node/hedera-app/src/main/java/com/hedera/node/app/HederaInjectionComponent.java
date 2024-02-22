@@ -20,6 +20,7 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
@@ -148,10 +149,7 @@ public interface HederaInjectionComponent {
         Builder configProvider(ConfigProvider configProvider);
 
         @BindsInstance
-        Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);
-
-        @BindsInstance
-        Builder feeManager(FeeManager feeManager);
+        Builder configProviderImpl(ConfigProviderImpl configProviderImpl);
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);

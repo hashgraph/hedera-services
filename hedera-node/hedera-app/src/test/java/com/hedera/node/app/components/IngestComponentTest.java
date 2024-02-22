@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.components;
 
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -29,17 +27,12 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -73,9 +66,6 @@ class IngestComponentTest {
     private Metrics metrics;
 
     @Mock
-    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
-
-    @Mock
     UtilizationScaledThrottleMultiplier genericFeeMultiplier;
 
     @Mock
@@ -103,26 +93,18 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
-        final var frontendThrottle = new ThrottleAccumulator(() -> 5, configProvider, FRONTEND_THROTTLE);
-        final var congestionMultipliers = new CongestionMultipliers(genericFeeMultiplier, gasFeeMultiplier);
-
-        final var exchangeRateManager = new ExchangeRateManager(configProvider);
-        final var feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
-
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configProvider(configProvider)
-                .feeManager(feeManager)
+                .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
-                .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
                 .build();
 

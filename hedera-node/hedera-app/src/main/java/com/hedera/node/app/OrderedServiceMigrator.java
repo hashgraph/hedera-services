@@ -27,7 +27,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.config.VersionedConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,12 +49,9 @@ import org.apache.logging.log4j.Logger;
 public class OrderedServiceMigrator {
     private static final Logger logger = LogManager.getLogger(OrderedServiceMigrator.class);
     private final ServicesRegistry servicesRegistry;
-    private final ThrottleAccumulator backendThrottle;
 
-    public OrderedServiceMigrator(
-            @NonNull final ServicesRegistry servicesRegistry, @NonNull final ThrottleAccumulator backendThrottle) {
+    public OrderedServiceMigrator(@NonNull final ServicesRegistry servicesRegistry) {
         this.servicesRegistry = requireNonNull(servicesRegistry);
-        this.backendThrottle = requireNonNull(backendThrottle);
     }
 
     /**
