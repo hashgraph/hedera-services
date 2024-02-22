@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.EventStreamManager;
@@ -38,6 +37,7 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -53,6 +53,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -64,9 +65,11 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
@@ -85,6 +88,7 @@ import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
@@ -127,16 +131,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
     private final HashLoggerWiring hashLoggerWiring;
-
     private final PlatformCoordinator platformCoordinator;
+    private final BirthRoundMigrationShimWiring birthRoundMigrationShimWiring;
 
     /**
      * Constructor.
      *
      * @param platformContext the platform context
-     * @param time            provides wall clock time
      */
-    public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    public PlatformWiring(@NonNull final PlatformContext platformContext) {
 
         final PlatformSchedulersConfig schedulersConfig =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
@@ -147,7 +150,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
-        model = WiringModel.create(platformContext, time, defaultPool);
+        model = WiringModel.create(platformContext, platformContext.getTime(), defaultPool);
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
@@ -161,6 +164,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 Duration.ofNanos(100));
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
+
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            birthRoundMigrationShimWiring = BirthRoundMigrationShimWiring.create(model);
+        } else {
+            birthRoundMigrationShimWiring = null;
+        }
 
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
@@ -247,7 +260,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        gossipWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        final InputWire<GossipEvent> pipelineInputWire;
+        if (birthRoundMigrationShimWiring != null) {
+            birthRoundMigrationShimWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+            pipelineInputWire = birthRoundMigrationShimWiring.eventInput();
+        } else {
+            pipelineInputWire = eventHasherWiring.eventInput();
+        }
+
+        gossipWiring.eventOutput().solderTo(pipelineInputWire);
         eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
@@ -270,7 +291,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         solderNonAncientEventWindow();
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
-        pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
 
         // Create the transformer that extracts keystone event sequence number from consensus rounds.
         // This is done here instead of in ConsensusEngineWiring, since the transformer needs to be soldered with
@@ -368,6 +389,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
      * @param hashLogger              the hash logger to bind
+     * @param birthRoundMigrationShim the birth round migration shim to bind, ignored if birth round migration has not
+     *                                yet happened, must not be null if birth round migration has happened
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -391,7 +414,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
-            @NonNull final HashLogger hashLogger) {
+            @NonNull final HashLogger hashLogger,
+            @Nullable final BirthRoundMigrationShim birthRoundMigrationShim) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);

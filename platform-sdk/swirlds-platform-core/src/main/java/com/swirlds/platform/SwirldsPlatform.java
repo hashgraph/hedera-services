@@ -476,7 +476,7 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
-        platformWiring = components.add(new PlatformWiring(platformContext, time));
+        platformWiring = components.add(new PlatformWiring(platformContext));
 
         savedStateController = new SavedStateController(stateConfig);
 
@@ -637,6 +637,8 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
+        // TODO instantiate birth round migration shim
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -659,7 +661,8 @@ public class SwirldsPlatform implements Platform {
                 eventStreamManager,
                 futureEventBuffer,
                 issDetector,
-                hashLogger);
+                hashLogger,
+                null);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
