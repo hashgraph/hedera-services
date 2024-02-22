@@ -70,7 +70,13 @@ public record SignedStateReserver(@NonNull String name)
      */
     @NonNull
     @Override
-    public String getName() {
+    public String getTransformerName() {
         return name;
+    }
+
+    @NonNull
+    @Override
+    public String getTransformerInputName() {
+        return "state to reserve";
     }
 }
