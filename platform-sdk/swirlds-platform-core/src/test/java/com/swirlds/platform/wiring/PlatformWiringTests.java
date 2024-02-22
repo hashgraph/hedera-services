@@ -44,6 +44,7 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.util.HashLogger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +82,8 @@ class PlatformWiringTests {
                 mock(EventStreamManager.class),
                 mock(FutureEventBuffer.class),
                 mock(IssDetector.class),
-                mock(IssHandler.class));
+                mock(IssHandler.class),
+                mock(HashLogger.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

@@ -58,6 +58,7 @@ import java.util.List;
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
+ * @param hashLoggerScheduler                       the scheduler for the hash logger
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -83,7 +84,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
-        @NonNull TaskScheduler<Void> issHandlerScheduler) {
+        @NonNull TaskScheduler<Void> issHandlerScheduler,
+        @NonNull TaskScheduler<Void> hashLoggerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -258,6 +260,12 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("issHandler")
                         .withType(TaskSchedulerType.DIRECT)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("hashLogger")
+                        .withType(config.hashLoggerSchedulerType())
+                        .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
     }

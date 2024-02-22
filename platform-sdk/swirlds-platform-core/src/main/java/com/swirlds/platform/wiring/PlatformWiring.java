@@ -66,6 +66,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -75,6 +76,7 @@ import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
+import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
@@ -127,6 +129,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
     private final IssHandlerWiring issHandlerWiring;
+    private final HashLoggerWiring hashLoggerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -212,6 +215,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
         issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
+        hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
+
         wire();
     }
 
@@ -369,6 +374,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
      * @param issHandler              the ISS handler to bind
+     * @param hashLogger              the hash logger to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -392,7 +398,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
-            @NonNull final IssHandler issHandler) {
+            @NonNull final IssHandler issHandler,
+            @NonNull final HashLogger hashLogger) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -416,6 +423,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
+        hashLoggerWiring.bind(hashLogger);
     }
 
     /**
@@ -500,6 +508,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
+    }
+
+    /**
+     * Get the input wire that the hashlogger uses to accept the signed state.
+     *
+     * @return the input wire that the hashlogger uses to accept the signed state
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getHashLoggerInput() {
+        return hashLoggerWiring.hashLoggerInputWire();
     }
 
     /**
