@@ -196,7 +196,8 @@ public final class BlockStreamFileWriterV1 implements BlockStreamWriter {
                 "Writing bytes to block stream - Bytes hash: " + item.hashCode() + " - File: " + this.blockFilePath);
         assert item.length() > 0 : "BlockItem must be non-empty";
         if (state != State.OPEN) {
-            throw new IllegalStateException("Cannot write to a BlockStreamFileWriterV1 that is not open");
+            throw new IllegalStateException(
+                    "Cannot write to a BlockStreamFileWriterV1 that is not open for block: " + this.blockNumber);
         }
 
         this.endRunningHash = endRunningHash;

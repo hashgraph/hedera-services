@@ -28,6 +28,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +40,8 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
 
     private final ExecutorService executor;
     private final BlockStreamProducer producer;
-    private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
+    //    private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
+    private volatile CompletableFuture<Void> lastFutureRef;
 
     /**
      * BlockStreamProducerConcurrent ensures that all the methods called on the producer are executed sequentially in
@@ -50,7 +53,9 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
      *    CompletableFuture down to be completed, for example, if we need to ensure that a BlockStateProof is produced
      *    and the entire block has been flushed and persisted to disk.
      *
-     * <p>This implementation of BlockStreamProducerConcurrent, the doAsync method chains asynchronous tasks in such a
+     * <p>This implementation of BlockStreamProducerConcurrent, the appendSerialAsyncTask method chains asynchronous
+     * tasks in
+     * such a
      *    way that they are executed sequentially by updating lastFutureRef with the new task that should run after the
      *    previous one completes. This chaining uses thenCompose, which creates a new stage that, when this stage
      *    completes normally, is executed with this stage's result as the argument to the supplied function.
@@ -71,15 +76,17 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
      */
     public ConcurrentBlockStreamProducer(
             @NonNull final ExecutorService executor, @NonNull final BlockStreamProducer producer) {
+        logger.info("Creating ConcurrentBlockStreamProducer");
         this.executor = executor;
         this.producer = producer;
-        this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
+        // this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
+        this.lastFutureRef = CompletableFuture.completedFuture(null);
     }
 
     /** {@inheritDoc} */
     @Override
     public void initFromLastBlock(@NonNull final RunningHashes runningHashes, final long lastBlockNumber) {
-        doAsync(CompletableFuture.runAsync(() -> producer.initFromLastBlock(runningHashes, lastBlockNumber), executor));
+        appendSerialAsyncTask(() -> producer.initFromLastBlock(runningHashes, lastBlockNumber));
     }
 
     /**
@@ -106,21 +113,25 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
      */
     @Override
     @Nullable
-    public Bytes getNMinus3RunningHash() {
+    public synchronized Bytes getNMinus3RunningHash() {
         blockUntilRunningHashesUpdated();
         return producer.getNMinus3RunningHash();
     }
 
     /** {@inheritDoc} */
     @Override
-    public void beginBlock() {
-        doAsync(CompletableFuture.runAsync(producer::beginBlock, executor));
+    public synchronized void beginBlock() {
+        appendSerialAsyncTask(() -> {
+            logger.info("beginBlock started");
+            producer.beginBlock();
+            logger.info("beginBlock completed");
+        });
     }
 
     /** {@inheritDoc} */
     @Override
     public void endBlock() {
-        doAsync(CompletableFuture.runAsync(producer::beginBlock, executor));
+        appendSerialAsyncTask(producer::endBlock);
     }
 
     /** {@inheritDoc} */
@@ -129,15 +140,17 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     public CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder) {
         // We want to end the block after the previous lastFuture has completed. Only this time, we also must return a
         // future with the result of the endBlock call.
-        CompletableFuture<BlockEnder> enderFuture = new CompletableFuture<>();
+        final CompletableFuture<BlockEnder> enderFuture = new CompletableFuture<>();
 
         // Chain the operation such that enderFuture is completed with the BlockEnder instance
         // once producer.endBlock() completes.
-        doAsync(producer.blockEnder(builder).thenAccept(enderFuture::complete).exceptionally(ex -> {
-            // Handle exceptions by completing enderFuture exceptionally.
-            enderFuture.completeExceptionally(ex);
-            return null; // CompletableFuture's exceptionally function requires a return value.
-        }));
+        appendSerialAsyncTask(() -> producer.blockEnder(builder)
+                .thenAccept(enderFuture::complete)
+                .exceptionally(ex -> {
+                    // Handle exceptions by completing enderFuture exceptionally.
+                    enderFuture.completeExceptionally(ex);
+                    return null; // CompletableFuture's exceptionally function requires a return value.
+                }));
 
         return enderFuture;
     }
@@ -145,47 +158,50 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     /** {@inheritDoc} */
     @Override
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        doAsync(CompletableFuture.runAsync(() -> producer.writeConsensusEvent(consensusEvent), executor));
+        appendSerialAsyncTask(() -> {
+            logger.info("writeConsensusEvent started");
+            producer.writeConsensusEvent(consensusEvent);
+            logger.info("writeConsensusEvent completed");
+        });
     }
 
     /** {@inheritDoc} */
     @Override
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
-        doAsync(CompletableFuture.runAsync(() -> producer.writeSystemTransaction(systemTxn), executor));
+        appendSerialAsyncTask(() -> producer.writeSystemTransaction(systemTxn));
     }
 
     /** {@inheritDoc} */
     @Override
     public void writeUserTransactionItems(@NonNull final ProcessUserTransactionResult items) {
-        doAsync(CompletableFuture.runAsync(() -> producer.writeUserTransactionItems(items), executor));
+        appendSerialAsyncTask(() -> producer.writeUserTransactionItems(items));
     }
 
     @Override
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
-        doAsync(CompletableFuture.runAsync(() -> producer.writeStateChanges(stateChanges), executor));
+        appendSerialAsyncTask(() -> producer.writeStateChanges(stateChanges));
     }
 
     /** {@inheritDoc} */
     @Override
-    public void close() throws Exception {
+    public synchronized void close() throws Exception {
         blockUntilRunningHashesUpdated();
         producer.close();
     }
 
-    private void doAsync(@NonNull final CompletableFuture<Void> updater) {
-        lastFutureRef.updateAndGet(lastFuture -> {
-            // Check if the lastFuture completed exceptionally
-            if (lastFuture.isCompletedExceptionally()) {
-                lastFuture
-                        .exceptionally(ex -> {
-                            // Throw a RuntimeException with the original exception
-                            throw new CompletionException(ex);
-                        })
-                        .join(); // This forces the exception to be thrown if present
-            }
-            // If lastFuture did not complete exceptionally, chain the future as before
-            return lastFuture.thenCompose(v -> updater);
-        });
+    private synchronized void appendSerialAsyncTask(@NonNull final Runnable task) {
+        // Check if the lastFuture completed exceptionally
+        if (lastFutureRef.isCompletedExceptionally()) {
+            lastFutureRef
+                    .exceptionally(ex -> {
+                        // Throw a RuntimeException with the original exception
+                        throw new CompletionException(ex);
+                    })
+                    .join(); // This forces the exception to be thrown if present
+        }
+        // If lastFuture did not complete exceptionally, chain the task so that task only executes after
+        // lastFutureRef has completed.
+        lastFutureRef = lastFutureRef.thenRunAsync(task, executor);
     }
 
     private void awaitFutureCompletion(@NonNull final Future<?> future) {
@@ -202,7 +218,7 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     }
 
     private void blockUntilRunningHashesUpdated() {
-        Future<?> currentUpdateTask = lastFutureRef.get();
+        Future<?> currentUpdateTask = lastFutureRef;
         if (currentUpdateTask == null) return;
         // Wait for the update task to complete and handle potential interruptions.
         awaitFutureCompletion(currentUpdateTask);

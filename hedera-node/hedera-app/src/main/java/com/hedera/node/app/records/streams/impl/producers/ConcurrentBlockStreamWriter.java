@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  * ConcurrentBlockStreamWriter is a wrapper around a BlockStreamWriter that allows for concurrent writes to multiple
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
     private final BlockStreamWriter writer;
     private final ExecutorService executor;
-    private final AtomicReference<CompletableFuture<Void>> lastFutureRef;
+    private volatile CompletableFuture<Void> lastFutureRef;
 
     /**
      * ConcurrentBlockStreamWriter ensures that all the methods called on the writer are executed sequentially in the
@@ -59,37 +60,36 @@ public class ConcurrentBlockStreamWriter implements BlockStreamWriter {
             @NonNull final ExecutorService executor, @NonNull final BlockStreamWriter writer) {
         this.executor = executor;
         this.writer = writer;
-        this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
+        this.lastFutureRef = CompletableFuture.completedFuture(null);
     }
 
     @Override
     public void init(final long blockNumber, @NonNull final HashObject startRunningHash) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.init(blockNumber, startRunningHash), executor));
+        appendSerialAsyncTask(() -> writer.init(blockNumber, startRunningHash));
     }
 
     @Override
     public void writeItem(@NonNull final Bytes item, @NonNull final Bytes endRunningHash) {
-        updateLastFuture(CompletableFuture.runAsync(() -> writer.writeItem(item, endRunningHash), executor));
+        appendSerialAsyncTask(() -> writer.writeItem(item, endRunningHash));
     }
 
     @Override
     public void close() {
-        updateLastFuture(CompletableFuture.runAsync(writer::close, executor));
+        appendSerialAsyncTask(writer::close);
     }
 
-    private void updateLastFuture(@NonNull final CompletableFuture<Void> updater) {
-        lastFutureRef.updateAndGet(lastFuture -> {
-            // Check if the lastFuture completed exceptionally
-            if (lastFuture.isCompletedExceptionally()) {
-                lastFuture
-                        .exceptionally(ex -> {
-                            // Throw a RuntimeException with the original exception
-                            throw new CompletionException(ex);
-                        })
-                        .join(); // This forces the exception to be thrown if present
-            }
-            // If lastFuture did not complete exceptionally, chain the future as before
-            return lastFuture.thenCompose(v -> updater);
-        });
+    private synchronized void appendSerialAsyncTask(@NonNull final Runnable task) {
+        // Check if the lastFuture completed exceptionally
+        if (lastFutureRef.isCompletedExceptionally()) {
+            lastFutureRef
+                    .exceptionally(ex -> {
+                        // Throw a RuntimeException with the original exception
+                        throw new CompletionException(ex);
+                    })
+                    .join(); // This forces the exception to be thrown if present
+        }
+        // If lastFuture did not complete exceptionally, chain the task so that task only executes after
+        // lastFutureRef has completed.
+        lastFutureRef = lastFutureRef.thenRunAsync(task, executor);
     }
 }

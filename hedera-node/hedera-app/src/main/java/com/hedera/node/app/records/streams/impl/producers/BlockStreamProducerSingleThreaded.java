@@ -62,7 +62,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
      * The {@link BlockStreamWriter} to use for writing produced blocks. A new one is created at the beginning
      * of each new block.
      */
-    private BlockStreamWriter writer;
+    private volatile BlockStreamWriter writer;
     /** The running hash at end of the last user transaction */
     private Bytes runningHash = null;
     /** The previous running hash */
@@ -72,7 +72,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     /** The previous, previous, previous running hash */
     private Bytes runningHashNMinus3 = null;
 
-    private long currentBlockNumber = -1;
+    private long currentBlockNumber = 0;
 
     //    private SoftwareVersion lastConsensusEventVersion;
 
@@ -111,11 +111,13 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void beginBlock() {
+        logger.info("Called beginBlock for block {}", this.currentBlockNumber);
         this.currentBlockNumber++;
+        logger.info("Called beginBlock block now {}", this.currentBlockNumber);
 
         final var lastRunningHash = getRunningHashObject();
 
-        logger.debug(
+        logger.info(
                 "Initializing block stream writer for block {} with running hash {}",
                 currentBlockNumber,
                 lastRunningHash);
@@ -129,7 +131,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     /** {@inheritDoc} */
     @Override
     public void endBlock() {
-        if (writer == null) return;
         logger.debug("Closing block record writer for block {}", this.currentBlockNumber);
         final var lastRunningHash = getRunningHashObject();
         closeWriter(lastRunningHash, this.currentBlockNumber);
@@ -139,6 +140,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     @Override
     @NonNull
     public CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder) {
+        logger.info("Called blockEnder for block {} writer is: {}", this.currentBlockNumber, this.writer);
         return CompletableFuture.completedFuture(builder.setLastRunningHash(getRunningHashObject())
                 .setWriter(writer)
                 .setFormat(format)
@@ -179,11 +181,12 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        System.out.println("Block: " + this.currentBlockNumber + " - Serializing event: " + consensusEvent.hashCode());
+        System.out.println(
+                "Round: " + (this.currentBlockNumber + 1) + " - Serializing event: " + consensusEvent.hashCode());
         final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Block: " + this.currentBlockNumber + " - Serialized event: " + consensusEvent.hashCode()
-                + " - Bytes hash: " + serializedBlockItem.hashCode());
+        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized event: "
+                + consensusEvent.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -191,7 +194,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         final var serializedBlockItem = format.serializeSystemTransaction(systemTxn);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Block: " + this.currentBlockNumber + " - Serialized system transaction: "
+        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized system transaction: "
                 + systemTxn.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
@@ -204,7 +207,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             final var serializedBlockItems = format.serializeUserTransaction(item);
             serializedBlockItems.forEach(serializedBlockItem -> {
                 updateRunningHashesWithMessageDigest(messageDigest, serializedBlockItem);
-                System.out.println("Block: " + this.currentBlockNumber + " - Serialized user transaction: "
+                System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized user transaction: "
                         + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
                 writeSerializedBlockItem(serializedBlockItem);
             });
@@ -215,7 +218,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         final var serializedBlockItem = format.serializeStateChanges(stateChanges);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Block: " + this.currentBlockNumber + " - Serialized state changes: "
+        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized state changes: "
                 + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
@@ -241,7 +244,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
                 signatureAlgorithm);
         final var serializedBlockItem = format.serializeBlockHeader(blockHeader);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Block: " + this.currentBlockNumber + " - Serialized block header: "
+        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized block header: "
                 + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
@@ -300,6 +303,7 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             // Depending on the configuration, this writer's methods may be asynchronous or synchronous. The
             // BlockStreamWriterFactory instantiated by dagger will determine this.
             writer = writerFactory.create();
+            logger.info("Set writer to: {}", writer);
             writer.init(currentBlockNumber, lastRunningHash);
         } catch (final Exception e) {
             // This represents an almost certainly fatal error. In the FUTURE we should look at dealing with this in a

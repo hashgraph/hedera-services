@@ -60,10 +60,10 @@ public class BlockEnder {
             @NonNull final HederaState state,
             @NonNull final BlockStreamFormat format,
             final long blockNumber) {
-        this.lastRunningHash = requireNonNull(lastRunningHash);
-        this.writer = requireNonNull(writer);
-        this.state = requireNonNull(state);
-        this.format = requireNonNull(format);
+        this.lastRunningHash = requireNonNull(lastRunningHash, "Last running hash must be present");
+        this.writer = requireNonNull(writer, "Block stream writer must be present");
+        this.state = requireNonNull(state, "State must be present");
+        this.format = requireNonNull(format, "Block stream format must be present");
         this.blockNumber = blockNumber;
 
         // We will need the running hashes at the time the block has been completed.
@@ -96,9 +96,9 @@ public class BlockEnder {
 
             // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
             // until it is able to get the state proof.
-            System.out.println("Block: " + this.blockNumber + " - Waiting for block state proof");
+            System.out.println("Round: " + (this.blockNumber + 1) + " - Waiting for block state proof");
             BlockStateProof proof = stateProofProducer.getBlockStateProof().get();
-            System.out.println("Block: " + this.blockNumber + " - Got block state proof");
+            System.out.println("Round: " + (this.blockNumber + 1) + " - Got block state proof");
 
             writeStateProof(proof);
             closeWriter(lastRunningHash, blockNumber);
@@ -178,25 +178,25 @@ public class BlockEnder {
 
         @NonNull
         public Builder setLastRunningHash(@NonNull final HashObject lastRunningHash) {
-            this.lastRunningHash = lastRunningHash;
+            this.lastRunningHash = requireNonNull(lastRunningHash, "Last running hash must be present");
             return this;
         }
 
         @NonNull
         public Builder setWriter(@NonNull final BlockStreamWriter writer) {
-            this.writer = writer;
+            this.writer = requireNonNull(writer, "Block stream writer must be present");
             return this;
         }
 
         @NonNull
         public Builder setState(@NonNull final HederaState state) {
-            this.state = state;
+            this.state = requireNonNull(state, "State must be present");
             return this;
         }
 
         @NonNull
         public Builder setFormat(@NonNull final BlockStreamFormat format) {
-            this.format = format;
+            this.format = requireNonNull(format, "Block stream format must be present");
             return this;
         }
 
