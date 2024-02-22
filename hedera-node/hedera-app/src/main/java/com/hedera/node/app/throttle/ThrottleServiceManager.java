@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,15 +90,13 @@ public class ThrottleServiceManager {
      */
     public void initFrom(@NonNull final HederaState state) {
         requireNonNull(state);
-
         // Apply configuration for gas throttles
         applyGasConfig();
         // Create backend/frontend throttles from the configured system file
         rebuildFromThrottleDefinitions(state);
         // Reset multiplier expectations
         congestionMultipliers.resetExpectations();
-        // Rehydrate the internal state of the throttling service,
-        // assuming we're not at genesis
+        // Rehydrate the internal state of the throttling service (if not at genesis)
         final var serviceStates = state.getReadableStates(CongestionThrottleService.NAME);
         resetThrottlesFromUsageSnapshots(serviceStates);
         syncFromCongestionLevelStarts(serviceStates);
@@ -116,6 +113,27 @@ public class ThrottleServiceManager {
         final var serviceStates = state.getWritableStates(CongestionThrottleService.NAME);
         saveThrottleSnapshotsTo(serviceStates);
         saveCongestionLevelStartsTo(serviceStates);
+    }
+
+    /**
+     * Refreshes the parts of the throttle service that depend on the
+     * current network configuration.
+     */
+    public void refreshThrottleConfiguration() {
+        applyGasConfig();
+        congestionMultipliers.resetExpectations();
+    }
+
+    /**
+     * Recreates the throttles based on the given throttle definitions.
+     *
+     * @param encoded the serialized throttle definitions
+     * @return the success status to use if the update was via HAPI
+     */
+    public ResponseCodeEnum recreateThrottles(@NonNull final Bytes encoded) {
+        final var validatedThrottles = rebuildThrottlesFrom(encoded);
+        congestionMultipliers.resetExpectations();
+        return validatedThrottles.successStatus();
     }
 
     private void saveThrottleSnapshotsTo(@NonNull final WritableStates serviceStates) {
@@ -146,27 +164,6 @@ public class ThrottleServiceManager {
                 translateToList(congestionMultipliers.gasThrottleMultiplierCongestionStarts())));
     }
 
-    /**
-     * Refreshes the parts of the throttle service that depend on the
-     * current network configuration.
-     */
-    public void refreshThrottleConfiguration() {
-        applyGasConfig();
-        congestionMultipliers.resetExpectations();
-    }
-
-    /**
-     * Recreates the throttles based on the given throttle definitions.
-     *
-     * @param encoded the serialized throttle definitions
-     * @return the success status to use if the update was via HAPI
-     */
-    public ResponseCodeEnum recreateThrottles(@NonNull final Bytes encoded) {
-        final var validatedThrottles = rebuildThrottlesFrom(encoded);
-        congestionMultipliers.resetExpectations();
-        return validatedThrottles.successStatus();
-    }
-
     private void rebuildFromThrottleDefinitions(HederaState state) {
         final var config = configProvider.getConfiguration();
         final var filesConfig = config.getConfigData(FilesConfig.class);
@@ -174,10 +171,10 @@ public class ThrottleServiceManager {
         rebuildThrottlesFrom(getFileContent(state, throttleDefinitionsId));
     }
 
-    private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NotNull Bytes encoded) {
+    private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NonNull Bytes encoded) {
         final var validatedThrottles = throttleParser.parse(encoded);
-        backendThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
         ingestThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
+        backendThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
         return validatedThrottles;
     }
 
