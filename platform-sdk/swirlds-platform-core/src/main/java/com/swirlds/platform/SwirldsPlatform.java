@@ -152,6 +152,7 @@ import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
@@ -321,6 +322,9 @@ public class SwirldsPlatform implements Platform {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+
+        // Call this method early since it may modify the state (only during birth round migration).
+        final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, appVersion);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
@@ -637,8 +641,6 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
-        // TODO instantiate birth round migration shim
-
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -662,7 +664,7 @@ public class SwirldsPlatform implements Platform {
                 futureEventBuffer,
                 issDetector,
                 hashLogger,
-                null);
+                birthRoundMigrationShim);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -771,6 +773,63 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableState);
+    }
+
+    // TODO create a different method for modifying the state and building the shim
+
+    /**
+     * Builds the birth round migration shim if necessary. If we are at the birth round migration boundary, this method
+     * also updates the state so that future restarts will properly initiate the shim.
+     *
+     * @param initialState the initial state
+     * @param appVersion   the current app version
+     * @return the birth round migration shim, or null if it is not needed
+     */
+    @Nullable
+    private BirthRoundMigrationShim buildBirthRoundMigrationShim(
+            @NonNull final SignedState initialState, @NonNull final SoftwareVersion appVersion) {
+
+        if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
+            // We don't need the shim if we haven't migrated to birth round mode.
+            return null;
+        }
+
+        final boolean alreadyMigrated =
+                initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode() != null;
+
+        if (alreadyMigrated) {
+            // if we've migrated in the past then need to use the configuration in the state
+            logger.info(STARTUP.getMarker(), "Using birth round migration shim configuration from state.");
+            return new BirthRoundMigrationShim(
+                    initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode(),
+                    initialState.getState().getPlatformState().getLastRoundBeforeBirthRoundMode(),
+                    initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+        }
+
+        logger.info(STARTUP.getMarker(), "Birth round migration in progress. Creating shim.");
+
+        final long lastRoundBeforeMigration =
+                initialState.getState().getPlatformState().getRound();
+        final long lowestJudgeGenerationBeforeMigration =
+                initialState.getState().getPlatformState().getMinGen(lastRoundBeforeMigration);
+
+        // update the state so that we properly initiate the shim if we restart in the future
+        initialState.getState().getPlatformState().setFirstVersionInBirthRoundMode(appVersion);
+        initialState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
+        initialState
+                .getState()
+                .getPlatformState()
+                .setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
+
+        // TODO doctor the generations object
+
+        // rehash the state
+        initialState.getState().getPlatformState().invalidateHash();
+        initialState.getState().getPlatformState().invalidateHash();
+        initialState.getState().invalidateHash();
+        MerkleCryptoFactory.getInstance().digestTreeSync(initialState.getState());
+
+        return new BirthRoundMigrationShim(appVersion, lastRoundBeforeMigration, lowestJudgeGenerationBeforeMigration);
     }
 
     /**

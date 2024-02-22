@@ -16,17 +16,24 @@
 
 package com.swirlds.platform.system.events;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Performs special migration on events during the birth round migration pathway.
  */
 public class BirthRoundMigrationShim {
+
+    // TODO add some metrics why not
+
+    private static final Logger logger = LogManager.getLogger(BirthRoundMigrationShim.class);
 
     /**
      * The first software version where the birth round mode is enabled. Events from this software version and later are
@@ -58,6 +65,14 @@ public class BirthRoundMigrationShim {
             final SoftwareVersion firstVersionInBirthRoundMode,
             final long lastRoundBeforeBirthRoundMode,
             final long lowestJudgeGenerationBeforeBirthRoundMode) {
+
+        logger.info(
+                STARTUP.getMarker(),
+                "BirthRoundMigrationShim initialized with firstVersionInBirthRoundMode={}, "
+                        + "lastRoundBeforeBirthRoundMode={}, lowestJudgeGenerationBeforeBirthRoundMode={}",
+                firstVersionInBirthRoundMode,
+                lastRoundBeforeBirthRoundMode,
+                lowestJudgeGenerationBeforeBirthRoundMode);
 
         this.firstVersionInBirthRoundMode = firstVersionInBirthRoundMode;
         this.lastRoundBeforeBirthRoundMode = lastRoundBeforeBirthRoundMode;

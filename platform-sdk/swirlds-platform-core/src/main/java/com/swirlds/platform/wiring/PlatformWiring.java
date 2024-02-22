@@ -91,6 +91,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -439,6 +440,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
         hashLoggerWiring.bind(hashLogger);
+
+        if (birthRoundMigrationShimWiring != null) {
+            birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
+        }
     }
 
     /**
