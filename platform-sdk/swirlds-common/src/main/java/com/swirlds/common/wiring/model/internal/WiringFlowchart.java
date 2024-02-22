@@ -20,7 +20,7 @@ import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHED
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_STATELESS;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
@@ -316,7 +316,7 @@ public class WiringFlowchart {
             if (hasState) {
                 return DIRECT;
             }
-            return DIRECT_STATELESS;
+            return DIRECT_THREADSAFE;
         }
     }
 
