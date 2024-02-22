@@ -59,7 +59,7 @@ public final class DirectSchedulerChecks {
      * Calling into a component A with type
      * {@link TaskSchedulerType#DIRECT DIRECT} from component B with type
      * {@link TaskSchedulerType#DIRECT DIRECT} or type
-     * {@link TaskSchedulerType#DIRECT_STATELESS DIRECT_STATELESS} counts as a call
+     * {@link TaskSchedulerType#DIRECT_THREADSAFE DIRECT_THREADSAFE} counts as a call
      * into B from all components calling into component A.
      * </li>
      * </ul>
@@ -81,7 +81,7 @@ public final class DirectSchedulerChecks {
         for (final ModelVertex vertex : vertices) {
             final TaskSchedulerType vertexType = vertex.getType();
 
-            if (vertexType == TaskSchedulerType.DIRECT || vertexType == TaskSchedulerType.DIRECT_STATELESS) {
+            if (vertexType == TaskSchedulerType.DIRECT || vertexType == TaskSchedulerType.DIRECT_THREADSAFE) {
                 // we can ignore direct schedulers at this phase. We care about calls INTO direct schedulers,
                 // not calls OUT OF direct schedulers.
                 continue;
@@ -156,7 +156,7 @@ public final class DirectSchedulerChecks {
                 final TaskSchedulerType destinationType = destination.getType();
 
                 if (destinationType != TaskSchedulerType.DIRECT
-                        && destinationType != TaskSchedulerType.DIRECT_STATELESS) {
+                        && destinationType != TaskSchedulerType.DIRECT_THREADSAFE) {
                     // we don't need to traverse edges that lead into non-direct schedulers
                     continue;
                 }
