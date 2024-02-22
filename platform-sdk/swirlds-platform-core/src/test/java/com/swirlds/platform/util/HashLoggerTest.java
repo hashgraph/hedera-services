@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -34,11 +34,11 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CyclicBarrier;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.MessageSupplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ public class HashLoggerTest {
         mockLogger = mock(Logger.class);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
-        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
+        hashLogger = new HashLogger(stateConfig, mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -83,7 +83,6 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(1));
         hashLogger.logHashes(createSignedState(2));
         hashLogger.logHashes(createSignedState(3));
-        flush();
         assertThat(logged).hasSize(3);
         assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
         assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
@@ -99,7 +98,6 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(1));
         hashLogger.logHashes(createSignedState(1));
         hashLogger.logHashes(createSignedState(2));
-        flush();
         assertThat(logged).hasSize(3);
         assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
         assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
@@ -112,7 +110,6 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(2));
         hashLogger.logHashes(createSignedState(5));
         hashLogger.logHashes(createSignedState(4));
-        flush();
         assertThat(logged).hasSize(4);
         assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
         assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
@@ -127,10 +124,9 @@ public class HashLoggerTest {
                 .getOrCreateConfig()
                 .getConfigData(StateConfig.class);
 
-        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
+        hashLogger = new HashLogger(stateConfig, mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
-        assertThat(hashLogger.queue()).isNullOrEmpty();
     }
 
     @Test
@@ -139,13 +135,12 @@ public class HashLoggerTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(getStaticThreadManager(), stateConfig);
+            hashLogger = new HashLogger(stateConfig);
             hashLogger.logHashes(createSignedState(1));
-            flush();
         });
     }
 
-    private SignedState createSignedState(final long round) {
+    private ReservedSignedState createSignedState(final long round) {
         final MerkleNode merkleNode = MerkleTestUtils.buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
@@ -167,20 +162,10 @@ public class HashLoggerTest {
         when(signedState.getState()).thenReturn(state);
         when(signedState.getRound()).thenReturn(round);
 
-        return signedState;
-    }
+        ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
+        when(reservedSignedState.get()).thenReturn(signedState);
+        when(signedState.reserve(anyString())).thenReturn(reservedSignedState);
 
-    private void flush() {
-        final CyclicBarrier barrier = new CyclicBarrier(2);
-        hashLogger.queue().offer(() -> {
-            try {
-                barrier.await();
-            } catch (final Exception e) {
-            }
-        });
-        try {
-            barrier.await();
-        } catch (final Exception e) {
-        }
+        return signedState.reserve("hash logger test");
     }
 }

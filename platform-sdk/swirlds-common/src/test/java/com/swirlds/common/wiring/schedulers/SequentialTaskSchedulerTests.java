@@ -2331,6 +2331,7 @@ class SequentialTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    @Tag(TIMING_SENSITIVE)
     void squelching(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);

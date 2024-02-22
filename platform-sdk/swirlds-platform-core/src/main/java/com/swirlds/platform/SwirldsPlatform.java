@@ -163,6 +163,7 @@ import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -499,7 +500,8 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
-                signedStateMetrics);
+                signedStateMetrics,
+                platformWiring.getHashLoggerInput()::offer);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
@@ -642,6 +644,9 @@ public class SwirldsPlatform implements Platform {
         });
         issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
 
+        final HashLogger hashLogger =
+                new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -663,7 +668,8 @@ public class SwirldsPlatform implements Platform {
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
-                issDetector);
+                issDetector,
+                hashLogger);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
