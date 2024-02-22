@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
@@ -67,7 +65,6 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     public void assess(
             final AccountID sender,
             final CustomFeeMeta feeMeta,
-            final int maxTransfersSize,
             final AccountID receiver,
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
@@ -75,7 +72,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             final Predicate<AccountID> autoCreationTest) {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
 
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore, autoCreationTest);
+        revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
@@ -85,20 +82,14 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
         }
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore, autoCreationTest);
+        revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
     }
 
-    private void validateBalanceChanges(
+    private void revalidateAssessmentResult(
             final AssessmentResult result,
-            final int maxTransfersSize,
             final ReadableTokenRelationStore tokenRelStore,
             final ReadableAccountStore accountStore,
             @NonNull final Predicate<AccountID> autoCreationTest) {
-        var inputFungibleTransfers = 0;
-        var newFungibleTransfers = 0;
-        for (final var entry : result.getMutableInputBalanceAdjustments().entrySet()) {
-            inputFungibleTransfers += entry.getValue().size();
-        }
         result.getHbarAdjustments().forEach((k, v) -> {
             if (v < 0) {
                 final var currentAccount = accountStore.getAccountById(k);
@@ -113,7 +104,6 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         });
         for (final var entry : result.getHtsAdjustments().entrySet()) {
             final var entryValue = entry.getValue();
-            newFungibleTransfers += entryValue.size();
             for (final var entryTx : entryValue.entrySet()) {
                 final Long htsBalanceChange = entryTx.getValue();
                 if (htsBalanceChange < 0) {
@@ -174,13 +164,6 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                 }
             });
         }
-
-        final var balanceChanges = result.getHbarAdjustments().size()
-                + newFungibleTransfers
-                + result.getImmutableInputHbarAdjustments().size()
-                + inputFungibleTransfers
-                + initialNftChanges;
-        validateFalse(balanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 
     /**

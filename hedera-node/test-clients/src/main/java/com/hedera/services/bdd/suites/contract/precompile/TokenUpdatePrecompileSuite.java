@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
@@ -161,6 +162,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
@@ -214,6 +216,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
@@ -233,6 +236,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_ADMIN_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
