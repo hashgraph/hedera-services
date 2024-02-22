@@ -108,7 +108,11 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(V2Security004FungibleTokenBurnNegative(), V2Security004NonFungibleTokenBurnNegative());
+        return List.of(
+                V2Security004FungibleTokenBurnNegative(),
+                V2Security004NonFungibleTokenBurnNegative(),
+                V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall(),
+                V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall());
     }
 
     @HapiTest
