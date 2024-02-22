@@ -426,9 +426,9 @@ public class SwirldsPlatform implements Platform {
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
             final AncientMode currentFileType = platformContext
-                    .getConfiguration()
-                    .getConfigData(EventConfig.class)
-                    .useBirthRoundAncientThreshold()
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .useBirthRoundAncientThreshold()
                     ? AncientMode.BIRTH_ROUND_THRESHOLD
                     : AncientMode.GENERATION_THRESHOLD;
 
@@ -515,8 +515,7 @@ public class SwirldsPlatform implements Platform {
 
         final QueueThread<GossipEvent> oldStyleIntakeQueue;
         if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(
-                    AdHocThreadManager.getStaticThreadManager())
+            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(AdHocThreadManager.getStaticThreadManager())
                     .setCapacity(10_000)
                     .setThreadName("old_style_intake_queue")
                     .setComponent("platform")
@@ -676,9 +675,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter,
                 platformWiring.getKeystoneEventSequenceNumberOutput());
 
-        final LongSupplier intakeQueueSizeSupplier = oldStyleIntakeQueue != null
-                ? oldStyleIntakeQueue::size
-                : platformWiring.getIntakeQueueSizeSupplier();
+        final LongSupplier intakeQueueSizeSupplier =
+                oldStyleIntakeQueue != null ? oldStyleIntakeQueue::size : platformWiring.getIntakeQueueSizeSupplier();
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
@@ -735,16 +733,17 @@ public class SwirldsPlatform implements Platform {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
-        final Consumer<GossipEvent> eventFromGossipConsumer = oldStyleIntakeQueue == null ?
-                platformWiring.getGossipEventInput()::put : event -> {
-            try {
-                oldStyleIntakeQueue.put(event);
-            } catch (final InterruptedException e) {
-                logger.error(
-                        EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
-                Thread.currentThread().interrupt();
-            }
-        };
+        final Consumer<GossipEvent> eventFromGossipConsumer = oldStyleIntakeQueue == null
+                ? platformWiring.getGossipEventInput()::put
+                : event -> {
+                    try {
+                        oldStyleIntakeQueue.put(event);
+                    } catch (final InterruptedException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
+                        Thread.currentThread().interrupt();
+                    }
+                };
 
         gossip = GossipFactory.buildGossip(
                 platformContext,
