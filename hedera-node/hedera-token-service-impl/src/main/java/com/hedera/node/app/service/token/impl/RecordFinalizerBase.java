@@ -97,7 +97,8 @@ public class RecordFinalizerBase {
     protected Map<EntityIDPair, Long> tokenRelChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull TokenType tokenType) {
+            @NonNull TokenType tokenType,
+            final boolean filterZeroAmounts) {
         final var tokenChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
@@ -121,7 +122,7 @@ public class RecordFinalizerBase {
 
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
-            if (netFungibleChange != 0) {
+            if (netFungibleChange != 0 || !filterZeroAmounts) {
                 tokenChanges.put(modifiedRel, netFungibleChange);
             }
         }
@@ -132,11 +133,14 @@ public class RecordFinalizerBase {
     /**
      * Given a map of {@link EntityIDPair} to {@link Long} representing the changes to the balances of the token
      * relations, returns a list of {@link TokenTransferList} representing the changes to the token relations.
+     *
      * @param fungibleChanges the map of {@link EntityIDPair} to {@link Long} representing the changes to the balances
+     * @param filterZeroAmounts whether to filter out zero amounts
      * @return a list of {@link TokenTransferList} representing the changes to the token relations
      */
     @NonNull
-    protected List<TokenTransferList> asTokenTransferListFrom(@NonNull final Map<EntityIDPair, Long> fungibleChanges) {
+    protected List<TokenTransferList> asTokenTransferListFrom(
+            @NonNull final Map<EntityIDPair, Long> fungibleChanges, final boolean filterZeroAmounts) {
         final var fungibleTokenTransferLists = new ArrayList<TokenTransferList>();
         final var acctAmountsByTokenId = new HashMap<TokenID, HashMap<AccountID, Long>>();
         for (final var fungibleChange : fungibleChanges.entrySet()) {
@@ -145,7 +149,7 @@ public class RecordFinalizerBase {
             if (!acctAmountsByTokenId.containsKey(tokenIdOfAcctAmountChange)) {
                 acctAmountsByTokenId.put(tokenIdOfAcctAmountChange, new HashMap<>());
             }
-            if (fungibleChange.getValue() != 0) {
+            if (fungibleChange.getValue() != 0 || !filterZeroAmounts) {
                 final var tokenIdMap = acctAmountsByTokenId.get(tokenIdOfAcctAmountChange);
                 tokenIdMap.merge(accountIdOfAcctAmountChange, fungibleChange.getValue(), Long::sum);
             }

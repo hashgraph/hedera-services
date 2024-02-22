@@ -23,6 +23,7 @@ import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
+import com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakySecurityModelV1Suite;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
@@ -48,6 +49,7 @@ public class SequentialSuites {
             TraceabilitySuite::new,
             LeakyContractTestsSuite::new,
             LeakyCryptoTestsSuite::new,
+            LeakyEthereumTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
             CannotDeleteSystemEntitiesSuite::new,

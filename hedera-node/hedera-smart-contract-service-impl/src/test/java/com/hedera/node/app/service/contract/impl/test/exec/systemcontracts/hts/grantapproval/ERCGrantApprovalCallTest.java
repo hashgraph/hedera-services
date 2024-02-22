@@ -54,7 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ERCGrantApprovalCallTest extends HtsCallTestBase {
-
     private ERCGrantApprovalCall subject;
 
     @Mock

@@ -45,6 +45,7 @@ public interface StatEntry extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.STAT_ENTRY;
@@ -53,6 +54,7 @@ public interface StatEntry extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return getBuffered() == null ? EnumSet.of(VALUE) : EnumSet.of(VALUE, MAX, MIN, STD_DEV);
@@ -61,9 +63,10 @@ public interface StatEntry extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default Object get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (getBuffered() == null) {
             if (valueType == VALUE) {
                 return getStatsStringSupplier().get();
@@ -85,6 +88,7 @@ public interface StatEntry extends Metric {
      *
      * @return the {@link StatsBuffered}, if available, otherwise {@code null}
      */
+    @Nullable
     StatsBuffered getBuffered();
 
     /**
@@ -92,6 +96,7 @@ public interface StatEntry extends Metric {
      *
      * @return the reset-lambda, if available, otherwise {@code null}
      */
+    @Nullable
     Consumer<Double> getReset();
 
     /**
@@ -99,6 +104,7 @@ public interface StatEntry extends Metric {
      *
      * @return the lambda
      */
+    @NonNull
     Supplier<Object> getStatsStringSupplier();
 
     /**
@@ -107,6 +113,7 @@ public interface StatEntry extends Metric {
      *
      * @return the lambda
      */
+    @NonNull
     Supplier<Object> getResetStatsStringSupplier();
 
     /**
@@ -116,12 +123,12 @@ public interface StatEntry extends Metric {
      */
     final class Config<T> extends PlatformMetricConfig<StatEntry, Config<T>> {
 
-        private final Class<T> type;
-        private final StatsBuffered buffered;
-        private final Function<Double, StatsBuffered> init;
-        private final Consumer<Double> reset;
-        private final Supplier<T> statsStringSupplier;
-        private final Supplier<T> resetStatsStringSupplier;
+        private final @NonNull Class<T> type;
+        private final @Nullable StatsBuffered buffered;
+        private final @Nullable Function<Double, StatsBuffered> init;
+        private final @Nullable Consumer<Double> reset;
+        private final @NonNull Supplier<T> statsStringSupplier;
+        private final @NonNull Supplier<T> resetStatsStringSupplier;
         private final double halfLife;
 
         /**
@@ -145,15 +152,30 @@ public interface StatEntry extends Metric {
                 @NonNull final Supplier<T> statsStringSupplier) {
 
             super(category, name, FloatFormats.FORMAT_11_3);
-            this.type = Objects.requireNonNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type must not be null");
             this.buffered = null;
             this.init = null;
             this.reset = null;
-            this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
+            this.statsStringSupplier =
+                    Objects.requireNonNull(statsStringSupplier, "statsStringSupplier must not be null");
             this.resetStatsStringSupplier = statsStringSupplier;
             this.halfLife = -1;
         }
 
+        /**
+         * stores all the parameters, which can be accessed directly
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param type
+         * 		the type of the values this {@code StatEntry} returns
+         * @param statsStringSupplier
+         * 		a lambda that returns the metric string
+         * @throws IllegalArgumentException
+         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         */
         @SuppressWarnings("java:S107")
         private Config(
                 @NonNull final String category,
@@ -169,19 +191,21 @@ public interface StatEntry extends Metric {
                 @NonNull final Supplier<T> resetStatsStringSupplier,
                 final double halfLife) {
             super(category, name, description, unit, format);
-            this.type = Objects.requireNonNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type must not be null");
             this.buffered = buffered;
             this.init = init;
             this.reset = reset;
-            this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
+            this.statsStringSupplier =
+                    Objects.requireNonNull(statsStringSupplier, "statsStringSupplier must not be null");
             this.resetStatsStringSupplier =
-                    Objects.requireNonNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+                    Objects.requireNonNull(resetStatsStringSupplier, "resetStatsStringSupplier must not be null");
             this.halfLife = halfLife;
         }
 
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public StatEntry.Config<T> withDescription(@NonNull final String description) {
             return new StatEntry.Config<>(
@@ -202,6 +226,7 @@ public interface StatEntry extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public StatEntry.Config<T> withUnit(@NonNull final String unit) {
             return new StatEntry.Config<>(
@@ -404,6 +429,7 @@ public interface StatEntry extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<StatEntry> getResultClass() {
             return StatEntry.class;

@@ -31,7 +31,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
@@ -157,14 +156,16 @@ public class CloseFlushTest {
                         final long lastLeafPath,
                         final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(
                                 firstLeafPath,
                                 lastLeafPath,
                                 pathHashRecordsToUpdate,
                                 leafRecordsToAddOrUpdate,
-                                leafRecordsToDelete);
+                                leafRecordsToDelete,
+                                isReconnectContext);
                     } catch (final Exception e) {
                         exceptionSink.set(e);
                     }
@@ -203,11 +204,6 @@ public class CloseFlushTest {
                 @Override
                 public void registerMetrics(final Metrics metrics) {
                     delegate.registerMetrics(metrics);
-                }
-
-                @Override
-                public VirtualKeySet<K> buildKeySet() {
-                    return delegate.buildKeySet();
                 }
 
                 @Override

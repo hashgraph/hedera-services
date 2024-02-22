@@ -41,12 +41,10 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
-import com.swirlds.virtualmap.test.fixtures.InMemoryKeySet;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.FileNotFoundException;
@@ -250,13 +248,13 @@ public abstract class VirtualMapReconnectTestBase {
 
         @Override
         public void saveRecords(
-                final long firstLeafPath,
-                final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                long firstLeafPath,
+                long lastLeafPath,
+                Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                boolean isReconnectContext)
                 throws IOException {
-
             final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                     leafRecordsToAddOrUpdate.collect(Collectors.toList());
 
@@ -312,11 +310,6 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public void registerMetrics(final Metrics metrics) {
             delegate.registerMetrics(metrics);
-        }
-
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return new InMemoryKeySet<>();
         }
 
         @Override

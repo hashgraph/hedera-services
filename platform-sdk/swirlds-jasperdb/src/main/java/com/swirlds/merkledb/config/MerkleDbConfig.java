@@ -50,26 +50,6 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  * 		used when a leaked key is encountered, which hides the problem from the perspective of the application. This
  * 		setting exists so that we can test behavior with and without this mitigation enabled. This mitigation should
  * 		always be enabled in production environments.
- * @param keySetBloomFilterHashCount
- * 		Configuration used during a reconnect. The number of hashes used per element
- * 		inserted into a bloom filter. The number of elements that may be inserted into the bloom filter is equal to the
- * 		number of leaf nodes transmitted during the reconnect for a single virtual map. This value should be chosen so
- * 		that the bloom filter has an acceptable false positive rate when a number of elements equal to the largest
- * 		virtual map in the state are inserted into the bloom filter.
- * @param keySetBloomFilterSizeInBytes
- * 		Configuration used during a reconnect. The in-memory size of the bloom filter, in bytes. This value should be
- * 		chosen so that the bloom filter has an acceptable false positive rate when a number of elements equal to the
- * 		largest virtual map in the state are inserted into the bloom filter. This value should be chosen with the memory
- * 		available during a reconnect kept in mind. Only one such bloom filter will be in memory at any specific point in
- * 		time.
- * @param keySetHalfDiskHashMapSize
- * 		Configuration used during a reconnect. A half disk hash map is instanced during a reconnect. This parameter
- * 		configures the size of the half disk hash map. The number of elements that may be inserted into the half disk
- * 		hash map is equal to the number of leaf nodes transmitted during the reconnect for a single virtual map. This
- * 		number should be chosen so that it accommodates the largest virtual map in the state.
- * @param keySetHalfDiskHashMapBuffer
- * 		Configuration used during a reconnect. This configures the size of an in-memory buffer that is used when
- * 		writing to the half disk hash map configured by {@link #keySetHalfDiskHashMapSize()}.
  * @param indexRebuildingEnforced
  * 		Configuration used to avoid reading stored indexes from a saved state and enforce rebuilding those indexes from
  * 		data files.
@@ -86,6 +66,10 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  *      If the value is zero, leaf records cache isn't used.
  * @param usePbj
  *      If true, use PBJ format for new (flushed) and compacted data files, otherwise use JDB.
+ * @param maxFileChannelsPerFileReader
+ *     Maximum number of file channels per file reader.
+ * @param maxThreadsPerFileChannel
+ *    Maximum number of threads per file channel.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
@@ -98,16 +82,14 @@ public record MerkleDbConfig(
         /* FUTURE WORK - https://github.com/hashgraph/hedera-services/issues/5178 */
         @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
-        @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
-        @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
-        @ConfigProperty(defaultValue = "1000000000") long keySetHalfDiskHashMapSize,
-        @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
         @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
         @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
-        @ConfigProperty(defaultValue = "true") boolean usePbj) {
+        @ConfigProperty(defaultValue = "true") boolean usePbj,
+        @Min(1) @ConfigProperty(defaultValue = "8") int maxFileChannelsPerFileReader,
+        @Min(1) @ConfigProperty(defaultValue = "8") int maxThreadsPerFileChannel) {
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 

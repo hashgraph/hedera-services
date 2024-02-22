@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -58,6 +59,11 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile impl
 
         final var defaultFreezeStatus = ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
         return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return evmEncoder.encodeGetTokenDefaultFreezeStatus(status, false);
     }
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(final Bytes input) {

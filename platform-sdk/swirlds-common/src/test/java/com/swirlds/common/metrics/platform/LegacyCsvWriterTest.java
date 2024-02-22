@@ -34,6 +34,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Counter.Config;
 import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.IntegerGauge;
@@ -693,6 +694,43 @@ class LegacyCsvWriterTest {
                                 ,,0\\.0,0\\.0,0\\.0,0\\.0,1000\\.0,1000\\.0,1000\\.0,0\\.0,2000\\.0,2000\\.0,2000\\.0,0\\.0,3000\\.0,3000\\.0,3000\\.0,0\\.0,4000\\.0,4000\\.0,4000\\.0,0\\.0,
                                 ,,,,,,5\\d*\\.\\d,5\\d*\\.\\d,1000.0,\\d*\\.\\d,,,,,16\\d*\\.\\d,16\\d*\\.\\d,3000.0,\\d*\\.\\d,,,,,
                                 """);
+    }
+
+    @Test
+    void testAddedMetricsAfterFirstSnapshotAreIgnored() throws IOException {
+        // given
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
+        final Path csvFilePath = writer.getCsvFilePath();
+        final List<Metric> metrics = createSimpleList();
+
+        // when
+        final List<Snapshot> snapshots1 = metrics.stream()
+                .map(DefaultMetric.class::cast)
+                .map(Snapshot::of)
+                .toList();
+        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots1));
+
+        final List<Snapshot> snapshots =
+                List.of(Snapshot.of((DefaultMetric) this.metrics.getOrCreate(new Config("NewCategory", "NewCounter"))));
+        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots));
+
+        // then
+        final String content = Files.readString(csvFilePath);
+        assertThat(content)
+                .matches(
+                        """
+                        filename:,.*,
+                        Counter 1:,Counter 1,
+                        Counter 2:,Counter 2,
+                        Counter 3:,Counter 3,
+                        Counter 4:,Counter 4,
+                        Counter 5:,Counter 5,
+
+                        ,,platform,platform,platform,platform,platform,
+                        ,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
+                        ,,0,0,0,0,0,
+                        ,,,,,,,
+                        """);
     }
 
     private List<Metric> createCompleteList() {

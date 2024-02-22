@@ -111,12 +111,19 @@ include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
-include(":swirlds-merkle-test", "platform-sdk/swirlds-unit-tests/structures/swirlds-merkle-test")
-
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 
 includeAllProjects("platform-sdk/platform-apps/tests")
+
+// Block Node Projects
+include(":blocknode-core", "block-node/blocknode-core")
+include(":blocknode-core-spi", "block-node/blocknode-core-spi")
+include(":blocknode-filesystem-api", "block-node/blocknode-filesystem-api")
+include(":blocknode-filesystem-local", "block-node/blocknode-filesystem-local")
+include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
+include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
+include(":blocknode-state", "block-node/blocknode-state")
 
 fun include(name: String, path: String) {
     include(name)
@@ -134,7 +141,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.44.0"
+val hapiProtoVersion = "0.47.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -143,6 +150,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.14")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.19")
     }
 }

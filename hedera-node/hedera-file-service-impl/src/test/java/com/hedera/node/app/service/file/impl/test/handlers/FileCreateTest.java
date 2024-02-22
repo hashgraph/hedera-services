@@ -60,6 +60,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -74,8 +75,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileCreateTest extends FileTestBase {
     static final AccountID ACCOUNT_ID_3 = AccountID.newBuilder().accountNum(3L).build();
-    private static final AccountID AUTO_RENEW_ACCOUNT =
-            AccountID.newBuilder().accountNum(4L).build();
+    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -130,7 +130,7 @@ class FileCreateTest extends FileTestBase {
         fileStore = new WritableFileStore(writableStates);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
     }
 
@@ -232,6 +232,8 @@ class FileCreateTest extends FileTestBase {
     void handleDoesntRequireKeys() {
         final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(configuration.getConfigData(HederaConfig.class))
+                .willReturn(DEFAULT_CONFIG.getConfigData(HederaConfig.class));
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);

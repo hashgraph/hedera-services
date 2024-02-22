@@ -246,8 +246,9 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (customizer != null) {
+        if (customizer != NOOP_EXTERNALIZED_RECORD_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
+            transactionBytes = transaction.signedTransactionBytes();
         }
         final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
         // FUTURE : In mono-service exchange rate is not set in preceding child records.
@@ -320,9 +321,7 @@ public class SingleTransactionRecordBuilderImpl
         serialNumbers.clear();
         tokenTransferLists.clear();
         automaticTokenAssociations.clear();
-        if (transferList.hasAccountAmounts()) {
-            transferList.accountAmounts().clear();
-        }
+        transferList = TransferList.DEFAULT;
         paidStakingRewards.clear();
         assessedCustomFees.clear();
 
@@ -441,6 +440,15 @@ public class SingleTransactionRecordBuilderImpl
     // fields needed for TransactionRecord
 
     /**
+     * Gets the transaction object.
+     *
+     * @return the transaction object
+     */
+    @NonNull
+    public Transaction transaction() {
+        return transaction;
+    }
+    /**
      * Gets the consensus instant.
      *
      * @return the consensus instant
@@ -528,8 +536,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
-        requireNonNull(transferList, "transferList must not be null");
+    public SingleTransactionRecordBuilderImpl transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }

@@ -28,11 +28,9 @@ import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
-import com.swirlds.virtualmap.test.fixtures.InMemoryKeySet;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.IOException;
@@ -172,14 +170,33 @@ class ReconnectHashListenerTest {
                 final long lastLeafPath,
                 final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                final boolean isReconnectContext)
                 throws IOException {
-
             final var ir = pathHashRecordsToUpdate.toList();
             this.internalRecords.add(ir);
             final var lr = leafRecordsToAddOrUpdate.toList();
             this.leafRecords.add(lr);
-            delegate.saveRecords(firstLeafPath, lastLeafPath, ir.stream(), lr.stream(), leafRecordsToDelete);
+            delegate.saveRecords(
+                    firstLeafPath, lastLeafPath, ir.stream(), lr.stream(), leafRecordsToDelete, isReconnectContext);
+        }
+
+        @Override
+        public void saveRecords(
+                final long firstLeafPath,
+                final long lastLeafPath,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                throws IOException {
+
+            saveRecords(
+                    firstLeafPath,
+                    lastLeafPath,
+                    pathHashRecordsToUpdate,
+                    leafRecordsToAddOrUpdate,
+                    leafRecordsToDelete,
+                    true);
         }
 
         @Override
@@ -221,14 +238,6 @@ class ReconnectHashListenerTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public VirtualKeySet<TestKey> buildKeySet() {
-            return new InMemoryKeySet<>();
         }
 
         /**

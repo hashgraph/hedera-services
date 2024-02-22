@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,20 +32,22 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void basicOperationTest(final boolean stateless) {
+    void basicOperationTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
         final Random random = getRandomPrintSeed();
         final Thread mainThread = Thread.currentThread();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
 
         final StandardObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 
@@ -115,10 +118,10 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void exceptionHandlerTest(final boolean stateless) {
+    void exceptionHandlerTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
         final Thread mainThread = Thread.currentThread();
 
         final AtomicInteger exceptionHandlerCount = new AtomicInteger(0);
@@ -164,5 +167,50 @@ class DirectTaskSchedulerTests {
             expectedCount = hash32(expectedCount, i);
             assertEquals(expectedCount, count.get());
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void squelching(final boolean threadsafe) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final Thread mainThread = Thread.currentThread();
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
+
+        final TaskScheduler<Integer> scheduler = model.schedulerBuilder("A")
+                .withType(type)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Integer> inputWire = scheduler.buildInputWire("input");
+
+        final AtomicInteger handleCount = new AtomicInteger(0);
+        inputWire.bind(x -> {
+            assertEquals(Thread.currentThread(), mainThread);
+            handleCount.incrementAndGet();
+            return -x;
+        });
+
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(15, handleCount.get(), "Tasks added before squelching should be handled");
+
+        scheduler.startSquelching();
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(15, handleCount.get(), "Tasks added after starting to squelch should not be handled");
+
+        scheduler.stopSquelching();
+        for (int i = 0; i < 5; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+        assertEquals(30, handleCount.get(), "Tasks added after stopping squelching should be handled");
     }
 }

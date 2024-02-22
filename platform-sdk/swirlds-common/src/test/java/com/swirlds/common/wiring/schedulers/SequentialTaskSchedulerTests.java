@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -49,10 +51,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 class SequentialTaskSchedulerTests {
 
     @Test
@@ -108,14 +112,14 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 value,
                 wireValue::get,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire sum did not match expected sum: " + value + " vs " + wireValue.get());
         model.stop();
     }
 
     /**
      * Add values to the task scheduler, ensure that each value was processed in the correct order. Add a delay to the
-     * handler. The delay should not effect the final value if things are happening as we expect. If the task scheduler
+     * handler. The delay should not affect the final value if things are happening as we expect. If the task scheduler
      * is allowing things to happen with parallelism, then the delay is likely to result in a reordering of operations
      * (which will fail the test).
      */
@@ -152,7 +156,7 @@ class SequentialTaskSchedulerTests {
             value = hash32(value, i);
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         model.stop();
     }
 
@@ -211,11 +215,11 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedValue, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedValue, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
                 expectedArguments.size(),
                 arguments::size,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire arguments did not match expected arguments");
         assertEquals(expectedArguments, arguments);
         model.stop();
@@ -286,11 +290,11 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedValue, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedValue, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
                 expectedArguments.size(),
                 arguments::size,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire arguments did not match expected arguments");
         assertEquals(expectedArguments, arguments);
 
@@ -337,14 +341,14 @@ class SequentialTaskSchedulerTests {
                         value.set(hash32(value.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "calling thread was blocked");
 
         // Release the latch and allow the wire to finish
         latch.countDown();
 
         assertEventuallyEquals(
-                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                value.get(), wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -399,7 +403,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 100L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value, count = "
                         + taskScheduler.getUnprocessedTaskCount());
 
@@ -408,7 +412,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 50L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
 
         latch50.countDown();
@@ -416,16 +420,16 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 2L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
 
         latch98.countDown();
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
                 0L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
 
         model.stop();
@@ -477,7 +481,7 @@ class SequentialTaskSchedulerTests {
                         value.set(hash32(value.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to add tasks");
         assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
@@ -509,20 +513,20 @@ class SequentialTaskSchedulerTests {
                     channel.inject(42);
                     value.set(hash32(value.get(), 42));
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
 
-        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(10), "unable to add all work");
         assertEventuallyEquals(
                 0L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value. " + taskScheduler.getUnprocessedTaskCount());
         assertEventuallyEquals(
-                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                value.get(), wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -572,7 +576,7 @@ class SequentialTaskSchedulerTests {
                         value.set(hash32(value.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to add tasks");
         assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
@@ -601,14 +605,14 @@ class SequentialTaskSchedulerTests {
         // Release the latch, all work should now be added
         latch.countDown();
 
-        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(10), "unable to add all work");
         assertEventuallyEquals(
                 0L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
-                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                value.get(), wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -640,7 +644,7 @@ class SequentialTaskSchedulerTests {
             value = hash32(value, i);
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         model.stop();
     }
 
@@ -755,18 +759,18 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedCountA, countA::get, Duration.ofSeconds(1), "Wire A sum did not match expected value");
+                expectedCountA, countA::get, Duration.ofSeconds(10), "Wire A sum did not match expected value");
         assertEventuallyEquals(
                 expectedNegativeCountA,
                 negativeCountA::get,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire A negative sum did not match expected value");
         assertEventuallyEquals(
-                expectedCountB, countB::get, Duration.ofSeconds(1), "Wire B sum did not match expected value");
+                expectedCountB, countB::get, Duration.ofSeconds(10), "Wire B sum did not match expected value");
         assertEventuallyEquals(
-                expectedCountC, countC::get, Duration.ofSeconds(1), "Wire C sum did not match expected value");
+                expectedCountC, countC::get, Duration.ofSeconds(10), "Wire C sum did not match expected value");
         assertEventuallyEquals(
-                expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
+                expectedCountD, countD::get, Duration.ofSeconds(10), "Wire D sum did not match expected value");
 
         model.stop();
     }
@@ -814,7 +818,8 @@ class SequentialTaskSchedulerTests {
             value = hash32(value, string.hashCode());
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire value did not match expected value");
+        assertEventuallyEquals(
+                value, wireValue::get, Duration.ofSeconds(10), "Wire value did not match expected value");
 
         model.stop();
     }
@@ -871,7 +876,7 @@ class SequentialTaskSchedulerTests {
                         value.set(hash32(value.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to add tasks");
         assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
@@ -903,20 +908,20 @@ class SequentialTaskSchedulerTests {
                     channel1.inject(42);
                     value.set(hash32(value.get(), 42));
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
 
-        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(10), "unable to add all work");
         assertEventuallyEquals(
                 0L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
-                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                value.get(), wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -989,7 +994,7 @@ class SequentialTaskSchedulerTests {
                         valueB.set(hash32(valueB.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to add tasks");
         assertEquals(11, backpressure.getCount());
 
@@ -1023,22 +1028,22 @@ class SequentialTaskSchedulerTests {
                     valueA.set(hash32(valueA.get(), -42));
                     valueB.set(hash32(valueB.get(), 42));
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
 
-        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(10), "unable to add all work");
         assertEventuallyEquals(
                 0L,
                 backpressure::getCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
-                valueA.get(), wireValueA::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                valueA.get(), wireValueA::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
-                valueB.get(), wireValueB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                valueB.get(), wireValueB::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         model.stop();
     }
 
@@ -1081,7 +1086,7 @@ class SequentialTaskSchedulerTests {
         model.start();
 
         // Flushing a wire with nothing in it should return quickly.
-        completeBeforeTimeout(taskScheduler::flush, Duration.ofSeconds(1), "unable to flush wire");
+        completeBeforeTimeout(taskScheduler::flush, Duration.ofSeconds(10), "unable to flush wire");
 
         // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
         completeBeforeTimeout(
@@ -1091,7 +1096,7 @@ class SequentialTaskSchedulerTests {
                         value.set(hash32(value.get(), i));
                     }
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to add tasks");
         assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
@@ -1122,8 +1127,7 @@ class SequentialTaskSchedulerTests {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
-        // The flush operation puts a task on the wire, which bumps the number up to 12 from 11
-        assertEquals(12, taskScheduler.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1134,21 +1138,21 @@ class SequentialTaskSchedulerTests {
                     channel.inject(42);
                     value.set(hash32(value.get(), 42));
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
 
-        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
-        assertEventuallyTrue(flushed::get, Duration.ofSeconds(1), "unable to flush wire");
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(10), "unable to add all work");
+        assertEventuallyTrue(flushed::get, Duration.ofSeconds(10), "unable to flush wire");
         assertEventuallyEquals(
                 0L,
                 taskScheduler::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
-                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                value.get(), wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -1208,7 +1212,7 @@ class SequentialTaskSchedulerTests {
             }
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEquals(1, exceptionCount.get());
 
         model.stop();
@@ -1285,7 +1289,7 @@ class SequentialTaskSchedulerTests {
                     channelB.put(Object.class);
                     channelC.put(Object.class);
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "deadlock");
 
         pool.shutdown();
@@ -1359,7 +1363,7 @@ class SequentialTaskSchedulerTests {
                     channelB.put(Object.class);
                     channelC.put(Object.class);
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "deadlock");
 
         pool.shutdown();
@@ -1427,7 +1431,7 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCount, countD::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
@@ -1468,7 +1472,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final AtomicInteger lambdaSum = new AtomicInteger();
-        taskSchedulerB.getOutputWire().solderTo("lambda", lambdaSum::getAndAdd);
+        taskSchedulerB.getOutputWire().solderTo("lambda", "lambda input", lambdaSum::getAndAdd);
 
         inputA.bind(x -> {
             countA.set(hash32(countA.get(), x));
@@ -1501,7 +1505,7 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCount, countD::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(sum, lambdaSum.get());
@@ -1608,7 +1612,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 expectedSum,
                 sumB::get,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire sum did not match expected sum, " + expectedSum + " vs " + sumB.get());
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countX.get());
@@ -1617,7 +1621,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 expectedInversionBit,
                 invertA::get,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "Wire inversion bit did not match expected value");
 
         model.stop();
@@ -1692,7 +1696,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 10L,
                 taskSchedulerC::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "C should have 10 unprocessed tasks, currently has " + taskSchedulerC.getUnprocessedTaskCount());
 
         assertEquals(expectedCount, countA.get());
@@ -1704,8 +1708,8 @@ class SequentialTaskSchedulerTests {
         expectedCount = hash32(expectedCount, 5);
         expectedSum += 2 * 5;
 
-        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
-        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(10), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(10), "B should have processed task");
 
         // If we wait some time, the task from B should have increased C's count to 11, but the task from A
         // should have been unable to increase C's count.
@@ -1720,7 +1724,7 @@ class SequentialTaskSchedulerTests {
         expectedSum += 2 * 6;
 
         assertEventuallyEquals(
-                expectedCountAfterHandling6, countB::get, Duration.ofSeconds(1), "B should have processed task");
+                expectedCountAfterHandling6, countB::get, Duration.ofSeconds(10), "B should have processed task");
 
         // Even if we wait, A should not have been able to process the task.
         MILLISECONDS.sleep(50);
@@ -1729,7 +1733,7 @@ class SequentialTaskSchedulerTests {
 
         // Releasing the latch should allow data to flow through C.
         latch.countDown();
-        assertEventuallyEquals(expectedSum, sumC::get, Duration.ofSeconds(1), "C should have processed all tasks");
+        assertEventuallyEquals(expectedSum, sumC::get, Duration.ofSeconds(10), "C should have processed all tasks");
         assertEquals(expectedCountAfterHandling6, countA.get());
 
         model.stop();
@@ -1740,7 +1744,7 @@ class SequentialTaskSchedulerTests {
      */
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    void squelchNullValuesInWiresTest(final String typeString) {
+    void discardNullValuesInWiresTest(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
@@ -1820,13 +1824,13 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedCountA, countA::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCountA, countA::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
-                expectedCountB, countB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCountB, countB::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
-                expectedCountC, countC::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCountC, countC::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEventuallyEquals(
-                expectedCountD, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCountD, countD::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
 
         model.stop();
     }
@@ -1913,7 +1917,7 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
-                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+                expectedCount, countD::get, Duration.ofSeconds(10), "Wire sum did not match expected sum");
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
@@ -1980,7 +1984,7 @@ class SequentialTaskSchedulerTests {
             expectedCount = hash32(expectedCount, i);
         }
 
-        assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(1), "Wire count did not match expected");
+        assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(10), "Wire count did not match expected");
 
         model.stop();
     }
@@ -2097,10 +2101,10 @@ class SequentialTaskSchedulerTests {
 
         // Unblock C. Entire pipeline is now unblocked and new things will be added.
         latchC.countDown();
-        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
-        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
-        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
-        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
+        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(10), "Counter should be empty");
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(10), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(10), "B should have processed task");
+        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(10), "C should have processed task");
         assertTrue(moreWorkInserted.get());
 
         model.stop();
@@ -2219,11 +2223,11 @@ class SequentialTaskSchedulerTests {
 
         // Unblock C. Entire pipeline is now unblocked and new things will be added.
         latchC.countDown();
-        assertEventuallyTrue(allWorkInserted::get, Duration.ofSeconds(1), "All work should have been inserted");
-        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
-        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
-        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
-        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
+        assertEventuallyTrue(allWorkInserted::get, Duration.ofSeconds(10), "All work should have been inserted");
+        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(10), "Counter should be empty");
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(10), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(10), "B should have processed task");
+        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(10), "C should have processed task");
 
         model.stop();
     }
@@ -2286,7 +2290,7 @@ class SequentialTaskSchedulerTests {
 
         // Wait until A has handled all of its tasks.
         assertEventuallyEquals(
-                0L, schedulerA::getUnprocessedTaskCount, Duration.ofSeconds(1), "A should have processed tasks");
+                0L, schedulerA::getUnprocessedTaskCount, Duration.ofSeconds(10), "A should have processed tasks");
         assertEquals(expectedCountA, countA.get());
 
         // B should not have processed any tasks.
@@ -2297,7 +2301,7 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 0L,
                 schedulerB::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "B should have processed all awaiting tasks");
         assertEquals(expectedCountB, countB.get());
 
@@ -2311,16 +2315,91 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(
                 0L,
                 schedulerA::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "A should have processed all awaiting tasks");
         assertEventuallyEquals(
                 0L,
                 schedulerB::getUnprocessedTaskCount,
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
                 "B should have processed all awaiting tasks");
 
         assertEquals(expectedCountA, countA.get());
         assertEquals(expectedCountB, countB.get());
+
+        model.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    @Tag(TIMING_SENSITIVE)
+    void squelching(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final AtomicInteger handleCount = new AtomicInteger();
+
+        final Consumer<Integer> handler = x -> {
+            handleCount.incrementAndGet();
+            try {
+                NANOSECONDS.sleep(random.nextInt(1_000_000));
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(type)
+                .withUnhandledTaskCapacity(100)
+                .withFlushingEnabled(true)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
+        inputWire.bind(handler);
+
+        model.start();
+
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        assertEventuallyTrue(() -> handleCount.get() > 5, Duration.ofSeconds(1), "Some tasks should get handled");
+        assertTrue(taskScheduler.getUnprocessedTaskCount() > 10, "There should be some unprocessed tasks");
+
+        taskScheduler.startSquelching();
+        final int countAtSquelchStart = handleCount.get();
+
+        // add more tasks, which will be squelched
+        for (int i = 0; i < 10; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(0L, taskScheduler.getUnprocessedTaskCount(), "Unprocessed task count should be 0");
+
+        final int countAtSquelchEnd = handleCount.get();
+
+        // it's very unlikely, but possible, that a single task was being handled when squelching started, but the
+        // atomic int hadn't been incremented yet. therefore, it could be the case that one more task was handled than
+        // the count we got would otherwise expect.
+        assertTrue(countAtSquelchEnd == countAtSquelchStart || countAtSquelchEnd == countAtSquelchStart + 1);
+
+        // stop squelching, and add some more tasks to be handled
+        taskScheduler.stopSquelching();
+        for (int i = 0; i < 2; i++) {
+            inputWire.put(i);
+            inputWire.offer(i);
+            inputWire.inject(i);
+        }
+
+        taskScheduler.flush();
+        assertEquals(
+                countAtSquelchEnd + 6, handleCount.get(), "New tasks should be processed after stopping squelching");
 
         model.stop();
     }

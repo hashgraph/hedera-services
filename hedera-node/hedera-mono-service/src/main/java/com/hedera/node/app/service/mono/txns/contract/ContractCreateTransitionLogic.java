@@ -211,9 +211,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         codeWithConstructorArgs,
                         consensusTime);
             } else {
-                sender.incrementEthereumNonce();
-                accountStore.commitAccount(sender);
-
                 result = evmTxProcessor.executeEth(
                         sender,
                         newContractAddress,
@@ -224,6 +221,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                         accountStore.loadAccount(relayerId),
                         userOfferedGasPrice,
                         maxGasAllowance);
+                result.setSignerNonce(worldState.get(senderId.asEvmAddress()).getNonce());
             }
         } finally {
             worldState.resetHapiSenderCustomizer();

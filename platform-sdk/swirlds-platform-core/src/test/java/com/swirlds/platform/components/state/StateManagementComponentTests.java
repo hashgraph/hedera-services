@@ -221,11 +221,11 @@ class StateManagementComponentTests {
         final DefaultStateManagementComponent stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
-                dispatchBuilder,
                 (msg, t, code) -> {},
                 signer,
                 ss -> {},
-                new SignedStateMetrics(new NoOpMetrics()));
+                new SignedStateMetrics(new NoOpMetrics()),
+                x -> true);
 
         dispatchBuilder.start();
 

@@ -17,8 +17,6 @@
 package com.swirlds.logging.api.extensions.handler;
 
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.Lock;
@@ -30,11 +28,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * console or to a file.
  */
 public abstract class AbstractSyncedHandler extends AbstractLogHandler {
-
-    /**
-     * The emergency logger that is used if the log handler is stopped.
-     */
-    private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
     /**
      * The write lock that is used to synchronize the handling of log events.

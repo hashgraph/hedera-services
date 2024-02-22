@@ -126,7 +126,7 @@ public interface StakingRewardsApi {
      *
      * @param then the instant
      * @param stakePeriodMins the length of a stake period in minutes
-     * @return
+     * @return the stake period at the given instant
      */
     static long stakePeriodAt(@NonNull final Instant then, final long stakePeriodMins) {
         if (stakePeriodMins == DAILY_STAKING_PERIOD_MINS) {
@@ -174,7 +174,7 @@ public interface StakingRewardsApi {
             final long currentStakePeriod,
             final long effectiveStart) {
         final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
-        if (rewardFrom == 0) {
+        if (rewardFrom <= 0) {
             return 0;
         }
 

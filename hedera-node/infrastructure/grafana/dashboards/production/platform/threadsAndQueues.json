@@ -7,9 +7,166 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "Platform Status (new)",
+            "uid": "bdcky36wafe9se"
+          }
+        ]
+      }
     }
   ],
   "__elements": {
+    "bdcky36wafe9se": {
+      "name": "Platform Status (new)",
+      "uid": "bdcky36wafe9se",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-GrYlRd"
+            },
+            "custom": {
+              "fillOpacity": 61,
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineWidth": 0,
+              "spanNulls": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "super-light-green",
+                    "index": 0,
+                    "text": "STARTING_UP"
+                  },
+                  "2": {
+                    "color": "green",
+                    "index": 1,
+                    "text": "ACTIVE"
+                  },
+                  "4": {
+                    "color": "red",
+                    "index": 2,
+                    "text": "BEHIND"
+                  },
+                  "5": {
+                    "color": "light-blue",
+                    "index": 3,
+                    "text": "FREEZING"
+                  },
+                  "6": {
+                    "color": "dark-blue",
+                    "index": 4,
+                    "text": "FREEZE_COMPLETE"
+                  },
+                  "7": {
+                    "color": "super-light-yellow",
+                    "index": 5,
+                    "text": "REPLAYING_EVENTS"
+                  },
+                  "8": {
+                    "color": "text",
+                    "index": 6,
+                    "text": "OBSERVING"
+                  },
+                  "9": {
+                    "color": "orange",
+                    "index": 7,
+                    "text": "CHECKING"
+                  },
+                  "10": {
+                    "color": "purple",
+                    "index": 8,
+                    "text": "RECONNECT_COMPLETE"
+                  },
+                  "11": {
+                    "color": "#250707",
+                    "index": 9,
+                    "text": "CATASTROPHIC_FAILURE"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unitScale": true
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "Platform Status (new)",
+          "uid": "bdcky36wafe9se"
+        },
+        "options": {
+          "alignValue": "left",
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "mergeValues": true,
+          "rowHeight": 0.9,
+          "showValue": "auto",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "platform_PlatformStatus{environment=\"$network\", node_id=~\"$NodeID\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Platform Status",
+        "type": "state-timeline"
+      }
+    },
     "ea3a07d5-8f0b-4705-997d-51935e44d3c0": {
       "name": "intakeQueue",
       "uid": "ea3a07d5-8f0b-4705-997d-51935e44d3c0",
@@ -331,7 +488,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.4.0-65875"
+      "version": "10.4.0-66955"
     },
     {
       "type": "datasource",
@@ -386,12 +543,25 @@
   "liveNow": false,
   "panels": [
     {
+      "gridPos": {
+        "h": 16,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "id": 48,
+      "libraryPanel": {
+        "uid": "bdcky36wafe9se",
+        "name": "Platform Status (new)"
+      }
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 16
       },
       "id": 16,
       "panels": [],
@@ -458,8 +628,7 @@
                 "value": 200
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -467,7 +636,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 1
+        "y": 17
       },
       "id": 6,
       "options": {
@@ -533,8 +702,7 @@
                 "value": 200
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -542,7 +710,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 1
+        "y": 17
       },
       "id": 17,
       "options": {
@@ -560,7 +728,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -676,8 +844,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -685,7 +852,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 9
+        "y": 25
       },
       "id": 9,
       "options": {
@@ -753,8 +920,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -762,7 +928,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 9
+        "y": 25
       },
       "id": 18,
       "options": {
@@ -778,7 +944,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -894,8 +1060,7 @@
                 "value": 400
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -903,7 +1068,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 17
+        "y": 33
       },
       "id": 43,
       "options": {
@@ -948,7 +1113,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 41
       },
       "id": 12,
       "panels": [],
@@ -1015,8 +1180,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1024,7 +1188,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 26
+        "y": 42
       },
       "id": 8,
       "options": {
@@ -1091,8 +1255,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1100,7 +1263,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 26
+        "y": 42
       },
       "id": 15,
       "options": {
@@ -1116,7 +1279,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1181,7 +1344,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 34
+        "y": 50
       },
       "id": 2,
       "libraryPanel": {
@@ -1194,7 +1357,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 34
+        "y": 50
       },
       "id": 14,
       "libraryPanel": {
@@ -1207,7 +1370,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
-      "description": "The number of unhandled tasks waiting to enter the intake pipeline. The first step if the intake pipeline is the event hasher",
+      "description": "The number of unhandled tasks waiting to enter the intake pipeline. Events accumulate waiting for intake in the post hash collector",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1262,16 +1425,15 @@
                 "value": 9000
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 16,
         "x": 0,
-        "y": 42
+        "y": 58
       },
       "id": 44,
       "options": {
@@ -1294,7 +1456,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "platform_eventHasher_unhandled_task_count{environment=\"$network\", node_id=~\"$NodeID\"}",
+          "expr": "platform_postHashCollector_unhandled_task_count{environment=\"$network\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1304,7 +1466,7 @@
           "useBackend": false
         }
       ],
-      "title": "intakeQueue (event hasher)",
+      "title": "intakeQueue (post hash collector)",
       "type": "timeseries"
     },
     {
@@ -1313,7 +1475,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 68
       },
       "id": 22,
       "panels": [],
@@ -1379,8 +1541,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1388,7 +1549,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 51
+        "y": 69
       },
       "id": 23,
       "options": {
@@ -1451,8 +1612,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1460,7 +1620,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 51
+        "y": 69
       },
       "id": 24,
       "options": {
@@ -1478,7 +1638,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1593,8 +1753,7 @@
                 "value": 800
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1602,7 +1761,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 59
+        "y": 77
       },
       "id": 25,
       "options": {
@@ -1665,8 +1824,7 @@
                 "value": 800
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1674,7 +1832,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 59
+        "y": 77
       },
       "id": 26,
       "options": {
@@ -1692,7 +1850,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1804,8 +1962,7 @@
                 "value": 400
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1813,7 +1970,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 67
+        "y": 85
       },
       "id": 45,
       "options": {
@@ -1855,7 +2012,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 93
       },
       "id": 27,
       "panels": [],
@@ -1921,8 +2078,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1930,7 +2086,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 76
+        "y": 94
       },
       "id": 28,
       "options": {
@@ -1993,8 +2149,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2002,7 +2157,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 76
+        "y": 94
       },
       "id": 29,
       "options": {
@@ -2020,7 +2175,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -2081,7 +2236,7 @@
         "type": "prometheus",
         "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
-      "description": "Number of tasks waiting to be handled by the PCES writer",
+      "description": "Number of tasks waiting to be handled by the PCES writier",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2132,8 +2287,7 @@
                 "value": 400
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2141,7 +2295,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 84
+        "y": 102
       },
       "id": 46,
       "options": {
@@ -2183,7 +2337,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 92
+        "y": 110
       },
       "id": 19,
       "panels": [],
@@ -2250,8 +2404,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2259,7 +2412,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 93
+        "y": 111
       },
       "id": 10,
       "options": {
@@ -2326,8 +2479,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2335,7 +2487,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 93
+        "y": 111
       },
       "id": 20,
       "options": {
@@ -2353,7 +2505,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -2418,7 +2570,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 101
+        "y": 119
       },
       "id": 4,
       "libraryPanel": {
@@ -2455,8 +2607,7 @@
                 "value": 1000
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2464,7 +2615,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 101
+        "y": 119
       },
       "id": 21,
       "options": {
@@ -2482,7 +2633,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -2602,8 +2753,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2611,7 +2761,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 109
+        "y": 127
       },
       "id": 36,
       "options": {
@@ -2710,8 +2860,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2719,7 +2868,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 117
+        "y": 135
       },
       "id": 42,
       "options": {
@@ -2818,8 +2967,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2827,7 +2975,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 125
+        "y": 143
       },
       "id": 37,
       "options": {
@@ -2926,8 +3074,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -2935,7 +3082,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 133
+        "y": 151
       },
       "id": 38,
       "options": {
@@ -3034,8 +3181,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3043,7 +3189,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 141
+        "y": 159
       },
       "id": 39,
       "options": {
@@ -3142,8 +3288,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3151,7 +3296,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 149
+        "y": 167
       },
       "id": 40,
       "options": {
@@ -3250,8 +3395,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3259,7 +3403,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 157
+        "y": 175
       },
       "id": 41,
       "options": {
@@ -3304,7 +3448,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 165
+        "y": 183
       },
       "id": 33,
       "panels": [],
@@ -3370,8 +3514,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3379,7 +3522,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 166
+        "y": 184
       },
       "id": 34,
       "options": {
@@ -3442,8 +3585,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3451,7 +3593,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 166
+        "y": 184
       },
       "id": 35,
       "options": {
@@ -3469,7 +3611,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -3531,7 +3673,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 174
+        "y": 192
       },
       "id": 30,
       "panels": [],
@@ -3597,8 +3739,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3606,7 +3747,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 175
+        "y": 193
       },
       "id": 31,
       "options": {
@@ -3669,8 +3810,7 @@
                 "value": 0.8
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -3678,7 +3818,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 175
+        "y": 193
       },
       "id": 32,
       "options": {
@@ -3696,7 +3836,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "10.4.0-65875",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -3753,7 +3893,6 @@
       "type": "gauge"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -3810,13 +3949,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
-    "to": "now"
+    "from": "2024-02-09T17:50:36.987Z",
+    "to": "2024-02-11T21:57:23.869Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Threads & Queues",
   "uid": "daf603b7-4578-4641-92b3-aa4f0f146876",
-  "version": 9,
+  "version": 10,
   "weekStart": ""
 }

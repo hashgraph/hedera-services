@@ -24,6 +24,8 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.un
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -71,6 +73,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall call;
         final HtsCallAttempt attempt;
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
@@ -105,9 +108,18 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
                 final var enhancement = proxyWorldUpdater.enhancement();
-                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+                final var responseCode = pricedResult.responseCode();
 
                 if (responseCode == SUCCESS) {
+                    if (pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT)
+                            || pricedResult
+                                    .fullResult()
+                                    .result()
+                                    .getState()
+                                    .equals(MessageFrame.State.EXCEPTIONAL_HALT)) {
+                        return pricedResult.fullResult();
+                    }
+
                     enhancement
                             .systemOperations()
                             .externalizeResult(
