@@ -247,6 +247,12 @@ public abstract class BlockRecordInjectionModule {
 
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var blockVersion = blockStreamConfig.blockVersion();
+
+        if (!blockStreamConfig.enabled()) {
+            // Not running block streams so no need to validate the version.
+            return blockVersion;
+        }
+
         // This is a sanity check until record streams are deprecated and we are fully switched to block streams.
         // FUTURE: Remove this check once we deprecate records.
         if (recordFileVersion != blockVersion) {
