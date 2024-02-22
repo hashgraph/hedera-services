@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
@@ -29,13 +27,16 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static java.util.Collections.emptyList;
 
 /**
  * A writable store that wraps a writable key-value state and supports operations required to create or update
