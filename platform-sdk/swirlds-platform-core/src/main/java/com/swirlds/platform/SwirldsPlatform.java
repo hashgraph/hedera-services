@@ -621,7 +621,7 @@ public class SwirldsPlatform implements Platform {
                 new ConsensusEngine(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
 
         final LongSupplier intakeQueueSizeSupplier =
-                oldStyleIntakeQueue != null ? oldStyleIntakeQueue::size : platformWiring.getIntakeQueueSizeSupplier();
+                oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
