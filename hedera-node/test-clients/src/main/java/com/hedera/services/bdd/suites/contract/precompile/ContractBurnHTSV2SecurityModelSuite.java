@@ -98,7 +98,10 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     public static void main(final String... args) {
         new ContractBurnHTSV2SecurityModelSuite().runSuiteSync();
     }
-
+    @Override
+    public boolean canRunConcurrent() {
+        return false;
+    }
     public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
@@ -106,6 +109,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     List<HapiSpec> positiveSpecs() {
         return List.of(V2Security004FungibleTokenBurnPositive(), V2Security005NonFungibleTokenBurnPositive());
     }
+
+
 
     List<HapiSpec> negativeSpecs() {
         return List.of(
