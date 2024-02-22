@@ -1472,7 +1472,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final AtomicInteger lambdaSum = new AtomicInteger();
-        taskSchedulerB.getOutputWire().solderTo("lambda", lambdaSum::getAndAdd);
+        taskSchedulerB.getOutputWire().solderTo("lambda", "lambda input", lambdaSum::getAndAdd);
 
         inputA.bind(x -> {
             countA.set(hash32(countA.get(), x));

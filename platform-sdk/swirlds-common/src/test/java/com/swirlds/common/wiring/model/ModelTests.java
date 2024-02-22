@@ -1493,7 +1493,7 @@ class ModelTests {
 
     /**
      * We should detect when a concurrent scheduler access a direct scheduler through proxies (i.e. the concurrent
-     * scheduler calls into a DIRECT_STATELESS scheduler which calls into a DIRECT scheduler).
+     * scheduler calls into a DIRECT_THREADSAFE scheduler which calls into a DIRECT scheduler).
      */
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
@@ -1517,8 +1517,8 @@ class ModelTests {
         G <----- F -----> H -----> I -----> J
 
         D = CONCURRENT
-        E = DIRECT_STATELESS
-        F = DIRECT_STATELESS
+        E = DIRECT_THREADSAFE
+        F = DIRECT_THREADSAFE
         G = DIRECT
 
         */
@@ -1542,13 +1542,13 @@ class ModelTests {
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
         final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
@@ -1611,7 +1611,7 @@ class ModelTests {
         G <----- F -----> H -----> I -----> J
 
         B = SEQUENTIAL_THREAD
-        C = DIRECT_STATELESS
+        C = DIRECT_THREADSAFE
         D = DIRECT
 
         */
@@ -1627,7 +1627,7 @@ class ModelTests {
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
