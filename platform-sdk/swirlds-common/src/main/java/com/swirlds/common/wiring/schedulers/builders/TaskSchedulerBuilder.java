@@ -85,8 +85,8 @@ public class TaskSchedulerBuilder<O> {
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
-            throw new IllegalArgumentException(
-                    "Task Schedulers name must only contain alphanumeric characters and underscores");
+            throw new IllegalArgumentException("Illegal name: \"" + name
+                    + "\". Task Schedulers name must only contain alphanumeric characters and underscores");
         }
         if (name.isEmpty()) {
             throw new IllegalArgumentException("TaskScheduler name must not be empty");

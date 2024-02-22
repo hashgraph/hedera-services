@@ -633,13 +633,14 @@ public class SwirldsPlatform implements Platform {
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
         final OutputWire<IssNotification> issOutput =
                 platformWiring.getIssDetectorWiring().issNotificationOutput();
-        issOutput.solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
-        issOutput.solderTo("statusManager", n -> {
+        issOutput.solderTo(
+                "issNotificationEngine", "ISS notification", n -> notificationEngine.dispatch(IssListener.class, n));
+        issOutput.solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
             if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
                 platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
             }
         });
-        issOutput.solderTo("issHandler", issHandler::issObserved);
+        issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
 
         platformWiring.bind(
                 eventHasher,

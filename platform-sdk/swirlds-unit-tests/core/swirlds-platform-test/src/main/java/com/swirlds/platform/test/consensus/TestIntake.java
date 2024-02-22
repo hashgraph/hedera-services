@@ -139,7 +139,9 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
 
         consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        consensusEngineWiring.consensusRoundOutput().solderTo("consensusOutputTestTool", output::consensusRound);
+        consensusEngineWiring
+                .consensusRoundOutput()
+                .solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
         eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
