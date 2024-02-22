@@ -181,12 +181,8 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        System.out.println(
-                "Round: " + (this.currentBlockNumber + 1) + " - Serializing event: " + consensusEvent.hashCode());
         final var serializedBlockItem = format.serializeConsensusEvent(consensusEvent);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized event: "
-                + consensusEvent.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -194,8 +190,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeSystemTransaction(@NonNull final ConsensusTransaction systemTxn) {
         final var serializedBlockItem = format.serializeSystemTransaction(systemTxn);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized system transaction: "
-                + systemTxn.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -207,8 +201,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             final var serializedBlockItems = format.serializeUserTransaction(item);
             serializedBlockItems.forEach(serializedBlockItem -> {
                 updateRunningHashesWithMessageDigest(messageDigest, serializedBlockItem);
-                System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized user transaction: "
-                        + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
                 writeSerializedBlockItem(serializedBlockItem);
             });
         });
@@ -218,8 +210,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     public void writeStateChanges(@NonNull final StateChanges stateChanges) {
         final var serializedBlockItem = format.serializeStateChanges(stateChanges);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized state changes: "
-                + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -244,8 +234,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
                 signatureAlgorithm);
         final var serializedBlockItem = format.serializeBlockHeader(blockHeader);
         updateRunningHashes(serializedBlockItem);
-        System.out.println("Round: " + (this.currentBlockNumber + 1) + " - Serialized block header: "
-                + serializedBlockItem.hashCode() + " - Bytes hash: " + serializedBlockItem.hashCode());
         writeSerializedBlockItem(serializedBlockItem);
     }
 
@@ -277,9 +265,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     private void closeWriter(@NonNull final HashObject lastRunningHash, final long lastBlockNumber) {
         if (writer != null) {
-            logger.debug(
-                    "Closing block record writer for block {} with running hash {}", lastBlockNumber, lastRunningHash);
-
             // If we fail to close the writer, then this node is almost certainly going to end up in deep trouble.
             // Make sure this is logged. In the FUTURE we may need to do something more drastic, like shut down the
             // node, or maybe retry a number of times before giving up.
@@ -303,7 +288,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
             // Depending on the configuration, this writer's methods may be asynchronous or synchronous. The
             // BlockStreamWriterFactory instantiated by dagger will determine this.
             writer = writerFactory.create();
-            logger.info("Set writer to: {}", writer);
             writer.init(currentBlockNumber, lastRunningHash);
         } catch (final Exception e) {
             // This represents an almost certainly fatal error. In the FUTURE we should look at dealing with this in a

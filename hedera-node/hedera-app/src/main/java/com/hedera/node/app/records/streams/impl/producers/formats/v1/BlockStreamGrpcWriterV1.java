@@ -104,7 +104,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
                     @Override
                     public void onNext(BlocksPutIfAbsentResponse response) {
                         // TODO(nickpoorman): Implement this.
-                        System.out.println("Response received: " + response.getStatus());
+                        logger.info("Response received: " + response.getStatus());
                     }
 
                     @Override
@@ -116,7 +116,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
                     @Override
                     public void onCompleted() {
                         // TODO(nickpoorman): Implement this.
-                        System.out.println("Stream completed.");
+                        logger.info("Stream completed.");
                     }
                 });
 

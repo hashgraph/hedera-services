@@ -202,11 +202,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     }
 
     private void startConsensusEvent(@NonNull final ConsensusEvent platformEvent) {
-        System.out.println("Round: " + (provisionalCurrentBlockNumber() + 1) + " - Writing event to block stream: "
-                + platformEvent.hashCode());
         blockStreamProducer.writeConsensusEvent(platformEvent);
-        System.out.println("Round: " + (provisionalCurrentBlockNumber() + 1) + " - Wrote event to block stream: "
-                + platformEvent.hashCode());
     }
 
     private void endConsensusEvent() {}
@@ -381,7 +377,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
             @NonNull final Runnable runnable) {
 
-        System.out.println("Round: " + round.getRoundNum() + " - Round started");
         BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
             this.startRound();
             try {
@@ -415,7 +410,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
                             .thenAcceptAsync(
                                     blockEnder -> blockEnder.endBlock(blockPersisted, stateProofProducer), executor);
                 }
-                System.out.println("Round: " + round.getRoundNum() + " - Round completed (successfully)");
             } catch (Exception e) {
                 logger.error("Exception while processing round", e);
                 // At the very least we should try to close the block resource that may have been opened.
@@ -434,8 +428,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             } finally {
                 // Ensure any opened rounds are closed.
                 this.endRound(state);
-
-                System.out.println("Round: " + round.getRoundNum() + " - Round completed (finally)");
             }
         });
     }
@@ -507,7 +499,6 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      */
     private void beginBlock() {
         blockOpen = true;
-        System.out.println("Round: " + (provisionalCurrentBlockNumber() + 1) + " - Beginning block for round");
         blockStreamProducer.beginBlock();
     }
 

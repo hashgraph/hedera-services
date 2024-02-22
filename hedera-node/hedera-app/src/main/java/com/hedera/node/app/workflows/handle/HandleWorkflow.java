@@ -236,8 +236,6 @@ public class HandleWorkflow {
         // We also provide a CompletableFuture to the BlockRecordManager that will be completed when the block is
         // persisted. Should platform need this signal in the future, we will have it available.
         blockRecordManager.processRound(state, round, persistedBlock, () -> {
-            System.out.println("Round: " + round.getRoundNum() + " - Number of events: " + round.getEventCount());
-
             int i = 0;
             // handle each event in the round
             for (final ConsensusEvent event : round) {
@@ -259,10 +257,6 @@ public class HandleWorkflow {
 
                 final var eventNum = i;
                 blockRecordManager.processConsensusEvent(state, event, () -> {
-                    System.out.println("Round: " + round.getRoundNum() + " - Event: " + eventNum
-                            + " - Number of transactions in the event: "
-                            + countItems(event.unfilteredConsensusTransactionIterator()));
-
                     // handle each transaction of the event
                     for (final var it = event.unfilteredConsensusTransactionIterator(); it.hasNext(); ) {
                         final var platformTxn = it.next();
@@ -313,7 +307,6 @@ public class HandleWorkflow {
         // ability to pull these from preHandle or handle.
         if (collectSignaturesEnabled()) {
             if (platformTxn instanceof StateSignatureTransaction txn) {
-                System.out.println("Collected signature from handle for round: " + txn.getRound());
                 // Collect the state signature transaction. We have a singleton instance of the
                 // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
                 // network and sorting them into queues to later.

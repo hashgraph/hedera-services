@@ -146,11 +146,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
             if (tx.isSystem()) {
-                if (collectSignaturesEnabled()) {
-                    if (tx instanceof StateSignatureTransaction txn) {
-                        System.out.println("Collected signature from preHandle");
-                        StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(nodeId, txn);
-                    }
+                if (collectSignaturesEnabled() && tx instanceof StateSignatureTransaction txn) {
+                    StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(nodeId, txn);
                 }
                 return;
             }

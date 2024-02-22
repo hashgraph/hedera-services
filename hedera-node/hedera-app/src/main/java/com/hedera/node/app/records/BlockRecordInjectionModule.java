@@ -79,7 +79,6 @@ public abstract class BlockRecordInjectionModule {
     @Singleton
     @NonNull
     static FileSystem provideFileSystem() {
-        System.out.println("Called provideFileSystem");
         return FileSystems.getDefault();
     }
 
@@ -94,7 +93,6 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final ConfigProvider configProvider,
             @NonNull final StreamFileProducerConcurrent concurrent,
             @NonNull final StreamFileProducerSingleThreaded serial) {
-        System.out.println("Called provideStreamFileProducer");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
@@ -117,7 +115,6 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockRecordStreamProducer streamFileProducer,
             @NonNull final BlockStreamProducer blockStreamProducer) {
-        System.out.println("Called provideBlockRecordManager");
 
         // We also want to create a BlockObserver instance at this point.
         BlockObserverSingleton.initInstance(configProvider);
@@ -146,7 +143,6 @@ public abstract class BlockRecordInjectionModule {
     @Singleton
     @NonNull
     public static BlockRecordFormat provideBlockRecordFormat(@NonNull final ConfigProvider configProvider) {
-        System.out.println("Called provideBlockRecordFormat");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         var recordFileVersion = recordStreamConfig.recordFileVersion();
         if (recordFileVersion > BlockRecordFormatV6.VERSION_6) {
@@ -187,7 +183,6 @@ public abstract class BlockRecordInjectionModule {
             @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final BlockStreamProducerSingleThreaded serial) {
-        System.out.println("Called provideBlockStreamFileProducer");
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
@@ -211,7 +206,6 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockStreamProducer blockStreamProducer) {
-        System.out.println("Called provideBlockStreamManager");
         validateBlockStreamVersion(configProvider);
 
         // We also want to create a BlockObserver instance at this point.
@@ -230,7 +224,6 @@ public abstract class BlockRecordInjectionModule {
     @Singleton
     @NonNull
     public static BlockStreamFormat provideBlockStreamFormat(@NonNull final ConfigProvider configProvider) {
-        System.out.println("Called provideBlockStreamFormat");
         final var blockVersion = validateBlockStreamVersion(configProvider);
         return switch (blockVersion) {
             case BlockStreamFormatV1.VERSION_7 -> BlockStreamFormatV1.INSTANCE;
@@ -248,7 +241,6 @@ public abstract class BlockRecordInjectionModule {
             @NonNull BlockStreamWriterFactoryImpl impl);
 
     private static int validateBlockStreamVersion(@NonNull final ConfigProvider configProvider) {
-        System.out.println("Called validateBlockStreamVersion");
         // This is the only time BlockRecordStreamConfig should be referenced in this package.
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         final var recordFileVersion = recordStreamConfig.recordFileVersion();

@@ -78,12 +78,8 @@ public class BlockStateProofProducer {
         //  know what the consensus roster is so that we can validate the proof before we return it.
         // For now, we will simply require a number of signatures to be provided.
         this.consensusRoster = consensusRoster;
-        // We need 2/3 + 1 signatures to produce a proof.
-        //        this.requiredNumberOfSignatures = (int) Math.ceil(consensusRoster.getSize() * 2 / 3.0)
-        // + 1;
+        // We need 1/3 + 1 signatures to produce a proof.
         this.requiredNumberOfSignatures = (int) Math.floor(consensusRoster.getSize() * 1.0 / 3.0) + 1;
-        log("Consensus roster size: " + consensusRoster.getSize());
-        log("Required number of signatures for round: " + this.roundNum + ": " + this.requiredNumberOfSignatures);
     }
 
     public void setRunningHashes(@NonNull final RunningHashes runningHashes) {
@@ -142,49 +138,38 @@ public class BlockStateProofProducer {
      */
     @NonNull
     private BlockStateProof collectProof(@NonNull final StateSignatureTransactionCollector c) {
-        log("Collecting proof for round: " + roundNum);
         final var q = c.getQueueForRound(roundNum);
 
         // Read from the queue to collect the signatures (or a proof if one is provided by the queue).
         while (!proofComplete()) {
-            log("Trying to collect proof for round using queue: " + q.hashCode());
-
             // Get the next signature from the queue.
-            log("Taking item from queue");
-
             QueuedStateSignatureTransaction e;
             try {
                 final var queueItem = q.take();
                 e = requireNonNull(queueItem, "Signature should not be null");
-                log("Took item from queue: " + e);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt(); // Restore the interrupt status.
-                log("Interrupted while taking from queue: " + ex);
+                logger.error("Interrupted while taking from queue: " + ex);
                 throw new RuntimeException("Thread interrupted during take operation", ex);
             } catch (Exception ex) {
-                log("Exception while taking from queue: " + ex);
+                logger.error("Error during take operation", ex);
                 throw new RuntimeException("Error during take operation", ex);
             }
-
-            log("Processing signature from queue: " + e);
 
             // If we are passed a proof, there is no reason to continue constructing one.
             final var p = tryConsumeProof(e);
             if (p != null) {
-                log("Got a proof from a queued signature ignature");
                 return p;
             }
 
             // Verify and add the signature to the list of signatures.
             final var sig = tryConsumeSignature(e);
             if (sig == null) {
-                log("Signature was not valid. Skipping it.");
                 continue; // No signature was added, skip the following steps.
             }
 
             // See if we have a proof given the signature we just added.
             final var proof = constructProof();
-            log("proof: " + proof);
             if (proof != null) return setProof(proof);
         }
 
@@ -198,13 +183,9 @@ public class BlockStateProofProducer {
      */
     @Nullable
     private BlockStateProof constructProof() {
-        log("Trying to construct proof");
         // Given the signatures we have, try to construct a proof.
         // Do we have enough signatures?
-        if (!haveEnoughSignatures()) {
-            log("Not enough signatures to construct the proof");
-            return null;
-        }
+        if (!haveEnoughSignatures()) return null;
         // If we have enough signatures, build the proof.
         return buildProof();
     }
@@ -221,11 +202,12 @@ public class BlockStateProofProducer {
 
     @NonNull
     private Stream<BlockSignature> buildBlockSignatures() {
-        log("Called buildBlockSignatures");
         return signatures.stream()
-                // .filter(sst -> sst.sig() != null && sst.nodeId() != -1)
                 .map(sst -> new BlockSignature(
-                        Bytes.wrap(sst.sig().getStateSignature().getSignatureBytes()), sst.nodeId()));
+                        Bytes.wrap(sst.sig()
+                                .getStateSignature() // Can't be null because we don't insert nulls into the queue.
+                                .getSignatureBytes()),
+                        sst.nodeId()));
     }
 
     /**
@@ -234,9 +216,7 @@ public class BlockStateProofProducer {
      */
     @NonNull
     private BlockStateProof buildProof() {
-        log("Building the proof");
         final var blockSignatures = buildBlockSignatures().toList();
-        log("Collected block signatures");
         assert siblingHashes != null : "Sibling hashes should not be null";
         assert runningHashes != null : "Running hashes should not be null";
         assert blockSignatures != null : "Block signatures should not be null";
@@ -247,8 +227,6 @@ public class BlockStateProofProducer {
                 .endRunningHashes(runningHashes)
                 .blockSignatures(blockSignatures)
                 .build();
-
-        log("Returning the proof: " + proof);
 
         // Construct the block proof with the information we gathered.
         return proof;
@@ -280,13 +258,8 @@ public class BlockStateProofProducer {
      */
     @NonNull
     private BlockStateProof setProof(@NonNull final BlockStateProof p) {
-        log("Called setProof: " + p);
         // Only set the proof if it's currently not set.
-        if (proof.compareAndSet(null, p)) {
-            log("Proof was net set. Setting it and returning it: " + p);
-            return p;
-        }
-        log("Proof was already set. Returning it: " + proof.get());
+        if (proof.compareAndSet(null, p)) return p;
         // Get the current value of the proof.
         return proof.get();
     }
@@ -331,9 +304,5 @@ public class BlockStateProofProducer {
     private boolean verifySignature(final long nodeId, @NonNull final StateSignatureTransaction sig) {
         // TODO(nickpoorman): Implement this.
         return true;
-    }
-
-    private void log(String s) {
-        System.out.println("Round: " + roundNum + " - " + s);
     }
 }
