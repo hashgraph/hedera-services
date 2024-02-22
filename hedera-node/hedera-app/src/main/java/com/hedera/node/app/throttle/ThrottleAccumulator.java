@@ -496,7 +496,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         }
     }
 
-    public static boolean throttleExempt(
+    private static boolean throttleExempt(
             @Nullable final AccountID accountID, @NonNull final Configuration configuration) {
         final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
