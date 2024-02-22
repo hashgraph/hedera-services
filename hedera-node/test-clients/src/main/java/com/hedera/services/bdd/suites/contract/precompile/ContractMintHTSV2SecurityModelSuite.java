@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -75,8 +75,6 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String CONTRACT_KEY = "ContractKey";
     public static final String MINT_CONTRACT = "MintContract";
-    private static final String NESTED_MINT_CONTRACT = "NestedMint";
-    public static final String MINT_NFT_CONTRACT = "MintNFTContract";
     private static final String HTS_CALLS = "HTSCalls";
     public static final String TRESHOLD_KEY_CORRECT_CONTRACT_ID =
             "tresholdKeyWithCorrectContractAndIncorrectSignerPublicKey";
@@ -107,7 +105,6 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     private static final String TOKEN_HAS_NO_UPDATED_KEY = "tokenHasUpdatedContractKey";
     private static final String SIGNER_MINTS_WITH_CONTRACT_ID =
             "signerMintsAndTokenSupplyKeyHasTheIntermediaryContractId";
-    private static final String TOKEN_WITH_CONTRACT_KEY = "tokenHasKeyWithTypeContract";
     private static final String SIGNER_MINTS_WITH_THRESHOLD_KEY = "tokenAndSignerHaveThresholdKey";
     private static final String SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID =
             "signerMintsAndTokenSupplyKeyHasTheSignerPublicKeyAndTheWrongContractId";
@@ -124,7 +121,12 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     static final byte[][] TEST_METADATA_2 = new byte[][] {TEST_METADATA_1.getBytes()};
 
     public static void main(final String... args) {
-        new ContractMintHTSV2SecurityModelSuite().runSuiteSync();
+        new ContractMintHTSV2SecurityModelSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     public List<HapiSpec> getSpecsInSuite() {
@@ -151,8 +153,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security002FungibleTokenMintPositive")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security002FungibleTokenMintPositive")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
@@ -225,6 +226,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_AND_PAYER_ARE_DIFFERENT)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER2, TOKEN_TREASURY)
+                                .refusingEthConversion()
                                 .payingWith(SIGNER2),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
@@ -277,8 +279,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         final var amount = 1;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security003NonFungibleTokenMintPositive")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security003NonFungibleTokenMintPositive")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
@@ -353,7 +354,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_AND_PAYER_ARE_DIFFERENT)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER2, TOKEN_TREASURY)
-                                .payingWith(SIGNER2),
+                                .payingWith(SIGNER2)
+                                .refusingEthConversion(),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         // Assert that the token is minted - total supply should be increased
@@ -408,8 +410,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security002FungibleTokenMintNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security002FungibleTokenMintNegative")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
@@ -470,7 +471,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                         new byte[][] {})
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
-                                .alsoSigningWithFullPrefix(SIGNER)
+                                .signedBy(SIGNER)
                                 .payingWith(SIGNER),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0L),
@@ -519,8 +520,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     final HapiSpec V2Security003NonFungibleTokenMintInTreasuryNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security003NonFungibleTokenMintNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security003NonFungibleTokenMintNegative")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
@@ -582,7 +582,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                         new byte[][] {TEST_METADATA_1.getBytes()})
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
-                                .alsoSigningWithFullPrefix(SIGNER)
+                                .signedBy(SIGNER)
                                 .payingWith(SIGNER),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0L),
@@ -626,8 +626,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
-        return propertyPreservingHapiSpec("V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecal")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecal")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
@@ -771,8 +770,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
@@ -855,8 +853,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final String precompileAddress = "0000000000000000000000000000000000000167";
 
-        return propertyPreservingHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(THOUSAND_HBAR),
