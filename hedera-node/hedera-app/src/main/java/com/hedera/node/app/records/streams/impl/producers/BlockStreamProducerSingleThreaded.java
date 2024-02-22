@@ -111,16 +111,9 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
 
     /** {@inheritDoc} */
     public void beginBlock() {
-        logger.info("Called beginBlock for block {}", this.currentBlockNumber);
         this.currentBlockNumber++;
-        logger.info("Called beginBlock block now {}", this.currentBlockNumber);
 
         final var lastRunningHash = getRunningHashObject();
-
-        logger.info(
-                "Initializing block stream writer for block {} with running hash {}",
-                currentBlockNumber,
-                lastRunningHash);
 
         openWriter(this.currentBlockNumber, lastRunningHash);
 
@@ -131,7 +124,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     /** {@inheritDoc} */
     @Override
     public void endBlock() {
-        logger.debug("Closing block record writer for block {}", this.currentBlockNumber);
         final var lastRunningHash = getRunningHashObject();
         closeWriter(lastRunningHash, this.currentBlockNumber);
     }
@@ -140,7 +132,6 @@ public final class BlockStreamProducerSingleThreaded implements BlockStreamProdu
     @Override
     @NonNull
     public CompletableFuture<BlockEnder> blockEnder(@NonNull final BlockEnder.Builder builder) {
-        logger.info("Called blockEnder for block {} writer is: {}", this.currentBlockNumber, this.writer);
         return CompletableFuture.completedFuture(builder.setLastRunningHash(getRunningHashObject())
                 .setWriter(writer)
                 .setFormat(format)

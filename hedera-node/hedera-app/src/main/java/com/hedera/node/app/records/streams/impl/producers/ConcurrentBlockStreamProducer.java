@@ -76,7 +76,6 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
      */
     public ConcurrentBlockStreamProducer(
             @NonNull final ExecutorService executor, @NonNull final BlockStreamProducer producer) {
-        logger.info("Creating ConcurrentBlockStreamProducer");
         this.executor = executor;
         this.producer = producer;
         // this.lastFutureRef = new AtomicReference<>(CompletableFuture.completedFuture(null));
@@ -121,11 +120,7 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     /** {@inheritDoc} */
     @Override
     public synchronized void beginBlock() {
-        appendSerialAsyncTask(() -> {
-            logger.info("beginBlock started");
-            producer.beginBlock();
-            logger.info("beginBlock completed");
-        });
+        appendSerialAsyncTask(producer::beginBlock);
     }
 
     /** {@inheritDoc} */
@@ -158,11 +153,7 @@ public class ConcurrentBlockStreamProducer implements BlockStreamProducer {
     /** {@inheritDoc} */
     @Override
     public void writeConsensusEvent(@NonNull final ConsensusEvent consensusEvent) {
-        appendSerialAsyncTask(() -> {
-            logger.info("writeConsensusEvent started");
-            producer.writeConsensusEvent(consensusEvent);
-            logger.info("writeConsensusEvent completed");
-        });
+        appendSerialAsyncTask(() -> producer.writeConsensusEvent(consensusEvent));
     }
 
     /** {@inheritDoc} */
