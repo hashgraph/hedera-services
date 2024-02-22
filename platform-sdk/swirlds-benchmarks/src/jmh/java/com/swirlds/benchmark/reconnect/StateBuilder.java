@@ -17,6 +17,7 @@
 package com.swirlds.benchmark.reconnect;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -69,10 +70,14 @@ public record StateBuilder<K, V>(
             final BiConsumer<K, V> learnerPopulator) {
         LongStream.range(1, size).forEach(i -> {
             final K key = keyBuilder.apply(i);
+            // Original values indexes 1..size-1
             final V value = valueBuilder.apply(i);
             teacherPopulator.accept(key, value);
             learnerPopulator.accept(key, value);
         });
+
+        // Current size of the teacher state.
+        final AtomicLong curSize = new AtomicLong(size - 1);
 
         LongStream.range(1, size).forEach(i -> {
             // Make all random outcomes independent of each other:
@@ -82,18 +87,26 @@ public record StateBuilder<K, V>(
 
             if (teacherAdd) {
                 final K key = keyBuilder.apply(i + size);
+                // Added values indexes (size + 1)..(2 * size)
                 final V value = valueBuilder.apply(i + size);
+                teacherPopulator.accept(key, value);
+                curSize.incrementAndGet();
+            }
+
+            final long iModify = random.nextLong(curSize.get()) + 1;
+            final long iRemove = random.nextLong(curSize.get()) + 1;
+
+            if (teacherModify) {
+                final K key = keyBuilder.apply(iModify);
+                // Modified values indexes (2 * size + 1)..(3 * size)
+                final V value = valueBuilder.apply(iModify + 2L * size);
                 teacherPopulator.accept(key, value);
             }
 
-            // Don't bother modifying if we're about to remove it
             if (teacherRemove) {
-                final K key = keyBuilder.apply(i);
+                final K key = keyBuilder.apply(iRemove);
                 teacherPopulator.accept(key, null);
-            } else if (teacherModify) {
-                final K key = keyBuilder.apply(i);
-                final V value = valueBuilder.apply(i + size);
-                teacherPopulator.accept(key, value);
+                curSize.decrementAndGet();
             }
         });
     }

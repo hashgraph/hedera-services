@@ -20,9 +20,9 @@ import static com.swirlds.common.merkle.copy.MerkleInitialize.initializeTreeAfte
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.benchmark.BenchmarkKey;
+import com.swirlds.benchmark.BenchmarkValue;
 import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
@@ -32,6 +32,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -40,49 +41,23 @@ import java.util.function.Function;
  * A utility class to support benchmarks for reconnect.
  */
 public class MerkleBenchmarkUtils {
-    /**
-     * Returns the following tree:
-     *
-     * <pre>
-     *             root
-     *           / |   \
-     *          A  i0  i1
-     *             /\  /\
-     *            B C D null
-     * </pre>
-     */
-    static BenchmarkMerkleInternal buildLessSimpleTree() {
-        final BenchmarkMerkleInternal root = new BenchmarkMerkleInternal("root");
 
-        final MerkleLeaf A = new BenchmarkMerkleLeaf("A");
-        final MerkleInternal i0 = new BenchmarkMerkleInternal("i0");
-        final MerkleInternal i1 = new BenchmarkMerkleInternal("i1");
-        root.setChild(0, A);
-        root.setChild(1, i0);
-        root.setChild(2, i1);
-
-        final MerkleLeaf B = new BenchmarkMerkleLeaf("B");
-        final MerkleLeaf C = new BenchmarkMerkleLeaf("C");
-        i0.setChild(0, B);
-        i0.setChild(1, C);
-
-        final MerkleLeaf D = new BenchmarkMerkleLeaf("D");
-        i1.setChild(0, D);
-        i1.setChild(1, null);
-
-        initializeTreeAfterCopy(root);
-        return root;
+    public static MerkleInternal createTreeForMap(final VirtualMap<BenchmarkKey, BenchmarkValue> map) {
+        final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
+        initializeTreeAfterCopy(tree);
+        tree.setChild(0, map);
+        tree.reserve();
+        return tree;
     }
 
-    static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree,
-            final MerkleNode desiredTree,
-            final Configuration configuration,
-            final ReconnectConfig reconnectConfig)
+    public static <T extends MerkleNode> T hashAndTestSynchronization(
+            final MerkleNode startingTree, final MerkleNode desiredTree, final Configuration configuration)
             throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
         System.out.println("desired: " + desiredTree);
+
+        final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
         if (startingTree != null && startingTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(startingTree);
@@ -121,10 +96,8 @@ public class MerkleBenchmarkUtils {
                         }
                     },
                     reconnectConfig);
-            final PlatformContext platformContext =
-                    BenchmarkPlatformContextBuilder.create().build(configuration);
             teacher = new TeachingSynchronizer(
-                    platformContext.getConfiguration(),
+                    configuration,
                     Time.getCurrent(),
                     getStaticThreadManager(),
                     streams.getTeacherInput(),

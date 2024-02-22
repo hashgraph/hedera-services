@@ -16,13 +16,15 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.benchmark.reconnect.ReconnectRunner;
+import com.swirlds.benchmark.reconnect.MerkleBenchmarkUtils;
 import com.swirlds.benchmark.reconnect.StateBuilder;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -40,7 +42,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
 @Warmup(iterations = 1)
-@Measurement(iterations = 5)
+@Measurement(iterations = 7)
 public class ReconnectBench extends VirtualMapBaseBench {
 
     /** A random seed for the StateBuilder. */
@@ -64,6 +66,10 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     private VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap;
     private VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap;
+    private MerkleInternal teacherTree;
+    private VirtualMap<BenchmarkKey, BenchmarkValue> copy;
+    private MerkleInternal learnerTree;
+    private MerkleNode node;
 
     private int dbIndex = 0;
 
@@ -122,10 +128,30 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
         teacherMap = flushMap(teacherMap);
         learnerMap = flushMap(learnerMap);
+
+        teacherTree = MerkleBenchmarkUtils.createTreeForMap(teacherMap);
+        copy = teacherMap.copy();
+        learnerTree = MerkleBenchmarkUtils.createTreeForMap(learnerMap);
     }
 
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws Exception {
+        try {
+            final VirtualRoot root = learnerMap.getRight();
+            if (!root.isHashed()) {
+                throw new IllegalStateException("Learner root node must be hashed");
+            }
+        } finally {
+            node.release();
+            node = null;
+            teacherTree.release();
+            teacherTree = null;
+            learnerTree.release();
+            learnerTree = null;
+            copy.release();
+            copy = null;
+        }
+
         final var finalTeacherMap = teacherMap;
         final var finalLearnerMap = learnerMap;
 
@@ -151,6 +177,6 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     @Benchmark
     public void reconnect() throws Exception {
-        ReconnectRunner.reconnect(configuration, getConfig(ReconnectConfig.class), teacherMap, learnerMap);
+        node = MerkleBenchmarkUtils.hashAndTestSynchronization(learnerTree, teacherTree, configuration);
     }
 }
