@@ -545,9 +545,7 @@ public class ThrottleAccumulator {
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
                 && isGasThrottled(txnInfo.functionality())
-                && (gasThrottle == null
-                        || !gasThrottle.allow(
-                                now, getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality())));
+                && !gasThrottle.allow(now, getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality()));
     }
 
     private boolean shouldThrottleMint(
@@ -788,6 +786,9 @@ public class ThrottleAccumulator {
     public void applyGasConfig() {
         final var configuration = configProvider.getConfiguration();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
+            log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
+        }
         gasThrottle = new GasLimitDeterministicThrottle(contractsConfig.maxGasPerSec());
         log.info(
                 "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
