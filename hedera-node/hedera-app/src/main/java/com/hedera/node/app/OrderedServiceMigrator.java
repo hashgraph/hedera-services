@@ -84,7 +84,6 @@ public class OrderedServiceMigrator {
                 currentVersion,
                 versionedConfiguration,
                 networkInfo,
-                backendThrottle,
                 // We call with null here because we're migrating the entity ID service itself
                 null);
 
@@ -121,7 +120,6 @@ public class OrderedServiceMigrator {
                             currentVersion,
                             versionedConfiguration,
                             networkInfo,
-                            backendThrottle,
                             // If we have reached this point in the code, entityIdStore should not be null because the
                             // EntityIdService should have been migrated already. We enforce with requireNonNull in case
                             // there are scenarios we haven't considered.

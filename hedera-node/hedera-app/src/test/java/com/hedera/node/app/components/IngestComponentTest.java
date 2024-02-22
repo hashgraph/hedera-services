@@ -32,18 +32,15 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleManager;
-import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -79,7 +76,7 @@ class IngestComponentTest {
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
-    EntityUtilizationMultiplier genericFeeMultiplier;
+    UtilizationScaledThrottleMultiplier genericFeeMultiplier;
 
     @Mock
     ThrottleMultiplier gasFeeMultiplier;
@@ -113,23 +110,12 @@ class IngestComponentTest {
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
         final var feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
-        final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
-                .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                        configProvider,
-                        throttleManager,
-                        exchangeRateManager,
-                        feeManager,
-                        congestionMultipliers,
-                        backendThrottle,
-                        frontendThrottle))
-                .networkUtilizationManager(new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
-                .throttleManager(throttleManager)
+                .configProvider(configProvider)
                 .feeManager(feeManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
@@ -138,7 +124,6 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
-                .synchronizedThrottleAccumulator(this.synchronizedThrottleAccumulator)
                 .build();
 
         final var state = new FakeHederaState();

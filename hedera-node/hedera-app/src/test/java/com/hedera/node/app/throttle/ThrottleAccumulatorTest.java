@@ -66,6 +66,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -129,6 +130,9 @@ class ThrottleAccumulatorTest {
     private ConfigProvider configProvider;
 
     @Mock
+    private GasLimitDeterministicThrottle gasThrottle;
+
+    @Mock
     private VersionedConfiguration configuration;
 
     @Mock
@@ -170,7 +174,7 @@ class ThrottleAccumulatorTest {
     @Test
     void worksAsExpectedForKnownQueries() throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
@@ -197,7 +201,7 @@ class ThrottleAccumulatorTest {
     @Test
     void worksAsExpectedForUnknownQueries() throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
@@ -236,7 +240,7 @@ class ThrottleAccumulatorTest {
     void managerBehavesAsExpectedForFungibleMint(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -273,7 +277,7 @@ class ThrottleAccumulatorTest {
     void managerBehavesAsExpectedForNftMint(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -313,7 +317,7 @@ class ThrottleAccumulatorTest {
     void managerBehavesAsExpectedForMultiBucketOp(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -351,7 +355,7 @@ class ThrottleAccumulatorTest {
     @EnumSource
     void handlesThrottleExemption(ThrottleAccumulator.ThrottleType throttleType) throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -384,7 +388,7 @@ class ThrottleAccumulatorTest {
     void computesNumImplicitCreationsIfNotAlreadyKnown(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -422,7 +426,7 @@ class ThrottleAccumulatorTest {
     void ifLazyCreationEnabledComputesNumImplicitCreationsIfNotAlreadyKnown(
             ThrottleAccumulator.ThrottleType throttleType) throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -460,7 +464,7 @@ class ThrottleAccumulatorTest {
     void cryptoTransfersWithNoAutoAccountCreationsAreThrottledAsExpected(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -496,7 +500,7 @@ class ThrottleAccumulatorTest {
     void managerAllowsCryptoTransfersWithAutoAccountCreationsAsExpected(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -532,7 +536,7 @@ class ThrottleAccumulatorTest {
     void managerRejectsCryptoTransfersWithAutoAccountCreationsAsExpected(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -567,7 +571,7 @@ class ThrottleAccumulatorTest {
     void managerRejectsCryptoTransfersWithMissingCryptoCreateThrottle(ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -980,7 +984,7 @@ class ThrottleAccumulatorTest {
     @ParameterizedTest
     @EnumSource
     void alwaysRejectsIfNoThrottle(ThrottleAccumulator.ThrottleType throttleType) {
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
@@ -1042,7 +1046,7 @@ class ThrottleAccumulatorTest {
 
     @Test
     void canThrottleNOfManaged() throws IOException, ParseException {
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, gasThrottle);
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
         subject.rebuildFor(defs);
@@ -1099,7 +1103,7 @@ class ThrottleAccumulatorTest {
             final boolean waitForExpiry)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1157,7 +1161,7 @@ class ThrottleAccumulatorTest {
             final boolean waitForExpiry)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1204,7 +1208,7 @@ class ThrottleAccumulatorTest {
     void scheduleCreateAlwaysThrottledWhenNoBody(final ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1244,7 +1248,7 @@ class ThrottleAccumulatorTest {
             final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1292,7 +1296,7 @@ class ThrottleAccumulatorTest {
             final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1363,7 +1367,7 @@ class ThrottleAccumulatorTest {
             final boolean autoOrLazyCreationEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1429,7 +1433,7 @@ class ThrottleAccumulatorTest {
             final boolean lazyCreationEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1473,7 +1477,7 @@ class ThrottleAccumulatorTest {
             final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1549,7 +1553,7 @@ class ThrottleAccumulatorTest {
             final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1609,7 +1613,7 @@ class ThrottleAccumulatorTest {
     @Test
     void reclaimsAllUsagesOnThrottledShouldThrottleTxn() throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1737,7 +1741,7 @@ class ThrottleAccumulatorTest {
             final boolean waitForExpiry)
             throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1839,7 +1843,7 @@ class ThrottleAccumulatorTest {
     @Test
     void scheduleSignAlwaysThrottledWhenNotExisting() throws IOException, ParseException {
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1885,7 +1889,7 @@ class ThrottleAccumulatorTest {
             throws IOException, ParseException {
 
         // given
-        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);

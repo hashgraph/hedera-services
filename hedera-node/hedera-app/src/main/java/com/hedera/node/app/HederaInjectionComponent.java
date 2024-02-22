@@ -42,13 +42,11 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -80,7 +78,8 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
-            PlatformModule.class
+            PlatformModule.class,
+            ThrottleServiceModule.class
         })
 public interface HederaInjectionComponent {
     /* Needed by ServicesState */
@@ -116,13 +115,13 @@ public interface HederaInjectionComponent {
 
     ExchangeRateManager exchangeRateManager();
 
-    ThrottleManager throttleManager();
-
     PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 
     InitTrigger initTrigger();
+
+    ThrottleServiceManager throttleServiceManager();
 
     @Component.Builder
     interface Builder {
@@ -146,10 +145,7 @@ public interface HederaInjectionComponent {
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 
         @BindsInstance
-        Builder configuration(ConfigProvider configProvider);
-
-        @BindsInstance
-        Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
+        Builder configProvider(ConfigProvider configProvider);
 
         @BindsInstance
         Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);
@@ -167,16 +163,7 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder throttleManager(ThrottleManager throttleManager);
-
-        @BindsInstance
-        Builder networkUtilizationManager(NetworkUtilizationManager networkUtilizationManager);
-
-        @BindsInstance
         Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
-
-        @BindsInstance
-        Builder synchronizedThrottleAccumulator(SynchronizedThrottleAccumulator synchronizedThrottleAccumulator);
 
         HederaInjectionComponent build();
     }
