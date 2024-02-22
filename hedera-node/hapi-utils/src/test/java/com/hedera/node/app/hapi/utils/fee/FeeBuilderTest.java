@@ -119,7 +119,7 @@ class FeeBuilderTest {
     @Test
     void assertCalculateBPT() {
         FeeBuilder feeBuilder = new FeeBuilder();
-        assertEquals(236, feeBuilder.calculateBPT());
+        assertEquals(236, feeBuilder.calculateBpt());
     }
 
     @Test
@@ -177,12 +177,12 @@ class FeeBuilderTest {
                 .setContractCallResult(contractFunctionResult)
                 .build();
 
-        assertEquals(220, FeeBuilder.getTxRecordUsageRBH(transactionRecord, 100));
+        assertEquals(220, FeeBuilder.getTxRecordUsageRbh(transactionRecord, 100));
     }
 
     @Test
     void assertGetTxRecordUsageRBHWhenTxRecordIsNull() {
-        assertEquals(0, FeeBuilder.getTxRecordUsageRBH(null, 100));
+        assertEquals(0, FeeBuilder.getTxRecordUsageRbh(null, 100));
     }
 
     @Test

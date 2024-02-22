@@ -65,6 +65,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -74,6 +75,7 @@ import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
+import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
@@ -124,6 +126,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
+    private final HashLoggerWiring hashLoggerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -208,6 +211,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
+        hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
+
         wire();
     }
 
@@ -234,7 +239,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.nonExpiredEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(futureEventBufferWiring.eventWindowInput(), INJECT);
     }
 
@@ -319,18 +324,23 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
-                .solderTo("status manager", statusManager::submitStatusAction);
+                .solderTo(
+                        "statusManager_submitStateWritten",
+                        "state written to disk notification",
+                        statusManager::submitStatusAction);
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
-                .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
-        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+                .solderTo("appCommunication", "state saving result", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring
+                .stateSignature()
+                .solderTo("transactionPool", "state signature transaction", transactionPool::submitSystemTransaction);
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
-                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
+                .solderTo("appComm", "complete state", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
-                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
+                .solderTo("latestCompleteStateNexus", "complete state", latestCompleteStateNexus::setStateIfNewer);
     }
 
     /**
@@ -357,6 +367,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
+     * @param hashLogger              the hash logger to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -379,7 +390,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
-            @NonNull final IssDetector issDetector) {
+            @NonNull final IssDetector issDetector,
+            @NonNull final HashLogger hashLogger) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -402,6 +414,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
+        hashLoggerWiring.bind(hashLogger);
     }
 
     /**
@@ -489,6 +502,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Get the input wire that the hashlogger uses to accept the signed state.
+     *
+     * @return the input wire that the hashlogger uses to accept the signed state
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getHashLoggerInput() {
+        return hashLoggerWiring.hashLoggerInputWire();
+    }
+
+    /**
      * Get the input wire for the PCES writer minimum generation to store
      *
      * @return the input wire for the PCES writer minimum generation to store
@@ -545,6 +568,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
+
+        // Since there is asynchronous access to the shadowgraph, it's important to ensure that
+        // it has fully ingested the new event window before continuing.
+        shadowgraphWiring.flushRunnable().run();
     }
 
     /**

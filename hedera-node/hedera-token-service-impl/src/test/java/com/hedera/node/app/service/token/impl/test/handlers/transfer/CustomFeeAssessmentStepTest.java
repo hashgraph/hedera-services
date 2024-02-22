@@ -337,9 +337,9 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 fungibleTokenId,
                 Map.of(
                         feeCollectorId,
-                        21L,
+                        20L,
                         tokensReceiver,
-                        -21L)); // 10 is for fallback royalty fee from given transaction.
+                        -20L)); // 10 is for fallback royalty fee from given transaction.
         // When assessing this level, we have a fixed fee of 10 and fractional fee of 1 (self denominated)
 
         final var expectedGivenOpTokenTransfers = Map.of(
@@ -411,10 +411,10 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         final var expectedLevel2TokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
-                        payerId, -41L, // when fungibleTokenIDC is assessed it has fixed fee in A , so moves
+                        payerId, -40L, // when fungibleTokenIDC is assessed it has fixed fee in A , so moves
                         // to this level and when assessing this level , C has fractional fee of A.
                         // Since fractional fee is self denominated, causes change in same level
-                        feeCollectorId, 41L));
+                        feeCollectorId, 40L));
 
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);

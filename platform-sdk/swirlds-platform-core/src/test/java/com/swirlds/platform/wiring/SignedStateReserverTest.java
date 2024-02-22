@@ -70,7 +70,8 @@ class SignedStateReserverTest {
                         ValueReference<ReservedSignedState>::new)
                 .limit(numConsumers)
                 .toList();
-        IntStream.range(0, consumers.size()).forEach(i -> outputWire.solderTo("name_" + i, consumers.get(i)::setValue));
+        IntStream.range(0, consumers.size())
+                .forEach(i -> outputWire.solderTo("name_" + i, "consumer input", consumers.get(i)::setValue));
 
         final ReservedSignedState state = signedState.reserve("main");
         assertFalse(state.isClosed(), "we just reserved it, so it should not be closed");
