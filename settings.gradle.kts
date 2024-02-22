@@ -117,13 +117,13 @@ includeAllProjects("platform-sdk/platform-apps/demos")
 includeAllProjects("platform-sdk/platform-apps/tests")
 
 // Block Node Projects
-include(":blocknode-core", "block-node/blocknode-core")
-include(":blocknode-core-spi", "block-node/blocknode-core-spi")
-include(":blocknode-filesystem-api", "block-node/blocknode-filesystem-api")
-include(":blocknode-filesystem-local", "block-node/blocknode-filesystem-local")
-include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
-include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
-include(":blocknode-state", "block-node/blocknode-state")
+include(":storage-core", "block-node/storage-core")
+include(":storage-core-spi", "block-node/storage-core-spi")
+include(":storage-filesystem-api", "block-node/storage-filesystem-api")
+include(":storage-filesystem-local", "block-node/storage-filesystem-local")
+include(":storage-filesystem-s3", "block-node/storage-filesystem-s3")
+include(":storage-grpc-api", "block-node/storage-grpc-api")
+include(":storage-state", "block-node/storage-state")
 
 fun include(name: String, path: String) {
     include(name)
