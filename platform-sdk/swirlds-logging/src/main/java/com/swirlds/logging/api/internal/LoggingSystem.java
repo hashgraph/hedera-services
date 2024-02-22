@@ -96,7 +96,6 @@ public class LoggingSystem implements LogEventConsumer {
      */
     public LoggingSystem(@NonNull final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        ;
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
         this.levelConfig = new HandlerLoggingLevelConfig(configuration);

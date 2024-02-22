@@ -5,25 +5,34 @@ pcli diagram \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -s 'eventWindowManager:non-ancient event window:ʘ' \
     -s 'heartbeat:heartbeat:♡' \
-    -s 'eventCreationManager:non-validated events:†' \
+    -s 'eventCreationManager:non-validated events:$' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:@' \
     -s 'inOrderLinker:events to gossip:g' \
     -s 'runningHashUpdate:running hash update:§' \
     -s 'getKeystoneEventSequenceNumber:flush request:Ξ' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:Ω' \
+    -s 'pcesReplayer:events to hash:!' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
     -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,g,ʘ,Ξ' \
-    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
+    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager,$' \
     -g 'Gossip:gossip,shadowgraph' \
+    -g 'Iss Detector:extractSignaturesForIssDetector,issDetector,issNotificationSplitter' \
+    -g 'Heartbeat:heartbeat,♡' \
+    -g 'PCES Replay:pcesReplayer,@,!' \
+    -g 'Transaction Prehandling:applicationTransactionPrehandler,★' \
+    -g 'Signature Management:State Signature Collection,stateSigner,Iss Detector' \
+    -g 'State Modification:consensusRoundHandler,runningHashUpdate,§' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
-    -c 'Consensus Engine'
+    -c 'Consensus Engine' \
+    -c 'State Signature Collection' \
+    -c 'State File Management'
