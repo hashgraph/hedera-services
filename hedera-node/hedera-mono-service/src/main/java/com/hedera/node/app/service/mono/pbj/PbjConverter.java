@@ -50,10 +50,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.FixedFee;
-import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -74,7 +71,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidKeyException;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class PbjConverter {
@@ -802,7 +798,7 @@ public final class PbjConverter {
     }
 
     public static @NonNull Transaction toPbj(final @NonNull com.hederahashgraph.api.proto.java.Transaction t) {
-        return protoToPbj(Objects.requireNonNull(t), Transaction.class);
+        return protoToPbj(requireNonNull(t), Transaction.class);
     }
 
     public static Timestamp toPbj(@NonNull com.hederahashgraph.api.proto.java.Timestamp t) {
@@ -1326,12 +1322,29 @@ public final class PbjConverter {
         }
     }
 
+    private interface ProtoParser<R extends GeneratedMessageV3> {
+        R parseFrom(byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static <T extends Record, R extends GeneratedMessageV3> R explicitPbjToProto(
+            @NonNull final T pbj, @NonNull final Codec<T> pbjCodec, @NonNull final ProtoParser<R> protoParser) {
+        requireNonNull(pbj);
+        requireNonNull(pbjCodec);
+        requireNonNull(protoParser);
+        try {
+            return protoParser.parseFrom(asBytes(pbjCodec, pbj));
+        } catch (InvalidProtocolBufferException e) {
+            // Should be impossible
+            throw new IllegalStateException("Serialization failure for " + pbj, e);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
             @NonNull final T proto, @NonNull final Class<R> pbjClass) {
         try {
-            final var bytes = Objects.requireNonNull(proto).toByteArray();
-            final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
+            final var bytes = requireNonNull(proto).toByteArray();
+            final var codecField = requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
             final var codec = (Codec<R>) codecField.get(null);
             return codec.parse(BufferedData.wrap(bytes));
         } catch (NoSuchFieldException | IllegalAccessException | ParseException e) {
@@ -1349,8 +1362,7 @@ public final class PbjConverter {
      * @throws IllegalStateException if the conversion fails
      */
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
-        try (final var bais =
-                new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
+        try (final var bais = new ByteArrayInputStream(requireNonNull(grpcKey).toByteArray())) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return Key.PROTOBUF.parse(stream);
@@ -1451,7 +1463,7 @@ public final class PbjConverter {
 
     public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
         try (final var bais =
-                new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
+                new ByteArrayInputStream(requireNonNull(fcFee).asGrpc().toByteArray())) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return CustomFee.PROTOBUF.parse(stream);
@@ -1495,27 +1507,8 @@ public final class PbjConverter {
 
     @NonNull
     public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@NonNull final CustomFee customFee) {
-        var builder = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
-        if (customFee.hasFixedFee()) {
-            builder.setFixedFee(fromPbj(customFee.fixedFee()));
-        } else if (customFee.hasFractionalFee()) {
-            builder.setFractionalFee(fromPbj(customFee.fractionalFee()));
-        } else if (customFee.hasRoyaltyFee()) {
-            builder.setRoyaltyFee(fromPbj(customFee.royaltyFee()));
-        }
-
-        builder.setFeeCollectorAccountId(fromPbj(customFee.feeCollectorAccountId()));
-        builder.setAllCollectorsAreExempt(customFee.allCollectorsAreExempt());
-
-        return builder.build();
-    }
-
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.RoyaltyFee fromPbj(@NonNull final RoyaltyFee royaltyFee) {
-        var builder = com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder();
-        builder.setExchangeValueFraction(fromPbj(royaltyFee.exchangeValueFraction()));
-        if (royaltyFee.hasFallbackFee()) builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
-        return builder.build();
+        return explicitPbjToProto(
+                customFee, CustomFee.PROTOBUF, com.hederahashgraph.api.proto.java.CustomFee::parseFrom);
     }
 
     @NonNull
@@ -1523,28 +1516,6 @@ public final class PbjConverter {
         var builder = com.hederahashgraph.api.proto.java.Fraction.newBuilder();
         builder.setNumerator(fraction.numerator());
         builder.setDenominator(fraction.denominator());
-        return builder.build();
-    }
-
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.FractionalFee fromPbj(@NonNull final FractionalFee fractionalFee) {
-        var builder = com.hederahashgraph.api.proto.java.FractionalFee.newBuilder();
-        builder.setFractionalAmount(fromPbj(fractionalFee.fractionalAmount()));
-        builder.setMinimumAmount(fractionalFee.minimumAmount());
-        builder.setMaximumAmount(fractionalFee.maximumAmount());
-        builder.setNetOfTransfers(fractionalFee.netOfTransfers());
-        return builder.build();
-    }
-
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@Nullable FixedFee fixedFee) {
-        var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
-        if (fixedFee != null) {
-            builder.setAmount(fixedFee.amount());
-            if (fixedFee.hasDenominatingTokenId()) {
-                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
-            }
-        }
         return builder.build();
     }
 
