@@ -171,7 +171,7 @@ public class StandardVertex implements ModelVertex {
                     case GROUP -> GROUP_COLOR;
                     case SCHEDULER -> switch (type) {
                         case DIRECT -> DIRECT_SCHEDULER_COLOR;
-                        case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
+                        case DIRECT_THREADSAFE -> DIRECT_SCHEDULER_COLOR;
                         default -> SCHEDULER_COLOR;
                     };
                 };
@@ -200,7 +200,7 @@ public class StandardVertex implements ModelVertex {
                 switch (type) {
                     case CONCURRENT -> sb.append("[[");
                     case DIRECT -> sb.append("[/");
-                    case DIRECT_STATELESS -> sb.append("{{");
+                    case DIRECT_THREADSAFE -> sb.append("{{");
                     default -> sb.append("[");
                 }
             }
@@ -222,7 +222,7 @@ public class StandardVertex implements ModelVertex {
                 switch (type) {
                     case CONCURRENT -> sb.append("]]");
                     case DIRECT -> sb.append("/]");
-                    case DIRECT_STATELESS -> sb.append("}}");
+                    case DIRECT_THREADSAFE -> sb.append("}}");
                     default -> sb.append("]");
                 }
             }
