@@ -393,6 +393,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private boolean collectSignaturesEnabled() {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
 
+        // If Block Streams is not enabled, then this is not enabled.
+        if (!blockStreamConfig.enabled()) return false;
+
         // If writing proofs is not enabled then this is not enabled.
         if (!blockStreamConfig.writeBlockProof()) return false;
 
