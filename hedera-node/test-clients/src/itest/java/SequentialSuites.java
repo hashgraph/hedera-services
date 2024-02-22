@@ -17,7 +17,6 @@
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
-import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileV2SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -54,7 +53,6 @@ public class SequentialSuites {
             CannotDeleteSystemEntitiesSuite::new,
             Evm38ValidationSuite::new,
             StakingSuite::new,
-            AssociatePrecompileV2SecurityModelSuite::new
         };
     }
 }

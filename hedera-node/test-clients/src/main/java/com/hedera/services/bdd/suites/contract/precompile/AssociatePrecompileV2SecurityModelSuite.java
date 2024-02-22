@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
@@ -97,12 +96,12 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
 
     public static void main(String... args) {
-        new AssociatePrecompileV2SecurityModelSuite().runSuiteSync();
+        new AssociatePrecompileV2SecurityModelSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -111,7 +110,8 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(v2Security006TokenAssociateNegativeTests());
+        return List.of(
+                v2Security006TokenAssociateNegativeTests(), V2Security041TokenAssociateFromStaticcallAndCallcode());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -124,8 +124,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec v2Security031AssociateSingleTokenWithDelegateContractKey() {
 
-        return propertyPreservingHapiSpec("v2Security031AssociateSingleTokenWithDelegateContractKey")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("v2Security031AssociateSingleTokenWithDelegateContractKey")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(FREEZE_KEY),
@@ -248,8 +247,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec v2Security006TokenAssociateNegativeTests() {
-        return propertyPreservingHapiSpec("v2Security006TokenAssociateNegativeTests")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("v2Security006TokenAssociateNegativeTests")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(FREEZE_KEY),
@@ -443,8 +441,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec v2Security010NestedAssociateNftAndNonFungibleTokens() {
 
-        return propertyPreservingHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -531,8 +528,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec V2Security036TokenAssociateFromDelegateCallWithDelegateContractId() {
 
-        return propertyPreservingHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -619,8 +615,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec V2Security041TokenAssociateFromStaticcallAndCallcode() {
 
-        return propertyPreservingHapiSpec("V2Security041TokenAssociateFromStaticcallAndCallcode")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security041TokenAssociateFromStaticcallAndCallcode")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
