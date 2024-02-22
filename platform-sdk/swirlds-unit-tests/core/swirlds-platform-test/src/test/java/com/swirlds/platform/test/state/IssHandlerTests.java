@@ -19,8 +19,10 @@ package com.swirlds.platform.test.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -31,6 +33,7 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -53,8 +56,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -86,8 +94,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -114,8 +127,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -144,8 +162,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -174,8 +197,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -210,8 +238,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -240,8 +273,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -276,8 +314,13 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+        final IssHandler handler = new IssHandler(
+                stateConfig,
+                haltRequestedConsumer,
+                fatalErrorConsumer,
+                simpleScratchpad,
+                mock(NotificationEngine.class),
+                mock(StatusActionSubmitter.class));
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 

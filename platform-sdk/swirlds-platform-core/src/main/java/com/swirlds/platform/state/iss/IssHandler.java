@@ -17,12 +17,16 @@
 package com.swirlds.platform.state.iss;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -34,6 +38,8 @@ public class IssHandler {
     private final HaltRequestedConsumer haltRequestedConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
     private final Scratchpad<IssScratchpad> issScratchpad;
+    private final NotificationEngine notificationEngine;
+    private final StatusActionSubmitter statusActionSubmitter;
 
     private boolean halted;
 
@@ -44,17 +50,24 @@ public class IssHandler {
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
      * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
+     * @param notificationEngine    dispatches notifications to the application
+     * @param statusActionSubmitter submits status actions to the platform status manager
      */
     public IssHandler(
             @NonNull final StateConfig stateConfig,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
+            @NonNull final Scratchpad<IssScratchpad> issScratchpad,
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+
         this.haltRequestedConsumer =
                 Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
     }
 
     /**
@@ -63,10 +76,12 @@ public class IssHandler {
      * @param issNotification the notification of the ISS event
      */
     public void issObserved(@NonNull final IssNotification issNotification) {
+        notificationEngine.dispatch(IssListener.class, issNotification);
+
         switch (issNotification.getIssType()) {
-            case SELF_ISS -> selfIssObserver(issNotification.getRound());
+            case SELF_ISS -> handleSelfIss(issNotification.getRound());
             case OTHER_ISS -> otherIss();
-            case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
+            case CATASTROPHIC_ISS -> handleCatastrophicIss(issNotification.getRound());
         }
     }
 
@@ -108,15 +123,15 @@ public class IssHandler {
     /**
      * This method is called when there is a self ISS.
      *
-     * @param round    the round of the ISS
+     * @param round the round of the ISS
      */
-    private void selfIssObserver(@NonNull final Long round) {
-
+    private void handleSelfIss(@NonNull final Long round) {
         if (halted) {
             // don't take any action once halted
             return;
         }
 
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
         updateIssRoundInScratchpad(round);
 
         if (stateConfig.haltOnAnyIss()) {
@@ -185,13 +200,13 @@ public class IssHandler {
      *
      * @param round the round of the ISS
      */
-    private void catastrophicIssObserver(@NonNull final Long round) {
-
+    private void handleCatastrophicIss(@NonNull final Long round) {
         if (halted) {
             // don't take any action once halted
             return;
         }
 
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
         updateIssRoundInScratchpad(round);
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {

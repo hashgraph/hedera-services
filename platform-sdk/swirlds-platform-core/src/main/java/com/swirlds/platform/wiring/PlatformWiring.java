@@ -59,6 +59,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -75,6 +76,7 @@ import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
+import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -124,6 +126,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
+    private final IssHandlerWiring issHandlerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -208,6 +211,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
+        issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
         wire();
     }
 
@@ -299,6 +303,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .runningHashUpdateOutput()
                 .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
         runningHashUpdaterWiring.runningHashUpdateOutput().solderTo(eventStreamManagerWiring.runningHashUpdateInput());
+
+        issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
     }
 
     /**
@@ -362,6 +368,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
+     * @param issHandler              the ISS handler to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -384,7 +391,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
-            @NonNull final IssDetector issDetector) {
+            @NonNull final IssDetector issDetector,
+            @NonNull final IssHandler issHandler) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -407,6 +415,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
+        issHandlerWiring.bind(issHandler);
     }
 
     /**
