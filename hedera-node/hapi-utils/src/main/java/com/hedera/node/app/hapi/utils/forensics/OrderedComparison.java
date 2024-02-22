@@ -70,6 +70,14 @@ public class OrderedComparison {
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
         List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
+        int missed = newSecondEntries.size() - secondEntries.size();
+        if (missed > 0) {
+            System.out.println(" ➡️  Missed " + missed + " entries");
+        } else if (missed < 0) {
+            System.out.println(" ➡️  Added " + (-missed) + " entries");
+            List<RecordStreamEntry> newFirstEntries = getNewSecondRecordStreamEntries(secondEntries, firstEntries);
+            return diff(newFirstEntries, secondEntries, recordDiffSummarizer);
+        }
         return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
     }
 
@@ -122,6 +130,14 @@ public class OrderedComparison {
                             null,
                             "No record found at " + firstEntry.consensusTime() + " for transactionID : "
                                     + firstEntry.txnRecord().getTransactionID()));
+                    continue;
+                }
+                if (firstEntries.get(i).txnRecord() == null) {
+                    diffs.add(new DifferingEntries(
+                            null,
+                            secondEntries.get(i),
+                            "No record found at " + secondEntries.get(i).consensusTime() + " for transactionID : "
+                                    + secondEntries.get(i).txnRecord().getTransactionID()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
