@@ -91,7 +91,7 @@ public class BirthRoundMigrationShim {
             // The event was created before the birth round mode was enabled.
             // We need to migrate the event's birth round.
 
-            if (event.getGeneration() <= lowestJudgeGenerationBeforeBirthRoundMode) {
+            if (event.getGeneration() >= lowestJudgeGenerationBeforeBirthRoundMode) {
                 // Any event with a generation greater than or equal to the lowest pre-migration judge generation
                 // is given a birth round that will be non-ancient at migration time.
                 event.getHashedData().setBirthRoundOverride(lastRoundBeforeBirthRoundMode);
