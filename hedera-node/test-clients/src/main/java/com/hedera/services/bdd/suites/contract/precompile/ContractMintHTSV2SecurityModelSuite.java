@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -188,7 +189,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
-                                .signedBy(SIGNER),
+                                .signedBy(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         // Assert the token is mined in the token treasury account
@@ -208,7 +210,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(TREASURY_MINTS)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY),
+                                .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(2 * amount),
                         // Assert the token is mined in the token treasury account
@@ -227,7 +230,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER2, TOKEN_TREASURY)
                                 .refusingEthConversion()
-                                .payingWith(SIGNER2),
+                                .payingWith(SIGNER2)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
                         // Assert the token is mined in the token treasury account
@@ -253,7 +257,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_THRESHOLD_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(4 * amount),
                         // Assert the token is mined in the token treasury account
@@ -316,7 +321,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(SIGNER)
-                                .signedBy(SIGNER),
+                                .signedBy(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         // Assert the token is mined in the token treasury account
@@ -336,7 +342,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(TREASURY_MINTS)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY),
+                                .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2 * amount),
                         // Assert the token is mined in the token treasury account
@@ -355,7 +362,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER2, TOKEN_TREASURY)
                                 .payingWith(SIGNER2)
-                                .refusingEthConversion(),
+                                .refusingEthConversion()
+                                .hasRetryPrecheckFrom(BUSY),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         // Assert that the token is minted - total supply should be increased
@@ -384,7 +392,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_THRESHOLD_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(4 * amount),
                         // Assert the token is mined in the token treasury account
@@ -443,7 +452,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -472,7 +482,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -498,7 +509,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -554,7 +566,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -583,7 +596,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -606,7 +620,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
-                                .payingWith(SIGNER),
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY),
                         // Assert that the token is NOT minted - total supply should be 0
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0L),
                         // Assert the token is NOT mined in the token treasury account
@@ -666,6 +681,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -688,6 +704,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -718,6 +735,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -740,6 +758,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -814,6 +833,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -834,6 +854,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -901,6 +922,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
@@ -928,6 +950,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // Assert that the token is NOT minted - total supply should be 0
