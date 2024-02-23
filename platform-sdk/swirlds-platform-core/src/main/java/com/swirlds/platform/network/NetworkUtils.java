@@ -109,7 +109,7 @@ public final class NetworkUtils {
         if (e == null) {
             return "";
         }
-        return "Caused By: {Exception: " + e.getClass().getSimpleName() + " Message: " + e.getMessage() + " "
-                + formatException(e.getCause()) + "}";
+        return "Caused by exception: " + e.getClass().getSimpleName() + " Message: " + e.getMessage() + " "
+                + formatException(e.getCause());
     }
 }
