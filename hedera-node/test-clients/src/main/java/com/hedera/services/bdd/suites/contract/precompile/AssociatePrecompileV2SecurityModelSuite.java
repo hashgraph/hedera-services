@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -180,6 +181,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("fungibleTokenAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
@@ -197,6 +199,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nonFungibleTokenAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
@@ -221,6 +224,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                         })
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("multipleTokensAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
@@ -302,6 +306,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .signedBy(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("fungibleTokenAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -320,6 +325,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .signedBy(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nonFungibleTokenAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -344,6 +350,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                         })
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("multipleTokensAssociate")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -362,6 +369,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nestedAssociateFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -383,6 +391,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("associateTokenToContractFails")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -471,6 +480,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nestedAssociateFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
@@ -489,6 +499,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nestedAssociateNonFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
@@ -556,6 +567,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nestedAssociateFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
@@ -572,6 +584,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("nestedAssociateNonFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
@@ -642,6 +655,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(ACCOUNT)
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("associateStaticcallFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
