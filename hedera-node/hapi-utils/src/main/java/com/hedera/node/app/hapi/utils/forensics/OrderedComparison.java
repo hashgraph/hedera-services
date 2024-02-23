@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -68,40 +69,68 @@ public class OrderedComparison {
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
         System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
-        List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        int missed = newSecondEntries.size() - secondEntries.size();
-        if (missed > 0) {
-            System.out.println(" ➡️  Missed " + missed + " entries");
-        } else if (missed < 0) {
-            System.out.println(" ➡️  Added " + (-missed) + " entries");
-            List<RecordStreamEntry> newFirstEntries = getNewSecondRecordStreamEntries(secondEntries, firstEntries);
-            return diff(newFirstEntries, secondEntries, recordDiffSummarizer);
-        }
-        return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
+        final var compareList = getCompareList(firstEntries, secondEntries);
+        return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
+    record CompareList(@NonNull List<RecordStreamEntry> firstList, @NonNull List<RecordStreamEntry> secondList) {}
+    ;
+
     @NonNull
-    private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
+    private static CompareList getCompareList(
             List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
-        List<RecordStreamEntry> ret = new ArrayList<>();
-        if (secondEntries.isEmpty()) {
-            return ret;
-        }
-        RecordStreamEntry firstEntry;
-        RecordStreamEntry secondEntry;
-        int secondIndex = 0;
-        for (RecordStreamEntry entry : firstEntries) {
-            firstEntry = entry;
-            secondEntry = secondEntries.get(secondIndex);
-            if (secondEntry.consensusTime().equals(firstEntry.consensusTime())) {
-                ret.add(secondEntry);
-                secondIndex++;
-            } else {
-                ret.add(new RecordStreamEntry(null, null, firstEntry.consensusTime()));
+        List<RecordStreamEntry> firstList = new ArrayList<>();
+        List<RecordStreamEntry> secondList = new ArrayList<>();
+
+        if (secondEntries.isEmpty() || firstEntries.isEmpty()) {
+            return new CompareList(firstEntries, secondEntries);
+        } else {
+            int i = 0, j = 0;
+
+            while (i < firstEntries.size() && j < secondEntries.size()) {
+                if (firstEntries
+                        .get(i)
+                        .consensusTime()
+                        .equals(secondEntries.get(j).consensusTime())) {
+                    firstList.add(firstEntries.get(i));
+                    secondList.add(secondEntries.get(j));
+                    i++;
+                    j++;
+                } else if (firstEntries
+                        .get(i)
+                        .consensusTime()
+                        .isBefore(secondEntries.get(j).consensusTime())) {
+                    firstList.add(firstEntries.get(i));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(i).consensusTime()));
+                    i++;
+                } else {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(j).consensusTime()));
+                    secondList.add(secondEntries.get(j));
+                    j++;
+                }
+            }
+
+            if (i < firstEntries.size()) { // j == secondEntries.size()
+                for (int k = i; k < firstEntries.size(); k++) {
+                    firstList.add(firstEntries.get(k));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(k).consensusTime()));
+                }
+            }
+
+            if (j < secondEntries.size()) { // i == firstEntries.size()
+                for (int k = j; k < secondEntries.size(); k++) {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(k).consensusTime()));
+                    secondList.add(secondEntries.get(k));
+                }
             }
         }
-        return ret;
+
+        return new CompareList(firstList, secondList);
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
@@ -128,15 +157,15 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             firstEntry,
                             null,
-                            "No record found at " + firstEntry.consensusTime() + " for transactionID : "
-                                    + firstEntry.txnRecord().getTransactionID()));
+                            "No modular record found at " + firstEntry.consensusTime() + " for transactionID : "
+                                    + firstEntry.txnRecord().getTransactionID() + " transBody : " + firstEntry.body()));
                     continue;
                 }
                 if (firstEntries.get(i).txnRecord() == null) {
                     diffs.add(new DifferingEntries(
                             null,
                             secondEntries.get(i),
-                            "No record found at " + secondEntries.get(i).consensusTime() + " for transactionID : "
+                            "No mono record found at " + secondEntries.get(i).consensusTime() + " for transactionID : "
                                     + secondEntries.get(i).txnRecord().getTransactionID()));
                     continue;
                 }
@@ -238,5 +267,18 @@ public class OrderedComparison {
             diffs.add(new DifferingEntries(
                     firstHasExtra ? extraEntry : null, firstHasExtra ? null : extraEntry, summary));
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        var path =
+                "/Users/isimon/code/services/work/hedera-services/platform-sdk/swirlds-cli/hedera-node/data/recordStreams/record0.0.30/";
+        //        var path = "/opt/hgcapp/recordStreams/record0.0.30/";
+        var filename = "2024-02-19T05_58_00.016395438Z";
+
+        var fw = new FileWriter(path + "/modular_" + filename + ".txt");
+        //        var fw = new FileWriter(path + "/mono_" + filename + ".txt");
+
+        var record = parseV6RecordStreamEntriesIn(path + filename + ".rcd.gz");
+        fw.write(record.toString());
     }
 }
