@@ -114,6 +114,8 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.RuntimeMetrics;
@@ -138,6 +140,7 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
@@ -628,6 +631,17 @@ public class SwirldsPlatform implements Platform {
             }
         });
         issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
+
+        final OutputWire<StateSavingResult> stateSavingResultOutput = platformWiring.getStateSavingResultOutput();
+        stateSavingResultOutput.solderTo(
+                "stateSavingResultNotificationEngine",
+                "state saving result notification",
+                stateSavingResult -> notificationEngine.dispatch(
+                        StateWriteToDiskCompleteListener.class,
+                        new StateWriteToDiskCompleteNotification(
+                                stateSavingResult.round(),
+                                stateSavingResult.consensusTimestamp(),
+                                stateSavingResult.freezeState())));
 
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));

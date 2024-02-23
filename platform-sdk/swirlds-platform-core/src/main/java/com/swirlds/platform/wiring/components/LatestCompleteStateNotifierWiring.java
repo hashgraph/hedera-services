@@ -21,18 +21,15 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Wiring for the {@link LatestCompleteStateNotifier}.
  *
  * @param completeStateNotificationInputWire  the input wire for the latest complete state notifier
- * @param stateSavingResultInputWire          the input wire for state saving result to disk
  */
 public record LatestCompleteStateNotifierWiring(
-        @NonNull InputWire<ReservedSignedState> completeStateNotificationInputWire,
-        @NonNull InputWire<StateSavingResult> stateSavingResultInputWire) {
+        @NonNull InputWire<ReservedSignedState> completeStateNotificationInputWire) {
     /**
      * Create a new instance of this wiring.
      *
@@ -41,8 +38,7 @@ public record LatestCompleteStateNotifierWiring(
      */
     public static LatestCompleteStateNotifierWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new LatestCompleteStateNotifierWiring(
-                taskScheduler.buildInputWire("completed reserved signed state to notify"),
-                taskScheduler.buildInputWire("state saving result to notify"));
+                taskScheduler.buildInputWire("completed reserved signed state to notify"));
     }
 
     /**
@@ -53,7 +49,5 @@ public record LatestCompleteStateNotifierWiring(
     public void bind(@NonNull final LatestCompleteStateNotifier latestCompleteStateNotifier) {
         ((BindableInputWire<ReservedSignedState, Void>) completeStateNotificationInputWire)
                 .bind(latestCompleteStateNotifier::latestCompleteStateHandler);
-        ((BindableInputWire<StateSavingResult, Void>) stateSavingResultInputWire)
-                .bind(latestCompleteStateNotifier::stateSavedToDisk);
     }
 }

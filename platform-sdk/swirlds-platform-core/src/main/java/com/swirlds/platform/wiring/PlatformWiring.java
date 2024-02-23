@@ -63,6 +63,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.util.HashLogger;
@@ -313,9 +314,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
-        signedStateFileManagerWiring
-                .stateSavingResultOutputWire()
-                .solderTo(latestCompleteStateNotifierWiring.stateSavingResultInputWire());
     }
 
     /**
@@ -334,8 +332,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
-                .solderTo("status manager", statusManager::submitStatusAction);
-        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+                .solderTo(
+                        "statusManager_submitStateWritten",
+                        "state written to disk notification",
+                        statusManager::submitStatusAction);
+
+        stateSignerWiring
+                .stateSignature()
+                .solderTo("transactionPool", "state signature transaction", transactionPool::submitSystemTransaction);
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
@@ -452,6 +456,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    /**
+     * @return the output wire for the state saving result
+     */
+    @NonNull
+    public OutputWire<StateSavingResult> getStateSavingResultOutput() {
+        return signedStateFileManagerWiring.stateSavingResultOutputWire();
     }
 
     /**
