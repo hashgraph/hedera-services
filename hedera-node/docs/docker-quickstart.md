@@ -107,9 +107,8 @@ under the `startupAccounts.path` key).
 
 ## Stopping or reinitializing the Compose network
 
-As you run operations against the local network, each node will periodically save its state using
-a combination of PostgreSQL tables under _compose-network/pgdata/_ and state files under, for example,
-_compose-network/node0/saved/com.hedera.node.app.ServicesMain/0/hedera/_.
+As you run operations against the local network, each node will periodically save its state to
+state files under, for example, _compose-network/node0/saved/com.hedera.node.app.ServicesMain/0/hedera/_.
 
 To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
 
@@ -144,7 +143,7 @@ externalize the Hedera Services and Platform logs. For example:
 ```
 
 Note that the container must have routes to the other network nodes listed in
-_config.txt_, and the PostgreSQL server given by `dbConnection.host` in _settings.txt_.
+_config.txt_.
 
 ### Limitations
 
