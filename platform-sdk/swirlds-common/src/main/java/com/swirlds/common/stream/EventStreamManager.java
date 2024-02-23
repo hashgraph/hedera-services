@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.swirlds.common.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
-import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;

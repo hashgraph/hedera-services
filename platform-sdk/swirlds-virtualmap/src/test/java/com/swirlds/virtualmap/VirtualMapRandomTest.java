@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package com.swirlds.virtualmap;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
+import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;

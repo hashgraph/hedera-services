@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.swirlds.common.threading;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -33,14 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -57,6 +57,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class StoppableThreadTests {
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Interruptable Thread")
     void testInterruptableThread() throws InterruptedException {
@@ -75,6 +76,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Uninterruptable Thread")
     void testUninterruptableThread() throws InterruptedException {
@@ -110,6 +112,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Blocking Stop Override")
     void testBlockingStopOverride() throws InterruptedException {
@@ -147,6 +150,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Test Interrupting Stop Override")
     void testInterruptingStopOverride() throws InterruptedException {
@@ -172,6 +176,7 @@ class StoppableThreadTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Final Run Test")
     void finalRunTest(final boolean doFinalCycle) throws InterruptedException {
@@ -257,7 +262,7 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TIMING_SENSITIVE)
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Pause Test")
     void pauseTest() throws InterruptedException {
@@ -302,6 +307,7 @@ class StoppableThreadTests {
      * Tests a bug that used to exist where the thread would not pause if LogAfterPauseDuration was set to ZERO
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Pause Test where LogAfterPause is set to 0")
     void zeroLogPauseTest() throws InterruptedException {
@@ -335,6 +341,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Hanging Thread Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -381,6 +388,7 @@ class StoppableThreadTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Hanging Thread Disabled Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -448,7 +456,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TIMING_SENSITIVE)
     @DisplayName("Max Rate Test")
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
@@ -650,7 +657,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TIMING_SENSITIVE)
     @DisplayName("Pause Then Stop Test")
     void pauseThenStopTest() throws InterruptedException {
         final AtomicInteger count = new AtomicInteger();
@@ -681,7 +687,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TIMING_SENSITIVE)
     @DisplayName("Join Before Start Test")
     void joinBeforeStartTest() throws InterruptedException {
         final StoppableThread stoppableThread = new StoppableThreadConfiguration<>(getStaticThreadManager())
@@ -703,7 +708,6 @@ class StoppableThreadTests {
     }
 
     @Test
-    @Tag(TIMING_SENSITIVE)
     @DisplayName("Join Before Start Seed Test")
     void joinBeforeStartSeedTest() throws InterruptedException {
         final StoppableThread stoppableThread1 = new StoppableThreadConfiguration<>(getStaticThreadManager())

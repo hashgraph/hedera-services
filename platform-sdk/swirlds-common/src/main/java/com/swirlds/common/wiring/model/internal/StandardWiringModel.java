@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
@@ -33,7 +34,6 @@ import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -86,23 +85,14 @@ public class StandardWiringModel implements WiringModel {
     private final Set<InputWireDescriptor> boundInputWires = new HashSet<>();
 
     /**
-     * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
-     */
-    private final ForkJoinPool defaultPool;
-
-    /**
      * Constructor.
      *
-     * @param metrics     provides metrics
-     * @param time        provides wall clock time
-     * @param defaultPool the default fork join pool, schedulers not explicitly assigned a pool will use this one
+     * @param metrics provides metrics
+     * @param time    provides wall clock time
      */
-    public StandardWiringModel(
-            @NonNull final Metrics metrics, @NonNull final Time time, @NonNull final ForkJoinPool defaultPool) {
-
+    public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
-        this.defaultPool = Objects.requireNonNull(defaultPool);
     }
 
     /**
@@ -111,7 +101,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
-        return new TaskSchedulerBuilder<>(this, name, defaultPool);
+        return new TaskSchedulerBuilder<>(this, name);
     }
 
     /**

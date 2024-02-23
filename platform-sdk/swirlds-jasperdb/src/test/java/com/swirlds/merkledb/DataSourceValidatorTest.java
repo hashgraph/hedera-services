@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,17 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.merkledb.MerkleDbDataSourceTest.createDataSource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,62 +37,62 @@ class DataSourceValidatorTest {
     @TempDir
     private Path tempDir;
 
+    private MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource;
     private int count;
+    private DataSourceValidator<VirtualLongKey, ExampleByteArrayVirtualValue> validator;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws IOException {
         count = 10_000;
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
+        // create db
+
+        dataSource = createDataSource(tempDir, "createAndCheckInternalNodeHashes", TestType.fixed_fixed, count, 0);
+        validator = new DataSourceValidator<>(dataSource);
+
+        // check db count
+        assertEventuallyEquals(
+                1L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected only 1 db");
     }
 
     @Test
     void testValidateValidDataSource() throws IOException {
-        MerkleDbDataSourceTest.createAndApplyDataSource(
-                tempDir, "createAndCheckInternalNodeHashes", TestType.fixed_fixed, count, 0, dataSource -> {
-                    // check db count
-                    assertEventuallyEquals(
-                            1L,
-                            MerkleDbDataSource::getCountOfOpenDatabases,
-                            Duration.ofSeconds(1),
-                            "Expected only 1 db");
+        // create some node hashes
+        dataSource.saveRecords(
+                count,
+                count * 2L,
+                IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                IntStream.range(count, count * 2 + 1)
+                        .mapToObj(i -> TestType.fixed_fixed.dataType().createVirtualLeafRecord(i)),
+                Stream.empty());
 
-                    final var validator = new DataSourceValidator<>(dataSource);
-                    // create some node hashes
-                    dataSource.saveRecords(
-                            count,
-                            count * 2L,
-                            IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
-                            IntStream.range(count, count * 2 + 1)
-                                    .mapToObj(
-                                            i -> TestType.fixed_fixed.dataType().createVirtualLeafRecord(i)),
-                            Stream.empty());
-
-                    assertTrue(validator.validate());
-                });
+        assertTrue(validator.validate());
     }
 
     @Test
     void testValidateInvalidDataSource() throws IOException {
-        MerkleDbDataSourceTest.createAndApplyDataSource(
-                tempDir, "createAndCheckInternalNodeHashes", TestType.fixed_fixed, count, 0, dataSource -> {
-                    // check db count
-                    assertEventuallyEquals(
-                            1L,
-                            MerkleDbDataSource::getCountOfOpenDatabases,
-                            Duration.ofSeconds(1),
-                            "Expected only 1 db");
-                    final var validator = new DataSourceValidator<>(dataSource);
-                    // create some node hashes
-                    dataSource.saveRecords(
-                            count,
-                            count * 2L,
-                            IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
-                            // leaves are missing
-                            Stream.empty(),
-                            Stream.empty());
-                    assertFalse(validator.validate());
-                });
+        // check db count
+        // create some node hashes
+        dataSource.saveRecords(
+                count,
+                count * 2L,
+                IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                // leaves are missing
+                Stream.empty(),
+                Stream.empty());
+
+        assertFalse(validator.validate());
+    }
+
+    @AfterEach
+    public void cleanup() throws IOException {
+        if (dataSource != null) {
+            dataSource.close();
+            // check db count
+            assertEventuallyEquals(
+                    0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
+        }
     }
 }

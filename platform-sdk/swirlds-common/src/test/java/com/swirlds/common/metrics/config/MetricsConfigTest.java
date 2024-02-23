@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;

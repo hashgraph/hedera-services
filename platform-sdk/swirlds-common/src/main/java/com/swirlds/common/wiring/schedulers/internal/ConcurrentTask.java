@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -35,8 +34,7 @@ class ConcurrentTask extends AbstractTask {
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
 
     /**
-     * Constructor. The task is created with zero dependencies, but not started automatically. It's
-     * the caller responsibility to start the task using {@link #send()} method.
+     * Constructor.
      *
      * @param pool                     the fork join pool that will execute this task
      * @param offRamp                  an object counter that is decremented when this task is executed
@@ -44,7 +42,7 @@ class ConcurrentTask extends AbstractTask {
      * @param handler                  the method that will be called when this task is executed
      * @param data                     the data to be passed to the consumer for this task
      */
-    ConcurrentTask(
+    protected ConcurrentTask(
             @NonNull final ForkJoinPool pool,
             @NonNull final ObjectCounter offRamp,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
@@ -70,14 +68,5 @@ class ConcurrentTask extends AbstractTask {
             offRamp.offRamp();
         }
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void send() {
-        // Expose this method to the scheduler
-        super.send();
     }
 }

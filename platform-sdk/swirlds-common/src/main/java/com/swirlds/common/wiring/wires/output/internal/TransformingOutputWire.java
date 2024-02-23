@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package com.swirlds.common.wiring.wires.output.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
-import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -45,32 +43,27 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
     private final List<Consumer<OUT>> forwardingDestinations = new ArrayList<>();
 
     private final Function<IN, OUT> transform;
-    private final Consumer<IN> inputCleanup;
-    private final Consumer<OUT> outputCleanup;
+    private final Consumer<IN> cleanup;
 
     /**
      * Constructor.
      *
-     * @param model         the wiring model containing this output wire
-     * @param name          the name of the output wire
-     * @param transformer   the function to transform the data from the input type to the output type. Is called once
-     *                      per output per data item. If this method returns null then the data is not forwarded.
-     * @param inputCleanup  an optional method that is called on input data after the data is forwarded to all
-     *                      destinations. The original data is passed to this method. Ignored if null.
-     * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
-     *                      possible if offer soldering is used and the destination declines to take the data.
+     * @param model       the wiring model containing this output wire
+     * @param name        the name of the output wire
+     * @param transformer the function to transform the data from the input type to the output type. Is called once per
+     *                    output per data item. If this method returns null then the data is not forwarded.
+     * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
+     *                    original data is passed to this method. Ignored if null.
      */
     public TransformingOutputWire(
             @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Function<IN, OUT> transformer,
-            @Nullable final Consumer<IN> inputCleanup,
-            @Nullable final Consumer<OUT> outputCleanup) {
+            @Nullable final Consumer<IN> cleanup) {
         super(model, name);
 
         this.transform = Objects.requireNonNull(transformer);
-        this.inputCleanup = inputCleanup == null ? (data) -> {} : inputCleanup;
-        this.outputCleanup = outputCleanup == null ? (data) -> {} : outputCleanup;
+        this.cleanup = cleanup == null ? (data) -> {} : cleanup;
     }
 
     /**
@@ -104,25 +97,6 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
                         e);
             }
         }
-        inputCleanup.accept(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void solderTo(@NonNull final InputWire<OUT> inputWire, @NonNull final SolderType solderType) {
-        getModel().registerEdge(getName(), inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
-
-        switch (solderType) {
-            case PUT -> addForwardingDestination(inputWire::put);
-            case INJECT -> addForwardingDestination(inputWire::inject);
-            case OFFER -> addForwardingDestination(x -> {
-                if (!inputWire.offer(x)) {
-                    outputCleanup.accept(x);
-                }
-            });
-            default -> throw new IllegalArgumentException("Unknown solder type: " + solderType);
-        }
+        cleanup.accept(data);
     }
 }

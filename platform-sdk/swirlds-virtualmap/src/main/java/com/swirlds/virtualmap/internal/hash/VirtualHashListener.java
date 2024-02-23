@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,27 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
     default void onHashingStarted() {}
 
     /**
-     * Called after each node is hashed, internal or leaf. This is called between
-     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
+     * Called when a batch (that is, a sub-tree) is about to be hashed. Batches are
+     * hashed sequentially, one at a time. You ar guaranteed that {@link #onHashingStarted()}
+     * will be called before this method, and that {@link #onBatchCompleted()} will be called
+     * before another invocation of this method.
+     */
+    default void onBatchStarted() {}
+
+    /**
+     * Called when hashing a rank within the batch.
+     * It may be that multiple batches work on the same rank, just a different subset of it.
+     * This will be called once for each combination of batch and rank. The ranks are called
+     * from bottom-to-top (that is, from the deepest rank to the lowest rank). This is
+     * called between {@link #onBatchStarted()} and {@link #onBatchCompleted()} methods.
+     */
+    default void onRankStarted() {}
+
+    /**
+     * Called after each node on a rank is hashed, internals and leaves. This is called between
+     * {@link #onRankStarted()} and {@link #onRankCompleted()}. Each call within the rank
+     * will send nodes in <strong>ascending path order</strong>.  There is no guarantee
+     * on the relative order between batches.
      *
      * @param path
      * 		Node path
@@ -43,12 +62,24 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
 
     /**
      * Called after each leaf node on a rank is hashed. This is called between
-     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
+     * {@link #onRankStarted()} and {@link #onRankCompleted()}. Each call within the rank
+     * will send leaf nodes in <strong>ascending path order</strong>. There is no guarantee
+     * on the relative order between batches.
      *
      * @param leaf
      * 		A non-null leaf record representing the hashed leaf.
      */
     default void onLeafHashed(VirtualLeafRecord<K, V> leaf) {}
+
+    /**
+     * Called when processing a rank within a batch has completed.
+     */
+    default void onRankCompleted() {}
+
+    /**
+     * Called when processing a batch has completed.
+     */
+    default void onBatchCompleted() {}
 
     /**
      * Called when all hashing has completed.

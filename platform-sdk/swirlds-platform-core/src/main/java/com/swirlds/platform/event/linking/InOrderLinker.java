@@ -16,24 +16,20 @@
 
 package com.swirlds.platform.event.linking;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -43,7 +39,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  *     <li>The parent's generation does not match the generation claimed by the child event</li>
  *     <li>The parent's time created is greater than or equal to the child's time created</li>
  * </ul>
- * Note: This class doesn't have a direct dependency on the {@link Shadowgraph ShadowGraph},
+ * Note: This class doesn't have a direct dependency on the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph ShadowGraph},
  * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
 public class InOrderLinker {
@@ -76,21 +71,20 @@ public class InOrderLinker {
 
     private final RateLimitedLogger missingParentLogger;
     private final RateLimitedLogger generationMismatchLogger;
-    private final RateLimitedLogger birthRoundMismatchLogger;
     private final RateLimitedLogger timeCreatedMismatchLogger;
 
     private final LongAccumulator missingParentAccumulator;
     private final LongAccumulator generationMismatchAccumulator;
-    private final LongAccumulator birthRoundMismatchAccumulator;
     private final LongAccumulator timeCreatedMismatchAccumulator;
 
     /**
      * A sequence map from event descriptor to event.
      * <p>
-     * The window of this map is shifted when the minimum non-ancient threshold is changed, so that only non-ancient
+     * The window of this map is shifted when the minimum generation non-ancient is changed, so that only non-ancient
      * events are retained.
      */
-    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap;
+    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap =
+            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     /**
      * A map from event hash to event.
@@ -103,7 +97,7 @@ public class InOrderLinker {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -125,7 +119,6 @@ public class InOrderLinker {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.missingParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.generationMismatchLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.birthRoundMismatchLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.timeCreatedMismatchLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.missingParentAccumulator = platformContext
@@ -138,31 +131,12 @@ public class InOrderLinker {
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "parentGenerationMismatch")
                                 .withDescription(
                                         "Parent child relationships where claimed parent generation did not match actual parent generation"));
-        this.birthRoundMismatchAccumulator = platformContext
-                .getMetrics()
-                .getOrCreate(
-                        new LongAccumulator.Config(PLATFORM_CATEGORY, "parentBirthRoundMismatch")
-                                .withDescription(
-                                        "Parent child relationships where claimed parent birth round did not match actual parent birth round"));
         this.timeCreatedMismatchAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
-
-        final AncientMode ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
-        } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
-        }
     }
 
     /**
@@ -172,42 +146,38 @@ public class InOrderLinker {
      * <ul>
      *     <li>The parent is ancient</li>
      *     <li>The parent's generation does not match the generation claimed by the child event</li>
-     *     <li>The parent's birthRound does not match the claimed birthRound by the child event</li>
      *     <li>The parent's time created is greater than or equal to the child's time created</li>
      * </ul>
      *
-     * @param child            the child event
-     * @param parentDescriptor the event descriptor for the claimed parent
+     * @param child                   the child event
+     * @param parentHash              the hash of the parent event
+     * @param claimedParentGeneration the generation claimed by the child event for the parent
      * @return the parent to link, or null if no parent should be linked
      */
     @Nullable
     private EventImpl getParentToLink(
-            @NonNull final GossipEvent child, @Nullable final EventDescriptor parentDescriptor) {
+            @NonNull final GossipEvent child, @NonNull final Hash parentHash, final long claimedParentGeneration) {
 
-        if (parentDescriptor == null) {
-            // There is no claimed parent for linking.
-            return null;
-        }
-
-        if (nonAncientEventWindow.isAncient(parentDescriptor)) {
+        if (nonAncientEventWindow.isAncient(claimedParentGeneration)) {
             // ancient parents don't need to be linked
             return null;
         }
 
-        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.getHash());
+        final EventImpl candidateParent = parentHashMap.get(parentHash);
         if (candidateParent == null) {
             missingParentAccumulator.update(1);
             missingParentLogger.error(
                     EXCEPTION.getMarker(),
                     "Child has a missing parent. This should not be possible. "
-                            + "Child: {}, Parent EventDescriptor: {}",
+                            + "Child: {}, missing parent hash: {}, missing parent claimed generation: {}",
                     EventStrings.toMediumString(child),
-                    parentDescriptor);
+                    parentHash,
+                    claimedParentGeneration);
 
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.getGeneration()) {
+        if (candidateParent.getGeneration() != claimedParentGeneration) {
             generationMismatchAccumulator.update(1);
             generationMismatchLogger.warn(
                     EXCEPTION.getMarker(),
@@ -215,22 +185,8 @@ public class InOrderLinker {
                             + "claimed generation: {}, actual generation: {}",
                     EventStrings.toMediumString(child),
                     EventStrings.toMediumString(candidateParent),
-                    parentDescriptor.getGeneration(),
+                    claimedParentGeneration,
                     candidateParent.getGeneration());
-
-            return null;
-        }
-
-        if (candidateParent.getBirthRound() != parentDescriptor.getBirthRound()) {
-            birthRoundMismatchAccumulator.update(1);
-            birthRoundMismatchLogger.warn(
-                    EXCEPTION.getMarker(),
-                    "Event has a parent with a different birth round than claimed. Child: {}, parent: {}, "
-                            + "claimed birth round: {}, actual birth round: {}",
-                    EventStrings.toMediumString(child),
-                    EventStrings.toMediumString(candidateParent),
-                    parentDescriptor.getBirthRound(),
-                    candidateParent.getBirthRound());
 
             return null;
         }
@@ -239,15 +195,11 @@ public class InOrderLinker {
                 candidateParent.getBaseEvent().getHashedData().getTimeCreated();
         final Instant childTimeCreated = child.getHashedData().getTimeCreated();
 
-        // only do this check for self parent, since the event creator doesn't consider other parent creation time
-        // when deciding on the event creation time
-        if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
-                && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
-
+        if (parentTimeCreated.compareTo(childTimeCreated) >= 0) {
             timeCreatedMismatchAccumulator.update(1);
-            timeCreatedMismatchLogger.error(
+            timeCreatedMismatchLogger.warn(
                     EXCEPTION.getMarker(),
-                    "Child time created isn't strictly after self parent time created. "
+                    "Child time created isn't strictly after parent time created. "
                             + "Child: {}, parent: {}, child time created: {}, parent time created: {}",
                     EventStrings.toMediumString(child),
                     EventStrings.toMediumString(candidateParent),
@@ -275,15 +227,12 @@ public class InOrderLinker {
         }
 
         final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
-
-        // FUTURE WORK: Extend other parent linking to support multiple other parents.
-        // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
-        final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
+        final EventImpl selfParent =
+                getParentToLink(event, hashedData.getSelfParentHash(), hashedData.getSelfParentGen());
+        final EventImpl otherParent =
+                getParentToLink(event, hashedData.getOtherParentHash(), hashedData.getOtherParentGen());
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
-        EventCounter.incrementLinkedEventCount();
 
         final EventDescriptor eventDescriptor = event.getDescriptor();
         parentDescriptorMap.put(eventDescriptor, linkedEvent);
@@ -301,7 +250,7 @@ public class InOrderLinker {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
         parentDescriptorMap.shiftWindow(
-                nonAncientEventWindow.getAncientThreshold(),
+                nonAncientEventWindow.getLowerBound(),
                 (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 

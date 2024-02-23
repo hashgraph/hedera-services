@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class TaskSchedulerBuilder<O> {
     private boolean externalBackPressure = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
-    private ForkJoinPool pool;
+    private ForkJoinPool pool = ForkJoinPool.commonPool();
     private UncaughtExceptionHandler uncaughtExceptionHandler;
 
     private Duration sleepDuration = Duration.ofNanos(100);
@@ -70,15 +70,10 @@ public class TaskSchedulerBuilder<O> {
     /**
      * Constructor.
      *
-     * @param model       the wiring model
-     * @param name        the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only
-     *                    contain alphanumeric characters and underscores.
-     * @param defaultPool the default fork join pool, if none is provided then this pool will be used
+     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
+     *             alphanumeric characters and underscores.
      */
-    public TaskSchedulerBuilder(
-            @NonNull final StandardWiringModel model,
-            @NonNull final String name,
-            @NonNull final ForkJoinPool defaultPool) {
+    public TaskSchedulerBuilder(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
@@ -91,7 +86,6 @@ public class TaskSchedulerBuilder<O> {
             throw new IllegalArgumentException("TaskScheduler name must not be empty");
         }
         this.name = name;
-        this.pool = Objects.requireNonNull(defaultPool);
     }
 
     /**

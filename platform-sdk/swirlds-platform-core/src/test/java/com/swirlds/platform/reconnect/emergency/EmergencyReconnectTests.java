@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -36,15 +37,12 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.merkle.util.PairedStreams;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -62,6 +60,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -93,8 +93,6 @@ class EmergencyReconnectTests {
     private EmergencyReconnectProtocol learnerProtocol;
     private EmergencyReconnectProtocol teacherProtocol;
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    private final PlatformContext platformContext =
-            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
 
     @BeforeEach
     public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
@@ -283,7 +281,6 @@ class EmergencyReconnectTests {
     private EmergencyReconnectProtocol createTeacherProtocol(
             final NotificationEngine notificationEngine, final ReconnectController reconnectController) {
         return new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
@@ -306,7 +303,6 @@ class EmergencyReconnectTests {
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
         return new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,

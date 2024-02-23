@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -43,6 +40,7 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -59,8 +57,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class EmergencyReconnectProtocolTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    private final PlatformContext platformContext =
-            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
     private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
@@ -103,7 +99,6 @@ public class EmergencyReconnectProtocolTests {
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -128,7 +123,6 @@ public class EmergencyReconnectProtocolTests {
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -161,7 +155,6 @@ public class EmergencyReconnectProtocolTests {
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -213,7 +206,6 @@ public class EmergencyReconnectProtocolTests {
                 new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),

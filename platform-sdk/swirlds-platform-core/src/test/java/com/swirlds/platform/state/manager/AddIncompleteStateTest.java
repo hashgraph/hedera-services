@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
@@ -28,7 +30,8 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.StateSignatureCollectorTester;
+import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -38,7 +41,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Add Incomplete State Test")
-class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
+class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -51,6 +54,8 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .build();
+
+    private final long firstRound = 50;
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -79,7 +84,7 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
+        SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -91,7 +96,6 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
             signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
         }
 
-        final long firstRound = 50;
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(firstRound)
@@ -102,16 +106,29 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
         final Hash stateHash = randomHash();
         stateFromDisk.getState().setHash(stateHash);
 
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+
         // The manager should store this state but not assigned it to the last complete signed state
-        manager.addReservedState(stateFromDisk.reserve("test"));
+        manager.addState(stateFromDisk);
+
+        assertEquals(
+                stateFromDisk.getState().getPlatformState().getConsensusTimestamp(), manager.getFirstStateTimestamp());
+        assertEquals(stateFromDisk.getState().getPlatformState().getRound(), manager.getFirstStateRound());
 
         assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());
 
+        try (final ReservedSignedState wrapper =
+                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash), "test")) {
+            assertNotNull(wrapper.get(), "Should have returned a state");
+            assertEquals(stateFromDisk, wrapper.get(), "Should have returned the state from disk");
+        }
+
         assertEquals(
-                1,
+                2,
                 stateFromDisk.getReservationCount(),
-                "One reservation expected, for collecting signatures, since the hash changed");
+                "Two reservations expected, one for the freshSignedStates, one for lastState");
 
         validateCallbackCounts(0, 0);
     }

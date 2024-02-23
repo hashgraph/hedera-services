@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -47,18 +45,14 @@ public final class GenerateConsensus {
     public static Deque<ConsensusRound> generateConsensusRounds(
             final int numNodes, final int numEvents, final long seed) {
         final List<EventSource<?>> eventSources = new ArrayList<>();
-        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(false)));
+        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(true)));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
-        final TestIntake intake = new TestIntake(
-                generator.getAddressBook(),
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
+        final TestIntake intake = new TestIntake(generator.getAddressBook());
 
         // generate events and feed them to consensus
         for (int i = 0; i < numEvents; i++) {
             intake.addEvent(generator.generateEvent().getBaseEvent());
         }
-
-        intake.flush();
 
         // return the rounds
         return intake.getConsensusRounds();

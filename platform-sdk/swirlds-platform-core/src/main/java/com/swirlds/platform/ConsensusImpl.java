@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -52,7 +51,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -188,23 +186,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private boolean migrationMode = false;
 
     /**
-     * The ancient mode used to determine if an event is ancient or not.
-     */
-    private AncientMode ancientMode;
-
-    /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
      * @param addressBook the global address book, which never changes
-     * @param ancientMode describes how we are currently computing "ancientness" of events
      */
     public ConsensusImpl(
             @NonNull final ConsensusConfig config,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final AddressBook addressBook,
-            @NonNull final AncientMode ancientMode) {
+            @NonNull final AddressBook addressBook) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -213,7 +204,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
-        this.ancientMode = Objects.requireNonNull(ancientMode);
     }
 
     @Override
@@ -661,26 +651,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 lastConsensusTime = ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             }
         }
-
-        // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
-        // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
-        final long previousRoundNonAncient = 0;
-        final long previousRoundNonExpired = 0;
-
-        final long nonAncientThreshold = ancientMode.selectIndicator(
-                getMinGenerationNonAncient(),
-                Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
-
-        final long nonExpiredThreshold = ancientMode.selectIndicator(
-                getMinRoundGeneration(),
-                Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
-
         return new ConsensusRound(
                 addressBook,
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
-                new NonAncientEventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
+                NonAncientEventWindow.createUsingRoundsNonAncient(
+                        decidedRoundNumber, getMinGenerationNonAncient(), config.roundsNonAncient()),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.api.Metric;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

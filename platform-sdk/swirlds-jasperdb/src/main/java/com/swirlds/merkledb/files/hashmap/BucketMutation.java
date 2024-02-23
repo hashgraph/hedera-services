@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
-
 import com.swirlds.virtualmap.VirtualKey;
 import java.util.Objects;
 
@@ -28,24 +26,13 @@ import java.util.Objects;
  *     The key.
  */
 class BucketMutation<K extends VirtualKey> {
-
     private final K key;
-    // If old value is HDHM.INVALID_VALUE, it means the old value should not be checked
-    private long oldValue;
     private long value;
     private BucketMutation<K> next;
 
-    BucketMutation(final K key, final long value) {
+    BucketMutation(K key, long value) {
         this.key = Objects.requireNonNull(key);
         this.value = value;
-        this.oldValue = INVALID_VALUE;
-        this.next = null;
-    }
-
-    BucketMutation(final K key, final long oldValue, final long value) {
-        this.key = Objects.requireNonNull(key);
-        this.value = value;
-        this.oldValue = oldValue;
         this.next = null;
     }
 
@@ -57,34 +44,16 @@ class BucketMutation<K extends VirtualKey> {
      * @param value
      * 		The value (cannot be null)
      */
-    void put(final K key, final long value) {
+    void put(K key, long value) {
         BucketMutation<K> mutation = this;
         while (true) {
             if (mutation.key.equals(key)) {
                 mutation.value = value;
-                mutation.oldValue = INVALID_VALUE;
                 return;
             } else if (mutation.next != null) {
                 mutation = mutation.next;
             } else {
                 mutation.next = new BucketMutation<>(key, value);
-                return;
-            }
-        }
-    }
-
-    void putIfEqual(final K key, final long oldValue, final long value) {
-        BucketMutation<K> mutation = this;
-        while (true) {
-            if (mutation.key.equals(key)) {
-                if (mutation.value == oldValue) {
-                    mutation.value = value;
-                }
-                return;
-            } else if (mutation.next != null) {
-                mutation = mutation.next;
-            } else {
-                mutation.next = new BucketMutation<>(key, oldValue, value);
                 return;
             }
         }
@@ -105,21 +74,6 @@ class BucketMutation<K extends VirtualKey> {
         return size;
     }
 
-    // For testing purposes
-    long getValue() {
-        return value;
-    }
-
-    // For testing purposes
-    long getOldValue() {
-        return oldValue;
-    }
-
-    // For testing purposes
-    BucketMutation<K> getNext() {
-        return next;
-    }
-
     /**
      * Visit each mutation in the list, starting from this mutation.
      * @param consumer
@@ -128,7 +82,7 @@ class BucketMutation<K extends VirtualKey> {
     void forEachKeyValue(MutationCallback<K> consumer) {
         BucketMutation<K> mutation = this;
         while (mutation != null) {
-            consumer.accept(mutation.key, mutation.oldValue, mutation.value);
+            consumer.accept(mutation.key, mutation.value);
             mutation = mutation.next;
         }
     }
@@ -139,6 +93,6 @@ class BucketMutation<K extends VirtualKey> {
      *     The key.
      */
     interface MutationCallback<K extends VirtualKey> {
-        void accept(final K key, final long oldValue, final long value);
+        void accept(K key, long value);
     }
 }

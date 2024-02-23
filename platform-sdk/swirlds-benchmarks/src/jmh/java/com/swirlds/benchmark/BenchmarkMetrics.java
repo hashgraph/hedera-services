@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.LongGauge;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.ValueType;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.metrics.api.LongGauge;
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.Metric.ValueType;
-import com.swirlds.metrics.api.Metrics;
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;

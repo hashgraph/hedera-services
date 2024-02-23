@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,22 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_0;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_1_4;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_0;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_0;
-import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_1_4;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_0;
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.OperatingSystemMXBean;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.signed.SignedState;
 import java.io.File;
 import java.lang.management.BufferPoolMXBean;

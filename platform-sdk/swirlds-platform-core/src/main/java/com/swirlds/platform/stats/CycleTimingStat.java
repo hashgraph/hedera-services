@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats;
 
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class CycleTimingStat {
                     metrics,
                     unit,
                     definition.getCategory(),
-                    definition.getName() + "_" + definition.getIntervalName(i),
+                    definition.getName() + "-" + definition.getIntervalName(i),
                     definition.getIntervalDescription(i),
                     AverageStat.WEIGHT_VOLATILE));
         }
@@ -74,7 +74,7 @@ public class CycleTimingStat {
                 metrics,
                 unit,
                 definition.getCategory(),
-                definition.getName() + "_total",
+                definition.getName() + "-total",
                 "average total time spend in the " + definition.getName() + " cycle.",
                 AverageStat.WEIGHT_VOLATILE);
     }

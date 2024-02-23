@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,104 +16,90 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
+import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.hedera.pbj.runtime.FieldDefinition;
-import com.hedera.pbj.runtime.FieldType;
-import com.hedera.pbj.runtime.ProtoConstants;
-import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Class for accessing the data in a bucket. Each bucket has an index and contains a number
- * of bucket entries. Entries contain key hash codes (as a single bucket may contain keys
- * with different hash codes), values, and full serialized key bytes.
+ * Class for accessing the data in a bucket. This is designed to be used from a single thread.
  *
- * <p>This class is not fully thread safe. Buckets may be updated in one thread and then
- * accessed from different threads, this use case is supported. However, buckets aren't
- * designed to be updated concurrently from multiple threads.
+ * Each bucket has a header containing:
  *
- * <p>Protobuf schema:
+ * <ul>
+ *   <li><b>int</b> - Bucket index in map hash index</li>
+ *   <li><b>int</b> - Bucket size, total number of bytes taken by bucket including header</li>
+ *   <li><b>int</b> - Number of entries in this bucket</li>
+ * </ul>
  *
- * <p><pre>
- * message Bucket {
+ * Then comes an array of entries. Each Entry contains:
  *
- *     // Bucket index
- *     optional uint32 index = 1;
- *
- *     // Items
- *     repeated BucketEntry entries = 11;
- * }
- *
- * message BucketEntry {
- *
- *     // Key hash code
- *     int32 hashCode = 1;
- *
- *     // Entry value, e.g. path
- *     optional int64 value = 2;
- *
- *     // Serialized key
- *     bytes keyBytes = 3;
- * }
- * </pre>
+ * <ul>
+ *   <li><b>hash code</b> - key hash code (int)</li>
+ *   <li><b>value</b> - the long value. It is here because it is fixed size (long)</li>
+ *   <li><b>key data</b> - can be fixed size of entryKeySize or variable size</li>
+ * </ul>
  */
-public sealed class Bucket<K extends VirtualKey> implements Closeable permits ParsedBucket {
-
+@SuppressWarnings("unused")
+public final class Bucket<K extends VirtualKey> implements Closeable {
     private static final Logger logger = LogManager.getLogger(Bucket.class);
 
-    /** Keep track of the bucket with most keys we have ever created for logging */
-    private static final AtomicInteger LARGEST_BUCKET_CREATED = new AtomicInteger(0);
+    /** When increasing the capacity of a bucket, increase it by this many bytes. */
+    private static final int CAPACITY_INCREMENT = 1024;
+    /** We assume 8KB will be enough for now for most buckets. */
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
 
-    protected static final FieldDefinition FIELD_BUCKET_INDEX =
-            new FieldDefinition("index", FieldType.FIXED32, false, false, false, 1);
-    protected static final FieldDefinition FIELD_BUCKET_ENTRIES =
-            new FieldDefinition("entries", FieldType.MESSAGE, true, true, false, 11);
+    private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
+    private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;
+    private static final int BUCKET_SIZE_SIZE = Integer.BYTES;
+    private static final int BUCKET_ENTRY_COUNT_OFFSET = BUCKET_SIZE_OFFSET + BUCKET_SIZE_SIZE;
+    private static final int BUCKET_ENTRY_COUNT_SIZE = Integer.BYTES;
+    /** The amount of data used for a header in each bucket */
+    private static final int BUCKET_HEADER_SIZE = BUCKET_ENTRY_COUNT_OFFSET + BUCKET_ENTRY_COUNT_SIZE;
 
-    protected static final FieldDefinition FIELD_BUCKETENTRY_HASHCODE =
-            new FieldDefinition("hashCode", FieldType.FIXED32, false, false, false, 1);
-    protected static final FieldDefinition FIELD_BUCKETENTRY_VALUE =
-            new FieldDefinition("value", FieldType.FIXED64, false, true, false, 2);
-    protected static final FieldDefinition FIELD_BUCKETENTRY_KEYBYTES =
-            new FieldDefinition("keyBytes", FieldType.BYTES, false, false, false, 3);
+    private static final int ENTRY_VALUE_OFFSET = KEY_HASHCODE_SIZE;
+    private static final int ENTRY_KEY_OFFSET = KEY_HASHCODE_SIZE + VALUE_SIZE;
 
-    /** Size of FIELD_BUCKET_INDEX, in bytes. */
-    private static final int METADATA_SIZE =
-            ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+    /** Keep track of the largest bucket we have ever created for logging */
+    private static final AtomicInteger LARGEST_SIZE_OF_BUCKET_CREATED = new AtomicInteger(0);
 
-    /** Key serializer */
-    protected final KeySerializer<K> keySerializer;
+    private int keySerializationVersion;
+
+    /**
+     * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of
+     * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
+     * limit is kept equal to the bucket size in bytes.
+     */
+    private ByteBuffer bucketBuffer;
+
+    private final KeySerializer<K> keySerializer;
+    private ByteBuffer reusableBuffer;
 
     /**
      * Bucket pool this bucket is managed by, optional. If not null, the bucket is
      * released back to the pool on close.
      */
-    protected final ReusableBucketPool<K> bucketPool;
-
-    private BufferedData bucketData;
-
-    private long bucketIndexFieldOffset = 0;
-
-    private int entryCount = 0;
+    private final ReusableBucketPool<K> bucketPool;
 
     /**
      * Create a new bucket with the default size.
      *
      * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    protected Bucket(final KeySerializer<K> keySerializer) {
+    Bucket(final KeySerializer<K> keySerializer) {
         this(keySerializer, null);
     }
 
@@ -122,22 +108,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *
      * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    protected Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
+    Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
         this.keySerializer = keySerializer;
+        this.keySerializationVersion = (int) keySerializer.getCurrentDataVersion();
+        bucketBuffer = ByteBuffer.allocate(DEFAULT_BUCKET_BUFFER_SIZE);
+        setSize(BUCKET_HEADER_SIZE);
+        setBucketIndex(-1);
+        reusableBuffer =
+                keySerializer.isVariableSize() ? ByteBuffer.allocate(keySerializer.getTypicalSerializedSize()) : null;
         this.bucketPool = bucketPool;
-        this.bucketData = BufferedData.allocate(METADATA_SIZE);
-        clear();
-    }
-
-    private void setSize(final int size) {
-        if (bucketData.capacity() < size) {
-            final BufferedData newData = BufferedData.allocate(size);
-            bucketData.resetPosition();
-            newData.writeBytes(bucketData);
-            bucketData = newData;
-        }
-        bucketData.resetPosition();
-        bucketData.limit(size);
     }
 
     /**
@@ -151,55 +130,91 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     }
 
     /**
-     * Reset for next use.
+     * Gets this bucket's reusable bucket pool. May be null.
+     *
+     * @return Bucket pool this bucket is managed by
      */
-    public void clear() {
-        setSize(METADATA_SIZE);
-        bucketIndexFieldOffset = 0;
-        setBucketIndex(0);
-        entryCount = 0;
+    public ReusableBucketPool<K> getBucketPool() {
+        return bucketPool;
+    }
+
+    /**
+     * Reset for next use
+     *
+     * @return this bucket for each chaining
+     */
+    public Bucket<K> clear() {
+        // clear index
+        setBucketIndex(-1);
+        // set 0 for entry count
+        setBucketEntryCount(0);
+        // reset size
+        setSize(BUCKET_HEADER_SIZE);
+        // reset buffer
+        bucketBuffer.clear();
+        bucketBuffer.limit(getSize());
+        return this;
     }
 
     public KeySerializer<K> getKeySerializer() {
         return keySerializer;
     }
 
+    /** Set the serialization version to use for keys */
+    public void setKeySerializationVersion(int keySerializationVersion) {
+        this.keySerializationVersion = keySerializationVersion;
+    }
+
     /** Get the index for this bucket */
     public int getBucketIndex() {
-        final long bucketIndexValueOffset = bucketIndexFieldOffset
-                + ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT);
-        return bucketData.getInt(bucketIndexValueOffset);
+        return bucketBuffer.getInt(0);
     }
 
     /** Set the index for this bucket */
-    public void setBucketIndex(int index) {
-        bucketData.position(bucketIndexFieldOffset);
-        ProtoWriterTools.writeTag(bucketData, FIELD_BUCKET_INDEX);
-        bucketData.writeInt(index);
-    }
-
-    public boolean isEmpty() {
-        return bucketData.length() == METADATA_SIZE;
+    public void setBucketIndex(int bucketIndex) {
+        this.bucketBuffer.putInt(0, bucketIndex);
     }
 
     /** Get the number of entries stored in this bucket */
     public int getBucketEntryCount() {
-        return entryCount;
+        return bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET);
     }
 
-    protected void checkLargestBucket(final int count) {
-        if (!logger.isDebugEnabled(MERKLE_DB.getMarker())) {
-            return;
-        }
-        if (count > LARGEST_BUCKET_CREATED.get()) {
-            LARGEST_BUCKET_CREATED.set(count);
-            logger.debug(MERKLE_DB.getMarker(), "New largest bucket, now = {} entries", count);
-        }
+    /** Set the number of entries stored in this bucket */
+    public void setBucketEntryCount(int count) {
+        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, count);
+    }
+
+    /** Add one to the number of entries stored in this bucket */
+    private void incrementBucketEntryCount() {
+        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) + 1);
+    }
+
+    /** Subtract one to the number of entries stored in this bucket */
+    private void decrementBucketEntryCount() {
+        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) - 1);
     }
 
     /** Get the size of this bucket in bytes, including header */
-    public int sizeInBytes() {
-        return Math.toIntExact(bucketData.length());
+    public int getSize() {
+        return this.bucketBuffer.getInt(BUCKET_SIZE_OFFSET);
+    }
+
+    /** Set the size of this bucket in bytes, including header */
+    private void setSize(int size) {
+        this.bucketBuffer.putInt(BUCKET_SIZE_OFFSET, size);
+        final int maxSize = LARGEST_SIZE_OF_BUCKET_CREATED.get();
+        if (size > maxSize) {
+            final int newMaxSize =
+                    LARGEST_SIZE_OF_BUCKET_CREATED.updateAndGet(oldMaxSize -> Math.max(oldMaxSize, size));
+            if (newMaxSize > BUCKET_HEADER_SIZE) {
+                logger.info(
+                        MERKLE_DB.getMarker(),
+                        "New largest buckets, now = {} bytes, {} entries",
+                        newMaxSize,
+                        getBucketEntryCount() + 1);
+            }
+        }
     }
 
     /**
@@ -212,10 +227,10 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @throws IOException If there was a problem reading the value from file
      */
     public long findValue(final int keyHashCode, final K key, final long notFoundValue) throws IOException {
-        final FindResult result = findEntry(keyHashCode, key);
-        if (result.found()) {
+        final FindResult found = findEntryOffset(keyHashCode, key);
+        if (found.found) {
             // yay! we found it
-            return result.entryValue();
+            return found.entryValue;
         } else {
             return notFoundValue;
         }
@@ -226,214 +241,247 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      *
      * @param key the entry key
      * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.INVALID_VALUE to mean delete
+     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
-    public final void putValue(final K key, final long value) {
-        putValue(key, INVALID_VALUE, value);
+    public void putValue(final K key, final long value) {
+        final int keyHashCode = key.hashCode();
+        try {
+            // scan over all existing key/value entries and see if there is already one for this
+            // key. If there is then update it, otherwise we have at least worked out the entryOffset
+            // for the end of existing entries and can use that for appending a new entry if there is
+            // room
+            final FindResult result = findEntryOffset(keyHashCode, key);
+            // handle DELETE
+            if (value == SPECIAL_DELETE_ME_VALUE) {
+                if (result.found) {
+                    final int entryCount = getBucketEntryCount();
+                    final int currentSize = getSize();
+                    // read the key size so we can calculate entry size
+                    final int entrySize = KEY_HASHCODE_SIZE + VALUE_SIZE + getKeySize(result.entryOffset);
+                    // check if not last entry
+                    if (result.entryIndex < (entryCount - 1)) {
+                        // move all entries after this one up
+                        final int offsetOfNextEntry = result.entryOffset + entrySize;
+                        final int sizeOfEntriesToMove = currentSize - offsetOfNextEntry;
+                        bucketBuffer.put(result.entryOffset, bucketBuffer, offsetOfNextEntry, sizeOfEntriesToMove);
+                    }
+                    // decrement count
+                    decrementBucketEntryCount();
+                    // update size by removing entry size from size
+                    setSize(currentSize - entrySize);
+                    // we are done deleting
+                }
+                return;
+            }
+            // handle UPDATE
+            if (result.found) {
+                // yay! we found it, so update value
+                bucketBuffer.putLong(result.entryOffset + ENTRY_VALUE_OFFSET, value);
+                return;
+            }
+            /* We have to serialize a variable-size key to a temp byte buffer to check
+            if there is going to be enough room to store it in this bucket. */
+            if (keySerializer.isVariableSize()) {
+                reusableBuffer.clear();
+                while (true) {
+                    try {
+                        keySerializer.serialize(key, reusableBuffer);
+                        break;
+                    } catch (final BufferOverflowException e) {
+                        // increment reusable buffer size, if needed
+                        reusableBuffer = ByteBuffer.allocate(reusableBuffer.capacity() * 2);
+                    }
+                }
+                final int keySizeBytes = reusableBuffer.position();
+                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySizeBytes;
+                ensureCapacity(newSize);
+                setSize(newSize);
+                // add a new entry
+                bucketBuffer.position(result.entryOffset);
+                bucketBuffer.putInt(keyHashCode);
+                bucketBuffer.putLong(value);
+                // write the key
+                reusableBuffer.flip();
+                bucketBuffer.put(reusableBuffer);
+            } else {
+                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySerializer.getSerializedSize();
+                ensureCapacity(newSize);
+                setSize(newSize);
+                // add a new entry
+                bucketBuffer.position(result.entryOffset);
+                bucketBuffer.putInt(keyHashCode);
+                bucketBuffer.putLong(value);
+                keySerializer.serialize(key, bucketBuffer);
+            }
+            // increment count
+            incrementBucketEntryCount();
+        } catch (IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
-     * Optionally check the current value, and if it matches the given value, then put a
-     * key/value entry into this bucket. If the existing value check is requested, but there
-     * is no existing value for the key, the value is not added.
+     * Fill this bucket with the data contained in the given ByteBuffer.
      *
-     * @param key the entry key
-     * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
-     *                 {@code checkOldValue} is false, this old value is ignored
-     * @param value the entry value, this can also be special
-     *     HalfDiskHashMap.INVALID_VALUE to mean delete
+     * @param dataBuffer Buffer containing new data for this bucket
      */
-    public void putValue(final K key, final long oldValue, final long value) {
-        final boolean needCheckOldValue = oldValue != INVALID_VALUE;
-        final int keyHashCode = key.hashCode();
-        final FindResult result = findEntry(keyHashCode, key);
-        if (value == INVALID_VALUE) {
-            if (result.found()) {
-                if (needCheckOldValue && (oldValue != result.entryValue)) {
-                    return;
-                }
-                final long nextEntryOffset = result.entryOffset() + result.entrySize();
-                final long remainderSize = bucketData.length() - nextEntryOffset;
-                if (remainderSize > 0) {
-                    final BufferedData remainder = bucketData.slice(nextEntryOffset, remainderSize);
-                    bucketData.position(result.entryOffset());
-                    bucketData.writeBytes(remainder);
-                }
-                if (bucketIndexFieldOffset > result.entryOffset()) {
-                    // It should not happen with default implementation, but if buckets are serialized
-                    // using 3rd-party tools, field order may be arbitrary, and "bucket index" field
-                    // may be after the deleted entry
-                    bucketIndexFieldOffset -= result.entrySize();
-                }
-                bucketData.position(0); // limit() doesn't work if the new limit is less than the current pos
-                bucketData.limit(result.entryOffset() + remainderSize);
-                entryCount--;
-            } else {
-                // entry not found, nothing to delete
-            }
-            return;
-        }
-        if (result.found()) {
-            // yay! we found it, so update value
-            if (needCheckOldValue && (oldValue != result.entryValue)) {
-                return;
-            }
-            bucketData.position(result.entryValueOffset());
-            bucketData.writeLong(value);
-        } else {
-            if (needCheckOldValue) {
-                return;
-            }
-            // add a new entry
-            writeNewEntry(keyHashCode, value, key);
-            checkLargestBucket(++entryCount);
-        }
+    public void putAllData(ByteBuffer dataBuffer) {
+        ensureCapacity(dataBuffer.limit());
+        bucketBuffer.rewind().put(dataBuffer);
     }
 
-    private void writeNewEntry(final int hashCode, final long value, final K key) {
-        final long entryOffset = bucketData.limit();
-        final int keySize = keySerializer.getSerializedSize(key);
-        final int entrySize =
-                ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
-                        + Integer.BYTES
-                        + ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
-                        + Long.BYTES
-                        + ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
-        final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
-        setSize(Math.toIntExact(entryOffset + totalSize));
-        bucketData.position(entryOffset);
-        ProtoWriterTools.writeDelimited(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
-            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
-            out.writeInt(hashCode);
-            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
-            out.writeLong(value);
-            ProtoWriterTools.writeDelimited(
-                    out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
-        });
-    }
-
-    public void readFrom(final ReadableSequentialData in) {
-        final int size = Math.toIntExact(in.remaining());
-        setSize(size);
-        in.readBytes(bucketData);
-        bucketData.flip();
-
-        entryCount = 0;
-        while (bucketData.hasRemaining()) {
-            final long fieldOffset = bucketData.position();
-            final int tag = bucketData.readVarInt(false);
-            final int fieldNum = tag >> TAG_FIELD_OFFSET;
-            if (fieldNum == FIELD_BUCKET_INDEX.number()) {
-                bucketIndexFieldOffset = fieldOffset;
-                bucketData.skip(Integer.BYTES);
-            } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
-                final int entryBytesSize = bucketData.readVarInt(false);
-                bucketData.skip(entryBytesSize);
-                entryCount++;
-            } else {
-                throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
-            }
-        }
-        checkLargestBucket(entryCount);
-    }
-
-    void readFrom(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot read Bucket from JDB");
-    }
-
-    public void writeTo(final WritableSequentialData out) {
-        bucketData.resetPosition();
-        out.writeBytes(bucketData);
-    }
-
-    void writeTo(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot write Bucket to JDB");
+    /**
+     * Write the complete data bytes for this bucket to a byte buffer
+     *
+     * @param buffer The byte buffer to write to
+     * @return the number of bytes written
+     */
+    public int writeToByteBuffer(final ByteBuffer buffer) {
+        buffer.put(bucketBuffer.rewind());
+        return getSize();
     }
 
     // =================================================================================================================
     // Private API
 
-    private FindResult findEntry(final int keyHashCode, final K key) {
-        bucketData.resetPosition();
-        while (bucketData.hasRemaining()) {
-            final long fieldOffset = bucketData.position();
-            final int tag = bucketData.readVarInt(false);
-            final int fieldNum = tag >> TAG_FIELD_OFFSET;
-            if (fieldNum == FIELD_BUCKET_INDEX.number()) {
-                bucketData.skip(Integer.BYTES);
-            } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
-                final int entrySize = bucketData.readVarInt(false);
-                final long nextEntryOffset = bucketData.position() + entrySize;
-                final long oldLimit = bucketData.limit();
-                bucketData.limit(nextEntryOffset);
-                try {
-                    int entryHashCode = -1;
-                    long entryValueOffset = -1;
-                    long entryValue = 0;
-                    long entryKeyBytesOffset = -1;
-                    int entryKeyBytesSize = -1;
-                    while (bucketData.hasRemaining()) {
-                        final int entryTag = bucketData.readVarInt(false);
-                        final int entryFieldNum = entryTag >> TAG_FIELD_OFFSET;
-                        if (entryFieldNum == FIELD_BUCKETENTRY_HASHCODE.number()) {
-                            entryHashCode = bucketData.readInt();
-                            if (entryHashCode != keyHashCode) {
-                                break;
-                            }
-                        } else if (entryFieldNum == FIELD_BUCKETENTRY_VALUE.number()) {
-                            entryValueOffset = bucketData.position();
-                            entryValue = bucketData.readLong();
-                        } else if (entryFieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
-                            entryKeyBytesSize = bucketData.readVarInt(false);
-                            entryKeyBytesOffset = bucketData.position();
-                            bucketData.skip(entryKeyBytesSize);
-                        } else {
-                            throw new IllegalArgumentException("Unknown bucket entry field: " + entryFieldNum);
-                        }
-                    }
-                    if (entryHashCode == keyHashCode) {
-                        if ((entryValueOffset == -1) || (entryKeyBytesOffset == -1)) {
-                            logger.warn(MERKLE_DB.getMarker(), "Broken bucket entry");
-                        } else {
-                            bucketData.position(entryKeyBytesOffset);
-                            bucketData.limit(entryKeyBytesOffset + entryKeyBytesSize);
-                            if (keySerializer.equals(bucketData, key)) {
-                                return new FindResult(
-                                        true,
-                                        fieldOffset,
-                                        Math.toIntExact(nextEntryOffset - fieldOffset),
-                                        entryValueOffset,
-                                        entryValue);
-                            }
-                        }
-                    }
-                } finally {
-                    bucketData.limit(oldLimit);
-                    bucketData.position(nextEntryOffset);
-                }
-            } else {
-                throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
+    /**
+     * Expand the capacity of this bucket to make sure it is at least big enough to contain
+     * neededSize and sets bucket buffer limit to the requested size.
+     */
+    private void ensureCapacity(int neededSize) {
+        int capacity = bucketBuffer.capacity();
+        if (neededSize > capacity) {
+            while (capacity < neededSize) {
+                capacity += CAPACITY_INCREMENT;
             }
+            ByteBuffer newBucketBuffer = ByteBuffer.allocate(capacity);
+            bucketBuffer.clear();
+            newBucketBuffer.put(bucketBuffer);
+            bucketBuffer = newBucketBuffer;
         }
-        return FindResult.NOT_FOUND;
-    }
-
-    /** toString for debugging */
-    @Override
-    public String toString() {
-        final int entryCount = getBucketEntryCount();
-        final int size = sizeInBytes();
-        return "Bucket{bucketIndex=" + getBucketIndex() + ", entryCount=" + entryCount + ", size=" + size + "}";
+        bucketBuffer.limit(neededSize);
     }
 
     /**
-     * Simple record for entry lookup results. If an entry is found, "found" is set to true,
-     * "entryOffset" is the entry offset in bytes in the bucket buffer, entrySize is the size of entry in
-     * bytes, and "entryValue" is the entry value. If no entity is found, "found" is false, "entryOffset"
-     * and "entrySize" are -1, and "entryValue" is undefined.
+     * Find the offset in bucket for an entry matching the given key, if not found then just return
+     * the offset for the end of all entries.
+     *
+     * @param keyHashCode hash code for the key to search for
+     * @param key the key to search for
+     * @return either true and offset for found key entry or false and offset for end of all entries
+     *     in this bucket
+     * @throws IOException If there was a problem reading bucket
      */
-    private record FindResult(boolean found, long entryOffset, int entrySize, long entryValueOffset, long entryValue) {
+    private FindResult findEntryOffset(final int keyHashCode, final K key) throws IOException {
+        final int entryCount = getBucketEntryCount();
+        int entryOffset = BUCKET_HEADER_SIZE;
+        for (int i = 0; i < entryCount; i++) {
+            bucketBuffer.position(entryOffset);
+            final int readHashCode = bucketBuffer.getInt();
+            if (readHashCode == keyHashCode) {
+                final long readValue = bucketBuffer.getLong();
+                // now check the full key
+                if (keySerializer.equals(bucketBuffer, keySerializationVersion, key)) {
+                    // yay! we found it
+                    return new FindResult(entryOffset, i, true, readValue);
+                }
+            }
+            // Move entry offset to the next entry. No need to do this for the last entry
+            if (i < entryCount - 1) {
+                // now read the key size so we can jump
+                int keySize = getKeySize(entryOffset);
+                // move to next entry
+                entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+            }
+        }
+        // Entry is not found. Return the current size of the buffer as the offset
+        return new FindResult(getSize(), -1, false, 0);
+    }
 
-        static FindResult NOT_FOUND = new FindResult(false, -1, -1, -1, -1);
+    /**
+     * Read the size of the key for an entry
+     *
+     * @param entryOffset the offset to start of entry
+     * @return the size of the key in bytes
+     */
+    private int getKeySize(final int entryOffset) {
+        if (!keySerializer.isVariableSize()) {
+            return keySerializer.getSerializedSize();
+        }
+        bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
+        return keySerializer.deserializeKeySize(bucketBuffer);
+    }
+
+    /**
+     * Read a key for a given entry
+     *
+     * @param entryOffset the offset for the entry
+     * @return The key deserialized from bucket
+     * @throws IOException If there was a problem reading or deserializing the key
+     */
+    private K getKey(int entryOffset) throws IOException {
+        bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
+        return keySerializer.deserialize(bucketBuffer, keySerializationVersion);
+    }
+
+    /** toString for debugging */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+    @Override
+    public String toString() {
+        final int entryCount = getBucketEntryCount();
+        final int size = getSize();
+        final StringBuilder sb = new StringBuilder(
+                "Bucket{bucketIndex=" + getBucketIndex() + ", entryCount=" + entryCount + ", size=" + size + "\n");
+        try {
+            int entryOffset = BUCKET_HEADER_SIZE;
+            for (int i = 0; i < entryCount; i++) {
+                final int keySize = getKeySize(entryOffset);
+                bucketBuffer.position(entryOffset);
+                final int readHash = bucketBuffer.getInt();
+                final long value = bucketBuffer.getLong();
+                final K key = getKey(entryOffset);
+                sb.append("    ENTRY["
+                        + i
+                        + "] value= "
+                        + value
+                        + " keyHashCode="
+                        + readHash
+                        + " keyVer="
+                        + keySerializationVersion
+                        + " key="
+                        + key
+                        + " keySize="
+                        + keySize
+                        + "\n");
+                entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+            }
+        } catch (IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Failed enumerating bucket entries", e);
+        }
+        bucketBuffer.clear();
+        sb.append("} RAW DATA = ");
+        final byte[] bucketArray = bucketBuffer.array();
+        for (int i = 0; i < size; i++) {
+            sb.append(String.format("%02X ", bucketArray[i]).toUpperCase());
+        }
+        return sb.toString();
+    }
+
+    // =================================================================================================================
+    // FindResult class
+
+    /**
+     * Simple record for entry lookup results. If an entry is found, "found" is set to true,
+     * "entryOffset" is the entry offset in bytes in the bucket buffer, "entryIndex" is the
+     * entry index in the array of entries, and "entryValue" is the entry value. If no entity
+     * is found, "found" is false, "entryOffset" is the total size of the bucket buffer,
+     * "entryIndex" and "entryValue" are undefined.
+     */
+    private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {}
+
+    /** Get bucket buffer for tests */
+    ByteBuffer getBucketBuffer() {
+        return bucketBuffer;
     }
 }

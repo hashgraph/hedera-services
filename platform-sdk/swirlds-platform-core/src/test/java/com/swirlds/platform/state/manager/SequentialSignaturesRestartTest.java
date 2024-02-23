@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.crypto.Hash;
@@ -30,7 +29,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.StateSignatureCollectorTester;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
@@ -41,7 +40,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Sequential Signatures After Restart Test")
-public class SequentialSignaturesRestartTest extends AbstractStateSignatureCollectorTest {
+public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -84,7 +83,7 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
     @DisplayName("Sequential Signatures After Restart Test")
     void sequentialSignaturesAfterRestartTest() throws InterruptedException {
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -104,11 +103,8 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
         stateFromDisk.getState().setHash(stateHash);
 
         signedStates.put(firstRound, stateFromDisk);
-        // the validation in stateHasEnoughSignaturesConsumer does not work well with adding a complete state,
-        // so we set the highest round to pass the validation
-        highestRound.set(firstRound + roundAgeToSign);
-        manager.addReservedState(stateFromDisk.reserve("test"));
         highestRound.set(firstRound);
+        manager.addState(stateFromDisk);
 
         // Create a series of signed states.
         final int count = 100;
@@ -122,7 +118,7 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addReservedState(signedState.reserve("test"));
+            manager.addState(signedState);
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
@@ -133,8 +129,10 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
                 addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
+                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
+            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
-                assertNotNull(lastCompletedState, "there should be a complete state");
                 if (roundToSign >= firstRound) {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
@@ -144,7 +142,8 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
             }
 
             final int roundsAfterRestart = (int) (round - firstRound);
-            validateCallbackCounts(0, Math.max(1, roundsAfterRestart - roundAgeToSign + 1));
+
+            validateCallbackCounts(0, Math.max(0, roundsAfterRestart - roundAgeToSign));
         }
 
         // Check reservation counts.
@@ -153,6 +152,6 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
         // We don't expect any further callbacks. But wait a little while longer in case there is something unexpected.
         SECONDS.sleep(1);
 
-        validateCallbackCounts(0, count - roundAgeToSign);
+        validateCallbackCounts(0, count - roundAgeToSign - 1);
     }
 }

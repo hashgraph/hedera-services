@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,14 @@
 
 package com.swirlds.platform.event.deduplication;
 
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -43,13 +41,6 @@ import java.util.function.Function;
  * <p>
  * A duplicate event is defined as an event with an identical descriptor and identical signature to an event that has
  * already been observed.
- * <p>
- * It is necessary to consider the signature bytes when determining if an event is a duplicate, not just the descriptor
- * or hash. This guards against a malicious node gossiping the same event with different signatures, or a node gossiping
- * another node's event with a modified signature. If we went only off the descriptor or hash, we might discard the
- * correct version of an event as a duplicate, because a malicious version has already been received. Instead, the
- * deduplicator lets all versions of the event through that have a unique descriptor/signature pair, and the signature
- * validator further along the pipeline will handle discarding bad versions.
  */
 public class EventDeduplicator {
     /**
@@ -65,7 +56,7 @@ public class EventDeduplicator {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -75,7 +66,8 @@ public class EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents;
+    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents =
+            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "eventsWithDisparateSignature")
@@ -108,24 +100,12 @@ public class EventDeduplicator {
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
-
-        final AncientMode ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
-        } else {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
-        }
     }
 
     /**
      * Handle a potentially duplicate event
      * <p>
-     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is
-     * returned.
+     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is returned.
      *
      * @param event the event to handle
      * @return the event if it is not a duplicate, or null if it is a duplicate
@@ -165,7 +145,7 @@ public class EventDeduplicator {
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
+        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
     }
 
     /**

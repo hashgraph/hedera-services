@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
@@ -53,17 +52,16 @@ public class DataFileCollectionBench extends BaseBench {
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         final var store =
                 new DataFileCollection<BenchmarkRecord>(
-                        getConfig(MerkleDbConfig.class),
                         getTestDir(),
                         storeName,
                         null,
                         new BenchmarkRecordSerializer(),
-                        (dataLocation, dataValue) -> {}) {
+                        (key, dataLocation, dataValue) -> {}) {
                     BenchmarkRecord read(long dataLocation) throws IOException {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor<>(storeName, store, index, null, null, null, null);
+        final var compactor = new DataFileCompactor(storeName, store, index, null, null, null, null);
         System.out.println();
 
         // Write files

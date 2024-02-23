@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.areTreesEqual;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,10 +25,11 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +63,7 @@ class StateTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.IO)
     @DisplayName("State Serialization Test")
@@ -80,6 +82,7 @@ class StateTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("State Copy Test")
     void stateCopyTest() {

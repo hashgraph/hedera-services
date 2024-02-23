@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package com.swirlds.fcqueue;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.metrics.api.FloatFormats;
-import com.swirlds.metrics.api.Metrics;
 import java.util.Objects;
 
 /**
@@ -40,7 +41,7 @@ public class FCQueueStatistics {
     private static final RunningAverageMetric.Config FCQ_ADD_EXECUTION_MICROS_CONFIG = new RunningAverageMetric.Config(
                     FCQUEUE_CATEGORY, "fcqAddExecMicroSec")
             .withDescription("avg time taken to execute the FCQueue add method, not including locks (in microseconds)")
-            .withFormat(FloatFormats.FORMAT_9_6);
+            .withFormat(FORMAT_9_6);
 
     private static RunningAverageMetric fcqAddExecutionMicros;
 
@@ -51,7 +52,7 @@ public class FCQueueStatistics {
             new RunningAverageMetric.Config(FCQUEUE_CATEGORY, "fcqRemoveExecMicroSec")
                     .withDescription(
                             "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
-                    .withFormat(FloatFormats.FORMAT_9_6);
+                    .withFormat(FORMAT_9_6);
 
     private static RunningAverageMetric fcqRemoveExecutionMicros;
 
@@ -62,7 +63,7 @@ public class FCQueueStatistics {
                     FCQUEUE_CATEGORY, "fcqHashExecMicroSec")
             .withDescription(
                     "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
-            .withFormat(FloatFormats.FORMAT_9_6);
+            .withFormat(FORMAT_9_6);
 
     private static RunningAverageMetric fcqHashExecutionMicros;
 

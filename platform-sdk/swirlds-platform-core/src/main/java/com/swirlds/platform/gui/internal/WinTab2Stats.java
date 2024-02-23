@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.gui.internal;
 
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.Metric.ValueType;
-import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.gui.GuiConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.Chart;
@@ -228,7 +228,7 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
                     }
                 });
             }
-            if ("trans_per_sec".equals(metric.getName())) {
+            if ("trans/sec".equals(metric.getName())) {
                 showChart(j);
             }
         }
@@ -286,7 +286,7 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
             if (metric == null) {
                 return "";
             }
-            return String.format(Locale.US, metric.getFormat(), metric.get(ValueType.VALUE));
+            return String.format(Locale.US, metric.getFormat(), metric.get(VALUE));
         } catch (final IllegalFormatException e) {
             logger.error(EXCEPTION.getMarker(), "unable to compute string for {}", metric.getName(), e);
         }

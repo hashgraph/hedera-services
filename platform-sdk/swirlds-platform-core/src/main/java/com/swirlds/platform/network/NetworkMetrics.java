@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,18 @@
 
 package com.swirlds.platform.network;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_4_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_7_0;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.api.FloatFormats;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,17 +49,17 @@ public class NetworkMetrics {
     private static final String BPSS_CATEGORY = "bpss";
 
     private static final RunningAverageMetric.Config AVG_PING_CONFIG = new RunningAverageMetric.Config(
-                    Metrics.PLATFORM_CATEGORY, "ping")
+                    PLATFORM_CATEGORY, "ping")
             .withDescription("average time for a round trip message between 2 computers (in milliseconds)")
-            .withFormat(FloatFormats.FORMAT_7_0);
+            .withFormat(FORMAT_7_0);
     private static final SpeedometerMetric.Config BYTES_PER_SECOND_SENT_CONFIG = new SpeedometerMetric.Config(
-                    Metrics.INTERNAL_CATEGORY, "bytes_per_sec_sent")
+                    INTERNAL_CATEGORY, "bytes/sec_sent")
             .withDescription("number of bytes sent per second over the network (total for this member)")
-            .withFormat(FloatFormats.FORMAT_16_2);
+            .withFormat(FORMAT_16_2);
     private static final RunningAverageMetric.Config AVG_CONNS_CREATED_CONFIG = new RunningAverageMetric.Config(
-                    Metrics.PLATFORM_CATEGORY, "conns")
+                    PLATFORM_CATEGORY, "conns")
             .withDescription("number of times a TLS connections was created")
-            .withFormat(FloatFormats.FORMAT_10_0)
+            .withFormat(FORMAT_10_0)
             .withHalfLife(0.0);
 
     /** this node's id */
@@ -104,23 +110,22 @@ public class NetworkMetrics {
                             new RunningAverageMetric.Config(PING_CATEGORY, String.format("ping_ms_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "milliseconds to send node %02d a byte and receive a reply", nodeId.id()))
-                                    .withFormat(FloatFormats.FORMAT_4_2)));
+                                    .withFormat(FORMAT_4_2)));
             avgBytePerSecSent.put(
                     nodeId,
                     metrics.getOrCreate(new SpeedometerMetric.Config(
-                                    BPSS_CATEGORY, String.format("bytes_per_sec_sent_%02d", nodeId.id()))
+                                    BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
                             .withDescription(String.format("bytes per second sent to node %02d", nodeId.id()))
-                            .withFormat(FloatFormats.FORMAT_16_2)));
+                            .withFormat(FORMAT_16_2)));
             disconnectFrequency.put(
                     nodeId,
                     new CountPerSecond(
                             metrics,
                             new CountPerSecond.Config(
-                                            Metrics.PLATFORM_CATEGORY,
-                                            String.format("disconnects_per_sec_%02d", nodeId.id()))
+                                            PLATFORM_CATEGORY, String.format("disconnects/sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of disconnects per second from node %02d", nodeId.id()))
-                                    .withFormat(FloatFormats.FORMAT_10_0)));
+                                    .withFormat(FORMAT_10_0)));
         }
     }
 
@@ -151,7 +156,7 @@ public class NetworkMetrics {
     /**
      * Updates the metrics.
      * <p>
-     * This method will be called by {@link com.swirlds.metrics.api.Metrics} and is not intended to be called from anywhere else.
+     * This method will be called by {@link Metrics} and is not intended to be called from anywhere else.
      */
     public void update() {
         // calculate the value for otherStatPing (the average of all, not including self)

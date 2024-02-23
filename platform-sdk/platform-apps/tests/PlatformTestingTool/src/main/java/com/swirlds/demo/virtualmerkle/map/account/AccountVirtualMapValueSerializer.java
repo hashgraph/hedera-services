@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -52,27 +49,18 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
     }
 
     @Override
-    public void serialize(@NonNull final AccountVirtualMapValue value, @NonNull final WritableSequentialData out) {
-        value.serialize(out);
+    public int serialize(AccountVirtualMapValue data, ByteBuffer buffer) throws IOException {
+        data.serialize(buffer);
+        return getSerializedSize();
     }
 
     @Override
-    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
-        value.serialize(buffer);
-    }
-
-    @Override
-    public AccountVirtualMapValue deserialize(@NonNull final ReadableSequentialData in) {
-        final AccountVirtualMapValue value = new AccountVirtualMapValue();
-        value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final AccountVirtualMapValue value = new AccountVirtualMapValue();
-        value.deserialize(buffer, (int) dataVersion);
-        return value;
+    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        if (dataVersion != getCurrentDataVersion()) {
+            throw new IllegalStateException("Data version mismatch");
+        }
+        final AccountVirtualMapValue data = new AccountVirtualMapValue();
+        data.deserialize(buffer, (int) dataVersion);
+        return data;
     }
 }

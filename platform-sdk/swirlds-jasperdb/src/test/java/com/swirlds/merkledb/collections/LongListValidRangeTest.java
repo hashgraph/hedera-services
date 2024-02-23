@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.Objects;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,6 +44,7 @@ class LongListValidRangeTest {
     public static final int MAX_LONGS = 1000;
     private AbstractLongList<?> list;
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -53,6 +54,7 @@ class LongListValidRangeTest {
         assertThrows(IndexOutOfBoundsException.class, () -> list.updateValidRange(-1, maxValidIndex()));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -62,6 +64,7 @@ class LongListValidRangeTest {
         assertThrows(IndexOutOfBoundsException.class, () -> list.updateValidRange(0, MAX_LONGS));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -91,6 +94,7 @@ class LongListValidRangeTest {
     }
 
     @SuppressWarnings("resource")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     @DisplayName("Attempt to create LongListOffHeap with too many memory chunks")
@@ -103,6 +107,7 @@ class LongListValidRangeTest {
         assertThrows(IllegalArgumentException.class, () -> new LongListDisk(1, 32769, 1));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -125,6 +130,7 @@ class LongListValidRangeTest {
         assertEquals(3, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -146,6 +152,7 @@ class LongListValidRangeTest {
         assertEquals(2, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -168,6 +175,7 @@ class LongListValidRangeTest {
         assertEquals(3, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -189,6 +197,7 @@ class LongListValidRangeTest {
         assertEquals(6, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -209,6 +218,7 @@ class LongListValidRangeTest {
         assertEquals(2, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -228,6 +238,7 @@ class LongListValidRangeTest {
         assertEquals(6, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -252,6 +263,7 @@ class LongListValidRangeTest {
         assertEquals(6, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -271,6 +283,7 @@ class LongListValidRangeTest {
         assertEquals(1, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -300,6 +313,7 @@ class LongListValidRangeTest {
         assertEquals(9, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -331,6 +345,7 @@ class LongListValidRangeTest {
         assertEquals(9, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -353,6 +368,7 @@ class LongListValidRangeTest {
         assertEquals(9, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -374,6 +390,7 @@ class LongListValidRangeTest {
         assertEquals(3, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("longListProviderLargeBuffer")
@@ -394,6 +411,7 @@ class LongListValidRangeTest {
         assertHasValuesInRange(10, 11);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("longListProviderLargeBuffer")
@@ -416,6 +434,7 @@ class LongListValidRangeTest {
         assertEquals(2, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("longListProviderIncreasedBuffer")
@@ -437,6 +456,7 @@ class LongListValidRangeTest {
         assertHasValuesInRange(7, 8);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("longListProviderIncreasedBuffer")
@@ -460,6 +480,7 @@ class LongListValidRangeTest {
         assertEquals(2, list.size());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -481,6 +502,7 @@ class LongListValidRangeTest {
         assertHasValuesInRange(10, 11);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -505,6 +527,7 @@ class LongListValidRangeTest {
         assertEmptyFromIndex(2);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -527,6 +550,7 @@ class LongListValidRangeTest {
         assertMemoryChunksNumber(1);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
@@ -553,7 +577,7 @@ class LongListValidRangeTest {
     public static final int INITIAL_DATA_SIZE = 10_000_000;
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
+    @Tag(TestTypeTags.PERFORMANCE)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Make sure that the list releases allocated memory on update of min valid index")
     @Execution(SAME_THREAD) // to make sure that the other tests don't mess with the memory
@@ -611,6 +635,7 @@ class LongListValidRangeTest {
                 Arguments.of(halfElements, halfElements * Long.BYTES + memoryPerChunk, false));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     @DisplayName("Make sure that off-heap memory consumption calculation is correct")
@@ -650,6 +675,7 @@ class LongListValidRangeTest {
         }
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     @DisplayName("Make sure that off-heap memory consumption calculation is correct")

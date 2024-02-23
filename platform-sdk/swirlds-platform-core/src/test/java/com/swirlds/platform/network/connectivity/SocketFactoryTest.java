@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -130,7 +130,7 @@ class SocketFactoryTest {
      * 		if anything goes wrong
      */
     @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void tlsFactoryTest(final AddressBook addressBook, final KeysAndCerts[] keysAndCerts) throws Throwable {
         // choose 2 random nodes to test

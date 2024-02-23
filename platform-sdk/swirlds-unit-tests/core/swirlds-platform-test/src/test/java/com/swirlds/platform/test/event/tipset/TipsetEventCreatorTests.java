@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -61,6 +58,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -76,7 +74,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("TipsetEventCreatorImpl Tests")
@@ -136,8 +133,7 @@ class TipsetEventCreatorTests {
             final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            // FUTURE WORK: Expand test to include birth round based ancient threshold.
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, AncientMode.GENERATION_THRESHOLD);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
@@ -894,91 +890,11 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
-        // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(
-                new NonAncientEventWindow(1, 100, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
         // that event would be stale at the moment of its creation.
         assertNull(eventCreator.maybeCreateEvent());
-    }
-
-    /**
-     * Checks that birth round on events is being set if the setting for using birth round is set.
-     * <p>
-     * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
-     */
-    @ParameterizedTest
-    @CsvSource({"true, true", "true, false", "false, true", "false, false"})
-    @DisplayName("Check setting of birthRound on new events.")
-    void checkSettingEventBirthRound(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed(0);
-
-        final int networkSize = 10;
-
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
-
-        final FakeTime time = new FakeTime();
-
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
-
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
-
-        final Map<Hash, EventImpl> events = new HashMap<>();
-
-        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
-            for (final Address address : addressBook) {
-                if (advancingClock) {
-                    time.tick(Duration.ofMillis(10));
-                }
-
-                transactionSupplier.set(generateRandomTransactions(random));
-
-                final NodeId nodeId = address.getNodeId();
-                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
-
-                final long pendingConsensusRound = eventIndex + 2;
-                if (eventIndex > 0) {
-
-                    final long ancientThreshold;
-                    if (useBirthRoundForAncient) {
-                        ancientThreshold = Math.max(1, eventIndex - 26);
-                    } else {
-                        ancientThreshold = Math.max(0, eventIndex - 26);
-                    }
-
-                    // Set non-ancientEventWindow after creating genesis event from each node.
-                    eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
-                            pendingConsensusRound - 1,
-                            ancientThreshold,
-                            1 /* ignored in this context */,
-                            useBirthRoundForAncient
-                                    ? AncientMode.BIRTH_ROUND_THRESHOLD
-                                    : AncientMode.GENERATION_THRESHOLD));
-                }
-
-                final GossipEvent event = eventCreator.maybeCreateEvent();
-
-                // In this test, it should be impossible for a node to be unable to create an event.
-                assertNotNull(event);
-
-                linkAndDistributeEvent(nodes, events, event);
-
-                if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
-                }
-
-                if (eventIndex == 0 || (!useBirthRoundForAncient && event != null)) {
-                    final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
-                } else if (event != null) {
-                    final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(pendingConsensusRound, birthRound);
-                }
-            }
-        }
     }
 }

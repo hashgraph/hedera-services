@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
@@ -30,7 +30,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.ReconnectFinishPayload;
 import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.SignedState;
@@ -68,10 +67,8 @@ public class ReconnectTeacher {
 
     private final ThreadManager threadManager;
     private final Time time;
-    private final PlatformContext platformContext;
 
     /**
-     * @param platformContext        the platform context
      * @param threadManager          responsible for managing thread lifecycles
      * @param connection             the connection to be used for the reconnect
      * @param reconnectSocketTimeout the socket timeout to use during the reconnect
@@ -82,7 +79,6 @@ public class ReconnectTeacher {
      * @param configuration          the configuration
      */
     public ReconnectTeacher(
-            @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
@@ -93,7 +89,6 @@ public class ReconnectTeacher {
             @NonNull final ReconnectMetrics statistics,
             @NonNull final Configuration configuration) {
 
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
@@ -221,7 +216,6 @@ public class ReconnectTeacher {
 
         final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         final TeachingSynchronizer synchronizer = new TeachingSynchronizer(
-                platformContext.getConfiguration(),
                 time,
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),

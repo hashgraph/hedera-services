@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.throttle.MultiThrottle;
 import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.platform.actions.QuorumTriggeredAction;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -371,7 +371,7 @@ public class TransactionSubmitter {
             // it may try to catch up the lost transactions count by submitting
             // many transactions in short window and lead to a burst of transactions. This is not good for
             // platform, so we need to check the current TPS and make sure it is not too high.
-            final double tranSubTPS = (double) metrics.getValue("Debug:info", "tranSubTPS");
+            final double tranSubTPS = (double) metrics.getValue("Debug.info", "tranSubTPS");
             if (tranSubTPS > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
                 return false;
             }
@@ -390,13 +390,13 @@ public class TransactionSubmitter {
             }
 
         } else if (this.goal == SUBMIT_GOAL.EVENTS_PER_SECOND_WHOLE_NETWORK) {
-            double realEvensPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "events_per_sec");
+            double realEvensPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "events/sec");
             return realEvensPerSecond > eventsPerSecondGoal;
         } else if (this.goal == SUBMIT_GOAL.ROUNDS_PER_SECOND_WHOLE_NETWORK) {
-            final double realRoundsPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "rounds_per_sec");
+            final double realRoundsPerSecond = (double) metrics.getValue(PLATFORM_CATEGORY, "rounds/sec");
             return realRoundsPerSecond <= roundsPerSecondGoal;
         } else if (this.goal == SUBMIT_GOAL.TRANS_PER_EVENT_WHOLE_NETWORK) {
-            final double realTranPerEvent = (double) metrics.getValue(PLATFORM_CATEGORY, "trans_per_event");
+            final double realTranPerEvent = (double) metrics.getValue(PLATFORM_CATEGORY, "trans/event");
             return realTranPerEvent <= tranPerEventGoal;
 
         } else if (this.goal == SUBMIT_GOAL.C2C_LATENCY) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
@@ -133,39 +131,36 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         return new SmartContractByteCodeMapValue(this);
     }
 
-    int getSizeInBytes() {
-        return Integer.BYTES + byteCode.length;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(byteCode);
     }
 
-    void serialize(final WritableSequentialData out) {
-        out.writeInt(byteCode.length);
-        out.writeBytes(byteCode);
-    }
-
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putInt(byteCode.length);
-        buffer.put(byteCode);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         byteCode = in.readByteArray(MAX_BYTE_CODE_BYTES);
     }
 
-    void deserialize(final ReadableSequentialData in) {
-        final int len = in.readInt();
-        byteCode = new byte[len];
-        in.readBytes(byteCode);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.putInt(byteCode.length);
+        buffer.put(byteCode);
     }
 
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
         final int len = buffer.getInt();
         byteCode = new byte[len];
         buffer.get(byteCode);

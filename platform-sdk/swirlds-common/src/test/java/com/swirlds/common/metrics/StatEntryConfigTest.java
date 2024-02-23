@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.metrics.api.FloatFormats;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;

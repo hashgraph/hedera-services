@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,14 @@
 package com.swirlds.merkledb.files;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,12 +35,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
-@Disabled
 class DataFileWriterTest {
 
     private DataFileWriter<Object> dataFileWriter;
@@ -52,7 +55,6 @@ class DataFileWriterTest {
         MockitoAnnotations.openMocks(this);
         when(dataItemSerializer.getSerializedSize()).thenReturn(1);
         when(dataItemSerializer.getCurrentDataVersion()).thenReturn(1L);
-        /*
         when(dataItemSerializer.copyItem(anyLong(), anyInt(), any(), any()))
                 .thenAnswer((Answer<Integer>) invocation -> {
                     int i = callCount.incrementAndGet();
@@ -71,10 +73,9 @@ class DataFileWriterTest {
 
                     return 1;
                 });
-        */
 
         Path dataFileWriterPath = Files.createTempDirectory("dataFileWriter");
-        dataFileWriter = new DataFileWriterJdb<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
+        dataFileWriter = new DataFileWriter<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
     }
 
     /**
@@ -87,10 +88,9 @@ class DataFileWriterTest {
         ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
         Future<?> writeFuture = writeExecutor.submit(() -> {
             try {
-                ByteBuffer allocate = ByteBuffer.allocate(10);
+                ByteBuffer allocate = ByteBuffer.allocate(4);
                 allocate.put("test".getBytes());
-                allocate.flip();
-                dataFileWriter.writeCopiedDataItem(allocate);
+                dataFileWriter.writeCopiedDataItem(1, allocate);
             } catch (IOException e) {
                 throw new RuntimeException();
             }

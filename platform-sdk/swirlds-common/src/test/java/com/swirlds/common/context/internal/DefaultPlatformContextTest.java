@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Test;
 
 class DefaultPlatformContextTest {
@@ -50,6 +50,5 @@ class DefaultPlatformContextTest {
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
         assertNotNull(context.getMetrics(), "Metrics must not be null");
         assertNotNull(context.getCryptography(), "Cryptography must not be null");
-        assertNotNull(context.getTime(), "Time must not be null");
     }
 }

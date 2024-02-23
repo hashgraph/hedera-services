@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,9 +194,7 @@ public record SavedStateMetadata(
                 selfId,
                 signingNodes,
                 signedState.getSigningWeight(),
-                platformState.getAddressBook() == null
-                        ? 0
-                        : platformState.getAddressBook().getTotalWeight(),
+                platformState.getAddressBook().getTotalWeight(),
                 epochHash,
                 epochHash == null ? "null" : epochHash.toMnemonic());
     }
@@ -315,7 +313,6 @@ public record SavedStateMetadata(
     }
 
     // This unused method is intentionally not deleted, in case we ever decide to add a new long to this file.
-
     /**
      * Attempt to parse a long from the data map.
      *
@@ -411,7 +408,6 @@ public record SavedStateMetadata(
     }
 
     // This unused method is intentionally not deleted, in case we ever decide to add a new instant to this file.
-
     /**
      * Attempt to parse an instant from the data map.
      *

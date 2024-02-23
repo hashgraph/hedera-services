@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.demo.migration.virtual;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -94,23 +92,6 @@ public class AccountVirtualMapValue implements VirtualValue {
         out.writeLong(uid);
     }
 
-    void serialize(final WritableSequentialData out) {
-        out.writeLong(balance);
-        out.writeLong(sendThreshold);
-        out.writeLong(receiveThreshold);
-        out.writeByte(getRequireSignatureAsByte());
-        out.writeLong(uid);
-    }
-
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putLong(balance);
-        buffer.putLong(sendThreshold);
-        buffer.putLong(receiveThreshold);
-        buffer.put(getRequireSignatureAsByte());
-        buffer.putLong(uid);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -123,16 +104,23 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.uid = in.readLong();
     }
 
-    void deserialize(final ReadableSequentialData in) {
-        this.balance = in.readLong();
-        this.sendThreshold = in.readLong();
-        this.receiveThreshold = in.readLong();
-        this.requireSignature = in.readByte() == 1;
-        this.uid = in.readLong();
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.putLong(balance);
+        buffer.putLong(sendThreshold);
+        buffer.putLong(receiveThreshold);
+        buffer.put(getRequireSignatureAsByte());
+        buffer.putLong(uid);
     }
 
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
         this.balance = buffer.getLong();
         this.sendThreshold = buffer.getLong();
         this.receiveThreshold = buffer.getLong();

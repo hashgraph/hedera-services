@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -48,6 +50,8 @@ public class SkippingIteratorTest {
         return Stream.of(Arguments.of(Collections.emptySet()), Arguments.of(NULL_SET));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @ParameterizedTest
     @MethodSource("skipParams")
@@ -65,6 +69,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - some skipped indices")
@@ -89,6 +95,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - unordered skipped indices")
@@ -113,6 +121,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - first index skipped")
@@ -129,6 +139,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - last index skipped")
@@ -145,6 +157,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - skip all indices")
@@ -157,6 +171,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - null array")
@@ -164,6 +180,8 @@ public class SkippingIteratorTest {
         assertThrows(NullPointerException.class, () -> new SkippingIterator<>(null, Collections.emptySet()));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - empty array")
@@ -173,6 +191,8 @@ public class SkippingIteratorTest {
         assertHasNextThrows(iter);
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
     @Tag(TestComponentTags.PLATFORM)
     @Test
     @DisplayName("SkippingIterator - skip invalid indices")

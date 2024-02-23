@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
@@ -47,7 +47,6 @@ import org.apache.logging.log4j.Logger;
  */
 @SuppressWarnings({"DuplicatedCode"})
 public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, FileStatisticAware {
-
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
     /**
@@ -86,21 +85,35 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @throws IOException If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
-            final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback<D> loadedDataCallback,
+            final LoadedDataCallback loadedDataCallback,
             final LongList keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
+        final boolean indexIsEmpty = keyToDiskLocationIndex.size() == 0;
         // create store dir
         Files.createDirectories(storeDir);
+        // rebuild index as well as calling user's loadedDataCallback if needed
+        final LoadedDataCallback combinedLoadedDataCallback;
+        if (!indexIsEmpty && loadedDataCallback == null) {
+            combinedLoadedDataCallback = null;
+        } else {
+            combinedLoadedDataCallback = (key, dataLocation, dataValue) -> {
+                if (indexIsEmpty) {
+                    index.put(key, dataLocation);
+                }
+                if (loadedDataCallback != null) {
+                    loadedDataCallback.newIndexEntry(key, dataLocation, dataValue);
+                }
+            };
+        }
         // create file collection
         fileCollection = new DataFileCollection<>(
-                config, storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
+                storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
         // no limits for the keys on init
         minValidKey = new AtomicLong(0);
         maxValidKey = new AtomicLong(Long.MAX_VALUE);
@@ -199,8 +212,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @return Array of serialization version for data if the value was read or null if not found
      * @throws IOException If there was a problem reading the value from file
      */
-    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
-    public Object getBytes(final long key) throws IOException {
+    public ByteBuffer getBytes(final long key) throws IOException {
         if (!checkKeyInRange(key)) {
             return null;
         }

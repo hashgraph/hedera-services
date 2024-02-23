@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -43,6 +44,7 @@ public class SemanticVersionTest {
             "Expected %s to throw %s, but no exception of the correct type was " + "thrown";
 
     @ParameterizedTest(name = "[{index}] {0}")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testValidSemanticVersionParsing(
@@ -70,6 +72,7 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("invalidVersionSupplier")
     void testInvalidSemanticVersionParsing(
@@ -89,6 +92,7 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSemanticVersionToString(
@@ -104,6 +108,7 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSerialization(

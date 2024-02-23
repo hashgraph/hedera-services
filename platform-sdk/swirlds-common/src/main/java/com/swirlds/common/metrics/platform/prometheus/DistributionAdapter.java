@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
+import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.TYPE_LABEL;
 
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.api.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -54,10 +55,14 @@ public class DistributionAdapter extends AbstractMetricAdapter {
      *     </ul>
      */
     public DistributionAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
-        super(adapterType, metric);
+        super(adapterType);
         Objects.requireNonNull(registry, "registry must not be null");
         Objects.requireNonNull(metric, "metric must not be null");
-        final Gauge.Builder builder = assignCommonValues(new Gauge.Builder());
+        final Gauge.Builder builder = new Gauge.Builder()
+                .subsystem(fix(metric.getCategory()))
+                .name(fix(metric.getName()))
+                .help(metric.getDescription())
+                .unit(metric.getUnit());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL, TYPE_LABEL);
         } else {

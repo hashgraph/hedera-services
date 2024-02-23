@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,19 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.virtual.merkle.TestKey;
+import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,9 +52,9 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
             final long lastLeafPath,
             final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
-            final boolean isReconnectContext)
+            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
             throws IOException {
+
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
@@ -105,6 +111,12 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
 
     @Override
     public void registerMetrics(final Metrics metrics) {}
+
+    @Override
+    public VirtualKeySet<TestKey> buildKeySet() {
+        return new HalfDiskVirtualKeySet<>(
+                new TestKeySerializer(), 10, 2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS, 1_000_000, 10_000);
+    }
 
     @Override
     public long getFirstLeafPath() {

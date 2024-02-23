@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
@@ -38,8 +39,8 @@ import org.apache.logging.log4j.Logger;
  * This class only contains one method that was extracted from the {@link Browser} class.
  *
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future once the
- * config.txt has been migrated to the regular config API. If you need to use this class please try to do as less static
- * access as possible.
+ * config.txt has been migrated to the regular config API. If you need to use this class please try to do as less
+ * static access as possible.
  */
 @Deprecated(forRemoval = true)
 public final class ApplicationDefinitionLoader {
@@ -51,26 +52,22 @@ public final class ApplicationDefinitionLoader {
     /**
      * Creates an {@link ApplicationDefinition}, using the config file at the given path.
      *
-     * @param pathsConfig the {@link PathsConfig} to use for bootstrapping
-     * @param configPath  the path to the config file
+     * @param configPath the path to the config file
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
      * @throws ConfigurationException if the configuration cannot be loaded
      */
-    public static @NonNull ApplicationDefinition loadDefault(
-            @NonNull final PathsConfig pathsConfig, @NonNull final Path configPath) throws ConfigurationException {
-        return load(pathsConfig, LegacyConfigPropertiesLoader.loadConfigFile(configPath));
+    public static @NonNull ApplicationDefinition loadDefault(@NonNull final Path configPath)
+            throws ConfigurationException {
+        return load(LegacyConfigPropertiesLoader.loadConfigFile(configPath));
     }
 
     /**
      * Creates a {@link ApplicationDefinition} from a given {@link LegacyConfigProperties}
      *
-     * @param pathsConfig             the {@link PathsConfig} to use for bootstrapping
-     * @param configurationProperties the {@link LegacyConfigProperties} to use for bootstrapping
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
      * @throws ConfigurationException if the configuration cannot be loaded
      */
-    public static @NonNull ApplicationDefinition load(
-            @NonNull final PathsConfig pathsConfig, @NonNull final LegacyConfigProperties configurationProperties)
+    public static @NonNull ApplicationDefinition load(@NonNull final LegacyConfigProperties configurationProperties)
             throws ConfigurationException {
         Objects.requireNonNull(configurationProperties, "configurationProperties must not be null");
 
@@ -80,7 +77,7 @@ public final class ApplicationDefinitionLoader {
 
         final AppStartParams appStartParams = configurationProperties
                 .appConfig()
-                .map(p -> ApplicationDefinitionLoader.convertToStartParams(pathsConfig, p))
+                .map(ApplicationDefinitionLoader::convertToStartParams)
                 .orElseThrow(() -> new ConfigurationException("application config is missing"));
 
         return new ApplicationDefinition(
@@ -91,13 +88,14 @@ public final class ApplicationDefinitionLoader {
                 addressBook);
     }
 
-    private static @NonNull AppStartParams convertToStartParams(
-            @NonNull final PathsConfig pathsConfig, @NonNull final JarAppConfig appConfig) {
+    private static @NonNull AppStartParams convertToStartParams(@NonNull final JarAppConfig appConfig) {
         final String[] appParameters = appConfig.params();
         // the line is: app, jarFilename, optionalParameters
         final String appJarFilename = appConfig.jarName();
         // this is a real .jar file, so load from data/apps/
-        final Path appJarPath = pathsConfig.getAppsDirPath().resolve(appJarFilename);
+        Path appJarPath = ConfigurationHolder.getConfigData(PathsConfig.class)
+                .getAppsDirPath()
+                .resolve(appJarFilename);
         String mainClassname = "";
         try (final JarFile jarFile = new JarFile(appJarPath.toFile())) {
             final Manifest manifest = jarFile.getManifest();

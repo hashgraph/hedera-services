@@ -27,7 +27,6 @@ module com.swirlds.demo.platform {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;
-    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
@@ -37,7 +36,6 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkle.test;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
-    requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires com.swirlds.virtualmap;
     requires java.logging;

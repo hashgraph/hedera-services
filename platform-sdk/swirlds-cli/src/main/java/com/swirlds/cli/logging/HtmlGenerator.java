@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -715,21 +715,21 @@ public class HtmlGenerator {
                 .addClass(WHITELIST_RADIO_LABEL)
                 .addClass(sectionName)
                 .addAttribute("type", "button")
-                .addAttribute("value", "v")
+                .addAttribute("value", "↓")
                 .generateTag());
         stringBuilder.append(new HtmlTagFactory("input")
                 .addClass(SECLECT_COLUMN_BUTTON_LABEL)
                 .addClass(NEUTRALLIST_RADIO_LABEL)
                 .addClass(sectionName)
                 .addAttribute("type", "button")
-                .addAttribute("value", "v")
+                .addAttribute("value", "↓")
                 .generateTag());
         stringBuilder.append(new HtmlTagFactory("input")
                 .addClass(SECLECT_COLUMN_BUTTON_LABEL)
                 .addClass(BLACKLIST_RADIO_LABEL)
                 .addClass(sectionName)
                 .addAttribute("type", "button")
-                .addAttribute("value", "v")
+                .addAttribute("value", "↓")
                 .generateTag());
         stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
@@ -997,6 +997,10 @@ public class HtmlGenerator {
 
         final StringBuilder containingDivBuilder = new StringBuilder();
         containingDivBuilder
+                .append(new HtmlTagFactory("h2", "Filters").generateTag())
+                .append("\n");
+
+        containingDivBuilder
                 .append(new HtmlTagFactory("div", filterDivBuilder.toString())
                         .addClass(INDEPENDENT_SCROLL_LABEL)
                         .generateTag())
@@ -1008,7 +1012,6 @@ public class HtmlGenerator {
 
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
-        cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("height", "99vh"));
 
         return new HtmlTagFactory("div", containingDivBuilder.toString()).generateTag();
     }

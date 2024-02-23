@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.set.Hotspot;
 import com.swirlds.common.test.fixtures.set.HotspotHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessSet;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -86,6 +87,7 @@ class RandomAccessSetTest {
      * assert that set contains same elements as reference set.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Randomized Hash Set Test")
     void randomizedHashSetTest() {
@@ -113,6 +115,7 @@ class RandomAccessSetTest {
      * Do randomized inserts and removes on HotspotHashSet, assert that set contains same elements as reference set.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Randomized Hotspot Set Test")
@@ -141,6 +144,7 @@ class RandomAccessSetTest {
      * Ensure that all elements appear with even probability in RandomAccessHashSet.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hash Set Distribution Test")
     void hashSetDistributionTest() {
@@ -186,6 +190,7 @@ class RandomAccessSetTest {
      * that has no configured hotspots.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hotspot Simple Distribution Test")
     void hotspotSimpleDistributionTest() {
@@ -231,6 +236,7 @@ class RandomAccessSetTest {
      * HotspotHashSet that has no configured hotspots.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hotspot Simple Distribution Weighted Test")
     void hotspotSimpleDistributionWeightedTest() {
@@ -276,6 +282,7 @@ class RandomAccessSetTest {
      * HotspotHashSet that has a single hotspot.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hotspot One Hotspot Test")
     void hotspotOneHotspotTest() {
@@ -326,6 +333,7 @@ class RandomAccessSetTest {
      * HotspotHashSet that has a single hotspot.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hotspot One Hotspot Test")
     void hotspotOneHotspotWeightedTest() {
@@ -393,6 +401,7 @@ class RandomAccessSetTest {
      * HotspotHashSet that has 3 hotspots.
      */
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.TESTING)
     @DisplayName("Hotspot Three Hotspots Test")
     void hotspotThreeHotspotsWeightedTest() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private PlatformState(final PlatformState that) {
         super(that);
-        this.addressBook = that.addressBook == null ? null : that.addressBook.copy();
+        this.addressBook = that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
         this.runningEventHash = that.runningEventHash;
@@ -254,8 +254,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param addressBook an address book
      */
-    public void setAddressBook(@Nullable final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public void setAddressBook(@NonNull final AddressBook addressBook) {
+        this.addressBook = Objects.requireNonNull(addressBook);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,12 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTr
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.HASH_STORE_DISK_SUFFIX;
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.OBJECT_KEY_TO_PATH_SUFFIX;
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.PATH_TO_KEY_VALUE_SUFFIX;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.runTaskAndCleanThreadLocals;
+import static com.swirlds.merkledb.MerkleDbTestUtils.runTaskAndCleanThreadLocals;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
-import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;

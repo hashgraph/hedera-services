@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package com.swirlds.platform.system;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("Basic SoftwareVersion Tests")
@@ -30,6 +32,7 @@ class BasicSoftwareVersionTest {
     public final SoftwareVersion VERSION_TWO = new BasicSoftwareVersion(2);
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify compareTo functionality")
     @SuppressWarnings("EqualsWithItself")
     void testCompareTo() {
@@ -53,6 +56,7 @@ class BasicSoftwareVersionTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Verify toString functionality")
     void testToString() {
         assertEquals("1", VERSION_ONE.toString(), "VERSION_ONE not reporting its version as 1.");

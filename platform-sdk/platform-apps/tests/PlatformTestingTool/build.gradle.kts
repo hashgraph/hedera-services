@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ plugins {
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
 testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.test.framework")
     requires("org.apache.logging.log4j.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.params")

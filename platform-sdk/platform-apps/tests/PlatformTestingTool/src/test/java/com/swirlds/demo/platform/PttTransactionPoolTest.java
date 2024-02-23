@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.demo.platform.TestUtil.addRecord;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
@@ -24,6 +23,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

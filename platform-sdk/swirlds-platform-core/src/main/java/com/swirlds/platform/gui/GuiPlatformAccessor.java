@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package com.swirlds.platform.gui;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.system.events.PlatformEvent;
@@ -42,10 +43,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @Deprecated(forRemoval = true)
 public final class GuiPlatformAccessor {
 
-    private final Map<NodeId, Shadowgraph> shadowGraphs = new ConcurrentHashMap<>();
+    private final Map<NodeId, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
+    private final Map<NodeId, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
-    private final Map<NodeId, SignedStateNexus> latestImmutableStateComponents = new ConcurrentHashMap<>();
 
     private static final GuiPlatformAccessor INSTANCE = new GuiPlatformAccessor();
 
@@ -66,7 +67,7 @@ public final class GuiPlatformAccessor {
      * @param nodeId      the ID of the node
      * @param shadowGraph the shadow graph
      */
-    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final Shadowgraph shadowGraph) {
+    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final ShadowGraph shadowGraph) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
         shadowGraphs.put(nodeId, shadowGraph);
@@ -79,7 +80,7 @@ public final class GuiPlatformAccessor {
      * @return the shadow graph
      */
     @Nullable
-    public Shadowgraph getShadowGraph(@NonNull NodeId nodeId) {
+    public ShadowGraph getShadowGraph(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return shadowGraphs.getOrDefault(nodeId, null);
     }
@@ -148,6 +149,31 @@ public final class GuiPlatformAccessor {
     }
 
     /**
+     * Set the state management component for a node.
+     *
+     * @param nodeId                   the ID of the node
+     * @param stateManagementComponent the state management component
+     */
+    public void setStateManagementComponent(
+            @NonNull final NodeId nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateManagementComponent, "stateManagementComponent must not be null");
+        stateManagementComponents.put(nodeId, stateManagementComponent);
+    }
+
+    /**
+     * Get the state management component for a node, or null if none is set.
+     *
+     * @param nodeId the ID of the node
+     * @return the state management component
+     */
+    @Nullable
+    public StateManagementComponent getStateManagementComponent(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        return stateManagementComponents.getOrDefault(nodeId, null);
+    }
+
+    /**
      * Set the consensus for a node.
      *
      * @param nodeId    the ID of the node
@@ -199,30 +225,5 @@ public final class GuiPlatformAccessor {
     public SignedStateNexus getLatestCompleteStateComponent(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return latestCompleteStateComponents.getOrDefault(nodeId, null);
-    }
-
-    /**
-     * Set the latest immutable state component for a node.
-     *
-     * @param nodeId              the ID of the node
-     * @param latestCompleteState the latest immutable state component
-     */
-    public void setLatestImmutableStateComponent(
-            @NonNull final NodeId nodeId, @NonNull final SignedStateNexus latestCompleteState) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(latestCompleteState, "latestCompleteState must not be null");
-        latestImmutableStateComponents.put(nodeId, latestCompleteState);
-    }
-
-    /**
-     * Get the latest immutable state component for a node, or null if none is set.
-     *
-     * @param nodeId the ID of the node
-     * @return the latest immutable state component
-     */
-    @Nullable
-    public SignedStateNexus getLatestImmutableStateComponent(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        return latestImmutableStateComponents.getOrDefault(nodeId, null);
     }
 }

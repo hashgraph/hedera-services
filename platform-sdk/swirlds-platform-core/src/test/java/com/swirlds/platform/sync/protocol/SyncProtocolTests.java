@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.sync.protocol;
 
-import static com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,17 +27,18 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.SyncPermitProvider;
-import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -54,9 +53,10 @@ import org.mockito.Mockito;
 @DisplayName("Sync Protocol Tests")
 class SyncProtocolTests {
     private NodeId peerId;
-    private ShadowgraphSynchronizer shadowGraphSynchronizer;
+    private ShadowGraphSynchronizer shadowGraphSynchronizer;
     private FallenBehindManager fallenBehindManager;
     private SyncPermitProvider permitProvider;
+    private PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private Duration sleepAfterSync;
     private SyncMetrics syncMetrics;
     private FakeTime time;
@@ -65,7 +65,7 @@ class SyncProtocolTests {
     @BeforeEach
     void setup() {
         peerId = new NodeId(1);
-        shadowGraphSynchronizer = mock(ShadowgraphSynchronizer.class);
+        shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
         permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
         sleepAfterSync = Duration.ofMillis(0);
@@ -78,6 +78,8 @@ class SyncProtocolTests {
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
         // only peer with ID 1 is needed for fallen behind
         Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
+        // peer agnostic sync checks pass
+        peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(() -> true));
 
         platformContext = TestPlatformContextBuilder.create().build();
     }
@@ -91,8 +93,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -113,8 +114,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
                 time);
@@ -151,16 +151,15 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
 
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain the only existing permits, so none are available to the protocol
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertTrue(permitProvider.tryAcquire(peerId));
+        assertTrue(permitProvider.tryAcquire(peerId));
         assertEquals(0, permitProvider.getNumAvailable());
 
         assertFalse(protocol.shouldInitiate());
@@ -176,8 +175,8 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> true,
-                () -> true,
+                // peer agnostic checks fail
+                new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -199,8 +198,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -221,8 +219,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -242,8 +239,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -258,7 +254,7 @@ class SyncProtocolTests {
     void shouldAccept() {
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain 1 of the permits, but 1 will still be available to accept
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertTrue(permitProvider.tryAcquire(peerId));
         assertEquals(1, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
@@ -267,8 +263,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -288,8 +283,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
                 time);
@@ -323,8 +317,8 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         // waste both available permits
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertTrue(permitProvider.tryAcquire(peerId));
+        assertTrue(permitProvider.tryAcquire(peerId));
 
         assertEquals(0, permitProvider.getNumAvailable());
 
@@ -334,8 +328,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -353,8 +346,8 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> true,
-                () -> true,
+                // peer agnostic checks fail
+                new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -376,8 +369,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -396,8 +388,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -418,8 +409,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -440,8 +430,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -462,8 +451,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -485,8 +473,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -514,8 +501,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -542,8 +528,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
@@ -569,8 +554,7 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                () -> false,
-                () -> false,
+                peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);

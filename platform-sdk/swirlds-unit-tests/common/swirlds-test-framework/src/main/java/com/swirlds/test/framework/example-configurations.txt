@@ -1,0 +1,66 @@
+This document contains example test configurations that developers have found useful.
+
+If you build a configuration that you find useful, post it here so that others can use it.
+
+========================================
+===    How to add a configuration    ===
+========================================
+
+- Click the drop down menu in Intellij next to the green play button.
+- Set the test kind to "Tags".
+- Set the scope to "In whole project".
+- Do not change the forking mode (default: none). Bug in intellij causes flags to be ignored if changed.
+- Add a tag expression.
+
+Tag expressions use standard Boolean logic:
+- and using the “&” character
+- or using the “|” character
+- not using the “!” character
+- (parentheses) are allowed
+- Whitespace sensitive, do not add any spaces or other whitespace
+
+Further tag documentation: https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions
+
+========================================
+===      Quick Standard tests        ===
+========================================
+
+Runs all functional tests that are quick and can be run locally.
+
+FUNCTIONAL&!BROKEN&!REMOTE_ONLY&!AT_SCALE
+
+========================================
+===     Complete Standard tests      ===
+========================================
+
+Runs all functional tests, even the ones that take a long time. A good thing to do before a commit.
+
+FUNCTIONAL&!BROKEN&!REMOTE_ONLY
+
+========================================
+===      Quick Component tests       ===
+========================================
+
+Runs quick functional tests for a particular component.
+
+Example 1: merkle tests
+
+MERKLE&FUNCTIONAL&!BROKEN&!REMOTE_ONLY&!AT_SCALE
+
+Example 2: fcmap tests
+
+FCMAP&FUNCTIONAL&!BROKEN&!REMOTE_ONLY&!AT_SCALE
+
+========================================
+===    Complete Component tests      ===
+========================================
+
+Runs quick functional tests for a particular component.
+
+Example 1: merkle tests
+
+MERKLE&FUNCTIONAL&!BROKEN&!REMOTE_ONLY
+
+Example 2: fcmap tests
+
+FCMAP&FUNCTIONAL&!BROKEN&!REMOTE_ONLY

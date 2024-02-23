@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -34,6 +35,7 @@ class SelfSerializableTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void serializeDeserialize(boolean includeClassId) throws IOException {
@@ -50,6 +52,7 @@ class SelfSerializableTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serialize Deserialize")
     void deserializeInvalidVersions() throws IOException {

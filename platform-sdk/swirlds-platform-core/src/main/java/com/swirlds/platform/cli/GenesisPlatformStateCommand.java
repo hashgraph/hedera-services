@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.state.PlatformData;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -60,9 +59,9 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
     }
 
     /**
-     * The path to the output directory
+     * The path to state to edit
      */
-    @CommandLine.Parameters(description = "The path to the output directory", index = "1")
+    @CommandLine.Parameters(description = "The path to the state to edit", index = "1")
     private void setOutputDir(final Path outputDir) {
         this.outputDir = dirMustExist(outputDir.toAbsolutePath());
     }
@@ -79,14 +78,9 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformState platformState =
-                    reservedSignedState.get().getState().getPlatformState();
             System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformData.GENESIS_ROUND);
-            platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
-            System.out.printf("Nullifying Address Books %n");
-            platformState.setAddressBook(null);
-            platformState.setPreviousAddressBook(null);
+            reservedSignedState.get().getState().getPlatformState().setRound(PlatformData.GENESIS_ROUND);
+            reservedSignedState.get().getState().getPlatformState().setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

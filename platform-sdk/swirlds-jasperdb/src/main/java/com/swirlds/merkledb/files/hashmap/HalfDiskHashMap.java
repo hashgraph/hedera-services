@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,16 +58,15 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * It maps a VirtualKey to a long value. This allows very large maps with minimal RAM usage and the
  * best performance profile as by using an in memory index we avoid the need for random disk writes.
  * Random disk writes are horrible performance wise in our testing.
- *
- * <p>This implementation depends on good hashCode() implementation on the keys, if there are too
+ * <p>
+ * This implementation depends on good hashCode() implementation on the keys, if there are too
  * many hash collisions the performance can get bad.
- *
- * <p><b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
+ * <p>
+ * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
 public class HalfDiskHashMap<K extends VirtualKey>
         implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
-
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -76,22 +75,26 @@ public class HalfDiskHashMap<K extends VirtualKey>
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.hdhm";
     /** Bucket index file name suffix with extension */
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
+    /** Nominal value for value to say please delete from map. */
+    protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
+    /** The amount of data used for storing key hash code */
+    protected static final int KEY_HASHCODE_SIZE = Integer.BYTES;
     /**
-     * A marker to indicate that a value should be deleted from the map, or that there is
-     * no old value to compare against in putIfEqual/deleteIfEqual
+     * The amount of data used for storing value in bucket, our values are longs as this is a key to
+     * long map
      */
-    protected static final long INVALID_VALUE = Long.MIN_VALUE;
-
+    protected static final int VALUE_SIZE = Long.BYTES;
     /**
      * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
-     * heuristic used in calculation for how many buckets to create. The larger this number the
-     * slower lookups will be but the more even distribution of entries across buckets will be. So
-     * it is a matter of balance.
+     * heuristic used alongside LOADING_FACTOR in calculation for how many buckets to create. The
+     * larger this number the slower lookups will be but the more even distribution of entries
+     * across buckets will be. So it is a matter of balance.
      */
-    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 32;
+    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
+    /** how full should all available bins be if we are at the specified map size */
+    public static final double LOADING_FACTOR = 0.6;
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
-
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket
@@ -143,7 +146,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param config                         MerkleDb config
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param keySerializer                  Serializer for converting raw data to/from keys
@@ -160,7 +162,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
-            final MerkleDbConfig config,
             final long mapSize,
             final KeySerializer<K> keySerializer,
             final Path storeDir,
@@ -172,9 +173,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
-        this.bucketSerializer = new BucketSerializer<>(config, keySerializer);
+        this.bucketSerializer = new BucketSerializer<>(keySerializer);
         // load or create new
-        LoadedDataCallback<Bucket<K>> loadedDataCallback;
+        LoadedDataCallback loadedDataCallback;
         if (Files.exists(storeDir)) {
             // load metadata
             Path metaDataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
@@ -219,8 +220,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
-                loadedDataCallback = (dataLocation, bucket) ->
-                        bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
+                loadedDataCallback =
+                        (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key, dataLocation);
             }
         } else {
             // create store dir
@@ -228,8 +229,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
             // create new index
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
-            minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
-            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
+            minimumBuckets = (int) Math.ceil((mapSize / LOADING_FACTOR) / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of
+            // 4096
             numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
@@ -241,9 +243,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     numOfBuckets);
         }
         // create file collection
-        fileCollection = new DataFileCollection<>(
-                // Need: propagate MerkleDb config from the database
-                config, storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
+        fileCollection =
+                new DataFileCollection<>(storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
     }
 
     /**
@@ -316,7 +317,14 @@ public class HalfDiskHashMap<K extends VirtualKey>
         writingThread = Thread.currentThread();
     }
 
-    private BucketMutation<K> findBucketForUpdate(final K key, final long oldValue, final long value) {
+    /**
+     * Put a key/value during the current writing session. The value will not be retrievable until
+     * it is committed in the {@link #endWriting()} call.
+     *
+     * @param key the key to store the value for
+     * @param value the value to store for given key
+     */
+    public void put(final K key, final long value) {
         if (key == null) {
             throw new IllegalArgumentException("Can not write a null key");
         }
@@ -329,68 +337,18 @@ public class HalfDiskHashMap<K extends VirtualKey>
         }
         // store key and value in transaction cache
         final int bucketIndex = computeBucketIndex(key.hashCode());
-        return oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, oldValue, value));
-    }
-
-    /**
-     * Put a key/value during the current writing session. The value will not be retrievable until
-     * it is committed in the {@link #endWriting()} call.
-     *
-     * <p>This method may be called multiple times for the same key in a single writing
-     * session. The value from the last call will be stored in this map after the session is
-     * ended.
-     *
-     * @param key the key to store the value for
-     * @param value the value to store for given key
-     */
-    public void put(final K key, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, INVALID_VALUE, value);
+        final BucketMutation<K> bucketMap =
+                oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, value));
         bucketMap.put(key, value);
     }
 
     /**
-     * Put a key/value during the current writing session. This method is similar to {@link
-     * #put(VirtualKey, long)}, but the new value is set only if the current value is equal to
-     * the given {@code oldValue}.
-     *
-     * <p>This method may be called multiple times for the same key in a single writing
-     * session. If the new value from the first call is equal to the old value in the second
-     * call, the new value from the second call will be stored in this map after the session
-     * is ended, otherwise the value from the second call will be ignored.
-     *
-     * <p>If the value for {@code oldValue} is {@link #INVALID_VALUE}, it's ignored, and this
-     * method is identical to {@link #put(VirtualKey, long)}.
-     *
-     * @param key the key to store the value for
-     * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
-     *                 if no current value check is needed
-     * @param value the value to store for the given key
-     */
-    public void putIfEqual(final K key, final long oldValue, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, oldValue, value);
-        bucketMap.putIfEqual(key, oldValue, value);
-    }
-
-    /**
-     * Delete a key entry from the map.
+     * Delete a key entry from map
      *
      * @param key The key to delete entry for
      */
     public void delete(final K key) {
-        put(key, INVALID_VALUE);
-    }
-
-    /**
-     * Delete a key entry from the map, if the current value is equal to the given {@code oldValue}.
-     * If {@code oldValue} is {@link #INVALID_VALUE}, no current value check is performed, and this
-     * method is identical to {@link #delete(VirtualKey)}.
-     *
-     * @param key the key to delete the entry for
-     * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
-     *                 if no current value check is needed
-     */
-    public void deleteIfEqual(final K key, final long oldValue) {
-        putIfEqual(key, oldValue, INVALID_VALUE);
+        put(key, SPECIAL_DELETE_ME_VALUE);
     }
 
     /**
@@ -434,32 +392,36 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     ++inFlight;
                 }
 
-                ReadBucketResult<K> res;
-                while ((res = queue.poll()) != null) {
-                    --inFlight;
-                    if (res.error != null) {
-                        throw new RuntimeException(res.error);
+                final ReadBucketResult<K> res = queue.poll();
+                if (res == null) {
+                    Thread.onSpinWait();
+                    continue;
+                }
+                --inFlight;
+
+                if (res.error != null) {
+                    throw new RuntimeException(res.error);
+                }
+                try (final Bucket<K> bucket = res.bucket) {
+                    final int bucketIndex = bucket.getBucketIndex();
+                    if (bucket.getBucketEntryCount() == 0) {
+                        // bucket is missing or empty, remove it from the index
+                        bucketIndexToBucketLocation.remove(bucketIndex);
+                    } else {
+                        // save bucket
+                        final long bucketLocation = fileCollection.storeDataItem(bucket);
+                        // update bucketIndexToBucketLocation
+                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                     }
-                    try (final Bucket<K> bucket = res.bucket) {
-                        final int bucketIndex = bucket.getBucketIndex();
-                        if (bucket.isEmpty()) {
-                            // bucket is missing or empty, remove it from the index
-                            bucketIndexToBucketLocation.remove(bucketIndex);
-                        } else {
-                            // save bucket
-                            final long bucketLocation = fileCollection.storeDataItem(bucket);
-                            // update bucketIndexToBucketLocation
-                            bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
-                        }
-                    } finally {
-                        ++processed;
-                    }
+                } finally {
+                    ++processed;
                 }
             }
             // close files session
             dataFileReader = fileCollection.endWriting(0, numOfBuckets);
             // we have updated all indexes so the data file can now be included in merges
             dataFileReader.setFileCompleted();
+            return dataFileReader;
         } else {
             dataFileReader = null;
         }
@@ -541,6 +503,47 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 minimumBuckets,
                 numOfBuckets,
                 GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+    }
+
+    /** Useful debug method to print the current state of the transaction cache */
+    public void debugDumpTransactionCacheCondensed() {
+        logger.info(MERKLE_DB.getMarker(), "=========== TRANSACTION CACHE ==========================");
+        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
+            final BucketMutation<K> bucketMap = oneTransactionsData.get(bucketIndex);
+            if (bucketMap != null) {
+                final String tooBig = (bucketMap.size() > GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
+                        ? ("TOO MANY! > " + GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
+                        : "";
+                logger.info(
+                        MERKLE_DB.getMarker(), "bucketIndex [{}] , count={} {}", bucketIndex, bucketMap.size(), tooBig);
+            } else {
+                logger.info(MERKLE_DB.getMarker(), "bucketIndex [{}] , EMPTY!", bucketIndex);
+            }
+        }
+        logger.info(MERKLE_DB.getMarker(), "========================================================");
+    }
+
+    /** Useful debug method to print the current state of the transaction cache */
+    public void debugDumpTransactionCache() {
+        logger.info(MERKLE_DB.getMarker(), "=========== TRANSACTION CACHE ==========================");
+        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
+            final BucketMutation<K> bucketMap = oneTransactionsData.get(bucketIndex);
+            if (bucketMap != null) {
+                final String tooBig = (bucketMap.size() > GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
+                        ? ("TOO MANY! > " + GOOD_AVERAGE_BUCKET_ENTRY_COUNT)
+                        : "";
+                logger.info(
+                        MERKLE_DB.getMarker(), "bucketIndex [{}] , count={} {}", bucketIndex, bucketMap.size(), tooBig);
+                bucketMap.forEachKeyValue((k, l) -> logger.info(
+                        MERKLE_DB.getMarker(),
+                        "        keyHash [{}] bucket [{}]  key [{}] value [{}]",
+                        k.hashCode(),
+                        computeBucketIndex(k.hashCode()),
+                        k,
+                        l));
+            }
+        }
+        logger.info(MERKLE_DB.getMarker(), "========================================================");
     }
 
     public DataFileCollection<Bucket<K>> getFileCollection() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,13 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.ValueType.MAX;
-import static com.swirlds.metrics.api.Metric.ValueType.MIN;
-import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.MAX;
+import static com.swirlds.common.metrics.Metric.ValueType.MIN;
+import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.metrics.api.FloatFormats;
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.MetricType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 

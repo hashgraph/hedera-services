@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIH
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -63,43 +65,42 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The goal of the ShadowgraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
+ * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
  * the same events in the graph. This process is called a sync.
  * <p>
  * This instance can be called by multiple threads at the same time. To avoid accidental concurrency issues, all the
  * variables in this class are final. The ones that are used for storing information about an ongoing sync are method
  * local.
  */
-public class ShadowgraphSynchronizer {
+public class ShadowGraphSynchronizer {
 
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The shadow graph manager to use for this sync
      */
-    private final Shadowgraph shadowGraph;
-
+    private final ShadowGraph shadowGraph;
+    /**
+     * Tracks the tipset of the latest self event. Null if feature is not enabled.
+     */
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
     /**
      * Number of member nodes in the network for this sync
      */
     private final int numberOfNodes;
-
     /**
      * All sync stats
      */
     private final SyncMetrics syncMetrics;
-
     /**
      * provides the current consensus instance, a supplier is used because this instance will change after a reconnect,
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
-
     /**
      * consumes events received by the peer
      */
     private final Consumer<GossipEvent> eventHandler;
-
     /**
      * manages sync related decisions
      */
@@ -115,12 +116,10 @@ public class ShadowgraphSynchronizer {
      * executes tasks in parallel
      */
     private final ParallelExecutor executor;
-
     /**
      * if set to true, send and receive initial negotiation bytes at the start of the sync
      */
     private final boolean sendRecInitBytes;
-
     /**
      * executed before fetching the tips from the shadowgraph for the second time in phase 3
      */
@@ -141,13 +140,15 @@ public class ShadowgraphSynchronizer {
      */
     private final Duration nonAncestorFilterThreshold;
 
-    public ShadowgraphSynchronizer(
+    public ShadowGraphSynchronizer(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Shadowgraph shadowGraph,
+            @NonNull final Time time,
+            @NonNull final ShadowGraph shadowGraph,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor,
@@ -155,8 +156,9 @@ public class ShadowgraphSynchronizer {
             @NonNull final InterruptableRunnable executePreFetchTips) {
 
         Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(intakeQueue);
 
-        this.time = platformContext.getTime();
+        this.time = Objects.requireNonNull(time);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
@@ -166,12 +168,56 @@ public class ShadowgraphSynchronizer {
         this.executor = Objects.requireNonNull(executor);
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = Objects.requireNonNull(executePreFetchTips);
-        this.eventHandler = Objects.requireNonNull(receivedEventHandler);
+        this.eventHandler = buildEventHandler(platformContext, intakeQueue);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
+        if (filterLikelyDuplicates) {
+            Objects.requireNonNull(latestEventTipsetTracker);
+        }
+    }
+
+    /**
+     * Construct the event handler for new events. If configured to do so, this handler will also hash events before
+     * passing them down the pipeline.
+     *
+     * @param platformContext the platform context
+     * @param intakeQueue     the event intake queue
+     */
+    @NonNull
+    private Consumer<GossipEvent> buildEventHandler(
+            @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
+
+        Objects.requireNonNull(intakeQueue);
+
+        final boolean hashOnGossipThreads = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .hashOnGossipThreads();
+
+        final Consumer<GossipEvent> wrappedPut = event -> {
+            try {
+                intakeQueue.put(event);
+            } catch (final InterruptedException e) {
+                // should never happen, and we don't have a simple way of recovering from it
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        if (hashOnGossipThreads) {
+            final Cryptography cryptography = platformContext.getCryptography();
+            return event -> {
+                cryptography.digestSync(event.getHashedData());
+                event.buildDescriptor();
+
+                wrappedPut.accept(event);
+            };
+        } else {
+            return wrappedPut;
+        }
     }
 
     /**
@@ -206,7 +252,7 @@ public class ShadowgraphSynchronizer {
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
         final List<EventImpl> sendList;
-        try (final ShadowgraphReservation reservation = shadowGraph.reserve()) {
+        try (final GenerationReservation reservation = shadowGraph.reserve()) {
             connection.initForSync();
 
             timing.start();
@@ -219,7 +265,7 @@ public class ShadowgraphSynchronizer {
 
             // the generation we reserved is our minimum round generation
             // the ShadowGraph guarantees it won't be expired until we release it
-            final Generations myGenerations = getGenerations(reservation.getReservedIndicator());
+            final Generations myGenerations = getGenerations(reservation.getGeneration());
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE generation numbers & tip hashes
             final TheirTipsAndGenerations theirTipsAndGenerations = readWriteParallel(
@@ -370,17 +416,22 @@ public class ShadowgraphSynchronizer {
         final List<EventImpl> eventsTheyMayNeed =
                 sendSet.stream().map(ShadowEvent::getEvent).collect(Collectors.toCollection(ArrayList::new));
 
-        SyncUtils.sort(eventsTheyMayNeed);
-
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
-            sendList = filterLikelyDuplicates(selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
+            sendList = filterLikelyDuplicates(
+                    selfId,
+                    nonAncestorFilterThreshold,
+                    time.now(),
+                    eventsTheyMayNeed,
+                    latestEventTipsetTracker.getLatestSelfEventTipset());
             final long endFilterTime = time.nanoTime();
             syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
         }
+
+        SyncUtils.sort(sendList);
 
         return sendList;
     }

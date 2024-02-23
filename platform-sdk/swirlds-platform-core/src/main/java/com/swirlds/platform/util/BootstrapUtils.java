@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
-import com.swirlds.common.config.BasicCommonConfig;
-import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -41,6 +43,8 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.config.extensions.sources.ThreadCountPropertyConfigSource;
+import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.ApplicationDefinition;
@@ -48,17 +52,14 @@ import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.event.preconsensus.PcesConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -120,6 +121,16 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
+     * Load the config for paths
+     *
+     * @return the paths configuration files
+     */
+    public static @NonNull PathsConfig loadPathsConfig() {
+        final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
+        return pathsConfig;
+    }
+
+    /**
      * Load the configuration for the platform.
      *
      * @param configurationBuilder the configuration builder to setup
@@ -132,17 +143,18 @@ public final class BootstrapUtils {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
         configurationBuilder
                 .withSource(mappedSettingsConfigSource)
+                .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
-                .withConfigDataType(BasicCommonConfig.class)
                 .withConfigDataType(StateConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
+                .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
@@ -154,7 +166,7 @@ public final class BootstrapUtils {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PcesConfig.class)
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)

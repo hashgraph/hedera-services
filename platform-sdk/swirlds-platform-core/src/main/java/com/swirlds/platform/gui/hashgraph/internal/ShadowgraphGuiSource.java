@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.PlatformEvent;
 
 /**
- * A {@link HashgraphGuiSource} that retrieves events from a {@link Shadowgraph}
+ * A {@link HashgraphGuiSource} that retrieves events from a {@link ShadowGraph}
  */
 public interface ShadowgraphGuiSource extends HashgraphGuiSource {
     @Override
@@ -40,7 +40,7 @@ public interface ShadowgraphGuiSource extends HashgraphGuiSource {
     @Override
     default PlatformEvent[] getEvents(final long startGeneration, final int numGenerations) {
         return getShadowGraph()
-                .findByAncientIndicator(startGeneration, startGeneration + numGenerations, e -> true)
+                .findByGeneration(startGeneration, startGeneration + numGenerations, e -> true)
                 .toArray(PlatformEvent[]::new);
     }
 
@@ -49,5 +49,5 @@ public interface ShadowgraphGuiSource extends HashgraphGuiSource {
         return getShadowGraph() != null;
     }
 
-    Shadowgraph getShadowGraph();
+    ShadowGraph getShadowGraph();
 }

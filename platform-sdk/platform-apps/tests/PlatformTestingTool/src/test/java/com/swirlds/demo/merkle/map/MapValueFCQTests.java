@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.demo.platform.TestUtil.deleteFirstRecord;
 import static com.swirlds.demo.platform.TestUtil.generateRandomContent;
 import static com.swirlds.demo.platform.TestUtil.generateTxRecord;
 import static com.swirlds.demo.platform.TestUtil.getExpirationTime;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,9 @@ mainModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.test.framework")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.config.extensions")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

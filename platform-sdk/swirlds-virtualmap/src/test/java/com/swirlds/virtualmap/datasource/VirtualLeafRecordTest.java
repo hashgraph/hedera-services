@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,10 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.virtualmap.TestKey;
+import com.swirlds.virtualmap.TestValue;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,6 +51,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the default Constructor works")
     void createLeafRecordUsingDefaultConstructor() {
@@ -59,6 +61,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the full constructor works")
     void createLeafRecordUsingFullConstructor() {
@@ -71,6 +74,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("toString with a null elements is OK")
     void toStringWithNullElementsDoesNotThrow() {
@@ -80,6 +84,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Identity equals")
     void identityEqualsWorks() {
@@ -90,6 +95,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Equal instances")
     void equalInstances() {
@@ -102,6 +108,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Unequal instances")
     void unequalInstances() {
@@ -147,6 +154,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("hashCode")
     void testHashCode() {
@@ -183,6 +191,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Test copy")
     void testCopy() {
@@ -196,6 +205,7 @@ class VirtualLeafRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Serialization and deserialization")
     void serializesAndDeserializes() throws IOException {

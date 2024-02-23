@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -33,6 +34,7 @@ class VirtualHashRecordTest {
     private static final Cryptography CRYPTO = CryptographyHolder.get();
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the path Constructor works")
     void createInternalRecordUsingPathConstructor() {
@@ -42,6 +44,7 @@ class VirtualHashRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the full constructor works")
     void createInternalRecordUsingPathHashConstructor() {
@@ -52,6 +55,7 @@ class VirtualHashRecordTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("toString with a null hash is OK")
     void toStringWithNullHashDoesNotThrow() {

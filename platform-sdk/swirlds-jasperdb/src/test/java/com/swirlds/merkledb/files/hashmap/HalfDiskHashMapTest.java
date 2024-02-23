@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,14 @@ package com.swirlds.merkledb.files.hashmap;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,6 @@ class HalfDiskHashMapTest {
     private HalfDiskHashMap<VirtualLongKey> createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap<VirtualLongKey> map = new HalfDiskHashMap<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 count,
                 (KeySerializer<VirtualLongKey>) testType.keySerializer,
                 tempDirPath.resolve(testType.name()),
@@ -112,7 +110,6 @@ class HalfDiskHashMapTest {
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
         HalfDiskHashMap<VirtualLongKey> mapFromSnapshot = new HalfDiskHashMap<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 count,
                 (KeySerializer<VirtualLongKey>) testType.keySerializer,
                 tempSnapshotDir,
@@ -184,6 +181,23 @@ class HalfDiskHashMapTest {
     }
 
     @Test
+    void testPrints() throws IOException {
+        final FilesTestType testType = FilesTestType.fixed;
+        // create map
+        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000);
+        // create some data
+        map.startWriting();
+        for (int i = 100; i < 300; i++) {
+            map.put(testType.createVirtualLongKey(i), i);
+        }
+        // print debug
+        map.debugDumpTransactionCache();
+        map.debugDumpTransactionCacheCondensed();
+        // end
+        map.endWriting();
+    }
+
+    @Test
     void testOverwritesWithCollision() throws IOException {
         final FilesTestType testType = FilesTestType.fixed;
         try (final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000)) {
@@ -221,6 +235,12 @@ class HalfDiskHashMapTest {
         @Override
         public long getClassId() {
             return CLASS_ID;
+        }
+
+        @Override
+        public void deserialize(final ByteBuffer byteBuffer, final int dataVersion) {
+            assertEquals(getVersion(), dataVersion);
+            super.deserialize(byteBuffer, dataVersion);
         }
 
         @Override

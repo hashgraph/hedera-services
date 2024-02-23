@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,10 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,26 +48,24 @@ public final class PcesUtilities {
     private PcesUtilities() {}
 
     /**
-     * Compact the span of a PCES file.
+     * Compact the generational span of a PCES file.
      *
-     * @param originalFile       the file to compact
-     * @param previousUpperBound the upper bound of the previous PCES file, used to prevent using a smaller upper bound
-     *                           than the previous file.
+     * @param originalFile              the file to compact
+     * @param previousMaximumGeneration the maximum generation of the previous PCES file, used to prevent using a
+     *                                  smaller maximum generation than the previous file.
      * @return the new compacted PCES file.
      */
     @NonNull
-    public static PcesFile compactPreconsensusEventFile(
-            @NonNull final PcesFile originalFile, final long previousUpperBound) {
+    public static PreconsensusEventFile compactPreconsensusEventFile(
+            @NonNull final PreconsensusEventFile originalFile, final long previousMaximumGeneration) {
 
-        final AncientMode fileType = originalFile.getFileType();
-
-        // Find the true upper bound in the file.
-        long newUpperBound = originalFile.getLowerBound();
-        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0, fileType)) {
+        // Find the maximum generation in the file.
+        long maxGeneration = originalFile.getMinimumGeneration();
+        try (final IOIterator<GossipEvent> iterator = new PreconsensusEventFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
-                newUpperBound = Math.max(newUpperBound, next.getAncientIndicator(fileType));
+                maxGeneration = Math.max(maxGeneration, next.getGeneration());
             }
 
         } catch (final IOException e) {
@@ -76,17 +73,17 @@ public final class PcesUtilities {
             return originalFile;
         }
 
-        // Important: do not decrease the upper bound below the value of the previous file's upper bound.
-        newUpperBound = Math.max(newUpperBound, previousUpperBound);
+        // Important: do not decrease the maximum generation below the value of the previous file's maximum generation.
+        maxGeneration = Math.max(maxGeneration, previousMaximumGeneration);
 
-        if (newUpperBound == originalFile.getUpperBound()) {
+        if (maxGeneration == originalFile.getMaximumGeneration()) {
             // The file cannot have its span compacted any further.
             logger.info(STARTUP.getMarker(), "No span compaction necessary for {}", originalFile.getPath());
             return originalFile;
         }
 
-        // Now, compact the span of the file using the newly discovered upper bound.
-        final PcesFile newFile = originalFile.buildFileWithCompressedSpan(newUpperBound);
+        // Now, compact the generational span of the file using the newly discovered maximum generation.
+        final PreconsensusEventFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
         try {
             Files.move(originalFile.getPath(), newFile.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -96,9 +93,9 @@ public final class PcesUtilities {
 
         logger.info(
                 STARTUP.getMarker(),
-                "Span compaction completed for {}, new upper bound is {}",
+                "Span compaction completed for {}, new maximum generation is {}",
                 originalFile.getPath(),
-                newUpperBound);
+                maxGeneration);
 
         return newFile;
     }
@@ -110,9 +107,9 @@ public final class PcesUtilities {
      * @return the wrapper object, or null if the file can't be parsed
      */
     @Nullable
-    public static PcesFile parseFile(@NonNull final Path path) {
+    public static PreconsensusEventFile parseFile(@NonNull final Path path) {
         try {
-            return PcesFile.of(path);
+            return PreconsensusEventFile.of(path);
         } catch (final IOException exception) {
             // ignore any file that can't be parsed
             logger.warn(EXCEPTION.getMarker(), "Failed to parse file: {}", path, exception);
@@ -126,11 +123,11 @@ public final class PcesUtilities {
      * @param rootPath the root of the directory tree
      */
     public static void compactPreconsensusEventFiles(@NonNull final Path rootPath) {
-        final List<PcesFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         try (final Stream<Path> fileStream = Files.walk(rootPath)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .filter(f -> f.toString().endsWith(PcesFile.EVENT_FILE_EXTENSION))
+                    .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
                     .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
@@ -139,10 +136,10 @@ public final class PcesUtilities {
             logger.error(EXCEPTION.getMarker(), "Failed to walk directory tree {}", rootPath, e);
         }
 
-        long previousUpperBound = 0;
-        for (final PcesFile file : files) {
-            final PcesFile compactedFile = compactPreconsensusEventFile(file, previousUpperBound);
-            previousUpperBound = compactedFile.getUpperBound();
+        long previousMaximumGeneration = 0;
+        for (final PreconsensusEventFile file : files) {
+            final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
+            previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
     }
 
@@ -150,23 +147,23 @@ public final class PcesUtilities {
      * Perform sanity checks on the properties of the next file in the sequence, to ensure that we maintain various
      * invariants.
      *
-     * @param permitGaps             if gaps are permitted in sequence number
-     * @param previousSequenceNumber the sequence number of the previous file
-     * @param previousLowerBound     the upper bound of the previous file
-     * @param previousUpperBound     the lower bound of the previous file
-     * @param previousOrigin         the origin round of the previous file
-     * @param previousTimestamp      the timestamp of the previous file
-     * @param descriptor             the descriptor of the next file
+     * @param permitGaps                if gaps are permitted in sequence number
+     * @param previousSequenceNumber    the sequence number of the previous file
+     * @param previousMinimumGeneration the minimum generation of the previous file
+     * @param previousMaximumGeneration the maximum generation of the previous file
+     * @param previousOrigin            the origin round of the previous file
+     * @param previousTimestamp         the timestamp of the previous file
+     * @param descriptor                the descriptor of the next file
      * @throws IllegalStateException if any of the required invariants are violated by the next file
      */
     public static void fileSanityChecks(
             final boolean permitGaps,
             final long previousSequenceNumber,
-            final long previousLowerBound,
-            final long previousUpperBound,
+            final long previousMinimumGeneration,
+            final long previousMaximumGeneration,
             final long previousOrigin,
             @NonNull final Instant previousTimestamp,
-            @NonNull final PcesFile descriptor) {
+            @NonNull final PreconsensusEventFile descriptor) {
 
         // Sequence number should always monotonically increase
         if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
@@ -175,18 +172,18 @@ public final class PcesUtilities {
                     + descriptor.getSequenceNumber());
         }
 
-        // Lower bound may never decrease
-        if (descriptor.getLowerBound() < previousLowerBound) {
-            throw new IllegalStateException("Lower bound must never decrease, file " + descriptor.getPath()
-                    + " has a lower bound that is less than the previous lower bound of "
-                    + previousLowerBound);
+        // Minimum generation may never decrease
+        if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
+            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
+                    + " has a minimum generation that is less than the previous minimum generation of "
+                    + previousMinimumGeneration);
         }
 
-        // Upper bound may never decrease
-        if (descriptor.getUpperBound() < previousUpperBound) {
-            throw new IllegalStateException("Upper bound must never decrease, file " + descriptor.getPath()
-                    + " has an upper bound that is less than the previous upper bound of "
-                    + previousUpperBound);
+        // Maximum generation may never decrease
+        if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
+            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
+                    + " has a maximum generation that is less than the previous maximum generation of "
+                    + previousMaximumGeneration);
         }
 
         // Timestamp must never decrease
@@ -216,9 +213,9 @@ public final class PcesUtilities {
     public static Path getDatabaseDirectory(
             @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
 
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path databaseDirectory = savedStateDirectory

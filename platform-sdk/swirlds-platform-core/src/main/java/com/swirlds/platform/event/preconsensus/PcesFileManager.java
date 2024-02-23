@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,16 +47,16 @@ public class PcesFileManager {
     private static final Logger logger = LogManager.getLogger(PcesFileManager.class);
 
     /**
-     * This constant can be used when the caller wants all events, regardless of the lower bound.
+     * This constant can be used when the caller wants all events, regardless of generation.
      */
-    public static final long NO_LOWER_BOUND = -1;
+    public static final long NO_MINIMUM_GENERATION = -1;
 
     /**
      * Provides the wall clock time.
      */
     private final Time time;
 
-    private final PcesMetrics metrics;
+    private final PreconsensusEventMetrics metrics;
 
     /**
      * The root directory where event files are stored.
@@ -85,14 +81,10 @@ public class PcesFileManager {
     private final PcesFileTracker files;
 
     /**
-     * The PCES file type for new files.
-     */
-    private final AncientMode newFileType;
-
-    /**
      * Constructor
      *
      * @param platformContext the platform context for this node
+     * @param time            provides wall clock time
      * @param files           the files to track
      * @param selfId          the ID of this node
      * @param startingRound   the round number of the initial state of the system
@@ -100,6 +92,7 @@ public class PcesFileManager {
      */
     public PcesFileManager(
             @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
             @NonNull final PcesFileTracker files,
             @NonNull final NodeId selfId,
             final long startingRound)
@@ -112,23 +105,16 @@ public class PcesFileManager {
             throw new IllegalArgumentException("starting round must be non-negative");
         }
 
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        this.time = platformContext.getTime();
+        this.time = Objects.requireNonNull(time);
         this.files = Objects.requireNonNull(files);
-        this.metrics = new PcesMetrics(platformContext.getMetrics());
+        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         this.databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
         this.currentOrigin = PcesUtilities.getInitialOrigin(files, startingRound);
-
-        this.newFileType = platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .useBirthRoundAncientThreshold()
-                ? BIRTH_ROUND_THRESHOLD
-                : GENERATION_THRESHOLD;
 
         initializeMetrics();
     }
@@ -140,15 +126,15 @@ public class PcesFileManager {
         totalFileByteCount = files.getTotalFileByteCount();
 
         if (files.getFileCount() > 0) {
-            metrics.getPreconsensusEventFileOldestIdentifier()
-                    .set(files.getFirstFile().getLowerBound());
-            metrics.getPreconsensusEventFileYoungestIdentifier()
-                    .set(files.getLastFile().getUpperBound());
+            metrics.getPreconsensusEventFileOldestGeneration()
+                    .set(files.getFirstFile().getMinimumGeneration());
+            metrics.getPreconsensusEventFileYoungestGeneration()
+                    .set(files.getLastFile().getMaximumGeneration());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
-            metrics.getPreconsensusEventFileOldestIdentifier().set(NO_LOWER_BOUND);
-            metrics.getPreconsensusEventFileYoungestIdentifier().set(NO_LOWER_BOUND);
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
             metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
@@ -177,7 +163,7 @@ public class PcesFileManager {
                     + "Current origin round: " + currentOrigin + ", new origin round: " + newOriginRound);
         }
 
-        final PcesFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
+        final PreconsensusEventFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
 
         logger.info(
                 STARTUP.getMarker(),
@@ -194,54 +180,56 @@ public class PcesFileManager {
      * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
      * actually open the file, it just permits the file to be opened by the caller.)
      *
-     * @param lowerBound the lower bound that can be stored in the file
-     * @param upperBound the upper bound that can be stored in the file
+     * @param minimumGeneration the minimum generation that can be stored in the file
+     * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PcesFile getNextFileDescriptor(final long lowerBound, final long upperBound) {
+    public @NonNull PreconsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration) {
 
-        if (lowerBound > upperBound) {
-            throw new IllegalArgumentException("lower bound must be less than or equal to the upper bound");
+        if (minimumGeneration > maximumGeneration) {
+            throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
         }
 
-        final long lowerBoundForFile;
-        final long upperBoundForFile;
+        final long minimumGenerationForFile;
+        final long maximumGenerationForFile;
 
         if (files.getFileCount() == 0) {
             // This is the first file
-            lowerBoundForFile = lowerBound;
-            upperBoundForFile = upperBound;
+            minimumGenerationForFile = minimumGeneration;
+            maximumGenerationForFile = maximumGeneration;
         } else {
             // This is not the first file, min/max values are constrained to only increase
-            lowerBoundForFile = Math.max(lowerBound, files.getLastFile().getLowerBound());
-            upperBoundForFile = Math.max(upperBound, files.getLastFile().getUpperBound());
+            minimumGenerationForFile =
+                    Math.max(minimumGeneration, files.getLastFile().getMinimumGeneration());
+            maximumGenerationForFile =
+                    Math.max(maximumGeneration, files.getLastFile().getMaximumGeneration());
         }
 
-        final PcesFile descriptor = PcesFile.of(
-                newFileType,
+        final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
                 time.now(),
                 getNextSequenceNumber(),
-                lowerBoundForFile,
-                upperBoundForFile,
+                minimumGenerationForFile,
+                maximumGenerationForFile,
                 currentOrigin,
                 databaseDirectory);
 
         if (files.getFileCount() > 0) {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
             // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
-            final PcesFile previousFile = files.getLastFile();
+            final PreconsensusEventFile previousFile = files.getLastFile();
             PcesUtilities.fileSanityChecks(
                     false,
                     previousFile.getSequenceNumber(),
-                    previousFile.getLowerBound(),
-                    previousFile.getUpperBound(),
+                    previousFile.getMinimumGeneration(),
+                    previousFile.getMaximumGeneration(),
                     currentOrigin,
                     previousFile.getTimestamp(),
                     descriptor);
         }
 
         files.addFile(descriptor);
-        metrics.getPreconsensusEventFileYoungestIdentifier().set(descriptor.getUpperBound());
+        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
 
         return descriptor;
     }
@@ -251,51 +239,51 @@ public class PcesFileManager {
      *
      * @param file the file that has been completely written
      */
-    public void finishedWritingFile(@NonNull final PcesMutableFile file) {
-        final long previousFileUpperBound;
+    public void finishedWritingFile(@NonNull final PreconsensusEventMutableFile file) {
+        final long previousFileHighestGeneration;
         if (files.getFileCount() == 1) {
-            previousFileUpperBound = 0;
+            previousFileHighestGeneration = 0;
         } else {
-            previousFileUpperBound = files.getFile(files.getFileCount() - 2).getUpperBound();
+            previousFileHighestGeneration =
+                    files.getFile(files.getFileCount() - 2).getMaximumGeneration();
         }
 
-        // Compress the span of the file. Reduces overlap between files.
-        final PcesFile compressedDescriptor = file.compressSpan(previousFileUpperBound);
+        // Compress the generational span of the file. Reduces overlap between files.
+        final PreconsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
         files.setFile(files.getFileCount() - 1, compressedDescriptor);
 
         // Update metrics
         totalFileByteCount += file.fileSize();
         metrics.getPreconsensusEventFileRate().cycle();
-        metrics.getPreconsensusEventAverageFileSpan().update(file.getSpan());
-        metrics.getPreconsensusEventAverageUnUtilizedFileSpan().update(file.getUnUtilizedSpan());
+        metrics.getPreconsensusEventAverageFileSpan().update(file.getGenerationalSpan());
+        metrics.getPreconsensusEventAverageUnUtilizedFileSpan().update(file.getUnUtilizedGenerationalSpan());
         updateFileSizeMetrics();
     }
 
     /**
      * Prune old event files. Files are pruned if they are too old AND if they do not contain events with high enough
-     * ancient indicators.
+     * generations.
      *
-     * @param lowerBoundToKeep the minimum ancient indicator that we need to keep in this store. It's possible that
-     *                         this operation won't delete all files with events older than this value, but this
-     *                         operation is guaranteed not to delete any files that may contain events with a higher
-     *                         ancient indicator.
+     * @param minimumGeneration the minimum generation that we need to keep in the database. It's possible that this
+     *                          operation won't delete all files with events older than this value, but this operation
+     *                          is guaranteed not to delete any files that may contain events with a higher generation.
      * @throws IOException if there is an error deleting files
      */
-    public void pruneOldFiles(final long lowerBoundToKeep) throws IOException {
+    public void pruneOldFiles(final long minimumGeneration) throws IOException {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
 
         while (files.getFileCount() > 0
-                && files.getFirstFile().getUpperBound() < lowerBoundToKeep
+                && files.getFirstFile().getMaximumGeneration() < minimumGeneration
                 && files.getFirstFile().getTimestamp().isBefore(minimumTimestamp)) {
 
-            final PcesFile file = files.removeFirstFile();
+            final PreconsensusEventFile file = files.removeFirstFile();
             totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }
 
         if (files.getFileCount() > 0) {
-            metrics.getPreconsensusEventFileOldestIdentifier()
-                    .set(files.getFirstFile().getLowerBound());
+            metrics.getPreconsensusEventFileOldestGeneration()
+                    .set(files.getFirstFile().getMinimumGeneration());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }

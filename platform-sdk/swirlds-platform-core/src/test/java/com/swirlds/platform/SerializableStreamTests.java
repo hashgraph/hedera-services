@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -76,6 +77,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Int Array")
     void intArray() throws IOException {
@@ -108,6 +110,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Int List")
     void intList() throws IOException {
@@ -143,6 +146,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Long Array")
     void longArray() throws IOException {
@@ -175,6 +179,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Long List")
     void longList() throws IOException {
@@ -210,6 +215,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Float Array")
     void floatArray() throws IOException {
@@ -242,6 +248,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Float List")
     void floatList() throws IOException {
@@ -277,6 +284,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Double Array")
     void doubleArray() throws IOException {
@@ -309,6 +317,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Double List")
     void doubleList() throws IOException {
@@ -344,6 +353,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("String Array")
     void stringArray() throws IOException {
@@ -382,6 +392,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("String List")
     void stringList() throws IOException {
@@ -424,6 +435,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("String normalization")
     void stringNormalization() throws IOException {
@@ -452,6 +464,7 @@ public class SerializableStreamTests {
 
     @ParameterizedTest
     @MethodSource("byteArrayArgProvider")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Byte Array")
     void byteArray(byte[] array) throws IOException {
@@ -470,6 +483,7 @@ public class SerializableStreamTests {
 
     @ParameterizedTest
     @MethodSource("serializableArgProvider")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serializable")
     void serializable(SelfSerializableExample serializable) throws IOException {
@@ -496,6 +510,7 @@ public class SerializableStreamTests {
 
     @ParameterizedTest
     @MethodSource("stringArgProvider")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("String")
     void string(String string) throws IOException {
@@ -522,6 +537,7 @@ public class SerializableStreamTests {
 
     @ParameterizedTest
     @MethodSource("serializableListArgProvider")
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Serializable List")
     void serializableList(List<SelfSerializableExample> list) throws IOException {
@@ -552,6 +568,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("Instant Test")
     void instantTest() throws IOException {
@@ -575,6 +592,7 @@ public class SerializableStreamTests {
         assertThrows(IOException.class, () -> io.getInput().readInstant());
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("getLongArraySerializedLengthTest")
     @ParameterizedTest
@@ -594,6 +612,7 @@ public class SerializableStreamTests {
         }
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("getIntArraySerializedLengthTest")
     @ParameterizedTest
@@ -605,6 +624,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("getNullByteArraySerializedLengthTest")
     void getNullByteArraySerializedLengthTest() {
@@ -617,6 +637,7 @@ public class SerializableStreamTests {
                 LENGTH_IN_BYTES + CHECKSUM_IN_BYTES, AugmentedDataOutputStream.getArraySerializedLength(null, true));
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("getByteArraySerializedLengthTest")
     @ParameterizedTest
@@ -637,6 +658,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthEmptyArray")
     void serializedLengthEmptyArray() throws IOException {
@@ -652,6 +674,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthArrayWithNullElement")
     void serializedLengthArrayWithNullElement() throws IOException {
@@ -669,6 +692,7 @@ public class SerializableStreamTests {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthNullArray")
     void serializedLengthNullArray() throws IOException {
@@ -682,6 +706,7 @@ public class SerializableStreamTests {
         }
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedSingleInstance")
     @ParameterizedTest
@@ -712,6 +737,7 @@ public class SerializableStreamTests {
         }
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthArraySameClass")
     @ParameterizedTest
@@ -736,6 +762,7 @@ public class SerializableStreamTests {
         }
     }
 
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthArrayDiffClass")
     @ParameterizedTest

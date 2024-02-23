@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,16 +48,16 @@ public class EventCounter {
     }
 
     /**
-     * Called when an event is linked.
+     * Called when an event is created
      */
-    public static void incrementLinkedEventCount() {
+    public static void eventCreated() {
         numEventsInMemory.incrementAndGet();
     }
 
     /**
-     * Called when a linked event is cleared, to decrement the count of how many uncleared events are in memory
+     * Called when an event is cleared, to decrement the count of how many uncleared events are in memory
      */
-    public static void decrementLinkedEventCount() {
+    public static void eventCleared() {
         numEventsInMemory.decrementAndGet();
     }
 

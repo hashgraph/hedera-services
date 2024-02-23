@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongListOffHeap;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -48,15 +47,15 @@ public class KeyValueStoreBench extends BaseBench {
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
         final var store = new MemoryIndexDiskKeyValueStore<>(
-                getConfig(MerkleDbConfig.class),
                 getTestDir(),
                 storeName,
                 null,
                 new BenchmarkRecordSerializer(),
-                (dataLocation, dataValue) -> {},
+                (key, dataLocation, dataValue) -> {},
                 keyToDiskLocationIndex);
-        final DataFileCompactor<BenchmarkRecord> compactor = new DataFileCompactor<>(
+        final DataFileCompactor compactor = new DataFileCompactor(
                 storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
+        System.out.println();
 
         // Write files
         long start = System.currentTimeMillis();

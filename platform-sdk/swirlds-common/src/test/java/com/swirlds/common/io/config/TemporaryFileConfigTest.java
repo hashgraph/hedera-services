@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.config;
 
-import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -40,12 +40,12 @@ class TemporaryFileConfigTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(StateConfig.class)
                 .build();
 
         // when
         final TemporaryFileConfig temporaryFileConfig = configuration.getConfigData(TemporaryFileConfig.class);
-        final StateCommonConfig stateConfig = configuration.getConfigData(StateCommonConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String temporaryFilePath = temporaryFileConfig.getTemporaryFilePath(stateConfig);
 
         // then

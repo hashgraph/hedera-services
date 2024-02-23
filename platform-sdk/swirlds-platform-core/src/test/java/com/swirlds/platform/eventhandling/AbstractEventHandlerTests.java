@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,15 @@ package com.swirlds.platform.eventhandling;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public abstract class AbstractEventHandlerTests {
@@ -48,7 +47,8 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected BiConsumer<State, ConsensusRound> consensusSystemTransactionManager;
+    protected PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
+    protected ConsensusSystemTransactionManager consensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
     protected Random random;
 
@@ -59,7 +59,8 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        consensusSystemTransactionManager = (s, r) -> {};
+        preconsensusSystemTransactionManager = mock(PreconsensusSystemTransactionManager.class);
+        consensusSystemTransactionManager = mock(ConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
         random = ThreadLocalRandom.current();
     }
@@ -91,6 +92,7 @@ public abstract class AbstractEventHandlerTests {
                 when(event.isEmpty()).thenReturn(true);
             }
             when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(NUM_NODES)));
+            when(event.getEstimatedTime()).thenReturn(Instant.now());
             when(event.getConsensusTimestamp()).thenReturn(Instant.now());
             final boolean isConsensus = random.nextBoolean();
             when(event.isConsensus()).thenReturn(isConsensus);

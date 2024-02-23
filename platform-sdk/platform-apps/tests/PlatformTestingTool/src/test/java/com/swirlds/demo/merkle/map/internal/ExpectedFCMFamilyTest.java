@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -67,6 +66,8 @@ import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.security.Security;
 import java.time.Duration;
@@ -280,6 +281,7 @@ class ExpectedFCMFamilyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1_000})
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.EXPECTED_MAP)
     @DisplayName("Add Entities during Reconnect test")
     public void addEntitiesFromActualFCMsReconnectTest(int size) {

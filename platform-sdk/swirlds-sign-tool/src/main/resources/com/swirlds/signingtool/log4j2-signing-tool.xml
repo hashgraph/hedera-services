@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<!-- monitorInterval="600" , if any change to log level will be effective after 10 minute -->
+<Configuration status="WARN" monitorInterval="600">
+	<!--
+	Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
+	to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
+	future is to use a top-level <Filter> and <Logger> specific filters in combination to achieve the desired
+	multi-logger setup for diagnostic logging.
+	-->
+	<Filters>
+		<!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
+		<!-- Intentially left disabled by default -->
+		<!-- <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />-->
+
+		<!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
+		<!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
+
+		<!-- Stream File Signing Tool -->
+		<MarkerFilter marker="FILE_SIGN"              onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+
+	</Filters>
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg%n</pattern>
+			</PatternLayout>
+		</Console>
+
+		<RollingRandomAccessFile name="SigningToolLog" fileName="signingTool.log" filePattern="signingTool.%i.log"
+								 immediateFlush="true">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="500 MB"/>
+			</Policies>
+			<DefaultRolloverStrategy max="1"/>
+		</RollingRandomAccessFile>
+
+
+	</Appenders>
+	<Loggers>
+		<Root level="ALL">
+			<AppenderRef ref="SigningToolLog"/>
+		</Root>
+	</Loggers>
+</Configuration>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.metrics.DoubleAccumulator;
+import com.swirlds.common.metrics.IntegerGauge;
+import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.metrics.api.DoubleAccumulator;
-import com.swirlds.metrics.api.FloatFormats;
-import com.swirlds.metrics.api.IntegerGauge;
-import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,7 +33,7 @@ import java.util.Objects;
  */
 public class MerkleDbStatistics {
 
-    public static final String STAT_CATEGORY = "merkle_db";
+    public static final String STAT_CATEGORY = "merkle-db";
 
     /** Prefix for all data source related metrics */
     private static final String DS_PREFIX = "ds_";
@@ -159,7 +160,7 @@ public class MerkleDbStatistics {
                 .withInitialValue(0.0)
                 .withAccumulator(Double::sum)
                 .withDescription(description)
-                .withFormat(FloatFormats.FORMAT_9_6));
+                .withFormat(FORMAT_9_6));
     }
 
     /**

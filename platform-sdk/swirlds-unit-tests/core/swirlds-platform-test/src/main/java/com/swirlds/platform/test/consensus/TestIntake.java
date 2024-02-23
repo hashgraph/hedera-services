@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,145 +16,108 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.linking.OrphanBufferingLinker;
+import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.wiring.InOrderLinkerWiring;
-import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
-import com.swirlds.platform.wiring.OrphanBufferWiring;
-import com.swirlds.platform.wiring.PlatformSchedulers;
-import com.swirlds.platform.wiring.PlatformSchedulersConfig;
-import com.swirlds.platform.wiring.components.EventHasherWiring;
-import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
-import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
-/**
- * Event intake with consensus and shadowgraph, used for testing
- */
+/** Event intake with consensus and shadowgraph, used for testing */
 public class TestIntake implements LoadableFromSignedState {
     private final ConsensusImpl consensus;
-    private final Shadowgraph shadowGraph;
+    private final EventLinker linker;
+    private final ShadowGraph shadowGraph;
+    private final EventIntake intake;
     private final ConsensusOutput output;
-
-    private final EventHasherWiring hasherWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
-    private final InOrderLinkerWiring linkerWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
-
-    private final BackpressureObjectCounter hashingObjectCounter;
+    private int numEventsAdded = 0;
 
     /**
-     * @param addressBook the address book used by this intake
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
      */
-    public TestIntake(@NonNull final AddressBook addressBook, @NonNull final ConsensusConfig consensusConfig) {
-        final Time time = Time.getCurrent();
-        output = new ConsensusOutput(time);
+    public TestIntake(@NonNull final AddressBook ab) {
+        this(ab, Time.getCurrent());
+    }
 
-        // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
-        consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
+    /**
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     */
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time) {
+        this(ab, time, new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
+    }
+
+    /**
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     */
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final ConsensusConfig consensusConfig) {
+        this(ab, Time.getCurrent(), consensusConfig);
+    }
+
+    /**
+     * @param ab the address book used by this intake
+     * @param time the time used by this intake
+     * @param consensusConfig the consensus config used by this intake
+     */
+    public TestIntake(
+            @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
+        output = new ConsensusOutput(time);
+        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
+        final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
+
+        linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
+
+        final EventObserverDispatcher dispatcher =
+                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph, null), output);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
-
-        final WiringModel model = WiringModel.create(platformContext, time, ForkJoinPool.commonPool());
-
-        hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter",
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
-
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
-
-        final EventHasher eventHasher = new EventHasher(platformContext);
-        hasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
-        hasherWiring.bind(eventHasher);
-
-        final PostHashCollectorWiring postHashCollectorWiring =
-                PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
-
-        final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
-        orphanBufferWiring.bind(orphanBuffer);
-
-        final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-        linkerWiring.bind(linker);
-
-        final EventObserverDispatcher dispatcher =
-                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
-
-        final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
+        intake = new EventIntake(
                 platformContext,
-                time,
-                () -> consensus,
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                new NodeId(0L), // only used for logging
+                linker,
+                this::getConsensus,
+                ab,
                 dispatcher,
+                mock(PhaseTimer.class),
                 shadowGraph,
-                intakeEventCounter,
-                mock(StandardOutputWire.class));
-
-        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-        linkedEventIntakeWiring.bind(linkedEventIntake);
-
-        final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
-
-        hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
-        postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
-        linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
-
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-
-        eventWindowManagerWiring
-                .nonAncientEventWindowOutput()
-                .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        eventWindowManagerWiring
-                .nonAncientEventWindowOutput()
-                .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
-
-        model.start();
+                null,
+                e -> {},
+                mock(IntakeEventCounter.class));
     }
 
     /**
@@ -163,23 +126,32 @@ public class TestIntake implements LoadableFromSignedState {
      * @param event the event to add
      */
     public void addEvent(@NonNull final GossipEvent event) {
-        hasherWiring.eventInput().put(event);
+        intake.addUnlinkedEvent(event);
+        numEventsAdded++;
     }
 
     /**
-     * Same as {@link #addEvent(GossipEvent)} but for a list of events
+     * Same as {@link #addEvent(GossipEvent)}
+     *
+     * <p>Note: this event won't be the one inserted, intake will create a new instance that will
+     * wrap the {@link BaseEvent}
      */
+    public void addEvent(@NonNull final EventImpl event) {
+        intake.addUnlinkedEvent(event.getBaseEvent());
+        numEventsAdded++;
+    }
+
+    /** Same as {@link #addEvent(GossipEvent)} but for a list of events */
     public void addEvents(@NonNull final List<IndexedEvent> events) {
         for (final IndexedEvent event : events) {
             addEvent(event.getBaseEvent());
         }
     }
 
-    /**
-     * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
-     */
+    /** Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance */
     public void addLinkedEvent(@NonNull final EventImpl event) {
-        linkedEventIntakeWiring.eventInput().put(event);
+        intake.addEvent(event);
+        numEventsAdded++;
     }
 
     /**
@@ -192,7 +164,7 @@ public class TestIntake implements LoadableFromSignedState {
     /**
      * @return the shadowgraph used by this intake
      */
-    public @NonNull Shadowgraph getShadowGraph() {
+    public @NonNull ShadowGraph getShadowGraph() {
         return shadowGraph;
     }
 
@@ -215,34 +187,13 @@ public class TestIntake implements LoadableFromSignedState {
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
-
-        // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
-        // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
-        // production.
-        orphanBufferWiring
-                .nonAncientEventWindowInput()
-                .put(new NonAncientEventWindow(
-                        consensus.getLastRoundDecided(),
-                        consensus.getMinGenerationNonAncient(),
-                        consensus.getMinRoundGeneration(),
-                        AncientMode.GENERATION_THRESHOLD));
-        linkerWiring
-                .nonAncientEventWindowInput()
-                .put(new NonAncientEventWindow(
-                        consensus.getLastRoundDecided(),
-                        consensus.getMinGenerationNonAncient(),
-                        consensus.getMinRoundGeneration(),
-                        AncientMode.GENERATION_THRESHOLD));
-
+        linker.updateGenerations(consensus);
         shadowGraph.clear();
-        shadowGraph.startWithExpiredThreshold(consensus.getMinGenerationNonAncient());
+        shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
     }
 
-    public void flush() {
-        hashingObjectCounter.waitUntilEmpty();
-        orphanBufferWiring.flushRunnable().run();
-        linkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+    public int getNumEventsAdded() {
+        return numEventsAdded;
     }
 
     public @NonNull ConsensusOutput getOutput() {
@@ -253,5 +204,6 @@ public class TestIntake implements LoadableFromSignedState {
         consensus.reset();
         shadowGraph.clear();
         output.clear();
+        numEventsAdded = 0;
     }
 }

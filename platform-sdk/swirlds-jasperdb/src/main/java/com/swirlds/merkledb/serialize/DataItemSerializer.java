@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.serialize;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface DataItemSerializer<D> extends BaseSerializer<D> {
@@ -23,23 +24,30 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
     /**
      * Get the number of bytes used for data item header
      *
-     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
-     * from JDB format. This format will be eventually removed.
-     *
      * @return size of header in bytes
      */
-    @Deprecated
     int getHeaderSize();
 
     /**
      * Deserialize data item header from the given byte buffer
      *
-     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
-     * from JDB format. This format will be eventually removed.
-     *
      * @param buffer Buffer to read from
      * @return The read header
      */
-    @Deprecated
     DataItemHeader deserializeHeader(ByteBuffer buffer);
+
+    default int copyItem(
+            final long serializedVersion,
+            final int dataItemSize,
+            final ByteBuffer dataItemData,
+            final ByteBuffer buffer)
+            throws IOException {
+        if (serializedVersion == getCurrentDataVersion()) {
+            buffer.put(dataItemData);
+        } else {
+            // deserialize and reserialize to convert versions
+            return serialize(deserialize(dataItemData, serializedVersion), buffer);
+        }
+        return dataItemSize;
+    }
 }

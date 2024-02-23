@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ public class WiringFlowchart {
             for (final ModelEdge edge : vertex.getOutgoingEdges()) {
                 if (!substitution.edge().equals(edge.getLabel())) {
                     // Only replace destinations for edges with the given label.
-                    uniqueEdges.add(edge);
+                    vertex.getOutgoingEdges().add(edge);
                     continue;
                 }
 
@@ -379,7 +379,7 @@ public class WiringFlowchart {
     @NonNull
     public String render() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("flowchart TD\n");
+        sb.append("flowchart LR\n");
 
         final List<ModelVertex> sortedVertices =
                 vertexMap.values().stream().sorted().toList();

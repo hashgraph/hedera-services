@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,25 @@
 package com.swirlds.platform.components.state;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -51,6 +55,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateHasher signedStateHasher;
 
     /**
+     * Keeps track of various signed states in various stages of collecting signatures
+     */
+    private final SignedStateManager signedStateManager;
+
+    /**
      * A logger for hash stream data
      */
     private final HashLogger hashLogger;
@@ -59,39 +68,40 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Used to track signed state leaks, if enabled
      */
     private final SignedStateSentinel signedStateSentinel;
-    /** signs a state */
+
+    private final Consumer<ReservedSignedState> stateFileManager;
+
     private final Consumer<ReservedSignedState> stateSigner;
-    /** collects signatures for a state */
-    private final Consumer<ReservedSignedState> sigCollector;
 
     /**
-     * @param platformContext    the platform context
-     * @param threadManager      manages platform thread resources
-     * @param dispatchBuilder    builds dispatchers. This is deprecated, do not wire new things together with this.
-     * @param fatalErrorConsumer consumer to invoke when a fatal error has occurred
-     * @param stateSigner        signs a state
-     * @param sigCollector       collects signatures for a state
-     * @param signedStateMetrics metrics about signed states
+     * @param platformContext                    the platform context
+     * @param threadManager                      manages platform thread resources
+     * @param dispatchBuilder                    builds dispatchers. This is deprecated, do not wire new things together
+     *                                           with this.
+     * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
+     * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
+     * @param stateFileManager                   writes states to disk
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final DispatchBuilder dispatchBuilder,
+            @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final Consumer<ReservedSignedState> stateSigner,
-            @NonNull final Consumer<ReservedSignedState> sigCollector,
-            @NonNull final SignedStateMetrics signedStateMetrics) {
+            @NonNull final Consumer<ReservedSignedState> stateFileManager,
+            @NonNull final Consumer<ReservedSignedState> stateSigner) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(newLatestCompleteStateConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
 
         // Various metrics about signed states
-
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
+        this.stateFileManager = Objects.requireNonNull(stateFileManager);
         this.stateSigner = Objects.requireNonNull(stateSigner);
-        this.sigCollector = Objects.requireNonNull(sigCollector);
 
         hashLogger =
                 new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
@@ -99,6 +109,25 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
+
+        signedStateManager = new SignedStateManager(
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
+                signedStateMetrics,
+                newLatestCompleteStateConsumer,
+                this::signatureCollectionDone,
+                this::signatureCollectionDone);
+    }
+
+    /**
+     * Signature for a signed state is now done. We should save it to disk, if it should be saved. The state may or may
+     * not have all its signatures collected.
+     *
+     * @param signedState the newly complete signed state
+     */
+    private void signatureCollectionDone(@NonNull final SignedState signedState) {
+        if (signedState.isStateToSave()) {
+            stateFileManager.accept(signedState.reserve("save to disk"));
+        }
     }
 
     private void logHashes(final SignedState signedState) {
@@ -117,9 +146,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             stateSigner.accept(signedState.getAndReserve("signing state from transactions"));
 
-            sigCollector.accept(
-                    signedState.getAndReserve("DefaultStateManagementComponent.newSignedStateFromTransactions"));
+            signedStateManager.addState(signedState.get());
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<SignedStateInfo> getSignedStateInfo() {
+        return signedStateManager.getSignedStateInfo();
     }
 
     /**
@@ -129,7 +165,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
         signedState.setGarbageCollector(signedStateGarbageCollector);
         logHashes(signedState);
-        sigCollector.accept(signedState.reserve("DefaultStateManagementComponent.stateToLoad"));
+        signedStateManager.addState(signedState);
     }
 
     /**
@@ -148,5 +184,14 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void stop() {
         signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public SignedStateManager getSignedStateManager() {
+        return signedStateManager;
     }
 }

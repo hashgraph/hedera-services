@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class QueueThreadMetrics {
      * @return the name of the busy time metric
      */
     public static String buildBusyTimeMetricName(@NonNull final String threadName) {
-        return "thread_busy_" + threadName;
+        return "thread-busy-" + threadName;
     }
 
     /**

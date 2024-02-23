@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.LongSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * Prevents event creations when the system is stressed and unable to keep up with its work load.
@@ -35,7 +35,7 @@ public class BackpressureRule implements EventCreationRule {
      */
     private final int eventIntakeThrottle;
 
-    private final LongSupplier eventIntakeQueueSize;
+    private final IntSupplier eventIntakeQueueSize;
 
     /**
      * Constructor.
@@ -44,7 +44,7 @@ public class BackpressureRule implements EventCreationRule {
      * @param eventIntakeQueueSize provides the size of the event intake queue
      */
     public BackpressureRule(
-            @NonNull final PlatformContext platformContext, @NonNull final LongSupplier eventIntakeQueueSize) {
+            @NonNull final PlatformContext platformContext, @NonNull final IntSupplier eventIntakeQueueSize) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
@@ -59,7 +59,7 @@ public class BackpressureRule implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        return eventIntakeQueueSize.getAsLong() < eventIntakeThrottle;
+        return eventIntakeQueueSize.getAsInt() < eventIntakeThrottle;
     }
 
     /**

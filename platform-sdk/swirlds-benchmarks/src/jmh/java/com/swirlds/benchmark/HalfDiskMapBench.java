@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import java.util.Arrays;
@@ -50,14 +49,8 @@ public class HalfDiskMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
-        final var store = new HalfDiskHashMap<>(
-                getConfig(MerkleDbConfig.class),
-                maxKey,
-                new BenchmarkKeySerializer(),
-                getTestDir(),
-                storeName,
-                null,
-                false);
+        final var store =
+                new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), storeName, null, false);
         final var dataFileCompactor = new DataFileCompactor(
                 storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null, null);
         System.out.println();

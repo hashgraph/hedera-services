@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -33,18 +34,14 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.ApplicationDefinitionLoader;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.config.PathsConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PcesFile;
-import com.swirlds.platform.event.preconsensus.PcesMutableFile;
-import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -127,14 +124,9 @@ public final class EventRecoveryWorkflow {
 
         setupConstructableRegistry();
 
-        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
-                .withConfigDataType(PathsConfig.class)
-                .build()
-                .getConfigData(PathsConfig.class);
-
         // parameters if the app needs them
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
@@ -177,10 +169,6 @@ public final class EventRecoveryWorkflow {
                     "Finished reapplying transactions, writing state to {}",
                     resultingStateDirectory);
 
-            // Make one more copy to force the state in recoveredState to be immutable.
-            final State mutableStateCopy =
-                    recoveredState.state().get().getState().copy();
-
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
                     platformContext,
                     selfId,
@@ -192,23 +180,18 @@ public final class EventRecoveryWorkflow {
 
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
-            final PcesFile preconsensusEventFile = PcesFile.of(
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(EventConfig.class)
-                            .getAncientMode(),
+            final PreconsensusEventFile preconsensusEventFile = PreconsensusEventFile.of(
                     Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),
                     recoveredState.judge().getGeneration(),
                     recoveredState.state().get().getRound(),
                     resultingStateDirectory);
-            final PcesMutableFile mutableFile = preconsensusEventFile.getMutableFile();
+            final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
             mutableFile.writeEvent(recoveredState.judge());
             mutableFile.close();
 
             recoveredState.state().close();
-            mutableStateCopy.release();
 
             logger.info(STARTUP.getMarker(), "Recovery process completed");
         }

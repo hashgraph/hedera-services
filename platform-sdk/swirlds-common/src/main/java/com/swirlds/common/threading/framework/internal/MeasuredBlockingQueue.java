@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import com.swirlds.metrics.api.IntegerAccumulator;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.IntegerAccumulator;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.Objects;
@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
  */
 class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
 
-    static final String QUEUE_MAX_SIZE_SUFFIX = "_queueMaxSize";
-    static final String QUEUE_MIN_SIZE_SUFFIX = "_queueMinSize";
+    static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
+    static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
 
     private final IntegerAccumulator maxSizeMetric;
     private final IntegerAccumulator minSizeMetric;

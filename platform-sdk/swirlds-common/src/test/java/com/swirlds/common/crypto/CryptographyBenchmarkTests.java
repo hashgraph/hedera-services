@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.fixtures.crypto.EcdsaSignedTxnPool;
 import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
+import com.swirlds.test.framework.TestTypeTags;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 class CryptographyBenchmarkTests {
     private static Cryptography cryptoProvider;
@@ -79,7 +80,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
+    @Tag(TestTypeTags.PERFORMANCE)
     @DisplayName("Verify Ed25519")
     void verifyEd25519() {
         final int count = 50_000;
@@ -121,7 +122,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
+    @Tag(TestTypeTags.PERFORMANCE)
     @DisplayName("Verify EcdsaSecp256k1")
     void verifyEcdsaSecp256k1() {
         final int count = 50_000;
@@ -163,7 +164,7 @@ class CryptographyBenchmarkTests {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
+    @Tag(TestTypeTags.PERFORMANCE)
     @DisplayName("SHA384 Hash")
     void sha384Hash() throws NoSuchAlgorithmException {
         final int count = 5_000_000;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import org.junit.jupiter.api.Assertions;
@@ -31,13 +29,7 @@ class ApplicationDefinitionLoaderTest {
 
     @Test
     void testNullParam() {
-        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
-                .withConfigDataType(PathsConfig.class)
-                .build()
-                .getConfigData(PathsConfig.class);
-
-        Assertions.assertThrows(
-                NullPointerException.class, () -> ApplicationDefinitionLoader.load(defaultPathsConfig, null));
+        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null));
     }
 
     @Test
@@ -45,15 +37,10 @@ class ApplicationDefinitionLoaderTest {
         // given
         final LegacyConfigProperties configProperties = new LegacyConfigProperties();
 
-        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
-                .withConfigDataType(PathsConfig.class)
-                .build()
-                .getConfigData(PathsConfig.class);
-
         // then
         Assertions.assertThrows(
                 ConfigurationException.class,
-                () -> ApplicationDefinitionLoader.load(defaultPathsConfig, configProperties),
+                () -> ApplicationDefinitionLoader.load(configProperties),
                 "Configuration properties must contain application definition");
     }
 }

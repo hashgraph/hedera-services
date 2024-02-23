@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,13 @@ public interface Event {
      */
     @NonNull
     NodeId getCreatorId();
+
+    /**
+     * Returns an estimate of what the consensus timestamp will be (could be a very bad guess).
+     *
+     * @return the estimated consensus timestamp
+     */
+    Instant getEstimatedTime();
 
     /**
      * A convenience method that supplies every transaction in this event to a consumer.

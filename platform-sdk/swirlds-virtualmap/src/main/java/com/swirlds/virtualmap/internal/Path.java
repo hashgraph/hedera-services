@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,23 +165,11 @@ public final class Path {
     /**
      * Gets the path of a node that would be the parent of the node represented by this path.
      *
-     * @return The Path of the parent. {@link #INVALID_PATH} if this Path is already the root (root nodes
+     * @return The Path of the parent. This may be null if this Path is already the root (root nodes
      * 		do not have a parent).
      */
     public static long getParentPath(long path) {
         return (path - 1) >> 1;
-    }
-
-    /**
-     * Gets the path of a node that is {@code levels} levels up from the given path. If the given
-     * path is less than {@code levels} from the root, {@link #INVALID_PATH} is returned.
-     */
-    public static long getGrandParentPath(final long path, final int levels) {
-        final int rank = getRank(path);
-        if (rank < levels) {
-            return INVALID_PATH;
-        }
-        return (path - (1L << levels) + 1) >> levels;
     }
 
     /**
@@ -206,13 +194,6 @@ public final class Path {
      */
     public static long getLeftChildPath(long path) {
         return (path << 1) + 1;
-    }
-
-    /**
-     * Gets the path of the left-most child node, which is {@code levels} levels below the given path.
-     */
-    public static long getLeftGrandChildPath(final long path, final int levels) {
-        return ((path + 1) << levels) - 1;
     }
 
     /**

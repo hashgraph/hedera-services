@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.system.address.Address;
@@ -71,9 +70,7 @@ class TipsetTrackerTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        // FUTURE WORK: Expand test to include birth round based ancient threshold.
-        final TipsetTracker tracker =
-                new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
@@ -145,9 +142,9 @@ class TipsetTrackerTests {
         long minimumGenerationNonAncient = 0;
         while (tracker.size() > 0) {
             minimumGenerationNonAncient += random.nextInt(1, 5);
-            // FUTURE WORK: change test to use birthRound number instead of minimum generation non-ancient.
-            final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
-                    1, minimumGenerationNonAncient, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
+            // FUTURE WORK: change test to use round number instead of minimum generation non-ancient.
+            final NonAncientEventWindow nonAncientEventWindow =
+                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient);
             tracker.setNonAncientEventWindow(nonAncientEventWindow);
             assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {

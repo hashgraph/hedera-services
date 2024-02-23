@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,8 @@ package com.swirlds.common.threading;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,11 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
+import com.swirlds.test.framework.TestQualifierTags;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -57,7 +56,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Parallel Work Test")
-    @Tag(TIMING_SENSITIVE)
     void parallelWorkTest() throws InterruptedException {
 
         final AtomicInteger sleepCount = new AtomicInteger();
@@ -158,7 +156,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Seed Test")
-    @Tag(TIME_CONSUMING)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void seedTest() throws InterruptedException {
 
         final AtomicLong count = new AtomicLong();
@@ -236,7 +234,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Configuration Mutability Test")
-    @Tag(TIMING_SENSITIVE)
     void configurationMutabilityTest() {
         // Build should make the configuration immutable
         final QueueThreadPoolConfiguration<Integer> configuration = new QueueThreadPoolConfiguration<Integer>(
@@ -256,7 +253,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Single Use Per Config Test")
-    @Tag(TIMING_SENSITIVE)
     void singleUsePerConfigTest() {
 
         // build() should cause future calls to build() to fail, and start() should cause buildSeed() to fail.
@@ -292,7 +288,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Copy Test")
-    @Tag(TIMING_SENSITIVE)
     void copyTest() {
         final QueueThreadPoolConfiguration<?> configuration =
                 new QueueThreadPoolConfiguration<Integer>(getStaticThreadManager()).setThreadCount(1234);
@@ -348,7 +343,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Uninterruptable Test")
-    @Tag(TIMING_SENSITIVE)
     void uninterruptableTest() throws InterruptedException {
         final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
 
@@ -389,7 +383,6 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Blocking Stop Override Test")
-    @Tag(TIMING_SENSITIVE)
     void blockingStopOverrideTest() throws InterruptedException {
         final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
 

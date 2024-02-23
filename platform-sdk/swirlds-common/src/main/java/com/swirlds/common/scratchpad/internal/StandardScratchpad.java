@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryF
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
-import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.SelfSerializable;
@@ -107,7 +107,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
             @NonNull final Class<K> clazz,
             @NonNull final String id) {
 
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         scratchpadDirectory = stateConfig
                 .savedStateDirectory()
                 .resolve(SCRATCHPAD_DIRECTORY_NAME)

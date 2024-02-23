@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package com.swirlds.virtual.merkle;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
@@ -39,6 +40,16 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        // no-op
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        // no-op
+    }
+
+    @Override
     public long getCurrentDataVersion() {
         return 1;
     }
@@ -49,41 +60,24 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public int getSerializedSize(final TestValue data) {
-        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
-        return Integer.BYTES + bytes.length;
-    }
-
-    @Override
     public int getTypicalSerializedSize() {
         return 20; // guesstimation
     }
 
     @Override
-    public void serialize(final TestValue data, final WritableSequentialData out) {
+    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
-        out.writeInt(bytes.length);
-        out.writeBytes(bytes);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        return Integer.BYTES + bytes.length;
     }
 
     @Override
-    public void serialize(TestValue data, ByteBuffer buffer) {
-        data.serialize(buffer);
-    }
-
-    @Override
-    public TestValue deserialize(final ReadableSequentialData in) {
-        final int size = in.readInt();
+    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        final int size = buffer.getInt();
         final byte[] bytes = new byte[size];
-        in.readBytes(bytes);
+        buffer.get(bytes);
         final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(value);
-    }
-
-    @Override
-    public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final TestValue value = new TestValue();
-        value.deserialize(buffer, (int) dataVersion);
-        return value;
     }
 }

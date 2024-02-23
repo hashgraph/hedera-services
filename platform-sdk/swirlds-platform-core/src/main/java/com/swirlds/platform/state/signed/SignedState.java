@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -34,7 +35,6 @@ import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
@@ -243,13 +243,10 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        if (!isGenesisState()) {
-            // Only non-genesis states will have signing weight
-            final AddressBook addressBook = getAddressBook();
-            for (final NodeId signingNode : sigSet) {
-                if (addressBook.contains(signingNode)) {
-                    signingWeight += addressBook.getAddress(signingNode).getWeight();
-                }
+        final AddressBook addressBook = getAddressBook();
+        for (final NodeId signingNode : sigSet) {
+            if (addressBook.contains(signingNode)) {
+                signingWeight += addressBook.getAddress(signingNode).getWeight();
             }
         }
     }

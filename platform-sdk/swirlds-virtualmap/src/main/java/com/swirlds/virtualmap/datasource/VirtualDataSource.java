@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
@@ -62,42 +62,8 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     void close() throws IOException;
 
     /**
-     * Save a batch of data to data store.
-     * <p>
-     * If you call this method where not all data is provided to cover the change in
-     * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
-     * obscure exceptions for any internals or leaves that have not been written. For example, if
-     * you were to grow the tree by more than 2x, and then called this method in batches, be aware
-     * that if you were to query for some record between batches that hadn't yet been saved, you
-     * will encounter problems.
-     *
-     * @param firstLeafPath the tree path for first leaf
-     * @param lastLeafPath the tree path for last leaf
-     * @param pathHashRecordsToUpdate stream of records with hashes to update, it is assumed this is sorted by
-     *     path and each path only appears once.
-     * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete stream of new leaf nodes to delete, The leaf record's key and path
-     *     have to be populated, all other data can be null.
-     * @throws IOException If there was a problem saving changes to data source
-     */
-    default void saveRecords(
-            final long firstLeafPath,
-            final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
-            throws IOException {
-        saveRecords(
-                firstLeafPath,
-                lastLeafPath,
-                pathHashRecordsToUpdate,
-                leafRecordsToAddOrUpdate,
-                leafRecordsToDelete,
-                false);
-    }
-
-    /**
      * Save a bulk set of changes to internal nodes and leaves.
+     * <p><strong>YOU MUST NEVER ASK FOR SOMETHING YOU HAVE NOT PREVIOUSLY WRITTEN.</strong></p>
      *
      * @param firstLeafPath
      * 		the new path of first leaf node
@@ -110,7 +76,6 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * @param leafRecordsToDelete
      * 		stream of new leaf nodes to delete, The leaf record's key and path have to be populated, all other data can
      * 		be null.
-     * @param isReconnectContext if the save is in the context of a reconnect
      * @throws IOException
      * 		If there was a problem saving changes to data source
      */
@@ -119,8 +84,7 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
             final long lastLeafPath,
             final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
-            final boolean isReconnectContext)
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException;
 
     /**
@@ -230,6 +194,14 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * Cancels all compactions that are currently running and disables background compaction process.
      */
     void stopAndDisableBackgroundCompaction();
+
+    /**
+     * Build an empty {@link VirtualKeySet}. This key set should be compatible with data in this data source,
+     * but should otherwise have no direct connection to the data in this data source.
+     *
+     * @return a new key set
+     */
+    VirtualKeySet<K> buildKeySet();
 
     /**
      * Provides estimation how much space is needed to store the given number of internal / leaf nodes in the data

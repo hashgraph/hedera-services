@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.notification.internal.Dispatcher;
-import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.threading.futures.StandardFuture;
+import com.swirlds.test.framework.TestComponentTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 class DispatcherTests {
 
     @Test
-    @Tag(TestComponentTags.NOTIFICATION)
+    @Tags({@Tag(TestTypeTags.FUNCTIONAL), @Tag(TestComponentTags.NOTIFICATION)})
     @DisplayName("Notification Engine: Dispatcher Sync Exception Handling")
     void validateSyncExceptionHandling() throws InterruptedException, TimeoutException {
         final Dispatcher<SyncOrderedIntegerListener> syncDispatcher =
@@ -71,7 +73,7 @@ class DispatcherTests {
     }
 
     @Test
-    @Tag(TestComponentTags.NOTIFICATION)
+    @Tags({@Tag(TestTypeTags.FUNCTIONAL), @Tag(TestComponentTags.NOTIFICATION)})
     @DisplayName("Notification Engine: Dispatcher ASync Exception Handling")
     void validateASyncExceptionHandling() throws InterruptedException, TimeoutException {
         final Dispatcher<AsyncOrderedIntegerListener> asyncDispatcher =

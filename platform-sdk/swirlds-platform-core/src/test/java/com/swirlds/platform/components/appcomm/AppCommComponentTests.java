@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.ResettableRandom;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
@@ -50,7 +54,11 @@ public class AppCommComponentTests {
     private final PlatformContext context;
 
     public AppCommComponentTests() {
-        context = TestPlatformContextBuilder.create().build();
+        context = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(),
+                new NoOpMetrics(),
+                CryptographyHolder.get(),
+                Time.getCurrent());
     }
 
     @Test
@@ -106,7 +114,7 @@ public class AppCommComponentTests {
 
         final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
         component.start();
-        component.newLatestCompleteStateEvent(signedState.reserve("test"));
+        component.newLatestCompleteStateEvent(signedState);
 
         // Allow the notification callback to execute
         senderLatch.countDown();

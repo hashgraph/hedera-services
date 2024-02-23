@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.stats.cycle;
 
+import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.metrics.api.FloatFormats;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import java.util.Objects;
 import java.util.function.BiFunction;
 

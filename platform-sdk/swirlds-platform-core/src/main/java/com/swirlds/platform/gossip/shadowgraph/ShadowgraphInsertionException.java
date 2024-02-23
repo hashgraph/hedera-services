@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 /**
- * An exception thrown by {@link Shadowgraph} when an event cannot be added to the shadow graph.
+ * An exception thrown by {@link ShadowGraph} when an event cannot be added to the shadow graph.
  */
-public class ShadowgraphInsertionException extends RuntimeException {
+public class ShadowGraphInsertionException extends Exception {
 
     private final InsertableStatus status;
 
@@ -32,7 +32,7 @@ public class ShadowgraphInsertionException extends RuntimeException {
      * @param status
      * 		the status of the event insertion
      */
-    public ShadowgraphInsertionException(final String message, final InsertableStatus status) {
+    public ShadowGraphInsertionException(final String message, final InsertableStatus status) {
         super(message);
         this.status = status;
     }

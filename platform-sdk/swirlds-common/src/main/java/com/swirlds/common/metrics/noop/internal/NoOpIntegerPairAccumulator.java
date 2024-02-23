@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.common.metrics.MetricType;
 
 /**
  * A no-op implementation of an integer pair accumulator.
@@ -60,6 +61,11 @@ public class NoOpIntegerPairAccumulator<T> extends AbstractNoOpMetric implements
      */
     @Override
     public void update(final int leftValue, final int rightValue) {}
+
+    @Override
+    public MetricType getMetricType() {
+        return MetricType.ACCUMULATOR;
+    }
 
     /**
      * {@inheritDoc}

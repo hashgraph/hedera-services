@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTree;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.platform.state.signed.SignedStateComparison.mismatchedNodeIterator;
 import static com.swirlds.platform.state.signed.SignedStateComparison.printMismatchedNodes;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.platform.state.signed.MismatchedNodes;
 import java.util.Iterator;
 import org.junit.jupiter.api.DisplayName;

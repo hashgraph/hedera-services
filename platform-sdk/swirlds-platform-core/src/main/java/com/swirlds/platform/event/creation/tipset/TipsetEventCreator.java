@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,21 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -70,7 +69,7 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private NonAncientEventWindow nonAncientEventWindow;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * The address book for the current network.
@@ -142,11 +141,7 @@ public class TipsetEventCreator implements EventCreator {
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        final AncientMode ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
-        tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
+        tipsetTracker = new TipsetTracker(time, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
                 platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
@@ -154,8 +149,6 @@ public class TipsetEventCreator implements EventCreator {
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
     /**
@@ -282,7 +275,7 @@ public class TipsetEventCreator implements EventCreator {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
             // an event before and the current non-ancient event window must have never been advanced.
-            if (!nonAncientEventWindow.isGenesis() || lastSelfEvent != null) {
+            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -428,9 +421,7 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
-                        ? nonAncientEventWindow.pendingConsensusRound()
-                        : ConsensusConstants.ROUND_FIRST,
+                addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
@@ -442,6 +433,29 @@ public class TipsetEventCreator implements EventCreator {
         cryptography.digestSync(event);
         event.buildDescriptor();
         return event;
+    }
+
+    /**
+     * Get the generation of a descriptor, handle null appropriately.
+     */
+    private static long getGeneration(@Nullable final EventDescriptor descriptor) {
+        if (descriptor == null) {
+            return GENERATION_UNDEFINED;
+        } else {
+            return descriptor.getGeneration();
+        }
+    }
+
+    /**
+     * Get the hash of a descriptor, handle null appropriately.
+     */
+    @Nullable
+    private static Hash getHash(@Nullable final EventDescriptor descriptor) {
+        if (descriptor == null) {
+            return null;
+        } else {
+            return descriptor.getHash();
+        }
     }
 
     /**

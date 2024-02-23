@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package com.swirlds.demo.migration.virtual;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -48,43 +47,24 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
         return ClassVersion.ORIGINAL;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getCurrentDataVersion() {
         return 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getSerializedSize() {
         return AccountVirtualMapValue.getSizeInBytes();
     }
 
     @Override
-    public void serialize(final AccountVirtualMapValue value, final WritableSequentialData out) {
-        value.serialize(out);
-    }
-
-    @Override
-    @Deprecated
-    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) {
+    public int serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
         value.serialize(buffer);
+        return getSerializedSize();
     }
 
     @Override
-    public AccountVirtualMapValue deserialize(final ReadableSequentialData in) {
-        final AccountVirtualMapValue value = new AccountVirtualMapValue();
-        value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) {
+    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) throws IOException {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(buffer, (int) version);
         return value;

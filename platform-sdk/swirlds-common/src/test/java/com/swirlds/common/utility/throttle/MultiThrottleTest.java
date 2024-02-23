@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.TestTypeTags;
 import java.util.Arrays;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -32,6 +33,7 @@ class MultiThrottleTest {
     private static final int ONE_SECOND_SLEEP = 1_000;
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Validate Throttling")
     void testValidateThrottling() throws InterruptedException {
@@ -73,6 +75,7 @@ class MultiThrottleTest {
     }
 
     @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Validate Creation")
     void testValidateCreation() {
         assertThrows(

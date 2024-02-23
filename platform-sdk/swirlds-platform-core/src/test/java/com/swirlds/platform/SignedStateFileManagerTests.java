@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
@@ -36,25 +35,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.config.StateCommonConfig_;
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.components.SavedStateController;
-import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -68,6 +62,9 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,7 +85,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("SignedStateFileManager Tests")
-@Tag(TIMING_SENSITIVE)
 class SignedStateFileManagerTests {
 
     private static final NodeId SELF_ID = new NodeId(1234);
@@ -114,13 +110,12 @@ class SignedStateFileManagerTests {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
-                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
+                        StateConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
-        signedStateFilePath =
-                new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
+        signedStateFilePath = new SignedStateFilePath(context.getConfiguration().getConfigData(StateConfig.class));
     }
 
     private SignedStateMetrics buildMockMetrics() {
@@ -266,7 +261,7 @@ class SignedStateFileManagerTests {
                 .withValue(StateConfig_.SAVE_STATE_PERIOD, stateSavePeriod)
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
+                        StateConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
@@ -332,7 +327,7 @@ class SignedStateFileManagerTests {
                 validateSavingOfState(signedState);
 
                 final List<SavedStateInfo> currentStatesOnDisk =
-                        SignedStateFileReader.getSavedStateFiles(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+                        SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
                 final SavedStateMetadata oldestMetadata =
                         currentStatesOnDisk.get(currentStatesOnDisk.size() - 1).metadata();
@@ -386,7 +381,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
                 .withValue(
-                        StateCommonConfig_.SAVED_STATE_DIRECTORY,
+                        StateConfig_.SAVED_STATE_DIRECTORY,
                         testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())

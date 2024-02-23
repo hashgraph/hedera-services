@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -60,16 +61,6 @@ public abstract class OutputWire<OUT> {
     @NonNull
     public String getName() {
         return name;
-    }
-
-    /**
-     * Get the wiring model that contains this output wire.
-     *
-     * @return the wiring model
-     */
-    @NonNull
-    protected StandardWiringModel getModel() {
-        return model;
     }
 
     /**
@@ -214,6 +205,38 @@ public abstract class OutputWire<OUT> {
      * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
      * instead of the transformer method being called once per data item, it is called once per output per data item.
      *
+     * @param name      the name of the transformer
+     * @param transform the function that transforms the output of this wire into the output of the transformer, called
+     *                  once per output per data item. Null data returned by this method his not forwarded.
+     * @param cleanup   an optional method that is called after the data is forwarded to all destinations. The original
+     *                  data is passed to this method. Ignored if null.
+     * @param <NEW_OUT> the output type of the transformer
+     * @return the output wire of the transformer
+     */
+    @NonNull
+    public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
+            @NonNull final String name,
+            @NonNull final Function<OUT, NEW_OUT> transform,
+            @Nullable final Consumer<OUT> cleanup) {
+
+        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer =
+                new AdvancedWireTransformer<>(model, Objects.requireNonNull(name), transform, cleanup);
+
+        solderTo(name, wireTransformer);
+
+        return wireTransformer.getOutputWire();
+    }
+
+    /**
+     * Build a {@link AdvancedWireTransformer}. The input wire to the transformer is automatically soldered to this
+     * output wire (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of
+     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
+     * instead of the transformer method being called once per data item, it is called once per output per data item.
+     *
+     * <p>
+     * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer)}, but with a
+     * different way of describing the transformation.
+     *
      * @param transformer an object that manages the transformation
      * @param <NEW_OUT>   the output type of the transformer
      * @return the output wire of the transformer
@@ -221,16 +244,7 @@ public abstract class OutputWire<OUT> {
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
             @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer = new AdvancedWireTransformer<>(
-                model,
-                Objects.requireNonNull(transformer.getName()),
-                transformer::transform,
-                transformer::inputCleanup,
-                transformer::outputCleanup);
-
-        solderTo(transformer.getName(), wireTransformer);
-
-        return wireTransformer.getOutputWire();
+        return buildAdvancedTransformer(transformer.getName(), transformer::transform, transformer::cleanup);
     }
 
     /**

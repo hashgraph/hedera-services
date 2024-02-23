@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Function;
 
 /**
  * HalfDiskHashMap buckets are somewhat expensive resources. Every bucket has an
@@ -55,27 +55,28 @@ public class ReusableBucketPool<K extends VirtualKey> {
     /** Buckets */
     private final ConcurrentLinkedDeque<Bucket<K>> buckets;
 
-    private final Function<ReusableBucketPool<K>, Bucket<K>> newBucketSupplier;
+    /** Key serializer */
+    private final KeySerializer<K> keySerializer;
 
     /**
      * Creates a new reusable bucket pool of the default size.
      *
-     * @param bucketSupplier To create new buckets
+     * @param serializer Key serializer used by the buckets in the pool
      */
-    public ReusableBucketPool(final Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
-        this(DEFAULT_POOL_SIZE, bucketSupplier);
+    public ReusableBucketPool(final BucketSerializer<K> serializer) {
+        this(DEFAULT_POOL_SIZE, serializer);
     }
 
     /**
      * Creates a new reusable bucket pool of the specified size.
      *
-     * @param bucketSupplier To create new buckets
+     * @param serializer Key serializer used by the buckets in the pool
      */
-    public ReusableBucketPool(final int size, Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
-        this.newBucketSupplier = bucketSupplier;
+    public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
         buckets = new ConcurrentLinkedDeque<>();
+        keySerializer = serializer.getKeySerializer();
         for (int i = 0; i < size; i++) {
-            buckets.offerLast(bucketSupplier.apply(this));
+            buckets.offerLast(new Bucket<>(keySerializer, this));
         }
     }
 
@@ -89,7 +90,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
     public Bucket<K> getBucket() {
         Bucket<K> bucket = buckets.pollLast();
         if (bucket == null) {
-            bucket = newBucketSupplier.apply(this);
+            bucket = new Bucket<>(keySerializer, this);
         }
         bucket.clear();
         return bucket;

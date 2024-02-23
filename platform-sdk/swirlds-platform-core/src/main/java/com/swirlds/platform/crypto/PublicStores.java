@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.platform.crypto.KeyCertPurpose.AGREEMENT;
+import static com.swirlds.platform.crypto.KeyCertPurpose.ENCRYPTION;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
 import com.swirlds.common.crypto.CryptographyException;
@@ -33,12 +34,17 @@ import java.util.stream.Stream;
  *
  * @param agrTrustStore
  * 		the trust store for all the sig certs (self-signed signing cert)
+ * @param encTrustStore
+ * 		the trust store for all the agr certs (agreement cert, signed by signing key)
  * @param sigTrustStore
  * 		the trust store for all the enc certs (encryption cert, signed by signing key)
  */
-public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore) {
+public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore, KeyStore encTrustStore) {
     public PublicStores() throws KeyStoreException {
-        this(CryptoStatic.createEmptyTrustStore(), CryptoStatic.createEmptyTrustStore());
+        this(
+                CryptoStatic.createEmptyTrustStore(),
+                CryptoStatic.createEmptyTrustStore(),
+                CryptoStatic.createEmptyTrustStore());
     }
 
     /**
@@ -58,20 +64,23 @@ public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore) {
     public static PublicStores fromAllPublic(final KeyStore allPublic, final Iterable<String> names)
             throws KeyStoreException, KeyLoadingException {
         final KeyStore sigTrustStore = CryptoStatic.createEmptyTrustStore();
+        final KeyStore encTrustStore = CryptoStatic.createEmptyTrustStore();
         final KeyStore agrTrustStore = CryptoStatic.createEmptyTrustStore();
 
         for (String name : names) {
             Certificate sigCert = allPublic.getCertificate(SIGNING.storeName(name));
             Certificate agrCert = allPublic.getCertificate(AGREEMENT.storeName(name));
+            Certificate encCert = allPublic.getCertificate(ENCRYPTION.storeName(name));
 
-            if (Stream.of(sigCert, agrCert).anyMatch(Objects::isNull)) {
+            if (Stream.of(sigCert, agrCert, encCert).anyMatch(Objects::isNull)) {
                 throw new KeyLoadingException("Cannot find certificates for: " + name);
             }
 
             sigTrustStore.setCertificateEntry(SIGNING.storeName(name), sigCert);
             agrTrustStore.setCertificateEntry(AGREEMENT.storeName(name), agrCert);
+            encTrustStore.setCertificateEntry(ENCRYPTION.storeName(name), encCert);
         }
-        return new PublicStores(sigTrustStore, agrTrustStore);
+        return new PublicStores(sigTrustStore, agrTrustStore, encTrustStore);
     }
 
     /**
@@ -90,6 +99,7 @@ public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore) {
         switch (type) {
             case SIGNING -> sigTrustStore.setCertificateEntry(type.storeName(name), certificate);
             case AGREEMENT -> agrTrustStore.setCertificateEntry(type.storeName(name), certificate);
+            case ENCRYPTION -> encTrustStore.setCertificateEntry(type.storeName(name), certificate);
         }
     }
 
@@ -107,7 +117,8 @@ public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore) {
         try {
             certificate = switch (type) {
                 case SIGNING -> sigTrustStore.getCertificate(type.storeName(name));
-                case AGREEMENT -> agrTrustStore.getCertificate(type.storeName(name));};
+                case AGREEMENT -> agrTrustStore.getCertificate(type.storeName(name));
+                case ENCRYPTION -> encTrustStore.getCertificate(type.storeName(name));};
         } catch (KeyStoreException e) {
             // cannot be thrown because we ensure the key store is initialized in the constructor
             throw new CryptographyException(e);

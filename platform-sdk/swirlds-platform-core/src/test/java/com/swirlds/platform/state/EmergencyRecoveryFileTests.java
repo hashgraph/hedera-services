@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.io.ResourceLoader;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.emergencyfile.Intervals;
 import com.swirlds.platform.recovery.emergencyfile.Location;
@@ -36,6 +34,8 @@ import com.swirlds.platform.recovery.emergencyfile.Package;
 import com.swirlds.platform.recovery.emergencyfile.Recovery;
 import com.swirlds.platform.recovery.emergencyfile.State;
 import com.swirlds.platform.recovery.emergencyfile.Stream;
+import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;

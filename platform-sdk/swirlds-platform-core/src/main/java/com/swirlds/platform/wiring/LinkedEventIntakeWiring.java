@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -31,17 +31,18 @@ import java.util.List;
 /**
  * Wiring for the {@link LinkedEventIntake}.
  *
- * @param eventInput                        the input wire for events to be added to the hashgraph
- * @param pauseInput                        the input wire for pausing the linked event intake
- * @param consensusRoundOutput              the output wire for consensus rounds
- * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
- * @param flushRunnable                     the runnable to flush the intake
+ * @param eventInput                  the input wire for events to be added to the hashgraph
+ * @param pauseInput                  the input wire for pausing the linked event intake
+ * @param consensusRoundOutput        the output wire for consensus rounds
+ * @param nonAncientEventWindowOutput the output wire for the {@link NonAncientEventWindow}. This output is transformed
+ *                                    from the consensus round output
+ * @param flushRunnable               the runnable to flush the intake
  */
 public record LinkedEventIntakeWiring(
         @NonNull InputWire<EventImpl> eventInput,
         @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
-        @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
+        @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -58,7 +59,10 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
                 taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
-                taskScheduler.buildSecondaryOutputWire(),
+                consensusRoundOutput.buildTransformer(
+                        "getNonAncientEventWindow",
+                        "rounds",
+                        consensusRound -> consensusRound.getNonAncientEventWindow()),
                 taskScheduler::flush);
     }
 

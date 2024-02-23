@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 import org.mockito.invocation.InvocationOnMock;
 
 /**
- * Utility methods for testing {@link StateSignatureCollector}
+ * Utility methods for testing {@link com.swirlds.platform.state.signed.SignedStateManager}
  */
 public class SignedStateManagerTestUtils {
 

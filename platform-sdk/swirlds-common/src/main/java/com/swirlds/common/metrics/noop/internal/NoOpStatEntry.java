@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import static com.swirlds.metrics.api.Metric.DataType.INT;
+import static com.swirlds.common.metrics.Metric.DataType.INT;
 
+import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.metrics.api.MetricConfig;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,108 +49,169 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The primary purpose of the shadowgraph is to unlink events when it is safe to do so. In order to decide when it is
- * safe to unlink an event, it allows for batches of events (by ancient indicator) to be reserved.
+ * <p>A shadow graph is a lightweight replication of the hashgraph structure. It supports:</p>
+ *
+ * <ul>
+ * <li>insertion of a shadow event</li>
+ * <li>querying for a shadow event by hashgraph event base hash</li>
+ * <li>querying for ancestors by shadow event</li>
+ * <li>providing the current tips (shadow events with no self-child)</li>
+ * <li>expiration of shadow events by generation</li>
+ * <li>reservation of a generation of events to prevent event expiration</li>
+ * </ul>
+ *
+ * <p>The shadow graph is thread safe.</p>
  */
-public class Shadowgraph implements Clearable {
+public class ShadowGraph implements Clearable {
 
-    private static final Logger logger = LogManager.getLogger(Shadowgraph.class);
+    private static final Logger logger = LogManager.getLogger(ShadowGraph.class);
 
     /**
-     * The ancient indicator indicating that nothing is currently reserved.
+     * The generation value for the first event created by a node.
      */
-    public static final int NO_RESERVATION = -1;
+    private static final long FIRST_GENERATION = 0;
+
+    /** The generation value indicating that no generation is currently reserved. */
+    public static final int NO_GENERATION_RESERVED = -1;
 
     /**
-     * The shadowgraph represented in a map from has to shadow event.
+     * The shadow graph represented in a map from has to shadow event.
      */
     private final HashMap<Hash, ShadowEvent> hashToShadowEvent;
 
     /**
-     * Map from ancient indicator to all shadow events with that ancient indicator.
+     * Map from generation to all shadow events in that generation.
      */
-    private final Map<Long /* ancient indicator */, Set<ShadowEvent>> indicatorToShadowEvent;
+    private final Map<Long, Set<ShadowEvent>> generationToShadowEvent;
 
     /**
-     * The set of all tips for the shadowgraph. A tip is an event with no self child (could have other children)
+     * The set of all tips for the shadow graph. A tip is an event with no self child (could have other children)
      */
     private final HashSet<ShadowEvent> tips;
 
     /**
-     * The indicator describing the expiration boundary. All events with an older (smaller) ancient indicator should be
-     * expired, when possible.
+     * The generation for which all older generations should be expired, when possible
      */
     private long expireBelow;
 
     /**
-     * The oldest ancient indicator that has not yet been expired
+     * The oldest generation that has not yet been expired
      */
-    private long oldestUnexpiredIndicator;
+    private long oldestGeneration;
 
     /**
-     * The list of all currently reserved indicators and their number of reservations.
+     * The list of all currently reserved generations and their number of reservations
      */
-    private final LinkedList<ShadowgraphReservation> reservationList;
+    private final LinkedList<GenerationReservationImpl> reservationList;
 
     /**
-     * Encapsulates metrics for the shadowgraph.
+     * The stats instance to update
      */
-    private final ShadowgraphMetrics metrics;
+    private final SyncMetrics syncMetrics;
 
-    /**
-     * the number of nodes in the network, used for debugging
-     */
+    /** the number of nodes in the network, used for debugging */
     private final int numberOfNodes;
 
-    /**
-     * Describes the current ancient mode.
-     */
-    private final AncientMode ancientMode;
+    private final NodeId selfId;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the address book
+     * @param time              provides wall clock time
+     * @param syncMetrics       metrics for sync gossip
+     * @param addressBook       the address book
+     * @param selfId            the id of this node
      */
-    public Shadowgraph(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public ShadowGraph(
+            @NonNull final Time time,
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId) {
 
-        ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
+        Objects.requireNonNull(time);
 
-        this.metrics = new ShadowgraphMetrics(platformContext);
+        this.syncMetrics = syncMetrics;
         this.numberOfNodes = addressBook.getSize();
-        expireBelow = ancientMode.getGenesisIndicator();
-        oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
+        this.selfId = Objects.requireNonNull(selfId);
+        expireBelow = FIRST_GENERATION;
+        oldestGeneration = FIRST_GENERATION;
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();
-        indicatorToShadowEvent = new HashMap<>();
+        generationToShadowEvent = new HashMap<>();
         reservationList = new LinkedList<>();
     }
 
     /**
-     * Define the starting non-expired threshold for the shadowgraph, it will not keep any events older than this
+     * <p>Initializes the {@link ShadowGraph} with the given {@code events}. This method should be used after
+     * reconnect or restart. {@code events} must be ordered by generation, smallest to largest.</p>
      *
-     * @param expiredEventThreshold the starting non-expired threshold
+     * <p>A minimum generation is necessary because events loaded from signed state a could have generation gaps and
+     * are used in {@link com.swirlds.platform.Consensus}. {@link com.swirlds.platform.Consensus} will eventually expire
+     * its smallest generation and that generation must be present in the {@link ShadowGraph} or an exception is thrown,
+     * so we create empty generations to match {@link com.swirlds.platform.Consensus}.</p>
+     *
+     * @param events        the events to add to the shadow graph
+     * @param minGeneration the generation to use as a minimum generation
+     * @throws IllegalArgumentException if argument is null or empty
      */
-    public synchronized void startWithExpiredThreshold(final long expiredEventThreshold) {
-        expireBelow = expiredEventThreshold;
-        oldestUnexpiredIndicator = expiredEventThreshold;
-        logger.info(STARTUP.getMarker(), "Shadowgraph starting from expiration threshold {}", expiredEventThreshold);
+    public synchronized void initFromEvents(final List<EventImpl> events, final long minGeneration) {
+        if (events == null || events.isEmpty()) {
+            throw new IllegalArgumentException("events must not be null or empty");
+        }
+
+        // Set this to the oldest generation in the event list, so we can determine if parent events are expired,
+        // therefore allowing the event to be inserted.
+        oldestGeneration = events.get(0).getGeneration();
+        expireBelow = events.get(0).getGeneration();
+
+        for (EventImpl event : events) {
+            // if an issue like this occurs, we still might be in a situation where we could continue running, that's
+            // why we catch and log these exceptions
+            try {
+                addEvent(event);
+            } catch (ShadowGraphInsertionException e) {
+                logger.error(EXCEPTION.getMarker(), "unable to insert event {}", event.toShortString(), e);
+            }
+        }
+
+        // if we are missing some generation, we will create empty ones to match Consensus
+        while (expireBelow > minGeneration) {
+            expireBelow--;
+            generationToShadowEvent.put(expireBelow, new HashSet<>());
+        }
+
+        // Now that events are added, update (decrease) the oldest generation to match the expireBelow value in case it
+        // was decreased to match the minGeneration.
+        oldestGeneration = expireBelow;
+
+        logger.info(
+                STARTUP.getMarker(),
+                "Shadow graph initialized from events. Provided minGeneration = {}. Calculated oldestGeneration = {}",
+                minGeneration,
+                oldestGeneration);
     }
 
     /**
-     * Reset the shadowgraph manager to its constructed state.
+     * Define the starting generation for the shadowgraph, it will not keep any events older than this
+     *
+     * @param generation the starting generation
+     */
+    public synchronized void startFromGeneration(final long generation) {
+        expireBelow = generation;
+        oldestGeneration = generation;
+        logger.info(STARTUP.getMarker(), "Shadow graph starting from generation {}", generation);
+    }
+
+    /**
+     * Reset the shadow graph manager to its constructed state.
      */
     public synchronized void clear() {
-        expireBelow = ancientMode.getGenesisIndicator();
-        oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
+        expireBelow = FIRST_GENERATION;
+        oldestGeneration = FIRST_GENERATION;
         disconnectShadowEvents();
         tips.clear();
         hashToShadowEvent.clear();
-        indicatorToShadowEvent.clear();
+        generationToShadowEvent.clear();
         reservationList.clear();
     }
 
@@ -159,24 +219,24 @@ public class Shadowgraph implements Clearable {
      * Disconnect all shadow events to help the garbage collector.
      */
     private void disconnectShadowEvents() {
-        for (final ShadowEvent shadow : hashToShadowEvent.values()) {
+        for (ShadowEvent shadow : hashToShadowEvent.values()) {
             shadow.disconnect();
             shadow.getEvent().clear();
         }
     }
 
     /**
-     * Increase the reservation count for the ancient indicator currently held by {@code expireBelow}. A reservation
-     * prevents events that have an ancient indicator not less than the threshold from being unlinked.
+     * Reserves the events in generation {@code expireBelow}. A reservation prevents events in that generation and later
+     * (higher) generations from being expired from the shadow graph.
      *
-     * @return the reservation instance, must be closed when the reservation is no longer needed
+     * @return the reservation instance with the reserved generation
      */
-    public synchronized ShadowgraphReservation reserve() {
+    public synchronized GenerationReservation reserve() {
         if (reservationList.isEmpty()) {
             return newReservation();
         }
-        final ShadowgraphReservation lastReservation = reservationList.getLast();
-        if (lastReservation.getReservedIndicator() == expireBelow) {
+        GenerationReservationImpl lastReservation = reservationList.getLast();
+        if (lastReservation.getGeneration() == expireBelow) {
             lastReservation.incrementReservations();
             return lastReservation;
         } else {
@@ -185,13 +245,11 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * Determines if the provided {@code hash} is in the shadowgraph.
+     * Determines if the provided {@code hash} is in the shadow graph.
      *
      * @param hash the hash to look for
-     * @return true if the hash matches the hash of a shadow event in the shadowgraph, false otherwise
-     * @deprecated still used by tests, planned for removal. Do not add new uses.
+     * @return true if the hash matches the hash of a shadow event in the shadow graph, false otherwise
      */
-    @Deprecated(forRemoval = true)
     public synchronized boolean isHashInGraph(final Hash hash) {
         return hashToShadowEvent.containsKey(hash);
     }
@@ -207,7 +265,7 @@ public class Shadowgraph implements Clearable {
      *     <li>adding events to the the graph does not affect ancestors</li>
      *     <li>checks for expired parent events are atomic</li>
      * </ol>
-     * <p>Note: This method is always accessed after a call to a synchronized {@link Shadowgraph} method, like
+     * <p>Note: This method is always accessed after a call to a synchronized {@link ShadowGraph} method, like
      * {@link #getTips()}, which acts as a memory gate and causes the calling thread to read the latest values for all
      * variables from memory, including {@link ShadowEvent} links.</p>
      *
@@ -234,21 +292,21 @@ public class Shadowgraph implements Clearable {
      */
     private void findAncestors(
             final HashSet<ShadowEvent> ancestors, final ShadowEvent event, final Predicate<ShadowEvent> predicate) {
-        final Deque<ShadowEvent> todoStack = new ArrayDeque<>();
+        Deque<ShadowEvent> todoStack = new ArrayDeque<>();
 
-        final ShadowEvent sp = event.getSelfParent();
+        ShadowEvent sp = event.getSelfParent();
         if (sp != null) {
             todoStack.push(sp);
         }
 
-        final ShadowEvent op = event.getOtherParent();
+        ShadowEvent op = event.getOtherParent();
         if (op != null) {
             todoStack.push(op);
         }
 
         // perform a depth first search of self and other parents
         while (!todoStack.isEmpty()) {
-            final ShadowEvent x = todoStack.pop();
+            ShadowEvent x = todoStack.pop();
             /*
             IF
 
@@ -263,11 +321,11 @@ public class Shadowgraph implements Clearable {
             add it to ancestors and push any non-null parents to the stack
              */
             if (!expired(x.getEvent()) && predicate.test(x) && ancestors.add(x)) {
-                final ShadowEvent xsp = x.getSelfParent();
+                ShadowEvent xsp = x.getSelfParent();
                 if (xsp != null) {
                     todoStack.push(xsp);
                 }
-                final ShadowEvent xop = x.getOtherParent();
+                ShadowEvent xop = x.getOtherParent();
                 if (xop != null) {
                     todoStack.push(xop);
                 }
@@ -276,23 +334,21 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * Looks for events in an ancient indicator range that pass the provided predicate.
+     * Looks for events in a generation range that pass the provided predicate.
      *
-     * @param lowerBound the start of the range (inclusive)
-     * @param upperBound the end of the range (exclusive)
-     * @param predicate  the predicate to filter out events
+     * @param startGen  the start of the generation range (inclusive)
+     * @param endGen    the end of the generation range (exclusive)
+     * @param predicate the predicate to filter out events
      * @return a collection of events found
-     * @deprecated planned for removal, do not add new uses
      */
-    @Deprecated(forRemoval = true)
-    public synchronized Collection<EventImpl> findByAncientIndicator(
-            final long lowerBound, final long upperBound, final Predicate<EventImpl> predicate) {
+    public synchronized Collection<EventImpl> findByGeneration(
+            final long startGen, final long endGen, final Predicate<EventImpl> predicate) {
         final List<EventImpl> result = new ArrayList<>();
-        if (lowerBound >= upperBound) {
+        if (startGen >= endGen) {
             return result;
         }
-        for (long indicator = lowerBound; indicator < upperBound; indicator++) {
-            indicatorToShadowEvent.getOrDefault(indicator, Collections.emptySet()).stream()
+        for (long gen = startGen; gen < endGen; gen++) {
+            generationToShadowEvent.getOrDefault(gen, Collections.emptySet()).stream()
                     .map(ShadowEvent::getEvent)
                     .filter(predicate)
                     .forEach(result::add);
@@ -301,108 +357,107 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * <p>Update the reservable ancient indicator and remove any events from the shadowgraph that can and should be
+     * <p>Update the reservable generation and remove any events from the shadow graph that can and should be
      * expired.</p>
      *
-     * <p>Events that should be expired have an ancient indicator that is less than {@code expireBelow}.</p>
+     * <p>Events that should be expired have a generation that is less than {@code expireBelow}.</p>
      * <p>Events that are allowed to be expired are events:</p>
      * <ol>
-     *     <li>whose ancient indicator has zero reservations</li>
-     *     <li>whose ancient indicator is less than the smallest indicator with a non-zero number of reservations</li>
+     *     <li>whose generation has zero reservations</li>
+     *     <li>whose generation is less than the smallest generation with a non-zero number of reservations</li>
      * </ol>
      *
-     * @param eventWindow describes the current window of non-expired events
+     * @param generation The generation below which all generations should be expired. For example, if
+     *                   {@code generation} is 100, events in generation 99 and below should be expired.
      */
-    public synchronized void updateNonExpiredEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
-
-        final long expiredThreshold = eventWindow.getExpiredThreshold();
-
-        if (expiredThreshold < expireBelow) {
+    public synchronized void expireBelow(final long generation) {
+        if (generation < expireBelow) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "A request to expire below {} is less than request of {}. Ignoring expiration request",
-                    expiredThreshold,
+                    "A request to expire generations below {} is less than request of {}. Ignoring expiration request",
+                    generation,
                     expireBelow);
             // The value of expireBelow must never decrease, so if we receive an invalid request like this, ignore it
             return;
         }
 
-        // Update the smallest threshold that should not be expired
-        expireBelow = expiredThreshold;
+        // Update the smallest generation that should not be expired
+        expireBelow = generation;
 
-        // Remove reservations for events that can and should be expired, and
-        // keep track of the oldest threshold that can be expired
-        long oldestReservedIndicator = pruneReservationList();
+        // Remove reservations for generations that can and should be expired, and
+        // keep track of the oldest generation that can be expired
+        long oldestReservedGen = pruneReservationList();
 
-        if (oldestReservedIndicator == NO_RESERVATION) {
-            oldestReservedIndicator = expireBelow;
+        if (oldestReservedGen == NO_GENERATION_RESERVED) {
+            oldestReservedGen = expireBelow;
         }
 
-        metrics.updateIndicatorsWaitingForExpiry(expireBelow - oldestReservedIndicator);
+        syncMetrics.updateGensWaitingForExpiry(expireBelow - oldestReservedGen);
 
-        // Expire events that can and should be expired, starting with the oldest non-expired ancient indicator
-        // and working up until we reach an indicator that should not or cannot be expired.
-        //
-        // This process must be separate from iterating through the reservations because even if there are no
-        // reservations, expiry should still function correctly.
+        /*
+        Expire events that can and should be expired, starting with the oldest non-expired generation
+        and working up until we reach a generation that should not or cannot be expired.
 
-        final long minimumIndicatorToKeep = Math.min(expireBelow, oldestReservedIndicator);
+        This process must be separate from iterating through the reservations because even if there are no
+        reservations, expiry should still function correctly.
+         */
+        long minGenToKeep = Math.min(expireBelow, oldestReservedGen);
 
-        while (oldestUnexpiredIndicator < minimumIndicatorToKeep) {
-            final Set<ShadowEvent> shadowsToExpire = indicatorToShadowEvent.remove(oldestUnexpiredIndicator);
+        while (oldestGeneration < minGenToKeep) {
+            Set<ShadowEvent> shadowsToExpire = generationToShadowEvent.remove(oldestGeneration);
             // shadowsToExpire should never be null, but check just in case.
             if (shadowsToExpire == null) {
                 logger.error(
-                        EXCEPTION.getMarker(),
-                        "There were no events with ancient indicator {} to expire.",
-                        oldestUnexpiredIndicator);
+                        EXCEPTION.getMarker(), "There were no events in generation {} to expire.", oldestGeneration);
             } else {
                 shadowsToExpire.forEach(this::expire);
             }
-            oldestUnexpiredIndicator++;
+            oldestGeneration++;
         }
     }
 
     /**
-     * Removes reservations that can and should be expired, starting with the oldest ancient indicator reservation.
+     * Removes reservations that can and should be expired, starting with the oldest generation reservation.
      *
-     * @return the oldest ancient indicator with at least one reservation, or {@code -1} if there are no reservations
-     * @see Shadowgraph#expireBelow
+     * @return the oldest generation with at least one reservation, or {@code -1} if there are no generations with at
+     * least one reservation.
+     * @see ShadowGraph#expireBelow
      */
     private long pruneReservationList() {
-        long oldestReservedIndicator = NO_RESERVATION;
+        long oldestReservedGen = NO_GENERATION_RESERVED;
 
-        // Iterate through the reservation list in ascending ancient indicator order, removing reservations
-        // for indicators that can and should be expired.
-        final Iterator<ShadowgraphReservation> iterator = reservationList.iterator();
-        while (iterator.hasNext()) {
-            final ShadowgraphReservation reservation = iterator.next();
-            final long reservedIndicator = reservation.getReservedIndicator();
+        // Iterate through the reservation list in ascending generation order, removing reservations for generations
+        // that can and should be expired.
+        Iterator<GenerationReservationImpl> iter = reservationList.iterator();
+        while (iter.hasNext()) {
+            GenerationReservationImpl reservation = iter.next();
+            long reservedGen = reservation.getGeneration();
 
-            if (reservation.getReservationCount() > 0) {
-                // As soon as we find a reserved indicator, stop iterating
-                oldestReservedIndicator = reservation.getReservedIndicator();
+            if (reservation.getNumReservations() > 0) {
+                // As soon as we find a reserved reservedGen, stop
+                // iterating because we cannot expire this reservedGen
+                oldestReservedGen = reservation.getGeneration();
                 break;
-            } else if (reservedIndicator < expireBelow) {
+            } else if (reservedGen < expireBelow) {
                 // If the number of reservations is 0 and the
-                // indicator should be expired, remove the reservation
-                iterator.remove();
+                // reservedGen should be expired, remove the reservation
+                iter.remove();
             } else {
-                // If the expireBelow indicator is reached, stop
-                // because no more indicators should be expired
+                // If the expireBelow reservedGen is reached, stop
+                // because no more generations should be expired
                 break;
             }
         }
-        return oldestReservedIndicator;
+        return oldestReservedGen;
     }
 
     /**
-     * Expires a single {@link ShadowEvent} from the shadowgraph.
+     * Expires a single {@link ShadowEvent} from the shadow graph.
      *
      * @param shadow the shadow event to expire
      */
     private void expire(final ShadowEvent shadow) {
-        // Remove the shadow from the shadowgraph
+        // Remove the shadow from the shadow graph
         hashToShadowEvent.remove(shadow.getEventBaseHash());
         // Remove references to parent shadows so this event gets garbage collected
         shadow.disconnect();
@@ -416,7 +471,7 @@ public class Shadowgraph implements Clearable {
      * @param e The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
-    public synchronized ShadowEvent shadow(final EventImpl e) {
+    public synchronized ShadowEvent shadow(final PlatformEvent e) {
         if (e == null) {
             return null;
         }
@@ -432,8 +487,8 @@ public class Shadowgraph implements Clearable {
      */
     public synchronized List<ShadowEvent> shadows(final List<Hash> hashes) {
         Objects.requireNonNull(hashes);
-        final List<ShadowEvent> shadows = new ArrayList<>(hashes.size());
-        for (final Hash hash : hashes) {
+        List<ShadowEvent> shadows = new ArrayList<>(hashes.size());
+        for (Hash hash : hashes) {
             shadows.add(shadow(hash));
         }
         return shadows;
@@ -443,9 +498,8 @@ public class Shadowgraph implements Clearable {
      * Get a hashgraph event from a hash
      *
      * @param h the hash
-     * @return the hashgraph event, if there is one in {@code this} shadowgraph, else `null`
+     * @return the hashgraph event, if there is one in {@code this} shadow graph, else `null`
      */
-    @Nullable
     public synchronized EventImpl hashgraphEvent(final Hash h) {
         final ShadowEvent shadow = shadow(h);
         if (shadow == null) {
@@ -461,19 +515,17 @@ public class Shadowgraph implements Clearable {
      *
      * @return an unmodifiable copy of the tips
      */
-    @NonNull
     public synchronized List<ShadowEvent> getTips() {
         return new ArrayList<>(tips);
     }
-
     /**
      * If Event `e` is insertable, then insert it and update the tip set, else do nothing.
      *
      * @param e The event reference to insert.
      * @return true iff e was inserted
-     * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
+     * @throws ShadowGraphInsertionException if the event was unable to be added to the shadow graph
      */
-    public synchronized boolean addEvent(final EventImpl e) throws ShadowgraphInsertionException {
+    public synchronized boolean addEvent(final EventImpl e) throws ShadowGraphInsertionException {
         final InsertableStatus status = insertable(e);
 
         if (status == InsertableStatus.INSERTABLE) {
@@ -488,14 +540,14 @@ public class Shadowgraph implements Clearable {
                 logger.info(
                         SYNC_INFO.getMarker(),
                         "tips size is {} after adding {}. Esp null:{} Ssp null:{}\n"
-                                + "expireBelow: {} oldestUnexpiredIndicator: {}\n"
+                                + "expireBelow: {} oldestGeneration: {}\n"
                                 + "current tips:{}",
                         tips::size,
                         () -> EventStrings.toMediumString(e),
                         () -> e.getSelfParent() == null,
                         () -> s.getSelfParent() == null,
                         () -> expireBelow,
-                        () -> oldestUnexpiredIndicator,
+                        () -> oldestGeneration,
                         () -> tips.stream()
                                 .map(sh -> EventStrings.toShortString(sh.getEvent()))
                                 .collect(Collectors.joining(",")));
@@ -505,26 +557,26 @@ public class Shadowgraph implements Clearable {
         } else {
             // Every event received should be insertable, so throw an exception if that is not the case
             if (status == InsertableStatus.EXPIRED_EVENT) {
-                throw new ShadowgraphInsertionException(
+                throw new ShadowGraphInsertionException(
                         String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                                "`addEvent`: did not insert, status is %s for event %s, oldestGeneration = %s",
+                                status, EventStrings.toMediumString(e), oldestGeneration),
                         status);
             } else if (status == InsertableStatus.NULL_EVENT) {
-                throw new ShadowgraphInsertionException(
+                throw new ShadowGraphInsertionException(
                         String.format("`addEvent`: did not insert, status is %s", status), status);
             } else {
-                throw new ShadowgraphInsertionException(
+                throw new ShadowGraphInsertionException(
                         String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                                "`addEvent`: did not insert, status is %s for event %s, oldestGeneration = %s",
+                                status, EventStrings.toMediumString(e), oldestGeneration),
                         status);
             }
         }
     }
 
-    private ShadowgraphReservation newReservation() {
-        final ShadowgraphReservation reservation = new ShadowgraphReservation(expireBelow);
+    private GenerationReservationImpl newReservation() {
+        GenerationReservationImpl reservation = new GenerationReservationImpl(expireBelow);
         reservationList.addLast(reservation);
         return reservation;
     }
@@ -553,15 +605,14 @@ public class Shadowgraph implements Clearable {
         final ShadowEvent sp = shadow(e.getSelfParent());
         final ShadowEvent op = shadow(e.getOtherParent());
 
-        final ShadowEvent se = new ShadowEvent(e, sp, op);
+        ShadowEvent se = new ShadowEvent(e, sp, op);
 
         hashToShadowEvent.put(se.getEventBaseHash(), se);
 
-        final long ancientIndicator = e.getBaseEvent().getAncientIndicator(ancientMode);
-        if (!indicatorToShadowEvent.containsKey(ancientIndicator)) {
-            indicatorToShadowEvent.put(ancientIndicator, new HashSet<>());
+        if (!generationToShadowEvent.containsKey(e.getGeneration())) {
+            generationToShadowEvent.put(e.getGeneration(), new HashSet<>());
         }
-        indicatorToShadowEvent.get(ancientIndicator).add(se);
+        generationToShadowEvent.get(e.getGeneration()).add(se);
 
         return se;
     }
@@ -572,8 +623,8 @@ public class Shadowgraph implements Clearable {
      * @param event The event.
      * @return true iff the given event is expired
      */
-    private boolean expired(final EventImpl event) {
-        return event.getBaseEvent().getAncientIndicator(ancientMode) < oldestUnexpiredIndicator;
+    private boolean expired(final PlatformEvent event) {
+        return event.getGeneration() < oldestGeneration;
     }
 
     /*
@@ -636,7 +687,7 @@ public class Shadowgraph implements Clearable {
         final boolean hasOP = e.getOtherParent() != null;
         final boolean hasSP = e.getSelfParent() != null;
 
-        // If e has an unexpired parent that is not already referenced by the shadowgraph, then we log an error. This
+        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an error. This
         // is only a sanity check, so there is no need to prevent insertion
         if (hasOP) {
             final boolean knownOP = shadow(e.getOtherParent()) != null;

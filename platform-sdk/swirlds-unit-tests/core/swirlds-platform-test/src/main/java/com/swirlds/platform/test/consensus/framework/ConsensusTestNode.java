@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package com.swirlds.platform.test.consensus.framework;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -57,10 +55,7 @@ public class ConsensusTestNode {
      */
     public static @NonNull ConsensusTestNode genesisContext(@NonNull final EventEmitter<?> eventEmitter) {
         return new ConsensusTestNode(
-                eventEmitter,
-                new TestIntake(
-                        eventEmitter.getGraphGenerator().getAddressBook(),
-                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
+                eventEmitter, new TestIntake(eventEmitter.getGraphGenerator().getAddressBook()));
     }
 
     /** Simulates a restart on a node */
@@ -86,10 +81,7 @@ public class ConsensusTestNode {
         newEmitter.reset();
 
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
-                newEmitter,
-                new TestIntake(
-                        newEmitter.getGraphGenerator().getAddressBook(),
-                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
+                newEmitter, new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
         consensusTestNode.intake.loadSnapshot(
                 Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
                         .getSnapshot());
