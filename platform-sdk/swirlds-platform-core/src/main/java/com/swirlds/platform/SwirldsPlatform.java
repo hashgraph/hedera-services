@@ -622,18 +622,16 @@ public class SwirldsPlatform implements Platform {
                 latestReconnectRound::get);
 
         platformWiring.wireExternalComponents(
-                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
+                platformStatusManager,
+                appCommunicationComponent,
+                transactionPool,
+                latestCompleteState,
+                notificationEngine);
 
         final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
 
-        // wire ISS output
-        final IssHandler issHandler = new IssHandler(
-                stateConfig,
-                this::haltRequested,
-                this::handleFatalError,
-                issScratchpad,
-                notificationEngine,
-                platformStatusManager);
+        final IssHandler issHandler =
+                new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
 
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));

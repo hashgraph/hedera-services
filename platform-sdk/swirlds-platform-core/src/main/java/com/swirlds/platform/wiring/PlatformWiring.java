@@ -24,6 +24,7 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
@@ -65,7 +66,10 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
@@ -89,6 +93,7 @@ import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -321,12 +326,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
      * @param transactionPool           the transaction pool to wire
+     * @param notificationEngine        the notification engine to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus) {
+            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
+            @NonNull final NotificationEngine notificationEngine) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -347,6 +354,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo("latestCompleteStateNexus", "complete state", latestCompleteStateNexus::setStateIfNewer);
+
+        issDetectorWiring
+                .issNotificationOutput()
+                .solderTo(
+                        "issNotificationEngine",
+                        "ISS notification",
+                        n -> notificationEngine.dispatch(IssListener.class, n));
+        issDetectorWiring
+                .issNotificationOutput()
+                .solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
+                    if (Set.of(IssNotification.IssType.SELF_ISS, IssNotification.IssType.CATASTROPHIC_ISS)
+                            .contains(n.getIssType())) {
+                        statusManager.submitStatusAction(new CatastrophicFailureAction());
+                    }
+                });
     }
 
     /**
