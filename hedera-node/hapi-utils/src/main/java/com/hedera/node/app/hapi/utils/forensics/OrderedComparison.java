@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -267,18 +266,5 @@ public class OrderedComparison {
             diffs.add(new DifferingEntries(
                     firstHasExtra ? extraEntry : null, firstHasExtra ? null : extraEntry, summary));
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        var path =
-                "/Users/isimon/code/services/work/hedera-services/platform-sdk/swirlds-cli/hedera-node/data/recordStreams/record0.0.30/";
-        //        var path = "/opt/hgcapp/recordStreams/record0.0.30/";
-        var filename = "2024-02-19T05_58_00.016395438Z";
-
-        var fw = new FileWriter(path + "/modular_" + filename + ".txt");
-        //        var fw = new FileWriter(path + "/mono_" + filename + ".txt");
-
-        var record = parseV6RecordStreamEntriesIn(path + filename + ".rcd.gz");
-        fw.write(record.toString());
     }
 }
