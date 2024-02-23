@@ -33,14 +33,15 @@ public final class NanoClock extends Clock {
     private final Instant initialInstant;
 
     /**
-     * Creates a NanoClock for UTC time
+     * Creates a NanoClock for UTC time.
      */
     public NanoClock() {
         this(Clock.systemUTC());
     }
 
     /**
-     * Creates a new NanoClock wrapping a {@code Clock} instance
+     * Creates a new NanoClock wrapping a {@code Clock} instance.
+     *
      * @param clock clock to use as source for a new NanoClock instance
      * @throws NullPointerException if {@code clock} is {@code null}
      */
@@ -70,7 +71,7 @@ public final class NanoClock extends Clock {
 
     /**
      * @param zone the time-zone to change to, not null
-     * @return Returns a copy of this clock with a different time-zone.
+     * @return Returns a copy of this clock with a different time-zone
      * @throws NullPointerException if {@code zone} is {@code null}
      */
     @Override

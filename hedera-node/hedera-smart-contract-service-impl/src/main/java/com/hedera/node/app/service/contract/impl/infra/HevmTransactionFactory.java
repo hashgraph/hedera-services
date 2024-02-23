@@ -35,7 +35,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
@@ -45,6 +44,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
@@ -278,7 +278,7 @@ public class HevmTransactionFactory {
             throw new HandleException(hydratedEthTxData.status());
         }
         final var ethTxData = requireNonNull(hydratedEthTxData.ethTxData());
-        validateTrue(ethTxData.matchesChainId(asChainIdBytes(contractsConfig.chainId())), WRONG_CHAIN_ID);
+        validateTrue(ethTxData.matchesChainId(Integers.toBytes(contractsConfig.chainId())), WRONG_CHAIN_ID);
         validateTrue(ethTxData.hasToAddress() || ethTxData.hasCallData(), INVALID_ETHEREUM_TRANSACTION);
         return ethTxData;
     }

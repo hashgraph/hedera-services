@@ -28,7 +28,7 @@ import java.util.Objects;
 
 public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyable {
 
-    public static final long CLASS_ID = 0x63302b26cc321421L;
+    public static final long CLASS_ID = 0x63302b26cc321422L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;

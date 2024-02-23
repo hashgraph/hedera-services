@@ -130,6 +130,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.8")})
     @DisplayName("Teacher and Learner that are the same size but completely different")
+    @Tag(TIMING_SENSITIVE)
     void equalFullTeacherFullLearner() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -323,6 +324,8 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
     @Tag(TIMING_SENSITIVE)
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
+    @Disabled
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 

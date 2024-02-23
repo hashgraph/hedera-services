@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class TransactionRecord extends AbstractSerializableHashable implements FastCopyable, Serializable {
-    private static final long CLASS_ID = 0xcdd5ad651cf2c4d7L;
+    private static final long CLASS_ID = 0xcdd5ad651cf2c4d8L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
