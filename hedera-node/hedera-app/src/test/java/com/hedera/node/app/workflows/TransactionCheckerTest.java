@@ -664,7 +664,7 @@ final class TransactionCheckerTest extends AppTestBase {
             }
 
             @Test
-            @DisplayName("A transaction ID with an alias as the payer is plausible")
+            @DisplayName("Aliased Payer accountID should be rejected")
             void testCheckTransactionBodyWithAliasAsPayer() throws PreCheckException {
                 // Given a transaction ID with an alias as the payer
                 final var payerId =
@@ -672,11 +672,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
-                // When we check the transaction
-                final var info = checker.check(tx);
-
-                // Then we get no errors
-                assertThat(info.transaction()).isEqualTo(tx);
+                assertThatThrownBy(() -> checker.check(tx))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
 
             @ParameterizedTest
