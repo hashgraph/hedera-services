@@ -1544,7 +1544,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             getHollowAccountInfoAfterTransfers);
                 }))
                 .then(getTxnRecord(FT_XFER)
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
