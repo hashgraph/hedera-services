@@ -1,3 +1,5 @@
+## GCP setup
+
 * `gcloud components update`
 * `gcloud init` -- if needed
   * pick project `hedera-regression`
@@ -16,6 +18,21 @@
 * use file `mainnet_hostnames-2024-02-04.txt`
 
 ## To run:
+
+First you use the script to create a file that contains the names of all the 
+stream files in the interval that are up there in Google Cloud Storage.  
+(And this file contains other date, such as the size of the file, and 
+whether or not it has been downloaded already.)
+
+Then you use that file to download all the data files (which Google Cloud 
+Storage calls "blobs").
+
+Easy.  Except due to cloud and network problems the smooth processing of 
+calls to Google Cloud Storage may get interrupted from time to time.  So the 
+script allows you to _rerun_ both phases until they're finally complete 
+(keeping track, via that file created in the first phase, of stuff that's 
+already been done, so it isn't done again.)
+
 1. First create the list of blobs (record/event files) you want to download from gcp:
    ```bash
    python3 main.py get_blob_names -root <dir-for-files> \
@@ -48,3 +65,48 @@
    You can "tune" the performance by changing the batch size with the
    `-batch nnn` argument, and by changing the level of concurrency with the
    `-concurrency nnn` argument.
+
+## More explanation
+
+- What are all these "blobs" in the names of things in the source code?  
+"Blob" is what Google Cloud Storage calls a "file".
+
+- All nodes put the streams out on GCP, even though they're _identical_ (except for the 
+  signatures, of course).  So you can pick any node number (1..29) to pull 
+from, your choice.  But sometimes nodes go down so the data is missing out 
+there (without any indication).  So this script lets you _rerun_ getting the 
+names of all the files, using a different node number ... you do that until 
+no new files are discovered.  Then, presumably, you have a full set of 
+stream file names.
+
+  But the node you pull from doesn't matter.  And so the default chosen by 
+the script, if you don't specify one, is arbitrary.
+
+- Speaking of nodes, nodes are always referred to by their _number_ (1..
+29/30).  And that's true whether the script calls it a "number" or an "id" or 
+whatever.
+
+- This script - and I still think of it as a script - has grown a bit.  It
+might be a bit larger than a "script" now ... but there it is.  And so, even
+though it is not good software engineering to use _global variables_ this 
+script does use global variables.  And since those global variables are 
+referred to everywhere, even though it is not good software engineering to 
+use _single character variable names **especially** for global variables_ 
+this script _does_ use single character variable names to refer to global 
+variables.  Because I wanted the minimum syntax overhead to specify the 
+context.  Because it's necessary to have the context for readability, but 
+too much of it is just visual cruft.
+
+  - `a` is the global holder of command line arguments.  All commands line 
+arguments are in there, with default values for those that weren't actually 
+on the command line.  It is of the class `Args`, and both are declared in 
+`cli_arguments.py` and imported elsewhere.
+  - `g` is the global holder of global variables.  It is of the class 
+`Globals`, and both are declared in `globals.py` and imported elsewhere.
+
+  And unfortunately importing a variable doesn't work the way I expected in 
+Python.  I'm not sure exactly what happens, but I think a copy is made. 
+Shallow copy probably.  Anyway, it hasn't impacted things so far but it's 
+something to be aware of and I'll probably have to fix it if the script has 
+further developments.
+

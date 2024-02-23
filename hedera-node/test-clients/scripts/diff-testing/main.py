@@ -56,7 +56,6 @@ def read_mainnet_hostnames():
     lines = [line.split() for line in lines]
     lines = [(int(line[0]), line[1]) for line in lines]
     g.mainnet_hostnames = dict(lines)
-    # [print(k, ':', v) for k, v in MAINNET_HOSTNAMES.items()]
 
 
 def get_ready_to_go():
@@ -74,6 +73,10 @@ def get_name_of_node(node_number):
 
 
 def get_number_of_node(node_name):
+    """Given a host's name, return the number of its node.
+
+    In this script - throughout, not just here - a node is always identified by its number (0..29/30),
+    whether it is called a number or an id or whatever ..."""
     return next(k for k, v in g.mainnet_hostnames.items() if v == node_name)
 
 
