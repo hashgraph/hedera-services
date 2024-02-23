@@ -18,7 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -37,7 +37,7 @@ public class ConsensusRounds {
     /** consensus configuration */
     private final ConsensusConfig config;
     /** stores the minimum generation for all decided and non-expired rounds */
-    private final SequentialRingBuffer<MinGenInfo> minGenStorage;
+    private final SequentialRingBuffer<MinimumJudgeInfo> minGenStorage;
     /** the only address book currently in use, until address book changes are implemented */
     private final AddressBook addressBook;
     /** The maximum round created of all the known witnesses */
@@ -48,7 +48,7 @@ public class ConsensusRounds {
     /** Constructs an empty object */
     public ConsensusRounds(
             @NonNull final ConsensusConfig config,
-            @NonNull final SequentialRingBuffer<MinGenInfo> minGenStorage,
+            @NonNull final SequentialRingBuffer<MinimumJudgeInfo> minGenStorage,
             @NonNull final AddressBook addressBook) {
         this.config = Objects.requireNonNull(config);
         this.minGenStorage = Objects.requireNonNull(minGenStorage);
@@ -115,7 +115,7 @@ public class ConsensusRounds {
      */
     public boolean isOlderThanDecidedRoundGeneration(@NonNull final EventImpl event) {
         return isAnyRoundDecided() // if no round has been decided, it can't be older
-                && minGenStorage.get(getLastRoundDecided()).minimumGeneration() > event.getGeneration();
+                && minGenStorage.get(getLastRoundDecided()).minimumJudgeAncientThreshold() > event.getGeneration();
     }
 
     /**
@@ -180,18 +180,18 @@ public class ConsensusRounds {
      *
      * @param minGen a list of round numbers and round generation pairs, in ascending round numbers
      */
-    public void loadFromMinGen(@NonNull final List<MinGenInfo> minGen) {
+    public void loadFromMinGen(@NonNull final List<MinimumJudgeInfo> minGen) {
         minGenStorage.reset(minGen.get(0).round());
-        for (final MinGenInfo roundGenPair : minGen) {
+        for (final MinimumJudgeInfo roundGenPair : minGen) {
             minGenStorage.add(roundGenPair.round(), roundGenPair);
         }
         roundElections.setRound(minGenStorage.getLatest().round() + 1);
     }
 
     /**
-     * @return A list of {@link MinGenInfo} for all decided and non-ancient rounds
+     * @return A list of {@link MinimumJudgeInfo} for all decided and non-ancient rounds
      */
-    public @NonNull List<MinGenInfo> getMinGenInfo() {
+    public @NonNull List<MinimumJudgeInfo> getMinGenInfo() {
         final long oldestNonAncientRound =
                 RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
         return LongStream.range(oldestNonAncientRound, getFameDecidedBelow())
@@ -200,9 +200,9 @@ public class ConsensusRounds {
                 .toList();
     }
 
-    private MinGenInfo getMinGen(final long round) {
-        final MinGenInfo minGenInfo = minGenStorage.get(round);
-        if (minGenInfo == null) {
+    private MinimumJudgeInfo getMinGen(final long round) {
+        final MinimumJudgeInfo minimumJudgeInfo = minGenStorage.get(round);
+        if (minimumJudgeInfo == null) {
             logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "Missing round {}. Fame decided below {}, oldest non-ancient round {}",
@@ -211,6 +211,6 @@ public class ConsensusRounds {
                     RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided()));
             return null;
         }
-        return minGenInfo;
+        return minimumJudgeInfo;
     }
 }

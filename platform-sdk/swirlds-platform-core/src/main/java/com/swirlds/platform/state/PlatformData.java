@@ -90,7 +90,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * the minimum generation of famous witnesses per round
      */
-    private List<MinGenInfo> minGenInfo;
+    private List<MinimumJudgeInfo> minimumJudgeInfo;
 
     /**
      * The version of the application software that was responsible for creating this state.
@@ -131,8 +131,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             this.events = Arrays.copyOf(that.events, that.events.length);
         }
         this.consensusTimestamp = that.consensusTimestamp;
-        if (that.minGenInfo != null) {
-            this.minGenInfo = new ArrayList<>(that.minGenInfo);
+        if (that.minimumJudgeInfo != null) {
+            this.minimumJudgeInfo = new ArrayList<>(that.minimumJudgeInfo);
         }
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
@@ -213,7 +213,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         consensusTimestamp = in.readInstant();
 
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            minGenInfo = MinGenInfo.deserializeList(in);
+            minimumJudgeInfo = MinimumJudgeInfo.deserializeList(in);
 
             // previously this was the last transaction timestamp
             in.readInstant();
@@ -340,11 +340,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return minimum generation info list
      */
-    public List<MinGenInfo> getMinGenInfo() {
+    public List<MinimumJudgeInfo> getMinGenInfo() {
         if (snapshot != null) {
             return snapshot.minGens();
         }
-        return minGenInfo;
+        return minimumJudgeInfo;
     }
 
     /**
@@ -356,9 +356,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo info : getMinGenInfo()) {
+        for (final MinimumJudgeInfo info : getMinGenInfo()) {
             if (info.round() == round) {
-                return info.minimumGeneration();
+                return info.minimumJudgeAncientThreshold();
             }
         }
         throw new NoSuchElementException("No minimum generation found for round: " + round);
@@ -373,7 +373,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         return getMinGenInfo().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+                .minimumJudgeAncientThreshold();
     }
 
     /**
@@ -478,7 +478,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 && Objects.equals(hashEventsCons, that.hashEventsCons)
                 && Arrays.equals(events, that.events)
                 && Objects.equals(consensusTimestamp, that.consensusTimestamp)
-                && Objects.equals(minGenInfo, that.minGenInfo)
+                && Objects.equals(minimumJudgeInfo, that.minimumJudgeInfo)
                 && Objects.equals(epochHash, that.epochHash)
                 && Objects.equals(roundsNonAncient, that.roundsNonAncient)
                 && Objects.equals(snapshot, that.snapshot);
@@ -502,7 +502,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append("hashEventsCons", hashEventsCons)
                 .append("events", events)
                 .append("consensusTimestamp", consensusTimestamp)
-                .append("minGenInfo", minGenInfo)
+                .append("minGenInfo", minimumJudgeInfo)
                 .append("epochHash", epochHash)
                 .append("roundsNonAncient", roundsNonAncient)
                 .append("snapshot", snapshot)

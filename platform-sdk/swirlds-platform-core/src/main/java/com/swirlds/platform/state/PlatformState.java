@@ -339,7 +339,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @return minimum generation info list, or null if this is a genesis state
      */
     @Nullable
-    public List<MinGenInfo> getMinGenInfo() {
+    public List<MinimumJudgeInfo> getMinGenInfo() {
         return snapshot == null ? null : snapshot.minGens();
     }
 
@@ -352,14 +352,14 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
+        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinGenInfo();
+        if (minimumJudgeInfo == null) {
             throw new IllegalStateException("No MinGen info found in state for round " + round);
         }
 
-        for (final MinGenInfo info : minGenInfo) {
+        for (final MinimumJudgeInfo info : minimumJudgeInfo) {
             if (info.round() == round) {
-                return info.minimumGeneration();
+                return info.minimumJudgeAncientThreshold();
             }
         }
         throw new NoSuchElementException("No minimum generation found for round: " + round);
@@ -372,15 +372,15 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public long getMinRoundGeneration() {
 
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
+        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinGenInfo();
+        if (minimumJudgeInfo == null) {
             throw new IllegalStateException("No MinGen info found in state for round " + round);
         }
 
         return getMinGenInfo().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+                .minimumJudgeAncientThreshold();
     }
 
     /**
