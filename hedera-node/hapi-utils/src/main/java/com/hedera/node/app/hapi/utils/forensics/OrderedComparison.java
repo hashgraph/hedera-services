@@ -74,62 +74,65 @@ public class OrderedComparison {
     }
 
     record CompareList(@NonNull List<RecordStreamEntry> firstList, @NonNull List<RecordStreamEntry> secondList) {}
-    ;
 
     @NonNull
     private static CompareList getCompareList(
             List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
-        List<RecordStreamEntry> firstList = new ArrayList<>();
-        List<RecordStreamEntry> secondList = new ArrayList<>();
+        CompareList ret;
+        final List<RecordStreamEntry> firstList = new ArrayList<>();
+        final List<RecordStreamEntry> secondList = new ArrayList<>();
 
         if (secondEntries.isEmpty() || firstEntries.isEmpty()) {
-            return new CompareList(firstEntries, secondEntries);
+            ret = new CompareList(firstEntries, secondEntries);
         } else {
-            int i = 0, j = 0;
+            int firstIdx = 0;
+            int secondIdx = 0;
 
-            while (i < firstEntries.size() && j < secondEntries.size()) {
+            while (firstIdx < firstEntries.size() && secondIdx < secondEntries.size()) {
                 if (firstEntries
-                        .get(i)
+                        .get(firstIdx)
                         .consensusTime()
-                        .equals(secondEntries.get(j).consensusTime())) {
-                    firstList.add(firstEntries.get(i));
-                    secondList.add(secondEntries.get(j));
-                    i++;
-                    j++;
+                        .equals(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
+                    secondList.add(secondEntries.get(secondIdx));
+                    firstIdx++;
+                    secondIdx++;
                 } else if (firstEntries
-                        .get(i)
+                        .get(firstIdx)
                         .consensusTime()
-                        .isBefore(secondEntries.get(j).consensusTime())) {
-                    firstList.add(firstEntries.get(i));
+                        .isBefore(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
                     secondList.add(new RecordStreamEntry(
-                            null, null, firstEntries.get(i).consensusTime()));
-                    i++;
+                            null, null, firstEntries.get(firstIdx).consensusTime()));
+                    firstIdx++;
                 } else {
                     firstList.add(new RecordStreamEntry(
-                            null, null, secondEntries.get(j).consensusTime()));
-                    secondList.add(secondEntries.get(j));
-                    j++;
+                            null, null, secondEntries.get(secondIdx).consensusTime()));
+                    secondList.add(secondEntries.get(secondIdx));
+                    secondIdx++;
                 }
             }
 
-            if (i < firstEntries.size()) { // j == secondEntries.size()
-                for (int k = i; k < firstEntries.size(); k++) {
+            if (firstIdx < firstEntries.size()) { // j == secondEntries.size()
+                for (int k = firstIdx; k < firstEntries.size(); k++) {
                     firstList.add(firstEntries.get(k));
                     secondList.add(new RecordStreamEntry(
                             null, null, firstEntries.get(k).consensusTime()));
                 }
             }
 
-            if (j < secondEntries.size()) { // i == firstEntries.size()
-                for (int k = j; k < secondEntries.size(); k++) {
+            if (secondIdx < secondEntries.size()) { // i == firstEntries.size()
+                for (int k = secondIdx; k < secondEntries.size(); k++) {
                     firstList.add(new RecordStreamEntry(
                             null, null, secondEntries.get(k).consensusTime()));
                     secondList.add(secondEntries.get(k));
                 }
             }
+
+            ret = new CompareList(firstList, secondList);
         }
 
-        return new CompareList(firstList, secondList);
+        return ret;
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
