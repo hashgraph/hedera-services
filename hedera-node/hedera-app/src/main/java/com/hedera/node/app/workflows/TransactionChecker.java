@@ -306,7 +306,7 @@ public class TransactionChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
+    private void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionIDOrThrow());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());
@@ -371,13 +371,14 @@ public class TransactionChecker {
     private void checkTransactionID(@NonNull final TransactionID txnId) throws PreCheckException {
         // Determines whether the given {@link AccountID} can possibly be valid. This method does not refer to state,
         // it simply looks at the {@code accountID} itself to determine whether it might be valid. An ID is valid if
-        // the shard and realm match the shard and realm of this node, AND if the account number is positive or if
-        // the alias is set.
+        // the shard and realm match the shard and realm of this node, AND if the account number is positive
+        // alias payer account is not allowed to submit transactions.
         final var accountID = txnId.accountID();
         final var isPlausibleAccount = accountID != null
                 && accountID.shardNum() == nodeAccount.shardNum()
                 && accountID.realmNum() == nodeAccount.realmNum()
-                && ((accountID.hasAccountNum() && accountID.accountNumOrElse(0L) > 0) || (accountID.hasAlias()));
+                && accountID.hasAccountNum()
+                && accountID.accountNumOrElse(0L) > 0;
 
         if (!isPlausibleAccount) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
