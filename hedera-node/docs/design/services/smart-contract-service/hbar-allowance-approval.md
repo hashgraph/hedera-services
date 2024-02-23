@@ -15,8 +15,8 @@ The implementation for crypto allowance and approval in the Token Service Module
 
 ## Architecture
 
-In order to support both EOA and contract callers to these functions, a new interface `IHAS` will be supported and implemented using the pattern established for token proxy contracts as discussed in the `Specification` section of [HIP-719](https://hips.hedera.com/hip/hip-719). 
-The difference is that `IHAS` will act on an account address rather than a token address will be the account in view with respect to the allowance to the `spender` account for the specified amount.  A new proxy contract and a new system contract to handle these transaction requests will be implemented.
+In order to support both EOA and contract callers to these functions, a new interface `IHRC<###>` will be supported and implemented using the pattern established for token proxy contracts as discussed in the `Specification` section of [HIP-719](https://hips.hedera.com/hip/hip-719). 
+The difference is that `IHRC[###]` will act on an account address rather than a token address will be the account in view with respect to the allowance to the `spender` account for the specified amount.  A new proxy contract and a new system contract to handle these transaction requests will be implemented.
 For security purposes, an EOA account sender must also sign the transaction.  If the sender is a contract that supports this interface then **any** caller will be able to grant an allowance to the contract's hbars.
 
 ## Implementation
@@ -50,7 +50,7 @@ Once the smart contract service dispatches the transaction to the Token Service 
 1. Validate semantic correctness of the transaction.
 2. Grant approval to the spender for the allowance amount from the effective owner.
 
-The implementation can be found int the `CryptoApproveAllowanceHandler` class.
+The implementation can be found in the `CryptoApproveAllowanceHandler` class.
 
 ## Acceptance Tests
 
