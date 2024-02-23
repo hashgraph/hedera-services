@@ -96,10 +96,6 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                 // mono-service refuses to let an auto-created account pay a custom fee, even
                 // if technically it is receiving sufficient credits in the same transaction
                 validateTrue(currentAccount != null, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                final var finalBalance = currentAccount.tinybarBalance()
-                        + v
-                        + result.getImmutableInputHbarAdjustments().getOrDefault(k, 0L);
-                validateTrue(finalBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         });
         for (final var entry : result.getHtsAdjustments().entrySet()) {
@@ -115,8 +111,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                     final var tokenRel = tokenRelStore.get(accountId, entry.getKey());
                     final var precedingChanges =
                             result.getImmutableInputTokenAdjustments().get(entry.getKey());
-                    final long precedingCredit =
-                            precedingChanges == null ? 0 : Math.max(0L, precedingChanges.getOrDefault(accountId, 0L));
+                    final var precedingAdjustment =
+                            precedingChanges == null ? 0 : precedingChanges.getOrDefault(accountId, 0L);
+                    final long precedingCredit = Math.max(0L, precedingAdjustment);
                     if (tokenRel == null) {
                         if (autoCreationTest.test(accountId)) {
                             // mono-service refuses to let an auto-created account pay a custom fee, even
@@ -135,34 +132,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                                 throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                             }
                         }
-                    } else {
-                        final var finalTokenRelBalance = tokenRel.balance() + htsBalanceChange + precedingCredit;
-                        validateTrue(finalTokenRelBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                     }
                 }
             }
-        }
-
-        for (final var fee : result.getAssessedCustomFees()) {
-            final var effectivePayers = fee.effectivePayerAccountId();
-            effectivePayers.forEach(payer -> {
-                if (fee.tokenId() != null) {
-                    final var tokenRel = tokenRelStore.get(payer, fee.tokenId());
-                    for (final var entry :
-                            result.getMutableInputBalanceAdjustments().entrySet()) {
-                        if (entry.getKey().equals(fee.tokenId())) {
-                            entry.getValue().forEach((accId, v) -> {
-                                if (v < 0 && accId.equals(payer)) {
-                                    final var finalTokenRelBalance = tokenRel.balance() + v;
-                                    validateTrue(
-                                            finalTokenRelBalance >= 0,
-                                            INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                                }
-                            });
-                        }
-                    }
-                }
-            });
         }
     }
 

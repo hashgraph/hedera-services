@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,4 +89,6 @@ public interface TransferContext {
      * @param assessedCustomFee the assessed custom fee
      */
     void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee);
+
+    List<AssessedCustomFee> getAssessedCustomFees();
 }
