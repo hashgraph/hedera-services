@@ -94,7 +94,6 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-
         model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
 
         final EventHasher eventHasher = new EventHasher(platformContext);
@@ -113,9 +112,8 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        final ConsensusEngine consensusEngine =
-                new ConsensusEngine(platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter,
-                        output::staleEvent);
+        final ConsensusEngine consensusEngine = new ConsensusEngine(
+                platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter, output::staleEvent);
 
         consensusEngineWiring = ConsensusEngineWiring.create(directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
@@ -128,8 +126,6 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
         linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
         linkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
-
-
 
         consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
         consensusEngineWiring
@@ -248,7 +244,7 @@ public class TestIntake implements LoadableFromSignedState {
         output.clear();
     }
 
-    public <X> TaskScheduler<X> directScheduler(final String name){
+    public <X> TaskScheduler<X> directScheduler(final String name) {
         return model.schedulerBuilder(name)
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
