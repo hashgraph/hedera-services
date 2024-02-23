@@ -135,7 +135,7 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("Generation Threshold With Negative BirthRound should validate")
+    @DisplayName("Generation Threshold With Negative BirthRound should NOT validate")
     void generationThresholdWithNegativeBirthRound() {
         final EventDescriptor selfParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
         final EventDescriptor otherParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
@@ -163,9 +163,9 @@ class InternalEventValidatorTests {
         final InternalEventValidator singleNodeValidator =
                 new InternalEventValidator(platformContext, time, true, intakeEventCounter);
 
-        assertNotNull(multinodeValidator.validateEvent(event));
-        assertNotNull(singleNodeValidator.validateEvent(event));
-        assertEquals(0, exitedIntakePipelineCount.get());
+        assertNull(multinodeValidator.validateEvent(event));
+        assertNull(singleNodeValidator.validateEvent(event));
+        assertEquals(2, exitedIntakePipelineCount.get());
     }
 
     @Test
