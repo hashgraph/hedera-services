@@ -59,6 +59,7 @@ import java.util.List;
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
+ * @param latestCompleteStateScheduler              the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -85,7 +86,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
-        @NonNull TaskScheduler<Void> hashLoggerScheduler) {
+        @NonNull TaskScheduler<Void> hashLoggerScheduler,
+        @NonNull TaskScheduler<Void> latestCompleteStateScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -265,6 +267,12 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("hashLogger")
                         .withType(config.hashLoggerSchedulerType())
                         .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("latestCompleteStateScheduler")
+                        .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
+                        .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());

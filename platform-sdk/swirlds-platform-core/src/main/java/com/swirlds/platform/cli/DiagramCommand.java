@@ -32,7 +32,6 @@ import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
@@ -106,7 +105,6 @@ public final class DiagramCommand extends AbstractCommand {
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(threadManager);
         platformWiring.wireExternalComponents(
                 new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
-                new AppCommunicationComponent(notificationEngine, platformContext),
                 new TransactionPool(platformContext),
                 new LatestCompleteStateNexus(
                         platformContext.getConfiguration().getConfigData(StateConfig.class),
