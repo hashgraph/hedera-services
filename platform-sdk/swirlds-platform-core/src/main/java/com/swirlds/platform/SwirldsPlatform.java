@@ -162,6 +162,7 @@ import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -482,7 +483,8 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
-                signedStateMetrics);
+                signedStateMetrics,
+                platformWiring.getHashLoggerInput()::offer);
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier =
                 new LatestCompleteStateNotifier(notificationEngine);
@@ -618,13 +620,17 @@ public class SwirldsPlatform implements Platform {
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
         final OutputWire<IssNotification> issOutput =
                 platformWiring.getIssDetectorWiring().issNotificationOutput();
-        issOutput.solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
-        issOutput.solderTo("statusManager", n -> {
+        issOutput.solderTo(
+                "issNotificationEngine", "ISS notification", n -> notificationEngine.dispatch(IssListener.class, n));
+        issOutput.solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
             if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
                 platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
             }
         });
-        issOutput.solderTo("issHandler", issHandler::issObserved);
+        issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
+
+        final HashLogger hashLogger =
+                new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
         platformWiring.bind(
                 eventHasher,
@@ -648,6 +654,7 @@ public class SwirldsPlatform implements Platform {
                 eventStreamManager,
                 futureEventBuffer,
                 issDetector,
+                hashLogger,
                 latestCompleteStateNotifier);
 
         // Load the minimum generation into the pre-consensus event writer
