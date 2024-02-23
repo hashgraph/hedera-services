@@ -164,8 +164,10 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             null,
                             secondEntries.get(i),
-                            "No mono record found at " + secondEntries.get(i).consensusTime() + " for transactionID : "
-                                    + secondEntries.get(i).txnRecord().getTransactionID()));
+                            "Additional modular record found at "
+                                    + secondEntries.get(i).consensusTime() + " for transactionID : "
+                                    + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
+                                    + firstEntry.body()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
