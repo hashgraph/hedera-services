@@ -18,7 +18,8 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -125,11 +126,11 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
-//comment test test
-        return propertyPreservingHapiSpec("V2Security004FungibleTokenBurnPositive")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+//sync
+        return defaultHapiSpec("V2Security004FungibleTokenBurnPositive")
+               // .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+                      //  overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER2),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
@@ -157,6 +158,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_BURNS_WITH_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER),
                         // Assert that the token is burdned - total supply should be decreased with the amount that was
@@ -167,6 +169,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY),
                         // Assert that the token is burned - total supply should be increased with the amount to burn.
@@ -177,6 +180,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_AND_PAYER_ARE_DIFFERENT)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER2)
                                 .signedBy(SIGNER2, SIGNER),
                         // Assert that the token is burned - total supply should be increased with the amount to burn.
@@ -193,6 +197,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_BURNS_WITH_TRESHOLD_KEY)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER),
                         // Assert that the token is burned - total supply should be decreased with the amount that was
@@ -222,10 +227,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var serialNumber2 = new long[]{2L};
         final var serialNumber3 = new long[]{3L};
 
-        return propertyPreservingHapiSpec("V2Security005NonFungibleTokenBurnPositive")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security005NonFungibleTokenBurnPositive")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER2),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
@@ -257,6 +260,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_BURNS_WITH_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(4 - amountToBurn),
@@ -266,6 +270,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber2)
                                 .via(SIGNER_HAS_KEY_WITH_CORRECT_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(3 - amountToBurn),
@@ -274,6 +279,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         contractCall(MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber3)
                                 .via(SIGNER_AND_PAYER_ARE_DIFFERENT)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER2)
                                 .signedBy(SIGNER2, TOKEN_TREASURY),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2 - amountToBurn))))
@@ -296,10 +302,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("V2Security004FungibleTokenBurnNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security004FungibleTokenBurnNegative")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -324,6 +328,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER)
                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -352,6 +357,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 new long[0])
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -374,6 +380,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(amountToBurn), new long[0])
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -399,10 +406,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[]{1L};
 
-        return propertyPreservingHapiSpec("V2Security004NonFungibleTokenBurnNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security004NonFungibleTokenBurnNegative")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -430,6 +435,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(SIGNER)
                                 .signedBy(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -455,6 +461,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY_AND_WRONG_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -477,6 +484,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 MIXED_BURN_TOKEN, "burnToken", BigInteger.valueOf(0), serialNumber1)
                                 .via(TOKEN_HAS_NO_UPDATED_KEY)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -500,10 +508,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var serialNumber1 = new long[]{1L};
-        return propertyPreservingHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -534,6 +540,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 serialNumber1)
                                 .via(DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
@@ -562,6 +569,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 serialNumber1)
                                 .via(DELEGATE_CALL_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID_SIGNER_SIGNS)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
@@ -589,10 +597,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     @HapiTest
     final HapiSpec V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var initialAmount = 20L;
-        return propertyPreservingHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -622,6 +628,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 new long[0])
                                 .via(DELEGATE_CALL_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
@@ -642,6 +649,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 new long[0])
                                 .via(DELEGATE_CALL_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID_SIGNER_SIGNS)
                                 .gas(GAS_TO_OFFER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
