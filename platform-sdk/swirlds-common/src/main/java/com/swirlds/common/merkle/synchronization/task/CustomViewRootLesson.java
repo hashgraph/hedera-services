@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

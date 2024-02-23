@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
+import com.swirlds.common.merkle.synchronization.task.NodeToSend;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -37,7 +37,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
 
     private static final long CLASS_ID = 0x3d03994ec6d42dccL;
 
-    private final List<DummyTeacherPushReceiveMerkleTreeView> views;
+    private final List<DummyTeacherPushMerkleTreeView> views;
 
     public DummyCustomReconnectRoot() {
         views = new LinkedList<>();
@@ -74,8 +74,8 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
     public TeacherTreeView<NodeToSend> buildTeacherView(final ReconnectConfig reconnectConfig) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final DummyTeacherPushReceiveMerkleTreeView view =
-                new DummyTeacherPushReceiveMerkleTreeView(platformContext.getConfiguration(), this);
+        final DummyTeacherPushMerkleTreeView view =
+                new DummyTeacherPushMerkleTreeView(platformContext.getConfiguration(), this);
         views.add(view);
         return view;
     }
@@ -84,7 +84,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * Throw an exception if all views have not yet been closed.
      */
     public void assertViewsAreClosed() {
-        for (final DummyTeacherPushReceiveMerkleTreeView view : views) {
+        for (final DummyTeacherPushMerkleTreeView view : views) {
             assertTrue(view.isClosed(), "view should have been closed");
         }
     }
@@ -106,7 +106,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      */
     @Override
     public LearnerTreeView<MerkleNode> buildLearnerView(final ReconnectConfig reconnectConfig) {
-        return new DummyLearnerPushReceiveMerkleTreeView(reconnectConfig, this);
+        return new DummyLearnerPushMerkleTreeView(reconnectConfig, this);
     }
 
     /**

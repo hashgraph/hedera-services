@@ -224,6 +224,10 @@ public final class Path {
         return (path << 1) + 2;
     }
 
+    public static long getRightGrandChildPath(final long path, final int levels) {
+        return (path << levels) + (2L << levels) - 2;
+    }
+
     /**
      * Computes the {@link com.swirlds.common.merkle.route.MerkleRoute} by iterating over
      * every node from the root of the Virtual Tree up to the {@code targetPath}, and

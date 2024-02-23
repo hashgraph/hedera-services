@@ -30,8 +30,8 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
@@ -87,7 +87,7 @@ public class VirtualMapReconnectTestBase {
 
     // Custom reconnect config to make tests with timeouts faster
     protected static ReconnectConfig reconnectConfig = ConfigurationBuilder.create()
-            .withSources(new SimpleConfigSource("reconnect.asyncStreamTimeout", "5s"))
+            .withSources(new SimpleConfigSource("reconnect.asyncStreamTimeout", "500s"))
             .withConfigDataType(ReconnectConfig.class)
             .build()
             .getConfigData(ReconnectConfig.class);

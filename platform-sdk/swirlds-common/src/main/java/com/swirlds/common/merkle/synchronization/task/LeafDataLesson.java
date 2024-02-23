@@ -14,81 +14,66 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import java.io.IOException;
-import java.util.List;
 
 /**
- * This lesson contains data for an internal node.
+ * This lesson describes a leaf node.
  *
  * @param <T>
- * 		the type used by the view to represent a merkle node
+ * 		the type used by the view to represent a node
  */
-public class InternalDataLesson<T> implements SelfSerializable {
+public class LeafDataLesson<T> implements SelfSerializable {
 
-    private static final long CLASS_ID = 0xb76e98a8989c60a1L;
+    private static final long CLASS_ID = 0xafbdd5560579cb02L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    private TeacherTreeView<T> teacherTreeView;
+    private TeacherTreeView<T> teacherView;
     private LearnerTreeView<T> learnerTreeView;
-    private T internal;
-    private List<Hash> queries;
+    private T leaf;
 
     /**
      * Zero arg constructor for constructable registry.
      */
-    public InternalDataLesson() {}
+    public LeafDataLesson() {}
 
     /**
-     * Create a new lesson containing an internal node.
-     *
-     * @param teacherTreeView
-     * 		the teacher's view
-     * @param internal
-     * 		the internal node to include in the lesson
-     */
-    public InternalDataLesson(final TeacherTreeView<T> teacherTreeView, final T internal) {
-        this.teacherTreeView = teacherTreeView;
-        this.internal = internal;
-    }
-
-    /**
-     * Create a new object that will be used to deserialize the lesson.
+     * This constructor is used by the learner when deserializing.
      *
      * @param learnerTreeView
-     * 		the learner's view
+     * 		the view for the learner
      */
-    public InternalDataLesson(final LearnerTreeView<T> learnerTreeView) {
+    public LeafDataLesson(final LearnerTreeView<T> learnerTreeView) {
         this.learnerTreeView = learnerTreeView;
     }
 
     /**
-     * Get the internal node described by the lesson.
+     * Create a new lesson for a leaf node.
      *
-     * @return the node described by the lesson
+     * @param teacherView
+     * 		the view for the teacher
+     * @param leaf
+     * 		the leaf to send in the lesson
      */
-    public T getInternal() {
-        return internal;
+    public LeafDataLesson(final TeacherTreeView<T> teacherView, final T leaf) {
+        this.teacherView = teacherView;
+        this.leaf = leaf;
     }
 
     /**
-     * Get the queries contained by this lesson (i.e. the hashes of the children of the internal node).
-     *
-     * @return a list of queries
+     * Get the leaf contained by this lesson.
      */
-    public List<Hash> getQueries() {
-        return queries;
+    public T getLeaf() {
+        return leaf;
     }
 
     /**
@@ -104,8 +89,7 @@ public class InternalDataLesson<T> implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        teacherTreeView.serializeInternal(out, internal);
-        teacherTreeView.writeChildHashes(internal, out);
+        teacherView.serializeLeaf(out, leaf);
     }
 
     /**
@@ -113,8 +97,7 @@ public class InternalDataLesson<T> implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        internal = learnerTreeView.deserializeInternal(in);
-        queries = in.readSerializableList(MerkleInternal.MAX_CHILD_COUNT_UBOUND, false, Hash::new);
+        leaf = learnerTreeView.deserializeLeaf(in);
     }
 
     /**

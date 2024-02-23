@@ -25,10 +25,10 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
-import com.swirlds.common.merkle.synchronization.views.LearnerPushReceiveMerkleTreeView;
+import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -257,7 +257,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
-            view = (LearnerTreeView<T>) new LearnerPushReceiveMerkleTreeView(reconnectConfig, root);
+            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root);
         } else {
             assert root instanceof CustomReconnectRoot;
             view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
@@ -265,7 +265,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        view.startLearnerThreads(workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
+        view.startLearnerTasks(workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();

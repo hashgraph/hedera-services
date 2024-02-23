@@ -27,13 +27,13 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.ExpectedLesson;
-import com.swirlds.common.merkle.synchronization.internal.LearnerPushReceiveThread;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
+import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Implementation for a view of a standard in memory merkle tree.
  */
-public class LearnerPushReceiveMerkleTreeView implements LearnerTreeView<MerkleNode> {
+public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
 
     private final ReconnectConfig reconnectConfig;
 
@@ -63,7 +63,7 @@ public class LearnerPushReceiveMerkleTreeView implements LearnerTreeView<MerkleN
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public LearnerPushReceiveMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
+    public LearnerPushMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
         this.reconnectConfig = reconnectConfig;
         this.originalRoot = root;
         expectedLessons = new LinkedList<>();
@@ -71,7 +71,7 @@ public class LearnerPushReceiveMerkleTreeView implements LearnerTreeView<MerkleN
     }
 
     @Override
-    public void startLearnerThreads(
+    public void startLearnerTasks(
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
@@ -84,19 +84,14 @@ public class LearnerPushReceiveMerkleTreeView implements LearnerTreeView<MerkleN
         in.start();
         out.start();
 
-        final LearnerPushReceiveThread<MerkleNode> learnerThread =
-                new LearnerPushReceiveThread<>(workGroup, in, out, rootsToReceive, reconstructedRoot, this, nodeCount);
+        final LearnerPushTask<MerkleNode> learnerThread =
+                new LearnerPushTask<>(workGroup, in, out, rootsToReceive, reconstructedRoot, this, nodeCount);
         learnerThread.start();
     }
 
     @Override
     public void abort() {
         in.abort();
-    }
-
-    @Override
-    public ReconnectConfig getReconnectConfig() {
-        return reconnectConfig;
     }
 
     /**

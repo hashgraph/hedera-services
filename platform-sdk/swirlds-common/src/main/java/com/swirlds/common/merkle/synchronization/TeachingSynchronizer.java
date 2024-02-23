@@ -23,7 +23,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -35,6 +35,7 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -145,6 +146,7 @@ public class TeachingSynchronizer {
                 root == null ? null : root.getClass().getName(),
                 root == null ? "[]" : root.getRoute());
 
+        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         // A future improvement might be to reuse threads between subtrees.
         final StandardWorkGroup workGroup =
                 new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
@@ -164,16 +166,18 @@ public class TeachingSynchronizer {
                         }
                         cause = cause.getCause();
                     }
+                    firstReconnectException.compareAndSet(null, ex);
                     // Let StandardWorkGroup log it as an error using the EXCEPTION marker
                     return false;
                 });
 
-        view.startTeacherThreads(time, workGroup, inputStream, outputStream, subtrees);
+        view.startTeacherTasks(time, workGroup, inputStream, outputStream, subtrees);
 
         workGroup.waitForTermination();
 
         if (workGroup.hasExceptions()) {
-            throw new MerkleSynchronizationException("Synchronization failed with exceptions");
+            throw new MerkleSynchronizationException(
+                    "Synchronization failed with exceptions", firstReconnectException.get());
         }
 
         logger.info(RECONNECT.getMarker(), "finished sending tree");

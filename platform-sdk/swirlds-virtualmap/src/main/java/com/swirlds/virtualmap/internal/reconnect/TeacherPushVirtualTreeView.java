@@ -28,13 +28,13 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSendingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,10 +64,10 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
-public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
+public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
 
-    private static final Logger logger = LogManager.getLogger(TeacherPushReceiveVirtualTreeView.class);
+    private static final Logger logger = LogManager.getLogger(TeacherPushVirtualTreeView.class);
 
     private final ReconnectConfig reconnectConfig;
 
@@ -97,7 +98,7 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
     private final CountDownLatch ready = new CountDownLatch(1);
 
     /**
-     * Create a new {@link TeacherPushReceiveVirtualTreeView}.
+     * Create a new {@link TeacherPushVirtualTreeView}.
      *
      * @param threadManager
      * 		responsible for creating and managing threads
@@ -108,7 +109,7 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
      * @param pipeline
      * 		The pipeline managing the virtual map.
      */
-    public TeacherPushReceiveVirtualTreeView(
+    public TeacherPushVirtualTreeView(
             final ThreadManager threadManager,
             final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
@@ -129,7 +130,7 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
     }
 
     @Override
-    public void startTeacherThreads(
+    public void startTeacherTasks(
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
@@ -137,24 +138,18 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
             final Queue<TeacherSubtree> subtrees) {
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
-        final AsyncOutputStream<Lesson<Long>> out = new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
-
         in.start();
+        final AsyncOutputStream<Lesson<Long>> out = new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
         out.start();
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        final TeacherSendingThread<Long> teacherSendingThread =
-                new TeacherSendingThread<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
-        teacherSendingThread.start();
-        final TeacherReceivingThread<Long> teacherReceivingThread =
-                new TeacherReceivingThread<>(workGroup, in, this, senderIsFinished);
-        teacherReceivingThread.start();
-    }
-
-    @Override
-    public ReconnectConfig getReconnectConfig() {
-        return reconnectConfig;
+        final TeacherPushSendTask<Long> teacherSendTask =
+                new TeacherPushSendTask<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        teacherSendTask.start();
+        final TeacherPushReceiveTask<Long> teacherReceiveTask =
+                new TeacherPushReceiveTask<>(workGroup, in, this, senderIsFinished);
+        teacherReceiveTask.start();
     }
 
     /**
@@ -173,11 +168,15 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
         return ROOT_PATH;
     }
 
+    private final AtomicLong processed = new AtomicLong(0);
+    private final AtomicLong skipped = new AtomicLong(0);
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void addToHandleQueue(final Long node) {
+        processed.incrementAndGet();
         checkValidNode(node, reconnectState);
         handleQueue.add(node);
     }
@@ -323,6 +322,7 @@ public final class TeacherPushReceiveVirtualTreeView<K extends VirtualKey, V ext
      */
     @Override
     public void close() {
+        System.err.println("Processed: " + processed.get());
         try {
             waitUntilReady();
             records.getDataSource().close();

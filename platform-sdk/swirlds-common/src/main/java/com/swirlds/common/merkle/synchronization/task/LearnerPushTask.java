@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -37,16 +37,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class manages the learner's work thread for synchronization.
+ * This class manages the learner's work task for synchronization.
  *
  * @param <T>
  * 		the type of data used by the view to represent a node
  */
-public class LearnerPushReceiveThread<T> {
+public class LearnerPushTask<T> {
 
-    private static final Logger logger = LogManager.getLogger(LearnerPushReceiveThread.class);
+    private static final Logger logger = LogManager.getLogger(LearnerPushTask.class);
 
-    private static final String NAME = "send-and-receive";
+    private static final String NAME = "learner-task";
 
     private final StandardWorkGroup workGroup;
     private final AsyncInputStream<Lesson<T>> in;
@@ -77,7 +77,7 @@ public class LearnerPushReceiveThread<T> {
      * @param nodeCount
      * 		an object used to keep track of the number of nodes sent during the reconnect
      */
-    public LearnerPushReceiveThread(
+    public LearnerPushTask(
             final StandardWorkGroup workGroup,
             final AsyncInputStream<Lesson<T>> in,
             final AsyncOutputStream<QueryResponse> out,

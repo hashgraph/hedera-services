@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,38 +14,35 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
-import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * This class encapsulates all logic for the teacher's receiving thread.
- *
- * @param <T>
- * 		the type of data used by the view to represent a node
- */
-public class TeacherReceivingThread<T> {
+public class LearnerPullVirtualTreeReceiveTask {
 
-    private static final Logger logger = LogManager.getLogger(TeacherReceivingThread.class);
+    private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeReceiveTask.class);
 
-    private static final String NAME = "receiver";
+    private static final String NAME = "reconnect-learner-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final AsyncInputStream<QueryResponse> in;
-    private final TeacherTreeView<T> view;
+    private final AsyncInputStream<PullVirtualTreeResponse> in;
+    private final VirtualLearnerTreeView view;
     private final AtomicBoolean senderIsFinished;
+    private final AtomicLong expectedResponses;
+    private final CountDownLatch rootResponseReceived;
 
     /**
-     * Create a thread for receiving responses to queries from the learner.
+     * Create a thread for receiving responses to queries from the teacher.
      *
      * @param workGroup
      * 		the work group that will manage this thread
@@ -56,15 +53,19 @@ public class TeacherReceivingThread<T> {
      * @param senderIsFinished
      * 		becomes true once the sending thread has finished
      */
-    public TeacherReceivingThread(
+    public LearnerPullVirtualTreeReceiveTask(
             final StandardWorkGroup workGroup,
-            final AsyncInputStream<QueryResponse> in,
-            final TeacherTreeView<T> view,
-            final AtomicBoolean senderIsFinished) {
+            final AsyncInputStream<PullVirtualTreeResponse> in,
+            final VirtualLearnerTreeView view,
+            final AtomicBoolean senderIsFinished,
+            final AtomicLong expectedResponses,
+            final CountDownLatch rootResponseReceived) {
         this.workGroup = workGroup;
         this.in = in;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
+        this.expectedResponses = expectedResponses;
+        this.rootResponseReceived = rootResponseReceived;
     }
 
     public void start() {
@@ -72,27 +73,31 @@ public class TeacherReceivingThread<T> {
     }
 
     private void run() {
-        try (in) {
+        try (in;
+                view) {
             boolean finished = senderIsFinished.get();
-            boolean responseExpected = view.isResponseExpected();
+            boolean responseExpected = expectedResponses.get() > 0;
 
             while (!finished || responseExpected) {
                 if (responseExpected) {
-                    final QueryResponse response = in.readAnticipatedMessage();
-                    final T node = view.getNodeForNextResponse();
-                    view.registerResponseForNode(node, response.doesLearnerHaveTheNode());
+                    final PullVirtualTreeResponse response =
+                            in.readAnticipatedMessage(); // will call the view to read hash and leaf
+                    if (response.getPath() == 0) {
+                        rootResponseReceived.countDown();
+                    }
+                    expectedResponses.decrementAndGet();
                 } else {
                     MILLISECONDS.sleep(1);
                 }
 
                 finished = senderIsFinished.get();
-                responseExpected = view.isResponseExpected();
+                responseExpected = expectedResponses.get() > 0;
             }
         } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
+            logger.warn(RECONNECT.getMarker(), "Learner's receiving task interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("exception in the teacher's receiving thread", ex);
+            throw new MerkleSynchronizationException("Exception in the learner's receiving task", ex);
         }
     }
 }

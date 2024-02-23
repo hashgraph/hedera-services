@@ -25,14 +25,14 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSendingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.NodeToSend;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A teaching tree view for a standard in memory merkle tree.
  */
-public class TeacherPushReceiveMerkleTreeView implements TeacherTreeView<NodeToSend> {
+public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
 
     private final ReconnectConfig reconnectConfig;
 
@@ -66,7 +66,7 @@ public class TeacherPushReceiveMerkleTreeView implements TeacherTreeView<NodeToS
      * @param configuration the configuration
      * @param root          the root of the tree
      */
-    public TeacherPushReceiveMerkleTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
+    public TeacherPushMerkleTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
         this.reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         maxAckDelayMilliseconds = (int) reconnectConfig.maxAckDelay().toMillis();
 
@@ -77,7 +77,7 @@ public class TeacherPushReceiveMerkleTreeView implements TeacherTreeView<NodeToS
     }
 
     @Override
-    public void startTeacherThreads(
+    public void startTeacherTasks(
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
@@ -93,17 +93,12 @@ public class TeacherPushReceiveMerkleTreeView implements TeacherTreeView<NodeToS
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        final TeacherSendingThread<NodeToSend> teacherSendingThread =
-                new TeacherSendingThread<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
-        teacherSendingThread.start();
-        final TeacherReceivingThread<NodeToSend> teacherReceivingThread =
-                new TeacherReceivingThread<>(workGroup, in, this, senderIsFinished);
-        teacherReceivingThread.start();
-    }
-
-    @Override
-    public ReconnectConfig getReconnectConfig() {
-        return reconnectConfig;
+        final TeacherPushSendTask<NodeToSend> teacherPushSendTask =
+                new TeacherPushSendTask<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        teacherPushSendTask.start();
+        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
+                new TeacherPushReceiveTask<>(workGroup, in, this, senderIsFinished);
+        teacherPushReceiveTask.start();
     }
 
     /**

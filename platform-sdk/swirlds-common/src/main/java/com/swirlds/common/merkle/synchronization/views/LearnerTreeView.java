@@ -23,8 +23,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -40,7 +39,19 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, LearnerInitializer<T>, TreeView<T> {
 
-    void startLearnerThreads(
+    /**
+     * For this tree view, start all required reconnect tasks in the given work group. Learning synchronizer
+     * will then wait for all tasks in the work group to complete before proceeding to the next tree view. If
+     * new custom tree views are encountered, they must be added to {@code rootsToReceive}, although it isn't
+     * currently supported by virtual tree views, as nested virtual maps are not supported.
+     *
+     * @param workGroup the work group to run teaching task(s) in
+     * @param inputStream the input stream to read data from teacher
+     * @param outputStream the output stream to write data to teacher
+     * @param rootsToReceive if custom tree views are encountered, they must be added to this queue
+     * @param reconstructedRoot the root node of the reconnected tree must be set here
+     */
+    void startLearnerTasks(
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
@@ -48,9 +59,11 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
             final AtomicReference<T> reconstructedRoot,
             final ReconnectNodeCount nodeCount);
 
+    /**
+     * Aborts the reconnect process on the learner side. It may be used to release resources, when
+     * reconnect failed with an exception.
+     */
     default void abort() {}
-
-    ReconnectConfig getReconnectConfig();
 
     /**
      * Check if this view represents the root of the state.
