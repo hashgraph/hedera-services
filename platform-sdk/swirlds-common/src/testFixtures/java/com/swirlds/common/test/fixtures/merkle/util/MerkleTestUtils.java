@@ -984,7 +984,8 @@ public final class MerkleTestUtils {
             final int latencyMilliseconds,
             final ReconnectConfig reconnectConfig)
             throws Exception {
-        try (PairedStreams streams = new PairedStreams()) {
+        final PairedStreams streams = new PairedStreams();
+        try {
 
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
@@ -1083,6 +1084,13 @@ public final class MerkleTestUtils {
             assertReconnectValidity(startingTree, desiredTree, generatedTree);
 
             return (T) generatedTree;
+        } finally {
+            try {
+                streams.close();
+            } catch (IOException e) {
+                // test code, no danger. The stream could have been closed previously.
+                e.printStackTrace();
+            }
         }
     }
 
