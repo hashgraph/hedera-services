@@ -67,24 +67,7 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
-import com.hedera.services.bdd.spec.transactions.token.HapiPartitionCreate;
-import com.hedera.services.bdd.spec.transactions.token.HapiPartitionUpdate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenFeeScheduleUpdate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenPause;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.token.*;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -643,5 +626,13 @@ public class TxnVerbs {
 
     public static HapiPartitionUpdate updatePartitionDefinitionsMemo(String token) {
         return new HapiPartitionUpdate(token);
+    }
+
+    public static HapiTokenLock tokenLock(String token, String account, long amount) {
+        return new HapiTokenLock(token, account, amount);
+    }
+
+    public static HapiTokenLock tokenLock(String token, String account, List<Long> serialNumbers) {
+        return new HapiTokenLock(token, account, serialNumbers);
     }
 }
