@@ -98,6 +98,7 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
@@ -646,6 +647,9 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
+        final TransactionPrehandler transactionPrehandler =
+                new TransactionPrehandler(platformContext, latestImmutableState);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -662,8 +666,8 @@ public class SwirldsPlatform implements Platform {
                 shadowGraph,
                 sequencer,
                 eventCreationManager,
-                swirldStateManager,
                 stateSignatureCollector,
+                transactionPrehandler,
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
@@ -718,6 +722,8 @@ public class SwirldsPlatform implements Platform {
                 getAddressBook(),
                 ancientMode));
 
+        latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
+
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
             startingRound = 0;
@@ -726,7 +732,6 @@ public class SwirldsPlatform implements Platform {
                     initialState.getState().getPlatformState().getMinimumGenerationNonAncient();
             startingRound = initialState.getRound();
 
-            latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
             savedStateController.registerSignedStateFromDisk(initialState);
 

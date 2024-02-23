@@ -23,8 +23,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -44,28 +42,6 @@ public class TransactionHandler {
     public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
         this.selfId = selfId;
         this.stats = stats;
-    }
-
-    /**
-     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any
-     * exceptions gracefully.
-     *
-     * @param event
-     * 		the event to apply
-     * @param swirldState
-     * 		the swirld state to apply {@code event} to
-     */
-    public void preHandle(final EventImpl event, final SwirldState swirldState) {
-        try {
-            swirldState.preHandle(event);
-        } catch (final Throwable t) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "error invoking SwirldState.preHandle() [ nodeId = {} ] with event {}",
-                    selfId,
-                    event.toMediumString(),
-                    t);
-        }
     }
 
     /**

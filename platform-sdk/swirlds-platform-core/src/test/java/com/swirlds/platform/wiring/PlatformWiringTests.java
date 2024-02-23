@@ -39,8 +39,8 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
@@ -76,8 +76,8 @@ class PlatformWiringTests {
                 mock(Shadowgraph.class),
                 mock(PcesSequencer.class),
                 mock(EventCreationManager.class),
-                mock(SwirldStateManager.class),
                 mock(StateSignatureCollector.class),
+                mock(TransactionPrehandler.class),
                 mock(ConsensusRoundHandler.class),
                 mock(EventStreamManager.class),
                 mock(FutureEventBuffer.class),

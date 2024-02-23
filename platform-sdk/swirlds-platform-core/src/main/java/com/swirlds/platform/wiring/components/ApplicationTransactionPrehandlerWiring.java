@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -48,12 +48,10 @@ public record ApplicationTransactionPrehandlerWiring(
     /**
      * Bind the preconsensus event handler to the input wire.
      *
-     * @param swirldStateManager manages operations on the current state, and also transaction prehandling on recent
-     *                           immutable states why not
+     * @param transactionPrehandler the transaction prehandler to bind
      */
-    public void bind(@NonNull final SwirldStateManager swirldStateManager) {
-        ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput).bind(event -> {
-            swirldStateManager.prehandleApplicationTransactions(event);
-        });
+    public void bind(@NonNull final TransactionPrehandler transactionPrehandler) {
+        ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput)
+                .bind(transactionPrehandler::prehandleApplicationTransactions);
     }
 }
