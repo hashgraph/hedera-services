@@ -92,7 +92,6 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.StateConfig;
@@ -134,7 +133,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(WiringConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(TemporaryFileConfig.class)
