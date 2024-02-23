@@ -19,7 +19,7 @@ package com.swirlds.platform.test.graph;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.List;
 import java.util.Random;
 
@@ -37,21 +37,21 @@ public class SimpleGraphs {
      */
     public static List<GossipEvent> graph5e2n(final Random r) {
         final GossipEvent e0 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(1).buildGossipEvent();
+                TestingEventBuilder.builder().setRandom(r).setCreatorId(1).buildGossipEvent();
         final GossipEvent e1 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(2).buildGossipEvent();
-        final GossipEvent e2 = GossipEventBuilder.builder()
+                TestingEventBuilder.builder().setRandom(r).setCreatorId(2).buildGossipEvent();
+        final GossipEvent e2 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(1)
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .buildGossipEvent();
-        final GossipEvent e3 = GossipEventBuilder.builder()
+        final GossipEvent e3 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(1)
                 .setSelfParent(e2)
                 .buildGossipEvent();
-        final GossipEvent e4 = GossipEventBuilder.builder()
+        final GossipEvent e4 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(2)
                 .setSelfParent(e1)
@@ -94,50 +94,50 @@ public class SimpleGraphs {
      */
     public static List<EventImpl> graph9e3n(final Random r) {
         // generation 0
-        final EventImpl e0 = GossipEventBuilder.builder()
+        final EventImpl e0 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(1)
                 .setConsensus(true)
                 .buildEventImpl();
-        final EventImpl e1 = GossipEventBuilder.builder()
+        final EventImpl e1 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(2)
                 .setConsensus(true)
                 .buildEventImpl();
         final EventImpl e2 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(3).buildEventImpl();
+                TestingEventBuilder.builder().setRandom(r).setCreatorId(3).buildEventImpl();
         // generation 1
-        final EventImpl e3 = GossipEventBuilder.builder()
+        final EventImpl e3 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(1)
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .buildEventImpl();
-        final EventImpl e4 = GossipEventBuilder.builder()
+        final EventImpl e4 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(3)
                 .setSelfParent(e2)
                 .buildEventImpl();
         // generation 2
-        final EventImpl e5 = GossipEventBuilder.builder()
+        final EventImpl e5 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(1)
                 .setSelfParent(e3)
                 .buildEventImpl();
-        final EventImpl e6 = GossipEventBuilder.builder()
+        final EventImpl e6 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(2)
                 .setSelfParent(e1)
                 .setOtherParent(e3)
                 .buildEventImpl();
-        final EventImpl e7 = GossipEventBuilder.builder()
+        final EventImpl e7 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(3)
                 .setSelfParent(e4)
                 .setOtherParent(e1)
                 .buildEventImpl();
         // generation 3
-        final EventImpl e8 = GossipEventBuilder.builder()
+        final EventImpl e8 = TestingEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(3)
                 .setSelfParent(e7)

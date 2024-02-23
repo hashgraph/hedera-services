@@ -34,7 +34,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for ConsensusCreateTopic transaction
+     * Computes fee for ConsensusCreateTopic transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -61,7 +61,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for ConsensusUpdateTopic transaction
+     * Computes fee for ConsensusUpdateTopic transaction.
      *
      * @param txBody transaction body
      * @param rbsIncrease rbs increase
@@ -85,15 +85,15 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     private static int getConsensusUpdateTopicTransactionBodySize(
-            final ConsensusUpdateTopicTransactionBody updateTopicTxBody, int variableSize) {
-        variableSize += BASIC_ENTITY_ID_SIZE; // topicID
+            final ConsensusUpdateTopicTransactionBody updateTopicTxBody, final int variableSize) {
+        int calcSize = BASIC_ENTITY_ID_SIZE + variableSize; // topicID
         if (updateTopicTxBody.hasExpirationTime()) {
-            variableSize += LONG_SIZE;
+            calcSize += LONG_SIZE;
         }
         if (updateTopicTxBody.hasAutoRenewPeriod()) {
-            variableSize += LONG_SIZE;
+            calcSize += LONG_SIZE;
         }
-        return variableSize;
+        return calcSize;
     }
 
     /**
@@ -177,7 +177,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for consensus delete topic transaction
+     * Computes fee for consensus delete topic transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -207,14 +207,14 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
         feeComponentsBuilder.setBpt(
                 getCommonTransactionBodyBytes(txBody) + txBodyDataSize + sigValObj.getSignatureSize());
         feeComponentsBuilder.setRbh(getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC + extraRbsServices);
-        final var rbsNetwork = getDefaultRBHNetworkSize() + extraRbsNetwork;
+        final var rbsNetwork = getDefaultRbhNetworkSize() + extraRbsNetwork;
         return getFeeDataMatrices(feeComponentsBuilder.build(), sigValObj.getPayerAcctSigCount(), rbsNetwork);
     }
 
     /**
      * @param variableSize value returned by {@link #computeVariableSizedFieldsUsage(Key, Key,
      *     String, boolean)}.
-     * @return Estimation of size (in bytes) used by Topic in memory.
+     * @return Estimation of size (in bytes) used by Topic in memory
      */
     public static int getTopicRamBytes(final int variableSize) {
         return BASIC_ENTITY_ID_SIZE
@@ -229,7 +229,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Compute variable sized fields usage
+     * Compute variable sized fields usage.
      *
      * @param adminKey admin key
      * @param submitKey submit key

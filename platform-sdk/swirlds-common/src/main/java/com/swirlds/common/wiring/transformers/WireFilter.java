@@ -55,7 +55,7 @@ public class WireFilter<T> {
         Objects.requireNonNull(predicate);
 
         final TaskScheduler<T> taskScheduler = model.schedulerBuilder(filterName)
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 
