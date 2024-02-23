@@ -18,13 +18,18 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -35,15 +40,17 @@ import java.io.IOException;
  */
 public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, LearnerInitializer<T>, TreeView<T> {
 
-    /**
-     * Start any required background threads. Threads should be created on the provided work group.
-     *
-     * @param threadManager
-     * 		responsible for creating new threads
-     * @param workGroup
-     * 		a work group responsible for managing threads
-     */
-    default void startThreads(final ThreadManager threadManager, final StandardWorkGroup workGroup) {}
+    void startLearnerThreads(
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<MerkleNode> rootsToReceive,
+            final AtomicReference<T> reconstructedRoot,
+            final ReconnectNodeCount nodeCount);
+
+    default void abort() {}
+
+    ReconnectConfig getReconnectConfig();
 
     /**
      * Check if this view represents the root of the state.

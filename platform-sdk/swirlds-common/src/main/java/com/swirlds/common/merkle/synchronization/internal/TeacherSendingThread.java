@@ -129,7 +129,7 @@ public class TeacherSendingThread<T> {
         final Lesson<T> lesson = new Lesson<>(CUSTOM_VIEW_ROOT, new CustomViewRootLesson(view.getClassId(node)));
         final CustomReconnectRoot<?, ?> subtreeRoot = (CustomReconnectRoot<?, ?>) view.getMerkleRoot(node);
 
-        subtrees.add(new TeacherSubtree(subtreeRoot, subtreeRoot.buildTeacherView()));
+        subtrees.add(new TeacherSubtree(subtreeRoot, subtreeRoot.buildTeacherView(view.getReconnectConfig())));
 
         return lesson;
     }
@@ -213,6 +213,7 @@ public class TeacherSendingThread<T> {
             throw new MerkleSynchronizationException("exception in the teacher's receiving thread", ex);
         } finally {
             senderIsFinished.set(true);
+            System.err.println("TeacherSendingThread.run finished");
         }
     }
 }
