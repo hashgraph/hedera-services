@@ -17,11 +17,15 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
+import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
+import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -34,6 +38,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,6 +82,8 @@ public abstract class BaseBench {
     private static final int SKEW = 2;
     private static final int RECORD_SIZE_MIN = 8;
 
+    private static final String SWIRLDS_PACKAGE = "com.swirlds";
+
     /* Directory for the entire benchmark */
     private static Path benchDir;
     /* Directory for each iteration */
@@ -84,17 +91,18 @@ public abstract class BaseBench {
     /* Verify benchmark results */
     protected boolean verify;
 
-    private static Configuration configuration;
+    protected static Configuration configuration;
 
     private static void loadConfig() throws IOException {
-        configuration = ConfigurationBuilder.create()
+        ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(new LegacyFileConfigSource(Path.of(".", "settings.txt")))
                 .withConfigDataType(BenchmarkConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .build();
+                .withConfigDataType(CryptoConfig.class);
+        configurationBuilder = ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
+        configuration = configurationBuilder.build();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         final StringBuilder settingsUsed = new StringBuilder();
@@ -123,9 +131,17 @@ public abstract class BaseBench {
         try {
             final ConstructableRegistry registry = ConstructableRegistry.getInstance();
             registry.registerConstructables("com.swirlds.virtualmap");
+            registry.registerConstructables("com.swirlds.virtualmap.datasource");
+            registry.registerConstructables("com.swirlds.virtualmap.internal.merkle");
             registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.benchmark");
             registry.registerConstructables("com.swirlds.common.crypto");
+            registry.registerConstructables("com.swirlds.common");
+            registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
+            registry.registerConstructable(
+                    new ClassConstructorPair(BenchmarkMerkleInternal.class, BenchmarkMerkleInternal::new));
+            registry.registerConstructable(new ClassConstructorPair(BenchmarkKey.class, BenchmarkKey::new));
+            registry.registerConstructable(new ClassConstructorPair(BenchmarkValue.class, BenchmarkValue::new));
         } catch (ConstructableRegistryException ex) {
             logger.error("Failed to construct registry", ex);
         }
