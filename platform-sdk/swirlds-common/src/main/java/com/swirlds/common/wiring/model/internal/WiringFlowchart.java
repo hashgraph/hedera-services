@@ -379,7 +379,11 @@ public class WiringFlowchart {
     @NonNull
     public String render() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("flowchart TD\n");
+        sb.append(
+                """
+                %%{init: {'flowchart': {'defaultRenderer': 'elk'}}}%%
+                flowchart TD
+                """);
 
         final List<ModelVertex> sortedVertices =
                 vertexMap.values().stream().sorted().toList();
