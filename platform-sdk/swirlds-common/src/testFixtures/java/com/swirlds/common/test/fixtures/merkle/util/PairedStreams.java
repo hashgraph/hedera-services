@@ -80,29 +80,39 @@ public class PairedStreams implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-        teacherOutput.close();
-        teacherInput.close();
-        learnerOutput.close();
-        learnerInput.close();
+    public void close() {
+        try {
+            teacherOutput.close();
+            teacherInput.close();
+            learnerOutput.close();
+            learnerInput.close();
 
-        teacherOutputBuffer.close();
-        teacherInputBuffer.close();
-        learnerOutputBuffer.close();
-        learnerInputBuffer.close();
+            teacherOutputBuffer.close();
+            teacherInputBuffer.close();
+            learnerOutputBuffer.close();
+            learnerInputBuffer.close();
 
-        server.close();
-        teacherSocket.close();
-        learnerSocket.close();
+            server.close();
+            teacherSocket.close();
+            learnerSocket.close();
+        } catch (IOException e) {
+            // this is the test code, and we don't want the test to fail because of a close error
+            e.printStackTrace();
+        }
     }
 
     /**
      * Do an emergency shutdown of the sockets. Intentionally pulls the rug out from
      * underneath all streams reading/writing the sockets.
      */
-    public void disconnect() throws IOException {
-        server.close();
-        teacherSocket.close();
-        learnerSocket.close();
+    public void disconnect() {
+        try {
+            server.close();
+            teacherSocket.close();
+            learnerSocket.close();
+        } catch (IOException e) {
+            // this is the test code, and we don't want the test to fail because of a close error
+            e.printStackTrace();
+        }
     }
 }
