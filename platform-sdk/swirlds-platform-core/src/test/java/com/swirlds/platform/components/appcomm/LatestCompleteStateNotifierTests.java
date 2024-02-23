@@ -20,15 +20,10 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.ResettableRandom;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -40,33 +35,6 @@ import org.junit.jupiter.api.Test;
  * Basic sanity check tests for the {@link LatestCompleteStateNotifier} class
  */
 public class LatestCompleteStateNotifierTests {
-
-    @Test
-    @DisplayName("StateWriteToDiskCompleteNotification")
-    void testStateWriteToDiskCompleteNotification() {
-        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final ResettableRandom random = RandomUtils.getRandomPrintSeed();
-        final StateSavingResult result = new StateSavingResult(
-                random.nextLong(1, Long.MAX_VALUE),
-                random.nextBoolean(),
-                RandomUtils.randomInstant(random),
-                random.nextLong(1, Long.MAX_VALUE));
-
-        final AtomicInteger numInvocations = new AtomicInteger();
-        notificationEngine.register(StateWriteToDiskCompleteListener.class, n -> {
-            numInvocations.getAndIncrement();
-            assertEquals(result.consensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
-            assertEquals(result.round(), n.getRoundNumber(), "Unexpected notification round number");
-            assertEquals(result.freezeState(), n.isFreezeState(), "Unexpected notification freeze state");
-            assertNull(n.getState(), "Deprecated field should be null");
-            assertNull(n.getFolder(), "Deprecated field should be null");
-        });
-
-        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
-        component.stateSavedToDisk(result);
-
-        assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
-    }
 
     @Test
     @DisplayName("NewLatestCompleteStateEventNotification")

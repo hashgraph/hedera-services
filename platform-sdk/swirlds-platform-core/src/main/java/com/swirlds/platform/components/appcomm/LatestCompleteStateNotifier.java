@@ -18,10 +18,7 @@ package com.swirlds.platform.components.appcomm;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,20 +40,6 @@ public class LatestCompleteStateNotifier {
      */
     public LatestCompleteStateNotifier(@NonNull final NotificationEngine notificationEngine) {
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
-    }
-
-    /**
-     * Notify the application that a state has been saved to disk successfully
-     *
-     * @param stateSavingResult the result of the state saving operation
-     */
-    public void stateSavedToDisk(@NonNull final StateSavingResult stateSavingResult) {
-        notificationEngine.dispatch(
-                StateWriteToDiskCompleteListener.class,
-                new StateWriteToDiskCompleteNotification(
-                        stateSavingResult.round(),
-                        stateSavingResult.consensusTimestamp(),
-                        stateSavingResult.freezeState()));
     }
 
     /**
