@@ -984,8 +984,7 @@ public final class MerkleTestUtils {
             final int latencyMilliseconds,
             final ReconnectConfig reconnectConfig)
             throws Exception {
-        final PairedStreams streams = new PairedStreams();
-        try {
+        try (PairedStreams streams = new PairedStreams()) {
 
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
@@ -996,14 +995,7 @@ public final class MerkleTestUtils {
                         streams.getLearnerInput(),
                         streams.getLearnerOutput(),
                         startingTree,
-                        () -> {
-                            try {
-                                streams.disconnect();
-                            } catch (final IOException e) {
-                                // test code, no danger
-                                e.printStackTrace();
-                            }
-                        },
+                        streams::disconnect,
                         reconnectConfig);
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
@@ -1014,14 +1006,7 @@ public final class MerkleTestUtils {
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
                         desiredTree,
-                        () -> {
-                            try {
-                                streams.disconnect();
-                            } catch (final IOException e) {
-                                // test code, no danger
-                                e.printStackTrace();
-                            }
-                        },
+                        streams::disconnect,
                         reconnectConfig);
             } else {
                 learner = new LaggingLearningSynchronizer(
@@ -1029,14 +1014,7 @@ public final class MerkleTestUtils {
                         streams.getLearnerOutput(),
                         startingTree,
                         latencyMilliseconds,
-                        () -> {
-                            try {
-                                streams.disconnect();
-                            } catch (final IOException e) {
-                                // test code, no danger
-                                e.printStackTrace();
-                            }
-                        },
+                        streams::disconnect,
                         reconnectConfig);
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
@@ -1046,14 +1024,7 @@ public final class MerkleTestUtils {
                         streams.getTeacherOutput(),
                         desiredTree,
                         latencyMilliseconds,
-                        () -> {
-                            try {
-                                streams.disconnect();
-                            } catch (IOException e) {
-                                // test code, no danger
-                                e.printStackTrace();
-                            }
-                        },
+                        streams::disconnect,
                         reconnectConfig);
             }
 
@@ -1084,13 +1055,6 @@ public final class MerkleTestUtils {
             assertReconnectValidity(startingTree, desiredTree, generatedTree);
 
             return (T) generatedTree;
-        } finally {
-            try {
-                streams.close();
-            } catch (IOException e) {
-                // test code, no danger. The stream could have been closed previously.
-                e.printStackTrace();
-            }
         }
     }
 
