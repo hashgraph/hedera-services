@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -314,8 +313,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        // TODO don't merge until this is reverted
-        return Math.max(birthRound, ROUND_FIRST);
+        return birthRound;
     }
 
     /**
