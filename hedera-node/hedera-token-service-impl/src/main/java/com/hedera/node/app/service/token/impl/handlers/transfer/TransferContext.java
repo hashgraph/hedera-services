@@ -91,4 +91,6 @@ public interface TransferContext {
     void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee);
 
     List<AssessedCustomFee> getAssessedCustomFees();
+
+    boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
 }

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -92,10 +92,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             @NonNull final Predicate<AccountID> autoCreationTest) {
         result.getHbarAdjustments().forEach((k, v) -> {
             if (v < 0) {
-                final var currentAccount = accountStore.getAccountById(k);
-                // mono-service refuses to let an auto-created account pay a custom fee, even
-                // if technically it is receiving sufficient credits in the same transaction
-                validateTrue(currentAccount != null, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                // (FUTURE) This is here for mono-service fidelity, which refused to let an
+                // auto-created account pay a custom fee, even if technically it is
+                // receiving sufficient credits in the same transaction; consider removing.
+                validateFalse(autoCreationTest.test(k), INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         });
         for (final var entry : result.getHtsAdjustments().entrySet()) {

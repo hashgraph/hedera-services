@@ -53,14 +53,22 @@ public class TransferContextImpl implements TransferContext {
     private final TokensConfig tokensConfig;
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     public TransferContextImpl(final HandleContext context) {
+        this(context, true);
+    }
+
+    public TransferContextImpl(
+            final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
         this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
         this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
+                enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
 
     @Override
@@ -154,5 +162,9 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public List<AssessedCustomFee> getAssessedCustomFees() {
         return assessedCustomFees;
+    }
+
+    public boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments() {
+        return enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
 }
