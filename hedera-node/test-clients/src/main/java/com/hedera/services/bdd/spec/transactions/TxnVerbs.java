@@ -259,7 +259,7 @@ public class TxnVerbs {
         return new HapiTokenUpdate(token);
     }
 
-    public static HapiTokenNftsUpdate tokenNftsUpdate(String token, String metadata, List<Long> serialNumbers) {
+    public static HapiTokenNftsUpdate tokenUpdateNfts(String token, String metadata, List<Long> serialNumbers) {
         return new HapiTokenNftsUpdate(token, metadata, serialNumbers);
     }
 

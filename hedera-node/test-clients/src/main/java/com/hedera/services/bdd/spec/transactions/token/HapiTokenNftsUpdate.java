@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -48,6 +49,7 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
     static final Logger log = LogManager.getLogger(HapiTokenNftsUpdate.class);
     private Optional<List<Long>> serialNumbers;
     private String token;
+    private final SubType subType;
 
     @Override
     public HederaFunctionality type() {
@@ -58,6 +60,7 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
         this.token = token;
         this.metadata = Optional.of(metadata);
         this.serialNumbers = Optional.of(serialNumbers);
+        this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
     }
 
     public HapiTokenNftsUpdate metadata(String metadata) {
