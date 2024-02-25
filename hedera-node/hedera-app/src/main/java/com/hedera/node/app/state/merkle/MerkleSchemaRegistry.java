@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -195,12 +196,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
+                            logger.info("Created singleton state {} for {}", stateKey, serviceName);
                         } else if (def.queue()) {
                             hederaState.putServiceStateIfAbsent(md, () -> new QueueNode<>(md));
+                            logger.info("Created queue state {} for {}", stateKey, serviceName);
                         } else if (!def.onDisk()) {
                             hederaState.putServiceStateIfAbsent(md, () -> {
                                 final var map = new MerkleMap<>();
                                 map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
+                                logger.info("Created in-memory state {} for {}", stateKey, serviceName);
                                 return map;
                             });
                         } else {
@@ -217,6 +221,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
                                 final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                                logger.info("Created on-disk state {} for {}", stateKey, serviceName);
                                 return new VirtualMap<>(label, dsBuilder);
                             });
                         }
@@ -225,6 +230,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
             final var writableStates = hederaState.getWritableStates(serviceName);
+            if(serviceName.equals(TokenServiceImpl.NAME)) {
+                logger.info("Token service accounts size before {} and now {}",
+                        previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size(),
+                        writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).size());
+                if(previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size() != writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).size()) {
+                    logger.info("Accounts before ");
+                    previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
+                    logger.info("Accounts after ");
+                    writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
+                }
+            }
+            logger.info("Accounts state size {}", writableStates.get(serviceName));
             final var statesToRemove = schema.statesToRemove();
             final var remainingStates = new HashSet<>(writableStates.stateKeys());
             remainingStates.removeAll(statesToRemove);
