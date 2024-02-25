@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
@@ -238,18 +239,31 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
             final var writableStates = hederaState.getWritableStates(serviceName);
-            if(serviceName.equals(TokenServiceImpl.NAME)) {
-                logger.info("Token service accounts size before {} and now {}",
-                        previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size(),
-                        writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).size());
-                if(previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size() != writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).size()) {
+            if (TokenService.NAME.equals(serviceName)) {
+                logger.info(
+                        "Token service accounts size before {} and now {}",
+                        previousStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
+                                ? previousStates
+                                        .get(TokenServiceImpl.ACCOUNTS_KEY)
+                                        .size()
+                                : "null",
+                        writableStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
+                                ? writableStates
+                                        .get(TokenServiceImpl.ACCOUNTS_KEY)
+                                        .size()
+                                : "null");
+                if (previousStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
+                        && writableStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
+                        && previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size()
+                                != writableStates
+                                        .get(TokenServiceImpl.ACCOUNTS_KEY)
+                                        .size()) {
                     logger.info("Accounts before ");
                     previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
                     logger.info("Accounts after ");
                     writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
                 }
             }
-            logger.info("Accounts state size {}", writableStates.get(serviceName));
             final var statesToRemove = schema.statesToRemove();
             final var remainingStates = new HashSet<>(writableStates.stateKeys());
             remainingStates.removeAll(statesToRemove);
