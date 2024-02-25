@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures.merkle.util;
+package com.swirlds.benchmark.reconnect;
 
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.connectivity.TcpFactory;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -44,9 +46,9 @@ public class PairedStreams implements AutoCloseable {
     protected Socket learnerSocket;
     protected ServerSocket server;
 
-    public PairedStreams() throws IOException {
+    public PairedStreams(final SocketConfig socketConfig) throws IOException {
 
-        server = new ServerSocket(0);
+        server = new TcpFactory(socketConfig).createServerSocket(new byte[] {127, 0, 0, 1}, 0);
         teacherSocket = new Socket("127.0.0.1", server.getLocalPort());
         learnerSocket = server.accept();
 
@@ -80,39 +82,29 @@ public class PairedStreams implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-        try {
-            teacherOutput.close();
-            teacherInput.close();
-            learnerOutput.close();
-            learnerInput.close();
+    public void close() throws IOException {
+        teacherOutput.close();
+        teacherInput.close();
+        learnerOutput.close();
+        learnerInput.close();
 
-            teacherOutputBuffer.close();
-            teacherInputBuffer.close();
-            learnerOutputBuffer.close();
-            learnerInputBuffer.close();
+        teacherOutputBuffer.close();
+        teacherInputBuffer.close();
+        learnerOutputBuffer.close();
+        learnerInputBuffer.close();
 
-            server.close();
-            teacherSocket.close();
-            learnerSocket.close();
-        } catch (IOException e) {
-            // this is the test code, and we don't want the test to fail because of a close error
-            e.printStackTrace();
-        }
+        server.close();
+        teacherSocket.close();
+        learnerSocket.close();
     }
 
     /**
      * Do an emergency shutdown of the sockets. Intentionally pulls the rug out from
      * underneath all streams reading/writing the sockets.
      */
-    public void disconnect() {
-        try {
-            server.close();
-            teacherSocket.close();
-            learnerSocket.close();
-        } catch (IOException e) {
-            // this is the test code, and we don't want the test to fail because of a close error
-            e.printStackTrace();
-        }
+    public void disconnect() throws IOException {
+        server.close();
+        teacherSocket.close();
+        learnerSocket.close();
     }
 }
