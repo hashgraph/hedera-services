@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -115,7 +116,7 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource("fullyConnected")
-    void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+    void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator().setSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
@@ -130,7 +131,7 @@ class TopologyTest {
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
                 assertTrue(topology.shouldConnectTo(neighbor), "I should connect to all neighbors");
-                assertTrue(topology.shouldConnectToMe(neighbor), "all neighbors should connect to me");
+                assertFalse(topology.shouldConnectToMe(neighbor), "all neighbors should connect to me");
             }
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
@@ -140,6 +141,19 @@ class TopologyTest {
             testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("fullyConnected")
+    void shouldConnectToMe(final int numNodes, final int numNeighbors) {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(numNodes).build();
+        final NodeId outOfBoundsId = addressBook.getNextNodeId();
+        final NodeId thisNodeId = addressBook.getNodeId(0);
+        final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
+    }
+
+    @Test
+    void shouldConnectTo() {}
 
     /** test a single random matrix with the given number of nodes and neighbors, created using the given seed */
     private void testRandomGraphTestIterative(

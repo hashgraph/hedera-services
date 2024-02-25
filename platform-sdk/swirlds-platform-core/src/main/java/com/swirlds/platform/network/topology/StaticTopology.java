@@ -38,21 +38,11 @@ public class StaticTopology implements NetworkTopology {
     private final AddressBook addressBook;
 
     private final RandomGraph connectionGraph;
-    private final boolean unidirectional;
 
     public StaticTopology(
             @NonNull final AddressBook addressBook, @NonNull final NodeId selfId, final int numberOfNeighbors) {
-        this(addressBook, selfId, numberOfNeighbors, true);
-    }
-
-    public StaticTopology(
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId,
-            final int numberOfNeighbors,
-            final boolean unidirectional) {
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.unidirectional = unidirectional;
         this.connectionGraph = new RandomGraph(addressBook.getSize(), numberOfNeighbors, SEED);
 
         if (!addressBook.contains(selfId)) {
@@ -85,8 +75,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId)
-                && (unidirectional || addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && (addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId));
     }
 
     /**
@@ -110,8 +99,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId)
-                && (unidirectional || addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && (addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId));
     }
 
     /**
