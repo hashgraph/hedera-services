@@ -51,6 +51,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
@@ -182,6 +183,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -407,7 +409,6 @@ public class SwirldsPlatform implements Platform {
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
-
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
                     recycleBin,
@@ -473,6 +474,23 @@ public class SwirldsPlatform implements Platform {
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
+
+        final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
+
+        final QueueThread<GossipEvent> oldStyleIntakeQueue;
+        if (useOldStyleIntakeQueue) {
+            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(AdHocThreadManager.getStaticThreadManager())
+                    .setCapacity(10_000)
+                    .setThreadName("old_style_intake_queue")
+                    .setComponent("platform")
+                    .setHandler(event -> platformWiring.getGossipEventInput().put(event))
+                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
+                    .build();
+            components.add(oldStyleIntakeQueue);
+
+        } else {
+            oldStyleIntakeQueue = null;
+        }
 
         savedStateController = new SavedStateController(stateConfig);
 
@@ -603,6 +621,9 @@ public class SwirldsPlatform implements Platform {
         final ConsensusEngine consensusEngine =
                 new ConsensusEngine(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
 
+        final LongSupplier intakeQueueSizeSupplier =
+                oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
+
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
                 this,
@@ -610,7 +631,7 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 appVersion,
                 transactionPool,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                intakeQueueSizeSupplier,
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
@@ -689,6 +710,18 @@ public class SwirldsPlatform implements Platform {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final Consumer<GossipEvent> eventFromGossipConsumer = oldStyleIntakeQueue == null
+                ? platformWiring.getGossipEventInput()::put
+                : event -> {
+                    try {
+                        oldStyleIntakeQueue.put(event);
+                    } catch (final InterruptedException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
+                        Thread.currentThread().interrupt();
+                    }
+                };
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -701,8 +734,8 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
-                platformWiring.getGossipEventInput()::put,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                eventFromGossipConsumer,
+                intakeQueueSizeSupplier,
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
