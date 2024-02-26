@@ -102,9 +102,9 @@ public class ConsensusSnapshot implements SelfSerializable {
     }
 
     /**
-     * @return for each non-ancient round, the minimum ancient threshold of the round's judges
+     * @return for each non-ancient round, the minimum ancient indicator of the round's judges
      */
-    public @NonNull List<MinimumJudgeInfo> minGens() {
+    public @NonNull List<MinimumJudgeInfo> getMinimumJudgeInfoList() {
         return minimumJudgeInfoList;
     }
 
@@ -137,12 +137,13 @@ public class ConsensusSnapshot implements SelfSerializable {
      * The minimum ancient threshold of famous witnesses (i.e. judges) for the round specified. This method only looks
      * at non-ancient rounds contained within this state.
      *
-     * @param round the round whose minimum generation will be returned
-     * @return the minimum generation for the round specified
-     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
+     * @param round the round whose minimum judge ancient indicator will be returned
+     * @return the minimum judge ancient indicator for the round specified
+     * @throws NoSuchElementException if the minimum judge info information for this round is not contained withing this
+     *                                state
      */
     public long getMinimumJudgeAncientThreshold(final long round) {
-        for (final MinimumJudgeInfo info : minGens()) {
+        for (final MinimumJudgeInfo info : getMinimumJudgeInfoList()) {
             if (info.round() == round) {
                 return info.minimumJudgeAncientThreshold();
             }

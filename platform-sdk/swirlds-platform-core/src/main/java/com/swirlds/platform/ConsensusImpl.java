@@ -232,7 +232,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
-        rounds.loadFromMinGen(snapshot.minGens());
+        rounds.loadFromMinimumJudge(snapshot.getMinimumJudgeInfoList());
         updateRoundGenerations(rounds.getFameDecidedBelow());
         numConsensus = snapshot.nextConsensusNumber();
         lastConsensusTime = snapshot.consensusTimestamp();
@@ -684,7 +684,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),
-                        rounds.getMinGenInfo(),
+                        rounds.getMinimumJudgeInfoList(),
                         numConsensus,
                         lastConsensusTime));
     }

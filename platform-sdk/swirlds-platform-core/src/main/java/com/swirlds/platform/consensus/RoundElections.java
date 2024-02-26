@@ -120,7 +120,7 @@ public class RoundElections {
     /**
      * @return create a {@link MinimumJudgeInfo} instance for this round
      */
-    public @NonNull MinimumJudgeInfo creatMinGenInfo() {
+    public @NonNull MinimumJudgeInfo creatMinimumJudgeInfo() {
         return new MinimumJudgeInfo(round, getMinGeneration());
     }
 

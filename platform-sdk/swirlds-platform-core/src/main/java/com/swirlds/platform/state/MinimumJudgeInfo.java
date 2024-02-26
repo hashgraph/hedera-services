@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Records the minimum ancient threshold for all judges in a particular round.
+ * Records the minimum ancient indicator for all judges in a particular round.
  *
  * @param round                        the round number
  * @param minimumJudgeAncientThreshold the minimum ancient threshold for all judges for a given round. Will be a
@@ -39,7 +39,7 @@ public record MinimumJudgeInfo(long round, long minimumJudgeAncientThreshold) {
      * {@link com.swirlds.platform.consensus.ConsensusConfig#roundsNonAncient()}, choices for this config that exceed
      * this value will result in an exception being thrown when deserializeList is called.
      */
-    public static int MAX_MINIMUM_JUDGE_INFO_SIZE = 32;
+    public static final int MAX_MINIMUM_JUDGE_INFO_SIZE = 32;
 
     /**
      * Serialize a list of {@link MinimumJudgeInfo} objects
