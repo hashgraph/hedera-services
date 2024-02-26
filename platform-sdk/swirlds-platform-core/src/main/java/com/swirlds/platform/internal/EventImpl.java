@@ -92,11 +92,6 @@ public class EventImpl extends EventMetadata
     private RunningHash runningHash;
 
     /**
-     * Tracks if this event was read out of a signed state.
-     */
-    private boolean fromSignedState;
-
-    /**
      * An unmodifiable ordered set of system transaction indices in the array of all transactions, from lowest to
      * highest.
      */
@@ -586,22 +581,6 @@ public class EventImpl extends EventMetadata
      */
     public boolean isEmpty() {
         return getTransactions() == null || getTransactions().length == 0;
-    }
-
-    /**
-     * Check if this event was read from a signed state.
-     *
-     * @return true iff this event was loaded from a signed state
-     */
-    public boolean isFromSignedState() {
-        return fromSignedState;
-    }
-
-    /**
-     * Mark this as an event that was read from a signed state.
-     */
-    public void markAsSignedStateEvent() {
-        this.fromSignedState = true;
     }
 
     //

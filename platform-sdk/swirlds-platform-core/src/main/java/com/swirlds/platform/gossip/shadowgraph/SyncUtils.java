@@ -182,7 +182,7 @@ public final class SyncUtils {
 
     /**
      * Send the events the peer needs. The complementary function to
-     * {@link #readEventsINeed(Connection, Consumer, SyncMetrics, CountDownLatch, IntakeEventCounter, Duration)}.
+     * {@link #readEventsINeed(Connection, Consumer, int, SyncMetrics, CountDownLatch, IntakeEventCounter, Duration)}.
      *
      * @param connection          the connection to write to
      * @param events              the events to write
@@ -205,14 +205,6 @@ public final class SyncUtils {
                     connection.getDescription(),
                     events.size());
             for (final EventImpl event : events) {
-                if (event.isFromSignedState()) {
-                    // if we encounter an event from a signed state, we should not send that event because it will have
-                    // had its transactions removed. the receiver would get the wrong hash and the signature check
-                    // would fail
-                    connection.getDos().writeByte(ByteConstants.COMM_EVENT_ABORT);
-                    writeAborted.set(true);
-                    break;
-                }
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
                 connection.getDos().writeEventData(event);
             }
@@ -253,6 +245,7 @@ public final class SyncUtils {
      *
      * @param connection         the connection to read from
      * @param eventHandler       the consumer of received events
+     * @param maxEventCount      the maximum number of events to read, or 0 for no limit
      * @param syncMetrics        tracks event reading metrics
      * @param eventReadingDone   used to notify the writing thread that reading is done
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
@@ -263,6 +256,7 @@ public final class SyncUtils {
     public static Callable<Integer> readEventsINeed(
             final Connection connection,
             final Consumer<GossipEvent> eventHandler,
+            final int maxEventCount,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
             @NonNull final IntakeEventCounter intakeEventCounter,
@@ -273,6 +267,7 @@ public final class SyncUtils {
             int eventsRead = 0;
             try {
                 final long startTime = System.nanoTime();
+                int count = 0;
                 while (true) {
                     // readByte() will throw a timeout exception if the socket timeout is exceeded
                     final byte next = connection.getDis().readByte();
@@ -281,6 +276,13 @@ public final class SyncUtils {
                     checkEventExchangeTime(maxSyncTime, startTime);
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
+                            if (maxEventCount > 0) {
+                                count++;
+                                if (count > maxEventCount) {
+                                    throw new IOException("max event count " + maxEventCount + " exceeded");
+                                }
+                            }
+
                             final GossipEvent gossipEvent = connection.getDis().readEventData();
 
                             gossipEvent.setSenderId(connection.getOtherId());

@@ -129,9 +129,10 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        // The original sync tests are incompatible with event filtering.
+        // The original sync tests are incompatible with event filtering and reduced sync event counts.
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(SyncConfig_.MAX_SYNC_EVENT_COUNT, 0)
                 .withValue(
                         EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
                         ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
@@ -238,9 +239,10 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
-        // The original sync tests are incompatible with event filtering.
+        // The original sync tests are incompatible with event filtering and reduced sync event counts.
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(SyncConfig_.MAX_SYNC_EVENT_COUNT, 0)
                 .withValue(
                         EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
                         ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
@@ -267,12 +269,11 @@ public class SyncNode {
      * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
      * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
      * becomes the oldest non-expired ancient indicator in the shadow graph returned by
-     * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior
-     * to the sync that occurs in the test.</p>
+     * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior to
+     * the sync that occurs in the test.</p>
      *
      * <p>The {@link SyncNode#getExpirationThreshold()} value is used to determine which events should not be send
-     * to
-     * the peer because they are expired.</p>
+     * to the peer because they are expired.</p>
      */
     public void expireBelow(final long expirationThreshold) {
         this.expirationThreshold = expirationThreshold;

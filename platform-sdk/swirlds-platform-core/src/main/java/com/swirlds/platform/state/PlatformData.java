@@ -205,7 +205,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             for (int i = 0; i < eventNum; i++) {
                 events[i] = in.readSerializable(false, EventImpl::new);
                 events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
-                events[i].markAsSignedStateEvent();
             }
             State.linkParents(events);
         }
