@@ -12,6 +12,8 @@ module com.hedera.node.blocknode.core {
     requires com.hedera.node.blocknode.state;
     requires com.hedera.node.hapi;
     requires org.apache.logging.log4j;
+    requires grpc.netty;
+//    requires com.hedera.block.node.api.proto.java;
 
 // Require modules which are needed for compilation and should be available to all modules that depend on this
 // module (including tests and other source sets).

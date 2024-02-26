@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-plugins {
-    id("application")
-    id("com.hedera.hashgraph.blocknode.conventions")
-}
+package com.hedera.node.blocknode.core;
 
-application { mainClass = "com.hedera.node.blocknode.core.BlockNodeServer" }
+import java.util.function.Consumer;
 
-tasks.withType<JavaExec>().configureEach {
-    if (name.endsWith("main()")) {
-        notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
-    }
+public interface GrpcServerManager {
+    void start(int port, int tlsPort, Consumer<String> println);
 }

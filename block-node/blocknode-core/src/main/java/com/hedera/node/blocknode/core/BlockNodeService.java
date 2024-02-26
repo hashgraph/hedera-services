@@ -16,13 +16,16 @@
 
 package com.hedera.node.blocknode.core;
 
+//import com.hedera.block.node.api.proto.java.BlockServiceGrpc;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BlockNode {
-    private static final Logger logger = LogManager.getLogger(BlockNode.class);
+class BlockNodeService
+//        extends BlockServiceGrpc.BlockServiceImplBase
+{
+    private static final Logger logger = LogManager.getLogger(BlockNodeServer.class);
 
-    public static void main(final String... args) {
-        logger.info("Initializing Block Node...");
+    public BlockNodeService() {
+        logger.info("Block service has been started successfully.");
     }
 }
