@@ -64,10 +64,7 @@ import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -118,6 +115,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     //    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
+
+    // This is a temporary fix to deal with the inefficient implementation of findNodeIndex(). It caches looked up
+    // indices globally, assuming these indices do not change that often. We need to re-think index lookup,
+    // but at this point all major rewrites seem to risky.
+    private static final Map<String, Integer> INDEX_LOOKUP = new ConcurrentHashMap<>();
 
     private long classId;
 
@@ -429,14 +431,26 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
+
+        final Integer index = INDEX_LOOKUP.get(label);
+        if (index != null && checkNodeIndex(index, label)) {
+            return index;
+        }
+
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
-            final var node = getChild(i);
-            if (node instanceof Labeled labeled && label.equals(labeled.getLabel())) {
+            if (checkNodeIndex(i, label)) {
+                INDEX_LOOKUP.put(label, i);
                 return i;
             }
         }
 
+        INDEX_LOOKUP.remove(label);
         return -1;
+    }
+
+    private boolean checkNodeIndex(final int index, @NonNull final String label) {
+        final var node = getChild(index);
+        return node instanceof Labeled labeled && Objects.equals(label, labeled.getLabel());
     }
 
     /**
