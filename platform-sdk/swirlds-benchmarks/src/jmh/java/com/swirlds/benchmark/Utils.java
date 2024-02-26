@@ -59,7 +59,7 @@ public final class Utils {
         try (Stream<Path> walk = Files.walk(path)) {
             walk.sorted(Comparator.reverseOrder()).forEach(p -> {
                 try {
-                    Files.delete(p);
+                    Files.deleteIfExists(p);
                 } catch (IOException ex) {
                     logger.warn("Couldn't delete {}: {}", p, ex.getMessage());
                 }

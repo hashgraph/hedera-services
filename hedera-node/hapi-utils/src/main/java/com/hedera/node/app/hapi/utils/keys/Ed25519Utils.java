@@ -17,9 +17,18 @@
 package com.hedera.node.app.hapi.utils.keys;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.DrbgParameters;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.SecureRandom;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -30,12 +39,18 @@ import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PKCS8Generator;
-import org.bouncycastle.openssl.jcajce.*;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 
-/** Minimal utility to read/write a single Ed25519 key from/to an encrypted PEM file. */
+/**
+ * Minimal utility to read/write a single Ed25519 key from/to an encrypted PEM file.
+ */
 public final class Ed25519Utils {
     private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
     private static final Provider BC_PROVIDER = new BouncyCastleProvider();
@@ -73,12 +88,12 @@ public final class Ed25519Utils {
         }
     }
 
-    public static Path relocatedIfNotPresentInWorkingDir(final Path p) {
-        return relocatedIfNotPresentInWorkingDir(p.toFile()).toPath();
+    public static Path relocatedIfNotPresentInWorkingDir(final Path path) {
+        return relocatedIfNotPresentInWorkingDir(path.toFile()).toPath();
     }
 
-    public static File relocatedIfNotPresentInWorkingDir(final File f) {
-        return relocatedIfNotPresentWithCurrentPathPrefix(f, RESOURCE_PATH_SEGMENT, TEST_CLIENTS_PREFIX);
+    public static File relocatedIfNotPresentInWorkingDir(final File file) {
+        return relocatedIfNotPresentWithCurrentPathPrefix(file, RESOURCE_PATH_SEGMENT, TEST_CLIENTS_PREFIX);
     }
 
     public static void writeKeyTo(final byte[] seed, final String pemLoc, final String passphrase) {
@@ -115,9 +130,9 @@ public final class Ed25519Utils {
     }
 
     public static File relocatedIfNotPresentWithCurrentPathPrefix(
-            final File f, final String firstSegmentToRelocate, final String newPathPrefix) {
-        if (!f.exists()) {
-            final var absPath = withDedupedHederaNodePathSegments(f.getAbsolutePath());
+            final File file, final String firstSegmentToRelocate, final String newPathPrefix) {
+        if (!file.exists()) {
+            final var absPath = withDedupedHederaNodePathSegments(file.getAbsolutePath());
             final var idx = absPath.indexOf(firstSegmentToRelocate);
             if (idx == -1) {
                 return new File(absPath);
@@ -125,7 +140,7 @@ public final class Ed25519Utils {
             final var relocatedPath = newPathPrefix + absPath.substring(idx);
             return new File(relocatedPath);
         } else {
-            return f;
+            return file;
         }
     }
 

@@ -1078,10 +1078,10 @@ class TipsetEventCreatorTests {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
 
-                if (eventIndex == 0 || (!useBirthRoundForAncient && event != null)) {
+                if (eventIndex == 0) {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
-                } else if (event != null) {
+                } else {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(pendingConsensusRound, birthRound);
                 }

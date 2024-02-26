@@ -71,7 +71,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidKeyException;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class PbjConverter {
@@ -1363,8 +1362,7 @@ public final class PbjConverter {
      * @throws IllegalStateException if the conversion fails
      */
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
-        try (final var bais =
-                new ByteArrayInputStream(requireNonNull(grpcKey).toByteArray())) {
+        try (final var bais = new ByteArrayInputStream(requireNonNull(grpcKey).toByteArray())) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return Key.PROTOBUF.parse(stream);
