@@ -4663,7 +4663,7 @@ public class TraceabilitySuite extends HapiSuite {
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
                             .sending(10)
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .via("callTest" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
                     "callTest" + finalI,
@@ -4768,7 +4768,7 @@ public class TraceabilitySuite extends HapiSuite {
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
                             .sending(10)
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .via("callCodeTest" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
                     "callCodeTest" + finalI,
@@ -4873,7 +4873,7 @@ public class TraceabilitySuite extends HapiSuite {
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
                             .sending(10)
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .via("delegateCallTest" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
                     "delegateCallTest" + finalI,
@@ -4926,7 +4926,7 @@ public class TraceabilitySuite extends HapiSuite {
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .via("delegateCallTestNoValue" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
                     "delegateCallTestNoValue" + finalI,
@@ -4977,7 +4977,7 @@ public class TraceabilitySuite extends HapiSuite {
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .sending(10L)
                             .via("staticCallTest" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
@@ -5031,7 +5031,7 @@ public class TraceabilitySuite extends HapiSuite {
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
                     contractCall(contract, functionName, mirrorAddrWith(systemAccounts.get(finalI)))
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .hasKnownStatus(SUCCESS)
                             .via("staticCallTestNoValue" + finalI)));
             opsArray2[i] = withOpContext((spec, opLog) -> expectContractActionSidecarFor(
                     "staticCallTestNoValue" + finalI,
