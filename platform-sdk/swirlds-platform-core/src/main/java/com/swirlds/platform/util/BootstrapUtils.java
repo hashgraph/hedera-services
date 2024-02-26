@@ -46,7 +46,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
-import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
@@ -153,7 +152,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(WiringConfig.class)
                 .withConfigDataType(PcesConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
