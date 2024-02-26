@@ -218,7 +218,7 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<TokenUpdateNftsTransactionBody.Builder> defaultDefTokenUpdateNftTransactionBody() {
+    public Consumer<TokenUpdateNftsTransactionBody.Builder> defaultDefTokenUpdateNftsTransactionBody() {
         return builder -> {};
     }
 
