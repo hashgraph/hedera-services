@@ -152,10 +152,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
-        System.out.println(
-                "MerkleHederaState constructed with lifecycles Hedera instance "
-                        + System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera)
-                        + " of all instances " + Hedera.ALL_INSTANCES);
+        logger.info(
+                "MerkleHederaState {} constructed with lifecycles Hedera instance {} (of all instances {})",
+                System.identityHashCode(this),
+                System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera),
+                Hedera.ALL_INSTANCES);
         this.classId = CLASS_ID;
     }
 
@@ -317,9 +318,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
-        System.out.println("Handling consensus round "
-                + " in state " + System.identityHashCode(this) +
-                " via lifecycles " + System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera));
+        logger.info("Handling consensus round "
+                + " in MHS instance {} via lifecycles {}",
+                System.identityHashCode(this),
+                System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera));
         lifecycles.onHandleConsensusRound(round, platformState, this);
     }
 
