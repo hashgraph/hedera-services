@@ -287,7 +287,16 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Now commit all the service-specific changes made during this service's update or migration
             if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+                logger.info("Committing changes to service {} state", serviceName);
                 mws.commit();
+                if (TokenService.NAME.equals(serviceName)) {
+                    logger.info(
+                            "Token service accounts size after {}, account keys {}",
+                            mws.get(TokenServiceImpl.ACCOUNTS_KEY).size(),
+                            mws.get(TokenServiceImpl.ACCOUNTS_KEY).keys());
+                    logger.info("Accounts after ");
+                    writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
+                }
             }
             // And finally we can remove any states we need to remove
             statesToRemove.forEach(stateKey -> hederaState.removeServiceState(serviceName, stateKey));
