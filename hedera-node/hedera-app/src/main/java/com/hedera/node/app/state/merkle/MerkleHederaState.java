@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
@@ -63,6 +64,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +72,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -149,6 +152,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
+        System.out.println(
+                "MerkleHederaState constructed with lifecycles Hedera instance "
+                        + System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera)
+                        + " of all instances " + Hedera.ALL_INSTANCES);
         this.classId = CLASS_ID;
     }
 
@@ -310,6 +317,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
+        System.out.println("Handling consensus round "
+                + " in state " + System.identityHashCode(this) +
+                " via lifecycles " + System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera));
         lifecycles.onHandleConsensusRound(round, platformState, this);
     }
 

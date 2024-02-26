@@ -129,6 +129,7 @@ import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -224,6 +225,8 @@ public final class Hedera implements SwirldMain {
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
 
+    public static final Set<Integer> ALL_INSTANCES = new HashSet<>();
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -315,6 +318,7 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
+        ALL_INSTANCES.add(System.identityHashCode(this));
     }
 
     /**

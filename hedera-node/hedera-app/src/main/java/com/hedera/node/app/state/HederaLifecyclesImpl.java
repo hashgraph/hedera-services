@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
 
-    private final Hedera hedera;
+    public final Hedera hedera;
 
     public HederaLifecyclesImpl(@NonNull final Hedera hedera) {
         this.hedera = Objects.requireNonNull(hedera);
