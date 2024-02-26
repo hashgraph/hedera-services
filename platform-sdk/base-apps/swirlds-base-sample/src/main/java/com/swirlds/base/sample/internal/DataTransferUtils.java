@@ -95,7 +95,7 @@ public class DataTransferUtils {
     public static <T> @Nullable T deserializeJsonFromExchange(
             final @NonNull HttpServerExchange exchange, final @NonNull Class<T> clazz) {
         try {
-            StringBuilder requestBody = new StringBuilder();
+            final StringBuilder requestBody = new StringBuilder();
             try (BufferedReader reader =
                     new BufferedReader(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
@@ -126,9 +126,9 @@ public class DataTransferUtils {
      * @return the path components of the URL
      */
     public static @NonNull List<String> urlToList(final @NonNull String path) {
-        List<String> paths = new ArrayList<>();
+        final List<String> paths = new ArrayList<>();
         // Split the path into individual segments
-        String[] pathSegments = path.split("/");
+        final String[] pathSegments = path.split("/");
 
         // Add each path segment to the list
         for (String segment : pathSegments) {

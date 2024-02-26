@@ -52,7 +52,7 @@ public class BaseSampleMain {
 
     public static void main(String[] args) {
         try {
-            ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
             ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_CONFIG_PACKAGE));
             configurationBuilder
                     .withSource(SystemEnvironmentConfigSource.getInstance())
@@ -63,10 +63,10 @@ public class BaseSampleMain {
                 configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));
             }
 
-            Configuration configuration = configurationBuilder.build();
-            DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
-            Metrics metrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
-            PlatformContext context = new DefaultPlatformContext(
+            final Configuration configuration = configurationBuilder.build();
+            final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
+            final Metrics metrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
+            final PlatformContext context = new DefaultPlatformContext(
                     configuration, metrics, CryptographyFactory.create(configuration), Time.getCurrent());
 
             // Add Benchmark metrics

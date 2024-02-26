@@ -30,7 +30,6 @@ import com.swirlds.base.sample.persistence.OperationDao;
 import com.swirlds.base.sample.persistence.OperationDao.Criteria;
 import com.swirlds.base.sample.persistence.StockDao;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -55,13 +54,10 @@ public class InventoryService extends CrudService<DetailedInventory> {
         this.operationDao = OperationDao.getInstance();
     }
 
-    @Nullable
+    @NonNull
     @Override
     public DetailedInventory retrieve(@NonNull final String itemId) {
         final Item item = itemDao.findById(itemId);
-        if (item == null) {
-            return null;
-        }
         final Inventory inventory = Objects.requireNonNull(
                 inventoryDao.findByItemId(itemId), "There should be an Inventory entry for the item:" + itemId);
 

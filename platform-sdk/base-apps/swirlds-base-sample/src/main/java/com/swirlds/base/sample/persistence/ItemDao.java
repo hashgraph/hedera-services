@@ -39,8 +39,8 @@ public class ItemDao {
 
     private static final Map<UUID, Item> ITEMS = new ConcurrentHashMap<>();
 
-    public Item save(final @NonNull Item item) {
-        Objects.requireNonNull(item, "item cannot be null");
+    public @NonNull Item save(@NonNull final Item item) {
+        Objects.requireNonNull(item, "item must not be null");
         UUID uuid;
         if (Objects.isNull(item.id())) {
             uuid = UUID.randomUUID();
@@ -50,7 +50,7 @@ public class ItemDao {
         } else {
             uuid = UUID.fromString(item.id());
             if (!ITEMS.containsKey(uuid)) {
-                return null;
+                throw new EntityNotFoundException(Item.class, item.id());
             }
         }
         final Item value =
@@ -59,22 +59,25 @@ public class ItemDao {
         return value;
     }
 
-    public Item findById(String id) {
+    public @NonNull Item findById(@NonNull final String id) {
+        if (!ITEMS.containsKey(UUID.fromString(id))) {
+            throw new EntityNotFoundException(Item.class, id);
+        }
         return ITEMS.get(UUID.fromString(id));
     }
 
-    public void deleteById(String id) {
+    public void deleteById(@NonNull final String id) {
         if (!ITEMS.containsKey(UUID.fromString(id))) {
-            throw new IllegalArgumentException("Resource does not exist");
+            throw new EntityNotFoundException(Item.class, id);
         }
         ITEMS.remove(UUID.fromString(id));
     }
 
-    public List<Item> findAll() {
+    public @NonNull List<Item> findAll() {
         return ITEMS.values().stream().toList();
     }
 
-    public Integer countAll() {
+    public @NonNull Integer countAll() {
         return ITEMS.size();
     }
 }

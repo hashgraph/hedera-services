@@ -42,7 +42,7 @@ public class ServerUtils {
     public static void createServer(
             final @NonNull BaseApiConfig config, final @NonNull PlatformContext swirldsContext) {
         // Create a path handler to associate handlers with different paths
-        PathHandler pathHandler = new PathHandler();
+        final PathHandler pathHandler = new PathHandler();
 
         new AdapterHandler<>(swirldsContext, new InventoryService(), config.apiBasePath() + "/inventories")
                 .into(pathHandler);
@@ -54,7 +54,7 @@ public class ServerUtils {
         new AdapterHandler<>(swirldsContext, new PurchaseService(swirldsContext), config.apiBasePath() + "/purchases")
                 .into(pathHandler);
         // Create the Undertow server with the path handler and bind it to port
-        Undertow server = Undertow.builder()
+        final Undertow server = Undertow.builder()
                 .addHttpListener(config.port(), config.host())
                 // Blocking adapter
                 .setHandler(new BlockingHandler(pathHandler))

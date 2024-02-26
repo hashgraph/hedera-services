@@ -28,8 +28,8 @@ import java.util.List;
 
 public class BenchmarkMetrics {
 
-    private static final OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-    private static final BufferPoolMXBean directMemMXBean = getDirectMemMXBean();
+    private static final OperatingSystemMXBean OS_BEAN = ManagementFactory.getOperatingSystemMXBean();
+    private static final BufferPoolMXBean DIRECT_MEM_MX_BEAN = getDirectMemMxBean();
     static final String BENCHMARK_CATEGORY = "internal";
     private static final FunctionGauge.Config<String> TIMESTAMP_CONFIG = new FunctionGauge.Config<>(
                     BENCHMARK_CATEGORY, "time", String.class, () -> DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
@@ -52,7 +52,7 @@ public class BenchmarkMetrics {
                     BENCHMARK_CATEGORY,
                     "directMem",
                     Long.class,
-                    directMemMXBean != null ? directMemMXBean::getMemoryUsed : () -> -1L)
+                    DIRECT_MEM_MX_BEAN != null ? DIRECT_MEM_MX_BEAN::getMemoryUsed : () -> -1L)
             .withDescription("used bytes of the JVM direct memory")
             .withFormat(FORMAT_INTEGER);
 
@@ -61,7 +61,7 @@ public class BenchmarkMetrics {
                     BENCHMARK_CATEGORY,
                     "cpuLoadProc",
                     Double.class,
-                    () -> osBean instanceof com.sun.management.OperatingSystemMXBean sunBean
+                    () -> OS_BEAN instanceof com.sun.management.OperatingSystemMXBean sunBean
                             ? sunBean.getProcessCpuLoad() * Runtime.getRuntime().availableProcessors()
                             : -1.0)
             .withDescription("CPU load of the JVM process")
@@ -71,7 +71,7 @@ public class BenchmarkMetrics {
                     BENCHMARK_CATEGORY,
                     "openFileDesc",
                     Long.class,
-                    () -> osBean instanceof com.sun.management.UnixOperatingSystemMXBean unixBean
+                    () -> OS_BEAN instanceof com.sun.management.UnixOperatingSystemMXBean unixBean
                             ? unixBean.getOpenFileDescriptorCount()
                             : -1L)
             .withDescription("Open file descriptors")
@@ -86,7 +86,7 @@ public class BenchmarkMetrics {
         context.getMetrics().getOrCreate(OPEN_FDS_CONFIG);
     }
 
-    private static BufferPoolMXBean getDirectMemMXBean() {
+    private static BufferPoolMXBean getDirectMemMxBean() {
         final List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
         for (final BufferPoolMXBean pool : pools) {
             if (pool.getName().equals("direct")) {

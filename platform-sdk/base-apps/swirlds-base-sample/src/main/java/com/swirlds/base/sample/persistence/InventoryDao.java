@@ -20,6 +20,7 @@ import com.swirlds.base.sample.domain.Inventory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -42,19 +43,23 @@ public class InventoryDao {
      * Saves or updates the object
      */
     public @NonNull Inventory saveOrUpdate(final @NonNull Inventory existence) {
-        INVENTORY.computeIfPresent(existence.itemId(), (s, b) -> {
-            b.lock.writeLock().lock();
-            b.amount = existence.amount();
-            b.lock.writeLock().unlock();
-            return b;
-        });
-        INVENTORY.putIfAbsent(existence.itemId(), new InnerItemExistence(existence.amount()));
+        Objects.requireNonNull(existence.itemId(), "itemId must not be null");
+        final InnerItemExistence ie = this.internalFindWithBlockForUpdate(existence.itemId());
+        if (ie == null) {
+            INVENTORY.put(existence.itemId(), new InnerItemExistence(existence.amount()));
+        } else {
+            INVENTORY.put(existence.itemId(), new InnerItemExistence(existence.amount(), ie.lock));
+            ie.lock.writeLock().unlock();
+        }
         return existence;
     }
 
     public @Nullable Inventory findByItemId(final @NonNull String itemId) {
         final InnerItemExistence internalBalance = INVENTORY.get(itemId);
-        return internalBalance == null ? null : new Inventory(itemId, internalBalance.amount);
+        if (internalBalance == null) {
+            return null;
+        }
+        return new Inventory(itemId, internalBalance.amount);
     }
 
     /**
@@ -62,11 +67,10 @@ public class InventoryDao {
      * released.
      */
     public @Nullable Inventory findWithBlockForUpdate(final @NonNull String itemId) {
-        final InnerItemExistence itemExistence = INVENTORY.get(itemId);
+        final InnerItemExistence itemExistence = internalFindWithBlockForUpdate(itemId);
         if (itemExistence == null) {
             return null;
         }
-        itemExistence.lock.writeLock().lock();
         return new Inventory(itemId, itemExistence.amount);
     }
 
@@ -87,12 +91,18 @@ public class InventoryDao {
         INVENTORY.remove(itemId);
     }
 
-    private static class InnerItemExistence {
-        private Integer amount;
-        private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private @Nullable InnerItemExistence internalFindWithBlockForUpdate(final @NonNull String itemId) {
+        final InnerItemExistence itemExistence = INVENTORY.get(itemId);
+        if (itemExistence == null) {
+            return null;
+        }
+        itemExistence.lock.writeLock().lock();
+        return itemExistence;
+    }
 
+    private record InnerItemExistence(Integer amount, ReentrantReadWriteLock lock) {
         public InnerItemExistence(final Integer amount) {
-            this.amount = amount;
+            this(amount, new ReentrantReadWriteLock());
         }
     }
 }

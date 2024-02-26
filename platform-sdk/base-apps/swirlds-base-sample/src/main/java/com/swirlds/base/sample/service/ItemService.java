@@ -24,6 +24,7 @@ import com.swirlds.base.sample.persistence.StockDao;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Controls items crud
@@ -52,8 +53,10 @@ public class ItemService extends CrudService<Item> {
     @Override
     public Item create(@NonNull final Item body) {
         final Item save = dao.save(body);
-        assert save.id() != null;
-        inventoryDao.saveOrUpdate(new Inventory(save.id(), 0));
+        Objects.requireNonNull(save.id(), "id must not be null");
+        if (!Objects.equals(body.id(), save.id())) { // Is creation
+            inventoryDao.saveOrUpdate(new Inventory(save.id(), 0));
+        }
         return save;
     }
 

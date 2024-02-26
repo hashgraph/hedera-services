@@ -79,8 +79,9 @@ public class OperationService extends CrudService<Operation> {
             Preconditions.checkArgument(d.amount() >= 0, "OperationDetails#amount cannot be less than or equals to 0");
         });
 
-        Map<String, Inventory> existences = new HashMap<>(operation.details().size());
-        Map<String, Integer> operationAmount = operation.details().stream()
+        final Map<String, Inventory> existences =
+                new HashMap<>(operation.details().size());
+        final Map<String, Integer> operationAmount = operation.details().stream()
                 .collect(Collectors.toMap(OperationDetail::itemId, OperationDetail::amount));
         for (OperationDetail od : operation.details()) {
             existences.put(od.itemId(), inventoryDao.findWithBlockForUpdate(od.itemId())); // Locks the stock for update
@@ -121,7 +122,7 @@ public class OperationService extends CrudService<Operation> {
             throw new IllegalArgumentException("Item " + notEnoughStockItem + " has not enough stock");
         }
 
-        Operation saved = operationDao.save(operation);
+        final Operation saved = operationDao.save(operation);
         updatedAmounts.forEach((k, v) -> inventoryDao.saveOrUpdate(new Inventory(k, v)));
 
         if (saved.type() == OperationType.ADDITION) {

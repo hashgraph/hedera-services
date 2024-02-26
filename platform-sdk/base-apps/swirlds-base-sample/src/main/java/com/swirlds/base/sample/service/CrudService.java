@@ -17,7 +17,6 @@
 package com.swirlds.base.sample.service;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +44,7 @@ public class CrudService<T> {
         throw new UnsupportedOperationException("Create Operation not supported");
     }
 
-    public @Nullable T retrieve(final @NonNull String key) {
+    public @NonNull T retrieve(final @NonNull String key) {
         throw new UnsupportedOperationException("Retrieve Operation not supported");
     }
 

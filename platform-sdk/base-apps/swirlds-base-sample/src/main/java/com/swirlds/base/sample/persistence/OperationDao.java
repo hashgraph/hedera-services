@@ -78,14 +78,15 @@ public class OperationDao {
          * Create a searching criteria based on a map containing values
          */
         public static @NonNull Criteria fromMap(final @NonNull Map<String, String> parameters) {
-            String uuid = parameters.get("uuid");
-            String itemId = parameters.get("itemId");
-            Date from = parameters.get("from") != null ? DataTransferUtils.parseDate(parameters.get("from")) : null;
-            Date to = parameters.get("to") != null ? DataTransferUtils.parseDate(parameters.get("to")) : null;
-            BigDecimal unitaryPriceFrom = parameters.get("unitaryPriceFrom") != null
+            final String uuid = parameters.get("uuid");
+            final String itemId = parameters.get("itemId");
+            final Date from =
+                    parameters.get("from") != null ? DataTransferUtils.parseDate(parameters.get("from")) : null;
+            final Date to = parameters.get("to") != null ? DataTransferUtils.parseDate(parameters.get("to")) : null;
+            final BigDecimal unitaryPriceFrom = parameters.get("unitaryPriceFrom") != null
                     ? new BigDecimal(parameters.get("unitaryPriceFrom"))
                     : null;
-            BigDecimal unitaryPriceTo =
+            final BigDecimal unitaryPriceTo =
                     parameters.get("unitaryPriceTo") != null ? new BigDecimal(parameters.get("unitaryPriceTo")) : null;
 
             return new Criteria(uuid, itemId, from, to, unitaryPriceFrom, unitaryPriceTo);

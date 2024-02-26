@@ -19,6 +19,7 @@ package com.swirlds.base.sample.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
+import com.swirlds.base.sample.persistence.EntityNotFoundException;
 import com.swirlds.base.sample.service.CrudService;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
@@ -61,21 +62,21 @@ public class AdapterHandler<T> implements HttpHandler {
      */
     @Override
     public void handleRequest(final @NonNull HttpServerExchange exchange) {
-        String requestMethod = exchange.getRequestMethod().toString();
+        final String requestMethod = exchange.getRequestMethod().toString();
         long start = System.nanoTime();
 
         final List<String> urlParts = DataTransferUtils.urlToList(exchange);
-        Object result = null;
-        int statusCode;
         final String id = urlParts.getLast();
         final boolean isId = !id.equalsIgnoreCase(getControllerName());
+        Object result = null;
+        int statusCode;
         try {
             switch (requestMethod) {
                 case "GET":
                     result = (isId && !id.contains("?"))
                             ? retrieve(id)
                             : retrieveAll(DataTransferUtils.getUrlParams(exchange));
-                    statusCode = result == null ? 404 : 200;
+                    statusCode = 200;
                     break;
                 case "POST":
                     result = this.create(
@@ -112,6 +113,9 @@ public class AdapterHandler<T> implements HttpHandler {
         } catch (IllegalArgumentException e) {
             statusCode = 400;
             result = ImmutableMap.of("error", e.getMessage());
+        } catch (EntityNotFoundException e) {
+            statusCode = 404;
+            result = ImmutableMap.of("error", "%s with code %s not found".formatted(e.getEntityType(), e.getId()));
         } catch (RuntimeException e) {
             statusCode = 500;
             result = ImmutableMap.of("error", "Internal error");
@@ -154,7 +158,7 @@ public class AdapterHandler<T> implements HttpHandler {
         return this.delegatedService.create(body);
     }
 
-    protected @Nullable T retrieve(final @NonNull String key) {
+    protected @NonNull T retrieve(final @NonNull String key) {
         return this.delegatedService.retrieve(key);
     }
 
