@@ -31,8 +31,8 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, Te
 
     VirtualDataSourceBuilder<TestKey, TestValue> delegate;
 
-    int numCallsBeforeThrow = Integer.MAX_VALUE;
-    int numTimesToBreak = 0;
+    volatile int numCallsBeforeThrow = Integer.MAX_VALUE;
+    volatile int numTimesToBreak = 0;
 
     // the following fields are volatile to ensure visibility,
     // as BreakableDataSource.saveRecords called from multiple threads.

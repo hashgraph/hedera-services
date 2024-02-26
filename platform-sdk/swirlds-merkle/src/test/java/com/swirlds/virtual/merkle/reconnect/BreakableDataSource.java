@@ -34,7 +34,6 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
 
     final VirtualDataSource<TestKey, TestValue> delegate;
     private final BrokenBuilder builder;
-    private final Object monitor = new Object();
 
     public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource<TestKey, TestValue> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
@@ -53,15 +52,15 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
-            synchronized (monitor) {
-                if(builder.numTimesBroken < builder.numTimesToBreak) {
-                    builder.numCalls += leaves.size();
-                    if (builder.numCalls > builder.numCallsBeforeThrow) {
-                        builder.numCalls = 0;
-                        builder.numTimesBroken++;
-                        delegate.close();
-                        throw new IOException("Something bad on the DB!");
-                    }
+            // Syncronization block is not required here, as this code is never called in parallel
+            // (though from different threads). `volatile` modifier is sufficient to ensure visibility.
+            if (builder.numTimesBroken < builder.numTimesToBreak) {
+                builder.numCalls += leaves.size();
+                if (builder.numCalls > builder.numCallsBeforeThrow) {
+                    builder.numCalls = 0;
+                    builder.numTimesBroken++;
+                    delegate.close();
+                    throw new IOException("Something bad on the DB!");
                 }
             }
         }
