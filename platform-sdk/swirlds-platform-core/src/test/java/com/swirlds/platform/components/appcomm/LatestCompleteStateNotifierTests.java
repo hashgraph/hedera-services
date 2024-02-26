@@ -20,17 +20,10 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.ResettableRandom;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -39,41 +32,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Basic sanity check tests for the {@link AppCommunicationComponent} class
+ * Basic sanity check tests for the {@link LatestCompleteStateNotifier} class
  */
-public class AppCommComponentTests {
-    private final PlatformContext context;
-
-    public AppCommComponentTests() {
-        context = TestPlatformContextBuilder.create().build();
-    }
-
-    @Test
-    @DisplayName("StateWriteToDiskCompleteNotification")
-    void testStateWriteToDiskCompleteNotification() {
-        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final ResettableRandom random = RandomUtils.getRandomPrintSeed();
-        final StateSavingResult result = new StateSavingResult(
-                random.nextLong(1, Long.MAX_VALUE),
-                random.nextBoolean(),
-                RandomUtils.randomInstant(random),
-                random.nextLong(1, Long.MAX_VALUE));
-
-        final AtomicInteger numInvocations = new AtomicInteger();
-        notificationEngine.register(StateWriteToDiskCompleteListener.class, n -> {
-            numInvocations.getAndIncrement();
-            assertEquals(result.consensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
-            assertEquals(result.round(), n.getRoundNumber(), "Unexpected notification round number");
-            assertEquals(result.freezeState(), n.isFreezeState(), "Unexpected notification freeze state");
-            assertNull(n.getState(), "Deprecated field should be null");
-            assertNull(n.getFolder(), "Deprecated field should be null");
-        });
-
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.stateSavedToDisk(result);
-
-        assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
-    }
+public class LatestCompleteStateNotifierTests {
 
     @Test
     @DisplayName("NewLatestCompleteStateEventNotification")
@@ -99,9 +60,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.start();
-        component.newLatestCompleteStateEvent(signedState.reserve("test"));
+        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
+        component.latestCompleteStateHandler(signedState.reserve("testNewLatestCompleteStateEventNotification"));
 
         // Allow the notification callback to execute
         senderLatch.countDown();
