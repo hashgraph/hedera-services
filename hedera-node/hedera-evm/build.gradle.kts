@@ -15,11 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.evm-maven-publish")
+    id("com.hedera.hashgraph.services.java")
+    id("com.hedera.hashgraph.services.publish")
 }
-
-group = "com.hedera.evm"
 
 description = "Hedera EVM - API"
 
@@ -31,11 +29,11 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
 }
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            groupId = "com.hedera.evm"
-            artifactId = "hedera-evm"
-        }
-    }
+// Second publication using the 'group' and 'name' under wich 'evm'
+// was published before
+publishing.publications.create<MavenPublication>("mavenLegacy") {
+    from(components["java"])
+
+    groupId = "com.hedera.evm"
+    artifactId = "hedera-evm"
 }

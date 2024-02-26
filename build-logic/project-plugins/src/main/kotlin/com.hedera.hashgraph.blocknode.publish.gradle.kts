@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,22 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.services.java")
-    id("com.hedera.hashgraph.services.publish")
+    id("java")
+    id("com.hedera.hashgraph.maven-publish")
 }
 
-description = "Hedera Smart Contract Service API"
+publishing {
+    publications {
+        named<MavenPublication>("maven") {
+            pom.developers {
+                // TODO fill this
+                developer {
+                    name = "Release Engineering Team"
+                    email = "release-engineering@swirldslabs.com"
+                    organization = "Hedera Hashgraph"
+                    organizationUrl = "https://www.hedera.com"
+                }
+            }
+        }
+    }
+}

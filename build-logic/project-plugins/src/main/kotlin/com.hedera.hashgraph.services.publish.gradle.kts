@@ -24,28 +24,28 @@ publishing {
         named<MavenPublication>("maven") {
             pom.developers {
                 developer {
-                    name.set("Hedera Base Team")
-                    email.set("hedera-base@swirldslabs.com")
-                    organization.set("Hedera Hashgraph")
-                    organizationUrl.set("https://www.hedera.com")
+                    name = "Hedera Base Team"
+                    email = "hedera-base@swirldslabs.com"
+                    organization = "Hedera Hashgraph"
+                    organizationUrl = "https://www.hedera.com"
                 }
                 developer {
-                    name.set("Hedera Services Team")
-                    email.set("hedera-services@swirldslabs.com")
-                    organization.set("Hedera Hashgraph")
-                    organizationUrl.set("https://www.hedera.com")
+                    name = "Hedera Services Team"
+                    email = "hedera-services@swirldslabs.com"
+                    organization = "Hedera Hashgraph"
+                    organizationUrl = "https://www.hedera.com"
                 }
                 developer {
-                    name.set("Hedera Smart Contracts Team")
-                    email.set("hedera-smart-contracts@swirldslabs.com")
-                    organization.set("Hedera Hashgraph")
-                    organizationUrl.set("https://www.hedera.com")
+                    name = "Hedera Smart Contracts Team"
+                    email = "hedera-smart-contracts@swirldslabs.com"
+                    organization = "Hedera Hashgraph"
+                    organizationUrl = "https://www.hedera.com"
                 }
                 developer {
-                    name.set("Release Engineering Team")
-                    email.set("release-engineering@swirldslabs.com")
-                    organization.set("Hedera Hashgraph")
-                    organizationUrl.set("https://www.hedera.com")
+                    name = "Release Engineering Team"
+                    email = "release-engineering@swirldslabs.com"
+                    organization = "Hedera Hashgraph"
+                    organizationUrl = "https://www.hedera.com"
                 }
             }
         }

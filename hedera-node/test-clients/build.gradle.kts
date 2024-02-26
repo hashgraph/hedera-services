@@ -17,7 +17,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.services.java")
     id("com.hedera.hashgraph.shadow-jar")
 }
 

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.hashgraph.services.java")
+    id("com.hedera.hashgraph.services.publish")
+}
 
 description = "Hedera Util Service API"
