@@ -57,7 +57,7 @@ public class TeacherPullVirtualTreeReceiveTask {
      * @param reconnectConfig       the configuration for reconnect
      * @param workGroup             the work group managing the reconnect
      * @param in                    the input stream
-     * @param in                    the output stream
+     * @param out                   the output stream
      * @param view                  an object that interfaces with the subtree
      */
     public TeacherPullVirtualTreeReceiveTask(

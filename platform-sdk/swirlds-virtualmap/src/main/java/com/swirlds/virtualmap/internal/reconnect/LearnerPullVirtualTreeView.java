@@ -79,6 +79,11 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private final ReconnectNodeRemover<K, V> nodeRemover;
 
     /**
+     * Received nodes statistics.
+     */
+    private ReconnectNodeCount nodeCount;
+
+    /**
      * A {@link RecordAccessor} for getting access to the original records.
      */
     private final RecordAccessor<K, V> originalRecords;
@@ -129,6 +134,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final Queue<MerkleNode> rootsToReceive,
             final AtomicReference<Long> reconstructedRoot,
             final ReconnectNodeCount nodeCount) {
+        this.nodeCount = nodeCount;
+
         in = new AsyncInputStream<>(inputStream, workGroup, () -> new PullVirtualTreeResponse(this), reconnectConfig);
         in.start();
 
@@ -171,41 +178,46 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         if (in.read(hash.getValue()) != DigestType.SHA_384.digestLength()) {
             throw new IOException("Failed to read node hash from the teacher");
         }
+        final boolean isLeaf = isLeaf(path);
         long parent = Path.getParentPath(path);
         boolean isClean = false;
         while ((parent > 0) && !isClean) {
             isClean = cleanNodes.contains(parent);
             parent = Path.getParentPath(parent);
         }
-        if (isClean) {
-            redundant.incrementAndGet();
-        } else {
+        if (!isClean) {
             if (path <= originalState.getLastLeafPath()) {
                 final Hash originalHash = getNodeHash(path);
                 assert originalHash != null;
                 isClean = hash.equals(originalHash);
-                if (isClean) {
+                if (isClean && !isLeaf) {
                     cleanNodes.add(path);
                 }
             }
         }
-        if (isLeaf(path)) {
+        if (isClean) {
+            if (isLeaf) {
+                nodeCount.incrementRedundantLeafCount();
+            } else {
+                nodeCount.incrementRedundantInternalCount();
+            }
+        }
+        if (isLeaf) {
             if (firstLeaf) {
                 root.prepareForFirstLeaf();
                 firstLeaf = false;
             }
             final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
-            nodeRemover.newLeafNode(path, leaf.getKey());
-            root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
+            if (!isClean) {
+                nodeRemover.newLeafNode(path, leaf.getKey());
+                root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
+            }
+            nodeCount.incrementLeafCount();
         } else {
             nodeRemover.newInternalNode(path);
+            nodeCount.incrementInternalCount();
         }
     }
-
-    // Future work: use ReconnectNodeCount instead
-    private final AtomicLong processed = new AtomicLong(0);
-    private final AtomicLong skipped = new AtomicLong(0);
-    private final AtomicLong redundant = new AtomicLong(0);
 
     @Override
     public long getNextPathToSend(long path) throws InterruptedException {
@@ -214,7 +226,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             path = result;
             result = skipCleanPaths(path);
         }
-        processed.incrementAndGet();
         applySendBackpressure();
         return result;
     }
@@ -242,9 +253,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             result = path;
         } else {
             result = Path.getRightGrandChildPath(cleanParent, cleanParentRanksAbove) + 1;
-        }
-        if (result <= reconnectState.getLastLeafPath()) {
-            skipped.addAndGet(result - path);
         }
         assert result >= path;
         return (result <= reconnectState.getLastLeafPath()) ? result : Path.INVALID_PATH;
@@ -360,10 +368,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void close() {
-        // Future work: use ReconnectNodeCount instead
-        // System.err.println("Processed: " + processed.get());
-        // System.err.println("Skipped: " + skipped.get());
-        // System.err.println("Redundant: " + redundant.get());
         root.endLearnerReconnect();
     }
 

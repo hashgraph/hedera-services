@@ -79,16 +79,24 @@ public class LearnerPullVirtualTreeSendTask {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
             }
 
+            int requestCounter = 0;
+            long lastFlushTime = System.currentTimeMillis();
             path = view.getNextPathToSend(path + 1);
             while (true) {
                 out.writeLong(path);
-                out.flush();
+                final long now = System.currentTimeMillis();
+                if ((requestCounter++ == 128) || (now - lastFlushTime > 128)) {
+                    out.flush();
+                    requestCounter = 0;
+                    lastFlushTime = now;
+                }
                 if (path == Path.INVALID_PATH) {
                     break;
                 }
                 view.anticipateMesssage();
                 path = view.getNextPathToSend(path + 1);
             }
+            out.flush();
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
             Thread.currentThread().interrupt();
