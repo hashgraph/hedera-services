@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
@@ -52,15 +53,26 @@ public interface HtsCall {
             return new PricedResult(result, 0L, responseCode, isViewCall);
         }
 
+        public static PricedResult gasPlus(
+                FullResult result, ResponseCodeEnum responseCode, boolean isViewCall, long nonGasCost) {
+            return new PricedResult(result, nonGasCost, responseCode, isViewCall);
+        }
+
         public ContractFunctionResult asResultOfCall(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,
                 @NonNull final Bytes functionParameters,
                 final long remainingGas) {
+            var errorMessage = responseCode == SUCCESS ? null : responseCode.protoName();
+            if (remainingGas < fullResult().gasRequirement()) {
+                errorMessage = INSUFFICIENT_GAS.protoName();
+            }
+
             return ContractFunctionResult.newBuilder()
                     .contractID(contractId)
+                    .amount(nonGasCost)
                     .contractCallResult(tuweniToPbjBytes(fullResult.output()))
-                    .errorMessage(responseCode == SUCCESS ? null : responseCode.protoName())
+                    .errorMessage(errorMessage)
                     .gasUsed(fullResult().gasRequirement())
                     .gas(remainingGas)
                     .functionParameters(functionParameters)

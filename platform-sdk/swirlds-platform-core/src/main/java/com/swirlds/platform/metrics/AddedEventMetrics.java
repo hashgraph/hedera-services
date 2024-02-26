@@ -32,16 +32,15 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
- * An {@link EventAddedObserver} that maintains all metrics which need to be updated on a new event
+ * Maintains all metrics which need to be updated on a new event
  */
-public class AddedEventMetrics implements EventAddedObserver {
+public class AddedEventMetrics {
 
     private final NodeId selfId;
 
@@ -122,16 +121,8 @@ public class AddedEventMetrics implements EventAddedObserver {
     /**
      * The constructor of {@code AddedEventMetrics}
      *
-     * @param selfId
-     * 		the {@link NodeId} of this node
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code selfId}</li>
-     *       <li>{@code metrics}</li>
-     *     </ul>
-     *
+     * @param selfId  the {@link NodeId} of this node
+     * @param metrics a reference to the metrics-system
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
@@ -159,9 +150,10 @@ public class AddedEventMetrics implements EventAddedObserver {
     }
 
     /**
-     * {@inheritDoc}
+     * Update the metrics when a new event is added to the hashgraph
+     *
+     * @param event the event that was added
      */
-    @Override
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
@@ -213,14 +205,5 @@ public class AddedEventMetrics implements EventAddedObserver {
         if (!event.isEmpty()) {
             numTrans.add(event.getTransactions().length);
         }
-    }
-
-    /**
-     * Returns the events per seconds of this node
-     *
-     * @return the events per second
-     */
-    public double getEventsCreatedPerSecond() {
-        return eventsCreatedPerSecond.get();
     }
 }

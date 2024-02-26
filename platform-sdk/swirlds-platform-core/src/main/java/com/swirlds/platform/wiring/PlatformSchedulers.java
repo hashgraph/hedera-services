@@ -42,7 +42,7 @@ import java.util.List;
  * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
  * @param orphanBufferScheduler                     the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
- * @param linkedEventIntakeScheduler                the scheduler for the linked event intake
+ * @param consensusEngineScheduler                  the scheduler for the consensus engine
  * @param eventCreationManagerScheduler             the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
@@ -57,6 +57,8 @@ import java.util.List;
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
+ * @param hashLoggerScheduler                       the scheduler for the hash logger
+ * @param latestCompleteStateScheduler              the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -66,7 +68,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
-        @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
+        @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
@@ -81,7 +83,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
-        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler) {
+        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
+        @NonNull TaskScheduler<Void> hashLoggerScheduler,
+        @NonNull TaskScheduler<Void> latestCompleteStateScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -150,9 +154,9 @@ public record PlatformSchedulers(
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
-                model.schedulerBuilder("linkedEventIntake")
-                        .withType(config.linkedEventIntakeSchedulerType())
-                        .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
+                model.schedulerBuilder("consensusEngine")
+                        .withType(config.consensusEngineSchedulerType())
+                        .withUnhandledTaskCapacity(config.consensusEngineUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
@@ -233,14 +237,12 @@ public record PlatformSchedulers(
                         .withSquelchingEnabled(true)
                         .build()
                         .cast(),
-                // though the eventStreamManager is of DIRECT_STATELESS type, it isn't actually stateless: it just
-                // is thread safe, and can therefore be treated as if it were stateless by the framework
                 model.schedulerBuilder("eventStreamManager")
-                        .withType(TaskSchedulerType.DIRECT_STATELESS)
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast(),
                 model.schedulerBuilder("runningHashUpdate")
-                        .withType(TaskSchedulerType.DIRECT_STATELESS)
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast(),
                 model.schedulerBuilder("futureEventBuffer")
@@ -253,6 +255,18 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("issDetector")
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("hashLogger")
+                        .withType(config.hashLoggerSchedulerType())
+                        .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("latestCompleteStateScheduler")
+                        .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
+                        .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());

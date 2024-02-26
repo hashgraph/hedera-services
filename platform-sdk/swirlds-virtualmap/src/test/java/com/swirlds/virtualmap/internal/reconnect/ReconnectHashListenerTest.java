@@ -170,14 +170,33 @@ class ReconnectHashListenerTest {
                 final long lastLeafPath,
                 final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                final boolean isReconnectContext)
                 throws IOException {
-
             final var ir = pathHashRecordsToUpdate.toList();
             this.internalRecords.add(ir);
             final var lr = leafRecordsToAddOrUpdate.toList();
             this.leafRecords.add(lr);
-            delegate.saveRecords(firstLeafPath, lastLeafPath, ir.stream(), lr.stream(), leafRecordsToDelete);
+            delegate.saveRecords(
+                    firstLeafPath, lastLeafPath, ir.stream(), lr.stream(), leafRecordsToDelete, isReconnectContext);
+        }
+
+        @Override
+        public void saveRecords(
+                final long firstLeafPath,
+                final long lastLeafPath,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                throws IOException {
+
+            saveRecords(
+                    firstLeafPath,
+                    lastLeafPath,
+                    pathHashRecordsToUpdate,
+                    leafRecordsToAddOrUpdate,
+                    leafRecordsToDelete,
+                    true);
         }
 
         @Override

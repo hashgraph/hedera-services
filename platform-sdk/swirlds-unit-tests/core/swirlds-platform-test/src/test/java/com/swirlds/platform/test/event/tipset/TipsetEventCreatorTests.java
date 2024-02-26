@@ -106,7 +106,7 @@ class TipsetEventCreatorTests {
             @NonNull final TransactionSupplier transactionSupplier) {
 
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         final Signer signer = mock(Signer.class);
         when(signer.sign(any())).thenAnswer(invocation -> randomSignature(random));
@@ -114,7 +114,7 @@ class TipsetEventCreatorTests {
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
         return new TipsetEventCreator(
-                platformContext, time, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
+                platformContext, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
     }
 
     /**
@@ -125,23 +125,23 @@ class TipsetEventCreatorTests {
             @NonNull final Random random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
-            @NonNull final TransactionSupplier transactionSupplier) {
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final AncientMode ancientMode) {
 
         final Map<NodeId, SimulatedNode> eventCreators = new HashMap<>();
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         for (final Address address : addressBook) {
 
             final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            // FUTURE WORK: Expand test to include birth round based ancient threshold.
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, AncientMode.GENERATION_THRESHOLD);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -291,9 +291,9 @@ class TipsetEventCreatorTests {
      * Nodes take turns creating events in a round-robin fashion.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Round Robin Test")
-    void roundRobinTest(final boolean advancingClock) {
+    void roundRobinTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -305,8 +305,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -341,9 +345,9 @@ class TipsetEventCreatorTests {
      * Each cycle, randomize the order in which nodes are asked to create events.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Random Order Test")
-    void randomOrderTest(final boolean advancingClock) {
+    void randomOrderTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -355,8 +359,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -400,13 +408,14 @@ class TipsetEventCreatorTests {
     }
 
     /**
-     * Each node creates many events in a row without allowing others to take a turn. Eventually, a node should be
-     * unable to create another event without first receiving an event from another node.
+     * This test is very similar to the {@link #randomOrderTest(boolean, boolean)}, except that we repeat the test
+     * several times using the same event creator. This fails when we do not clear the event creator in between runs,
+     * but should not fail if we have cleared the vent creator.
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    @DisplayName("Create Many Events In A Row Test")
-    void createManyEventsInARowTest(final boolean advancingClock) {
+    @DisplayName("Clear Test")
+    void clearTest(final boolean advancingClock) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -418,8 +427,87 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
+
+        for (int i = 0; i < 5; i++) {
+            final Map<Hash, EventImpl> events = new HashMap<>();
+
+            for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+
+                final List<Address> addresses = new ArrayList<>();
+                addressBook.iterator().forEachRemaining(addresses::add);
+                Collections.shuffle(addresses, random);
+
+                boolean atLeastOneEventCreated = false;
+
+                for (final Address address : addresses) {
+                    if (advancingClock) {
+                        time.tick(Duration.ofMillis(10));
+                    }
+
+                    transactionSupplier.set(generateRandomTransactions(random));
+
+                    final NodeId nodeId = address.getNodeId();
+                    final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
+
+                    final GossipEvent event = eventCreator.maybeCreateEvent();
+
+                    // It's possible a node may not be able to create an event. But we are guaranteed
+                    // to be able to create at least one event per cycle.
+                    if (event == null) {
+                        continue;
+                    }
+                    atLeastOneEventCreated = true;
+
+                    linkAndDistributeEvent(nodes, events, event);
+
+                    if (advancingClock) {
+                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    }
+                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
+                }
+
+                assertTrue(atLeastOneEventCreated);
+            }
+            // Reset the test by calling clear. This test fails in the second iteration if we don't clear things out.
+            for (final SimulatedNode node : nodes.values()) {
+                node.eventCreator.clear();
+
+                // There are copies of these data structures inside the event creator. We maintain these ones
+                // to sanity check the behavior of the event creator.
+                node.tipsetTracker.clear();
+                node.tipsetWeightCalculator.clear();
+            }
+            transactionSupplier.set(null);
+        }
+    }
+
+    /**
+     * Each node creates many events in a row without allowing others to take a turn. Eventually, a node should be
+     * unable to create another event without first receiving an event from another node.
+     */
+    @ParameterizedTest
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
+    @DisplayName("Create Many Events In A Row Test")
+    void createManyEventsInARowTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 10;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -468,9 +556,9 @@ class TipsetEventCreatorTests {
      * advance.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Node Test")
-    void zeroWeightNodeTest(final boolean advancingClock) {
+    void zeroWeightNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -492,8 +580,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -555,9 +647,9 @@ class TipsetEventCreatorTests {
      * that they do not get transitive tipset score improvements by using it.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Slow Node Test")
-    void zeroWeightSlowNodeTest(final boolean advancingClock) {
+    void zeroWeightSlowNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -579,8 +671,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
         final List<EventImpl> slowNodeEvents = new ArrayList<>();
@@ -653,9 +749,9 @@ class TipsetEventCreatorTests {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Size One Network Test")
-    void sizeOneNetworkTest(final boolean advancingClock) {
+    void sizeOneNetworkTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 1;
@@ -667,8 +763,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -875,9 +975,10 @@ class TipsetEventCreatorTests {
      * There was once a bug where it was possible to create a self event that was stale at the moment of its creation
      * time. This test verifies that this is no longer possible.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("No Stale Events At Creation Time Test")
-    void noStaleEventsAtCreationTimeTest() {
+    void noStaleEventsAtCreationTimeTest(final boolean useBirthRoundForAncient) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 4;
@@ -894,9 +995,11 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
-        // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(
-                new NonAncientEventWindow(1, 100, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
+                1,
+                100,
+                1 /* ignored in this context */,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
@@ -924,8 +1027,12 @@ class TipsetEventCreatorTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+        final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
+                random,
+                time,
+                addressBook,
+                transactionSupplier::get,
+                useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -945,9 +1052,9 @@ class TipsetEventCreatorTests {
 
                     final long ancientThreshold;
                     if (useBirthRoundForAncient) {
-                        ancientThreshold = Math.max(1, eventIndex - 26);
+                        ancientThreshold = Math.max(EventConstants.MINIMUM_ROUND_CREATED, eventIndex - 26);
                     } else {
-                        ancientThreshold = Math.max(0, eventIndex - 26);
+                        ancientThreshold = Math.max(EventConstants.FIRST_GENERATION, eventIndex - 26);
                     }
 
                     // Set non-ancientEventWindow after creating genesis event from each node.
@@ -971,10 +1078,10 @@ class TipsetEventCreatorTests {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
 
-                if (eventIndex == 0 || (!useBirthRoundForAncient && event != null)) {
+                if (eventIndex == 0) {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
-                } else if (event != null) {
+                } else {
                     final long birthRound = event.getHashedData().getBirthRound();
                     assertEquals(pendingConsensusRound, birthRound);
                 }

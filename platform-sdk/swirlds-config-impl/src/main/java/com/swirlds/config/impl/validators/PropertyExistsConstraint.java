@@ -24,8 +24,7 @@ import java.util.Objects;
 /**
  * Implementation of {@link ConfigPropertyConstraint} that results in a violation of the property is not defined.
  *
- * @param <T>
- * 		type of the property value
+ * @param <T> type of the property value
  */
 public class PropertyExistsConstraint<T> implements ConfigPropertyConstraint<T> {
 

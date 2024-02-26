@@ -21,6 +21,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.LongAccumulator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongBinaryOperator;
@@ -56,6 +57,7 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsLong())));

@@ -24,7 +24,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT_WITH_SIGNER_NONCE;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
@@ -49,10 +50,10 @@ import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -118,12 +119,12 @@ class EthereumTransactionHandlerTest {
     private TransactionProcessor transactionProcessor;
 
     @Mock
-    private ReadableAccountStore readableAccountStore;
-
-    @Mock
     CustomGasCharging customGasCharging;
 
     private EthereumTransactionHandler subject;
+
+    @Mock
+    private HederaEvmAccount senderAccount;
 
     @BeforeEach
     void setUp() {
@@ -157,7 +158,7 @@ class EthereumTransactionHandlerTest {
                         hederaEvmContext,
                         tracer,
                         DEFAULT_CONFIG))
-                .willReturn(SUCCESS_RESULT);
+                .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
     }
 
     @Test
@@ -168,12 +169,14 @@ class EthereumTransactionHandlerTest {
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
-        final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
+        givenSenderAccount();
+        final var expectedResult =
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
-                SUCCESS_RESULT.finalStatus(),
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.finalStatus(),
                 CALLED_CONTRACT_ID,
-                SUCCESS_RESULT.gasPrice(),
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.gasPrice(),
                 null,
                 null);
         given(callRecordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(callRecordBuilder);
@@ -194,12 +197,13 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
-        final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
+        final var expectedResult =
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
-                SUCCESS_RESULT.finalStatus(),
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.finalStatus(),
                 CALLED_CONTRACT_ID,
-                SUCCESS_RESULT.gasPrice(),
+                SUCCESS_RESULT_WITH_SIGNER_NONCE.gasPrice(),
                 null,
                 null);
 
@@ -208,6 +212,7 @@ class EthereumTransactionHandlerTest {
         given(createRecordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(createRecordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
+        givenSenderAccount();
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -241,5 +246,10 @@ class EthereumTransactionHandlerTest {
                 .willReturn(HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION));
         assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_ETHEREUM_TRANSACTION);
         verifyNoInteractions(ethereumSignatures);
+    }
+
+    void givenSenderAccount() {
+        given(baseProxyWorldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
+        given(senderAccount.getNonce()).willReturn(1L);
     }
 }
