@@ -159,10 +159,10 @@ public class PcesFileTracker {
      * future task will be to enable event iteration after startup.
      *
      * @param lowerBound    the desired lower bound, iterator is guaranteed to return all available events with an
-     *                      ancient indicator (i.e. a generation or a birth round depending on the
-     *                      {@link AncientMode}) greater or equal to this value. No events with a smaller ancient
-     *                      identifier will be returned. A value of {@link PcesFileManager#NO_LOWER_BOUND} will cause
-     *                      the returned iterator to walk over all available events.
+     *                      ancient indicator (i.e. a generation or a birth round depending on the {@link AncientMode})
+     *                      greater or equal to this value. No events with a smaller ancient identifier will be
+     *                      returned. A value of {@link PcesFileManager#NO_LOWER_BOUND} will cause the returned iterator
+     *                      to walk over all available events.
      * @param startingRound the round to start iterating from
      * @return an iterator that walks over events
      */
@@ -239,6 +239,15 @@ public class PcesFileTracker {
 
         // It should not be possible to reach this point.
         throw new IllegalStateException("Failed to find a file that may contain events at the requested lower bound");
+    }
+
+    /**
+     * Get an iterator that walks over all event files currently being tracked, in order. No filtering is applied.
+     *
+     * @return an unmodifiable iterator that walks over event files in order
+     */
+    public Iterator<PcesFile> getFileIterator() {
+        return new UnmodifiableIterator<>(files.iterator());
     }
 
     /**
