@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("io.github.gradle-nexus.publish-plugin") }
+plugins {
+    id("com.hedera.hashgraph.lifecycle")
+    id("io.github.gradle-nexus.publish-plugin")
+}
 
 nexusPublishing {
     repositories {
@@ -28,15 +31,15 @@ nexusPublishing {
 tasks.named("closeSonatypeStagingRepository") {
     // The publishing of all components to Maven Central is automatically done before close (which
     // is done before release).
-    dependsOn(subprojects.map { ":${it.name}:publishToSonatype" })
+    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
 }
 
-tasks.register("releaseMavenCentral") {
+tasks.named("releaseMavenCentral") {
     group = "release"
     dependsOn(tasks.closeAndReleaseStagingRepository)
 }
 
 tasks.register("releaseMavenCentralSnapshot") {
     group = "release"
-    dependsOn(subprojects.map { ":${it.name}:publishToSonatype" })
+    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
 }
