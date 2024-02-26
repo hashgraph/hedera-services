@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.state.output;
+package com.swirlds.benchmark.reconnect;
 
-import com.swirlds.platform.state.signed.SignedState;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.common.merkle.MerkleNode;
 
-/**
- * There is a new, most up-to-date and complete signed state.
- */
-@FunctionalInterface
-public interface NewLatestCompleteStateConsumer {
+public interface BenchmarkMerkleNode extends MerkleNode {
 
     /**
-     * There is a new latest complete signed state.
-     *
-     * @param signedState signed state
+     * Get a String value representing this node.
      */
-    void newLatestCompleteStateEvent(@NonNull final SignedState signedState);
+    String getValue();
 }

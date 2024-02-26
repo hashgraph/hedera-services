@@ -25,6 +25,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -81,7 +82,8 @@ class PlatformWiringTests {
                 mock(EventStreamManager.class),
                 mock(FutureEventBuffer.class),
                 mock(IssDetector.class),
-                mock(HashLogger.class));
+                mock(HashLogger.class),
+                mock(LatestCompleteStateNotifier.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
