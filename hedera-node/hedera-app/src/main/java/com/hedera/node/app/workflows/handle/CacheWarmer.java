@@ -82,7 +82,8 @@ public class CacheWarmer {
                 event.forEachTransaction(platformTransaction -> executor.execute(() -> {
                     final TransactionBody txBody = extractTransactionBody(platformTransaction);
                     if (txBody != null) {
-                        final AccountID payerID = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
+                        final AccountID payerID = txBody.transactionIDOrElse(TransactionID.DEFAULT)
+                                .accountID();
                         if (payerID != null) {
                             accountStore.warm(payerID);
                         }
