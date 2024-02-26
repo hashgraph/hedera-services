@@ -54,11 +54,46 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
 
     private static final Logger logger = LogManager.getLogger(VirtualTeacherTreeView.class);
 
+    // A queue of the nodes (by path) that we are about to handle. Note that ConcurrentBitSetQueue
+    // cleans up after itself in "chunks", such that we don't end up consuming a ton of memory.
+    // We use two separate accumulating and processing queues to implement a level-by-level traversal:
+
+    /** A queue to which we add items for the next level currently. */
+    private ConcurrentBitSetQueue accumulatingHandleQueue = new ConcurrentBitSetQueue();
+
+    /** A queue which we're processing currently (aka sending nodes to the learner). */
+    private ConcurrentBitSetQueue processingHandleQueue = new ConcurrentBitSetQueue();
+
+    /** Flip the queues by exchanging the accumulating and processing queues. */
+    private synchronized void flipQueues() {
+        final ConcurrentBitSetQueue temp = accumulatingHandleQueue;
+        accumulatingHandleQueue = processingHandleQueue;
+        processingHandleQueue = temp;
+    }
+
     /**
-     * A queue of the nodes (by path) that we are about to handle. Note that ConcurrentBitSetQueue
-     * cleans up after itself in "chunks", such that we don't end up consuming a ton of memory.
+     * A node which status has to be reported by the learner before the teacher resumes sending
+     * the next level of the tree.
+     * The node can end up being either KNOWN or NOT_KNOWN, either explicitly or implicitly
+     * by inferring the status from the previously reported ancestors' statuses (except
+     * the root status because it's always implicitly NOT_KNOWN, so we ignore it.)
+     * <p>
+     * It's volatile to avoid extra locks when accessing the value. It's totally
+     * okay if the value is updated after it's read. The worst that could happen
+     * is that we'll start sending the next level of nodes before receiving
+     * a response for the last node at the current level, but this is unlikely to happen
+     * because the code processing the queue is single-threaded,
+     * and it doesn't hurt from the correctness perspective even if it happens.
      */
-    private final ConcurrentBitSetQueue handleQueue = new ConcurrentBitSetQueue();
+    private volatile Long lastNodeAwaitingReporting = null;
+
+    /**
+     * A node status may become implicitly reported by a response about its ancestors,
+     * in which case we can retest the condition and go ahead and send the next level
+     * without waiting for this particular node to report its status since it's already known/inferred.
+     * So we use a timeout to recheck the condition periodically.
+     */
+    private static final long AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 100;
 
     /**
      * A queue of the nodes (by path) that we expect responses for.
@@ -134,7 +169,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public void addToHandleQueue(final Long node) {
         checkValidNode(node, reconnectState);
-        handleQueue.add(node);
+        accumulatingHandleQueue.add(node);
     }
 
     /**
@@ -142,7 +177,35 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getNextNodeToHandle() {
-        return handleQueue.remove();
+        if (processingHandleQueue.isEmpty()) {
+            // We've just sent an entire level of the tree, and before we resume sending the next level
+            // which has been accumulated in the current accumulatingHandleQueue, we'll wait
+            // until the learner has reported the status of the lastNodeAwaitingReporting.
+            // Note that in case we're just starting, there hasn't been any nodes sent yet,
+            // so we have to flip w/o waiting in that case (when it's null.)
+            if (lastNodeAwaitingReporting != null) {
+                try {
+                    synchronized (lastNodeAwaitingReporting) {
+                        while (!hasLearnerReportedFor(lastNodeAwaitingReporting)) {
+                            lastNodeAwaitingReporting.wait(AWAIT_FOR_REPORT_TIMEOUT_MILLIS);
+                        }
+                    }
+                } catch (InterruptedException ignore) {
+                    // We can ignore this. In the worst case, we'll just go ahead
+                    // and send the next level w/o awaiting a report from the learner.
+                }
+            }
+            // Exchange the accumulating queue with the processing queue:
+            flipQueues();
+            // Note that we know the other queue isn't empty because this method has been called after
+            // the caller checked areThereNodesToHandle() which tests both the queues.
+        }
+        final long node = processingHandleQueue.remove();
+        // Avoid waiting on a node which status has already been reported/inferred:
+        if (!hasLearnerReportedFor(node)) {
+            lastNodeAwaitingReporting = node;
+        }
+        return node;
     }
 
     /**
@@ -150,7 +213,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public boolean areThereNodesToHandle() {
-        return !handleQueue.isEmpty();
+        return !processingHandleQueue.isEmpty() || !accumulatingHandleQueue.isEmpty();
     }
 
     /**
@@ -188,6 +251,11 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
                 ? ConcurrentNodeStatusTracker.Status.KNOWN
                 : ConcurrentNodeStatusTracker.Status.NOT_KNOWN;
         nodeStatusTracker.set(node, status);
+        if (node == lastNodeAwaitingReporting) {
+            synchronized (node) {
+                node.notify();
+            }
+        }
     }
 
     /**
@@ -196,6 +264,17 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public boolean hasLearnerConfirmedFor(final Long node) {
         return nodeStatusTracker.getStatus(node) == ConcurrentNodeStatusTracker.Status.KNOWN;
+    }
+
+    /**
+     * Determines if the status of the given node has been reported either directly,
+     * or indirectly by reporting the status of an ancestor of the node.
+     *
+     * @param node a node
+     * @return true if the status has been reported by the learner
+     */
+    private boolean hasLearnerReportedFor(final Long node) {
+        return nodeStatusTracker.getReportedStatus(node) != ConcurrentNodeStatusTracker.Status.UNKNOWN;
     }
 
     /**

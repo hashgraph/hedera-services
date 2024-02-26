@@ -179,7 +179,7 @@ public final class ConcurrentNodeStatusTracker {
      *
      * @param value
      * 		path of node to check
-     * @return status of aa node
+     * @return status of a node
      */
     public Status getStatus(long value) {
         if (value < 0 || value >= capacity) {
@@ -196,6 +196,37 @@ public final class ConcurrentNodeStatusTracker {
                     .getStatus(index);
             value = Path.getParentPath(value);
         } while (status == Status.UNKNOWN);
+
+        return status;
+    }
+
+    /**
+     * Get the status of a node as reported by the learner, or return UNKNOWN.
+     * <p>
+     * This method is similar to the getStatus(long value) above except
+     * it stops the tree traversal when it reaches the root and returns UNKNOWN.
+     * The root of the tree is always marked as NOT_KNOWN (see the ConcurrentNodeStatusTracker constructor.)
+     * So this method avoids implicitly assuming that the node is NOT_KNOWN because a later
+     * report from the learner for either this node directly or one of its ancestors can redefine the status.
+     *
+     * @param value path of node to check
+     * @return status of a node, or UNKNOWN if its status or its ancestors' statuses have never been reported yet
+     */
+    public Status getReportedStatus(long value) {
+        if (value < 0 || value >= capacity) {
+            throw new IllegalArgumentException(
+                    String.format("Value can only be between [0, %d), %d is illegal", capacity, value));
+        }
+
+        Status status;
+        do {
+            final int index = getIndexInBitSetFor(value);
+            final long bitSetIndex = getBitSetIndexFor(value);
+            status = statusBitSets
+                    .computeIfAbsent(bitSetIndex, k -> new BitSetGroup())
+                    .getStatus(index);
+            value = Path.getParentPath(value);
+        } while (status == Status.UNKNOWN && value != 0);
 
         return status;
     }
