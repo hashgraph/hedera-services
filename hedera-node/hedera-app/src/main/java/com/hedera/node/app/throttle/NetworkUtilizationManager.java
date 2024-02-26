@@ -69,20 +69,6 @@ public interface NetworkUtilizationManager {
     void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value);
 
     /*
-     * Resets the throttle usage and congestion multiplier from the given state.
-     *
-     * @param state the state of the node
-     */
-    void resetFrom(@NonNull final HederaState state);
-
-    /*
-     * Saves the throttle usage and congestion multiplier to the given state.
-     *
-     * @param state the state of the node
-     */
-    void saveTo(@NonNull final HederaState state);
-
-    /*
      * Updates the throttle requirements for the given transaction and returns whether the transaction
      * should be throttled for the current time(Instant.now).
      *

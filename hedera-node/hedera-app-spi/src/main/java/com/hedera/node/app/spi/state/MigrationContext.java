@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,9 +74,6 @@ public interface MigrationContext {
     @NonNull
     GenesisRecordsBuilder genesisRecordsBuilder();
 
-    @NonNull
-    HandleThrottleParser handleThrottling();
-
     /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.
      * @return the next entity number
@@ -87,7 +83,7 @@ public interface MigrationContext {
     /**
      * Copies and releases the underlying on-disk state for the given key. If this is not called
      * periodically during a large migration, the underlying {@code VirtualMap} will grow too large
-     * and apply extreme backpressure in during transaction handling post-migration.
+     * and apply extreme backpressure during transaction handling post-migration.
      *
      * @param stateKey the key of the state to copy and release
      */

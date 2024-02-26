@@ -82,13 +82,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     final class ConstructorTests {
         @Test
         void servicesRegistryRequired() {
-            Assertions.assertThatThrownBy(() -> new OrderedServiceMigrator(null, accumulator))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void throttleAccumulatorRequired() {
-            Assertions.assertThatThrownBy(() -> new OrderedServiceMigrator(mock(ServicesRegistryImpl.class), null))
+            Assertions.assertThatThrownBy(() -> new OrderedServiceMigrator(null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -102,7 +96,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         @Test
         void stateRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
+            final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(
                             () -> subject.doMigrations(null, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
@@ -110,7 +104,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         @Test
         void currentVersionRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
+            final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(
                             () -> subject.doMigrations(merkleTree, null, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
@@ -118,7 +112,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         @Test
         void versionedConfigRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
+            final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(
                             () -> subject.doMigrations(merkleTree, CURRENT_VERSION, null, null, networkInfo))
                     .isInstanceOf(NullPointerException.class);
@@ -126,7 +120,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         @Test
         void networkInfoRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
+            final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(
                             () -> subject.doMigrations(merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
@@ -160,7 +154,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
-        final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
+        final var subject = new OrderedServiceMigrator(servicesRegistry);
         subject.doMigrations(
                 merkleTree, SemanticVersion.newBuilder().major(2).build(), null, VERSIONED_CONFIG, networkInfo);
 
@@ -260,7 +254,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 .forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
-        final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
+        final var subject = new OrderedServiceMigrator(servicesRegistry);
         subject.doMigrations(
                 merkleTree, SemanticVersion.newBuilder().major(1).build(), null, VERSIONED_CONFIG, networkInfo);
 

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_MIGRATION;
 import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
@@ -38,14 +37,11 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -56,12 +52,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeeService;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
-import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
@@ -105,17 +96,11 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleManager;
-import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
-import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -147,7 +132,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -205,18 +189,6 @@ public final class Hedera implements SwirldMain {
      * The configuration for this node
      */
     private ConfigProviderImpl configProvider;
-    /**
-     * The throttle manager for parsing the throttle definition file
-     */
-    private ThrottleManager throttleManager;
-    /**
-     * The exchange rate manager
-     */
-    private ExchangeRateManager exchangeRateManager;
-    /**
-     * The fee manager
-     */
-    private FeeManager feeManager;
     /** The class responsible for remembering objects created in genesis cases */
     private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
@@ -230,9 +202,6 @@ public final class Hedera implements SwirldMain {
      */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
-    private ThrottleAccumulator backendThrottle;
-    private ThrottleAccumulator frontendThrottle;
-    private CongestionMultipliers congestionMultipliers;
     private final SyntheticRecordsGenerator recordsGenerator;
 
     /**
@@ -245,8 +214,6 @@ public final class Hedera implements SwirldMain {
      * The swirld name. Currently, there is only one swirld.
      */
     public static final String SWIRLD_NAME = "123";
-
-    private static final IntSupplier SUPPLY_ONE = () -> 1;
 
     private static EntityIdService ENTITY_SERVICE;
     private static ConsensusServiceImpl CONSENSUS_SERVICE;
@@ -667,7 +634,7 @@ public final class Hedera implements SwirldMain {
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
 
-        final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
+        final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
         if (shouldDump(trigger, MOD_POST_MIGRATION)) {
@@ -965,67 +932,16 @@ public final class Hedera implements SwirldMain {
      */
     private void genesis(@NonNull final MerkleHederaState state) {
         logger.debug("Genesis Initialization");
-
-        logger.info("Initializing ThrottleManager");
-        this.throttleManager = new ThrottleManager();
-
-        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
-        this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
-        this.congestionMultipliers = createCongestionMultipliers(state);
-
-        logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager(configProvider);
-
-        logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
-
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null, GENESIS);
-
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
-
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
         initializeExchangeRateManager(state);
         initializeFeeManager(state);
-        initializeThrottles(state);
-    }
-
-    private CongestionMultipliers createCongestionMultipliers(HederaState state) {
-        final var genericFeeMultiplier = new ThrottleMultiplier(
-                "logical TPS",
-                "TPS",
-                "CryptoTransfer throughput",
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .minCongestionPeriod(),
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .percentCongestionMultipliers(),
-                () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
-
-        final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
-
-        final var gasFeeMultiplier = new ThrottleMultiplier(
-                "EVM gas/sec",
-                "gas/sec",
-                "EVM utilization",
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .minCongestionPeriod(),
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .percentCongestionMultipliers(),
-                () -> List.of(backendThrottle.gasLimitThrottle()));
-
-        return new CongestionMultipliers(txnRateMultiplier, gasFeeMultiplier);
+        daggerApp.throttleServiceManager().initFrom(state);
     }
 
     /*==================================================================================================================
@@ -1077,20 +993,6 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing Reconnect configuration");
         this.configProvider = new ConfigProviderImpl(false);
 
-        logger.info("Initializing ThrottleManager");
-        this.throttleManager = new ThrottleManager();
-
-        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
-        this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
-        this.congestionMultipliers = createCongestionMultipliers(state);
-
-        logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager(configProvider);
-
-        logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
-
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
@@ -1107,9 +1009,9 @@ public final class Hedera implements SwirldMain {
         // from information held in state (especially those in special files).
         initializeExchangeRateManager(state);
         initializeFeeManager(state);
-        initializeThrottles(state);
         observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
         logConfiguration();
+        daggerApp.throttleServiceManager().initFrom(state);
     }
 
     /*==================================================================================================================
@@ -1126,20 +1028,8 @@ public final class Hedera implements SwirldMain {
         // DaggerApp should be constructed every time we reach this point, even if exists. This is needed for reconnect
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
-                .configuration(configProvider)
-                .throttleManager(throttleManager)
-                .exchangeRateManager(exchangeRateManager)
-                .feeManager(feeManager)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                        configProvider,
-                        throttleManager,
-                        exchangeRateManager,
-                        feeManager,
-                        congestionMultipliers,
-                        backendThrottle,
-                        frontendThrottle))
-                .networkUtilizationManager(new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
-                .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
+                .configProvider(configProvider)
+                .configProviderImpl(configProvider)
                 .self(SelfNodeInfoImpl.of(nodeAddress, version))
                 .platform(platform)
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
@@ -1191,27 +1081,6 @@ public final class Hedera implements SwirldMain {
             daggerApp.exchangeRateManager().init(state, fileData);
         }
         logger.info("Exchange rates initialized");
-    }
-
-    private void initializeThrottles(@NonNull final HederaState state) {
-        logger.info("Initializing throttles");
-        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
-        final var fileNum = filesConfig.throttleDefinitions();
-        final var file = getFileFromStorage(state, fileNum);
-        if (file != null) {
-            final var fileData = file.contents();
-            daggerApp.throttleManager().update(fileData);
-
-            // Initializing handle throttling
-            this.backendThrottle.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
-            this.backendThrottle.applyGasConfig();
-            this.frontendThrottle.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
-            this.frontendThrottle.applyGasConfig();
-
-            // Updating the multiplier source to use the new throttle definitions
-            this.congestionMultipliers.resetExpectations();
-        }
-        logger.info("Throttles initialized");
     }
 
     private File getFileFromStorage(HederaState state, long fileNum) {

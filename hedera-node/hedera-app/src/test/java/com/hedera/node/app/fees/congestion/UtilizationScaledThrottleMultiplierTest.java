@@ -81,11 +81,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
-class EntityUtilizationMultiplierTest {
+class UtilizationScaledThrottleMultiplierTest {
 
     private static final long SOME_MULTIPLIER = 4L;
 
-    private EntityUtilizationMultiplier entityUtilizationMultiplier;
+    private UtilizationScaledThrottleMultiplier utilizationScaledThrottleMultiplier;
 
     @Mock
     private ThrottleMultiplier delegate;
@@ -125,7 +125,7 @@ class EntityUtilizationMultiplierTest {
 
     @BeforeEach
     void setUp() {
-        entityUtilizationMultiplier = new EntityUtilizationMultiplier(delegate, configProvider);
+        utilizationScaledThrottleMultiplier = new UtilizationScaledThrottleMultiplier(delegate, configProvider);
     }
 
     @Test
@@ -163,7 +163,7 @@ class EntityUtilizationMultiplierTest {
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -191,7 +191,7 @@ class EntityUtilizationMultiplierTest {
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -217,7 +217,7 @@ class EntityUtilizationMultiplierTest {
                                         FileID.newBuilder().fileNum(2L), File.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -257,7 +257,7 @@ class EntityUtilizationMultiplierTest {
                                                 Nft.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(nftMintTxnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(nftMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -280,7 +280,7 @@ class EntityUtilizationMultiplierTest {
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
         var storeFactory = new ReadableStoreFactory(new FakeHederaState());
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
     }
@@ -306,7 +306,7 @@ class EntityUtilizationMultiplierTest {
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -338,7 +338,7 @@ class EntityUtilizationMultiplierTest {
                                                 TokenRelation.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -364,7 +364,7 @@ class EntityUtilizationMultiplierTest {
                                         TopicID.newBuilder().topicNum(2L), Topic.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -377,7 +377,7 @@ class EntityUtilizationMultiplierTest {
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
         var storeFactory = new ReadableStoreFactory(new FakeHederaState());
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
     }
@@ -385,14 +385,14 @@ class EntityUtilizationMultiplierTest {
     @Test
     void testUpdateMultiplier() {
         Instant consensusTime = Instant.now();
-        entityUtilizationMultiplier.updateMultiplier(consensusTime);
+        utilizationScaledThrottleMultiplier.updateMultiplier(consensusTime);
 
         verify(delegate).updateMultiplier(consensusTime);
     }
 
     @Test
     void testResetExpectations() {
-        entityUtilizationMultiplier.resetExpectations();
+        utilizationScaledThrottleMultiplier.resetExpectations();
 
         verify(delegate).resetExpectations();
     }
@@ -400,7 +400,7 @@ class EntityUtilizationMultiplierTest {
     @Test
     void testResetCongestionLevelStarts() {
         Instant[] startTimes = {Instant.now(), Instant.now().plusSeconds(10)};
-        entityUtilizationMultiplier.resetCongestionLevelStarts(startTimes);
+        utilizationScaledThrottleMultiplier.resetCongestionLevelStarts(startTimes);
 
         verify(delegate).resetCongestionLevelStarts(startTimes);
     }
@@ -410,7 +410,7 @@ class EntityUtilizationMultiplierTest {
         Instant[] startTimes = {Instant.now(), Instant.now().plusSeconds(5)};
         when(delegate.congestionLevelStarts()).thenReturn(startTimes);
 
-        Instant[] starts = entityUtilizationMultiplier.congestionLevelStarts();
+        Instant[] starts = utilizationScaledThrottleMultiplier.congestionLevelStarts();
 
         assertEquals(startTimes, starts);
     }
