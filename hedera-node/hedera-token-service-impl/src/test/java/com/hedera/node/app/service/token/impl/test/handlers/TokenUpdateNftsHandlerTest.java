@@ -40,7 +40,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.token.TokenUpdateNftTransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -247,13 +247,13 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         private TransactionBody build(List<Long> serialNumbers) {
             final var transactionID =
                     TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
-            final var createTxnBody = TokenUpdateNftTransactionBody.newBuilder()
+            final var createTxnBody = TokenUpdateNftsTransactionBody.newBuilder()
                     .token(tokenId)
                     .metadata(Bytes.wrap(metadata))
                     .serialNumbers(serialNumbers);
             return TransactionBody.newBuilder()
                     .transactionID(transactionID)
-                    .tokenUpdateNft(createTxnBody)
+                    .tokenUpdateNfts(createTxnBody)
                     .build();
         }
 
@@ -261,13 +261,14 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
             final var transactionID =
                     TransactionID.newBuilder().accountID(ACCOUNT_1339).build();
 
-            TokenUpdateNftTransactionBody.Builder nftUpdateTxnBodyBuilder = TokenUpdateNftTransactionBody.newBuilder();
+            TokenUpdateNftsTransactionBody.Builder nftUpdateTxnBodyBuilder =
+                    TokenUpdateNftsTransactionBody.newBuilder();
             if (tokenId != null) nftUpdateTxnBodyBuilder.token(tokenId);
             nftUpdateTxnBodyBuilder.metadata(metadata);
             nftUpdateTxnBodyBuilder.serialNumbers(nftSerialNums);
             return TransactionBody.newBuilder()
                     .transactionID(transactionID)
-                    .tokenUpdateNft(nftUpdateTxnBodyBuilder)
+                    .tokenUpdateNfts(nftUpdateTxnBodyBuilder)
                     .build();
         }
 

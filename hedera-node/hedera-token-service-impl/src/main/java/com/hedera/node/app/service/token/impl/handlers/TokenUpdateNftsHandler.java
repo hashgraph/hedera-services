@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.token.TokenUpdateNftTransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -70,14 +70,14 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final var op = txn.tokenUpdateNftOrThrow();
+        final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenUpdateNftOrThrow();
+        final var op = context.body().tokenUpdateNftsOrThrow();
         pureChecks(context.body());
         final var tokenId = op.tokenOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -89,15 +89,15 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     public void handle(@NonNull HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txn = context.body();
-        final var tokenUpdateNftTransactionBody = txn.tokenUpdateNftOrThrow();
-        final var tokenNftId = tokenUpdateNftTransactionBody.tokenOrThrow();
+        final var tokenUpdateNftsTransactionBody = txn.tokenUpdateNftsOrThrow();
+        final var tokenNftId = tokenUpdateNftsTransactionBody.tokenOrThrow();
 
-        final var validationResult = tokenUpdateNftValidator.validateSemantics(context, tokenUpdateNftTransactionBody);
+        final var validationResult = tokenUpdateNftValidator.validateSemantics(context, tokenUpdateNftsTransactionBody);
         final var token = validationResult.token();
         final var nftStore = context.writableStore(WritableNftStore.class);
 
         // Wrap in Set to de-duplicate serial numbers
-        final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(tokenUpdateNftTransactionBody.serialNumbers()));
+        final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(tokenUpdateNftsTransactionBody.serialNumbers()));
         var nftCount = nftSerialNums.size();
         validateTrue(nftCount <= nftStore.sizeOfState(), INVALID_TRANSACTION_BODY);
         validateTrue(!nftSerialNums.isEmpty(), INVALID_TRANSACTION_BODY);
@@ -106,7 +106,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         if (nftCount > 1) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }
-        updateNftMetadata(nftSerialNums, nftStore, tokenNftId, tokenUpdateNftTransactionBody);
+        updateNftMetadata(nftSerialNums, nftStore, tokenNftId, tokenUpdateNftsTransactionBody);
         final var recordBuilder = context.recordBuilder(TokenUpdateNftRecordBuilder.class);
         recordBuilder.tokenType(token.tokenType());
     }
@@ -115,15 +115,16 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             ArrayList<Long> nftSerialNums,
             WritableNftStore nftStore,
             TokenID tokenNftId,
-            TokenUpdateNftTransactionBody tokenUpdateNftTransactionBody) {
+            TokenUpdateNftsTransactionBody tokenUpdateNftsTransactionBody) {
         // Validate that the list of NFTs provided in txnBody exist in state
         for (final Long nftSerialNumber : nftSerialNums) {
             validateTrue(nftSerialNumber > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final Nft nft = nftStore.get(tokenNftId, nftSerialNumber);
             validateTrue(nft != null, INVALID_NFT_ID);
             // For now we are only supporting metadata updates to the individual NFTs
-            if (tokenUpdateNftTransactionBody.metadata() != null) {
-                var updatedNft = buildUpdatedNft(tokenNftId, tokenUpdateNftTransactionBody.metadata(), nftSerialNumber);
+            if (tokenUpdateNftsTransactionBody.metadata() != null) {
+                var updatedNft =
+                        buildUpdatedNft(tokenNftId, tokenUpdateNftsTransactionBody.metadata(), nftSerialNumber);
                 // Update the metadata in the listed NFTs
                 nftStore.put(updatedNft);
             }

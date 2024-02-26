@@ -61,7 +61,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -115,5 +114,5 @@ public record TransactionHandlers(
         @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
-        @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
+        //        @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

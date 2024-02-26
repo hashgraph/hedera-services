@@ -33,7 +33,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenUpdateNftTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -53,7 +53,7 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.TokenUpdateNft;
+        return HederaFunctionality.TokenUpdateNfts;
     }
 
     public HapiTokenNftsUpdate(final String token, final String metadata, final List<Long> serialNumbers) {
@@ -81,9 +81,9 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         var txnId = TxnUtils.asTokenId(token, spec);
-        final TokenUpdateNftTransactionBody opBody = spec.txns()
-                .<TokenUpdateNftTransactionBody, TokenUpdateNftTransactionBody.Builder>body(
-                        TokenUpdateNftTransactionBody.class, b -> {
+        final TokenUpdateNftsTransactionBody opBody = spec.txns()
+                .<TokenUpdateNftsTransactionBody, TokenUpdateNftsTransactionBody.Builder>body(
+                        TokenUpdateNftsTransactionBody.class, b -> {
                             b.setToken(txnId);
                             var metadataValue = BytesValue.newBuilder()
                                     .setValue(ByteString.copyFrom(
@@ -92,7 +92,7 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
                             metadata.ifPresent(s -> b.setMetadata(metadataValue));
                             b.addAllSerialNumbers(serialNumbers.orElse(Collections.emptyList()));
                         });
-        return b -> b.setTokenUpdateNft(opBody);
+        return b -> b.setTokenUpdateNfts(opBody);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
                 }
                 return estimate.get();
             };
-            return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdateNft, metricsCalc, txn, numPayerKeys);
+            return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdateNfts, metricsCalc, txn, numPayerKeys);
         } catch (Throwable t) {
             log.warn("Couldn't estimate usage", t);
             return HapiSuite.ONE_HBAR;

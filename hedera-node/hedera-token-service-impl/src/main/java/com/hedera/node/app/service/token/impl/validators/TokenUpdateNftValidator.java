@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.token.TokenUpdateNftTransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.TokensConfig;
@@ -40,7 +40,7 @@ public class TokenUpdateNftValidator {
 
     @NonNull
     public ValidationResult validateSemantics(
-            @NonNull final HandleContext context, @NonNull final TokenUpdateNftTransactionBody op) {
+            @NonNull final HandleContext context, @NonNull final TokenUpdateNftsTransactionBody op) {
 
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenId = op.tokenOrThrow();

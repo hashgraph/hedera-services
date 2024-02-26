@@ -41,7 +41,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenUpdateNftTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
@@ -132,12 +132,12 @@ public enum TokenOpsUsageUtils {
     }
 
     public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TransactionBody txn) {
-        final var op = txn.getTokenUpdateNft();
+        final var op = txn.getTokenUpdateNfts();
         final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
         return tokenUpdateNftUsageFrom(op, subType);
     }
 
-    public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TokenUpdateNftTransactionBody op, final SubType subType) {
+    public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TokenUpdateNftsTransactionBody op, final SubType subType) {
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenUpdateNftsMeta::new);
     }
 
