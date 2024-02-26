@@ -21,7 +21,7 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * An abstract base class that implements the {@link LoggingMirror} interface
@@ -36,7 +36,7 @@ public abstract class AbstractLoggingMirror implements LoggingMirror {
      * @param filter The filter function to apply to log events.
      * @return A new logging mirror instance with the specified filter applied.
      */
-    protected abstract LoggingMirror filter(Function<LogEvent, Boolean> filter);
+    protected abstract LoggingMirror filter(@NonNull Predicate<LogEvent> filter);
 
     /**
      * {@inheritDoc}
@@ -52,7 +52,8 @@ public abstract class AbstractLoggingMirror implements LoggingMirror {
     @Override
     @NonNull
     public LoggingMirror filterByLevel(@NonNull final Level level) {
-        Function<LogEvent, Boolean> filter = event -> event.level().ordinal() >= level.ordinal();
+        Objects.requireNonNull(level, "level must not be null");
+        Predicate<LogEvent> filter = event -> event.level().ordinal() >= level.ordinal();
         return filter(filter);
     }
 
@@ -62,7 +63,9 @@ public abstract class AbstractLoggingMirror implements LoggingMirror {
     @Override
     @NonNull
     public LoggingMirror filterByContext(@NonNull final String key, @NonNull final String value) {
-        Function<LogEvent, Boolean> filter = event ->
+        Objects.requireNonNull(key, "key must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+        final Predicate<LogEvent> filter = event ->
                 event.context().containsKey(key) && event.context().get(key).equals(value);
         return filter(filter);
     }
@@ -73,7 +76,8 @@ public abstract class AbstractLoggingMirror implements LoggingMirror {
     @Override
     @NonNull
     public LoggingMirror filterByThread(@NonNull final String threadName) {
-        Function<LogEvent, Boolean> filter = event -> Objects.equals(event.threadName(), threadName);
+        Objects.requireNonNull(threadName, "threadName must not be null");
+        final Predicate<LogEvent> filter = event -> Objects.equals(event.threadName(), threadName);
         return filter(filter);
     }
 
@@ -83,7 +87,8 @@ public abstract class AbstractLoggingMirror implements LoggingMirror {
     @Override
     @NonNull
     public LoggingMirror filterByLogger(@NonNull final String loggerName) {
-        Function<LogEvent, Boolean> filter = event -> event.loggerName().startsWith(loggerName);
+        Objects.requireNonNull(loggerName, "loggerName must not be null");
+        final Predicate<LogEvent> filter = event -> event.loggerName().startsWith(loggerName);
         return filter(filter);
     }
 }

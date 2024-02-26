@@ -21,16 +21,17 @@ import com.swirlds.logging.test.fixtures.LoggingMirror;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.AbstractList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
- * A concrete implementation of the {@link LoggingMirror} interface that represents a filtered view
- * of log events based on a provided filter function. This class extends {@link AbstractLoggingMirror}
- * and allows you to create a filtered mirror of log events.
+ * A concrete implementation of the {@link LoggingMirror} interface that represents a filtered view of log events based
+ * on a provided filter function. This class extends {@link AbstractLoggingMirror} and allows you to create a filtered
+ * mirror of log events.
  */
 public class FilteredLoggingMirror extends AbstractLoggingMirror {
 
-    private final Function<LogEvent, Boolean> filter;
+    private final Predicate<LogEvent> filter;
     private final List<LogEvent> list;
     private final Runnable disposeAction;
 
@@ -40,14 +41,15 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
      * @param list          The list of log events to filter.
      * @param filter        The filter function used to select log events.
      * @param disposeAction The action to be executed when this mirror is disposed.
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
     public FilteredLoggingMirror(
             @NonNull final List<LogEvent> list,
-            @NonNull final Function<LogEvent, Boolean> filter,
+            @NonNull final Predicate<LogEvent> filter,
             @NonNull final Runnable disposeAction) {
-        this.list = list;
-        this.filter = filter;
-        this.disposeAction = disposeAction;
+        this.list = Objects.requireNonNull(list, "list must not be null");
+        this.filter = Objects.requireNonNull(filter, "filter must not be null");
+        this.disposeAction = Objects.requireNonNull(disposeAction, "filter must not be null");
     }
 
     /**
@@ -56,7 +58,7 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
     @Override
     @NonNull
     public List<LogEvent> getEvents() {
-        return list.stream().filter(filter::apply).toList();
+        return list.stream().filter(filter).toList();
     }
 
     /**
@@ -64,7 +66,8 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
      */
     @Override
     @NonNull
-    protected LoggingMirror filter(@NonNull final Function<LogEvent, Boolean> filter) {
+    protected LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
+        Objects.requireNonNull(filter, "filter must not be null");
         final List<LogEvent> liveList = new AbstractList<>() {
             @Override
             public int size() {
@@ -76,7 +79,7 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
                 return list.get(index);
             }
         };
-        return new FilteredLoggingMirror(liveList, filter, disposeAction);
+        return new FilteredLoggingMirror(liveList, this.filter.and(filter), disposeAction);
     }
 
     /**

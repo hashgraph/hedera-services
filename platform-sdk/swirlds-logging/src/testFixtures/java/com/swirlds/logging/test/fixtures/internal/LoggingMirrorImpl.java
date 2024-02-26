@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A concrete implementation of the {@link LoggingMirror} interface that serves as a logging mirror
@@ -63,7 +63,7 @@ public class LoggingMirrorImpl extends AbstractLoggingMirror implements LogHandl
      * {@inheritDoc}
      */
     @Override
-    protected LoggingMirror filter(@NonNull final Function<LogEvent, Boolean> filter) {
+    protected LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
         return new FilteredLoggingMirror(events, filter, this::dispose);
     }
 
