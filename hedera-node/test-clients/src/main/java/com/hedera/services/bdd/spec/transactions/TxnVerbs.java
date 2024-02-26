@@ -635,4 +635,12 @@ public class TxnVerbs {
     public static HapiTokenLock tokenLock(String token, String account, List<Long> serialNumbers) {
         return new HapiTokenLock(token, account, serialNumbers);
     }
+
+    public static HapiTokenUnlock tokenUnlock(String token, String account, long amount) {
+        return new HapiTokenUnlock(token, account, amount);
+    }
+
+    public static HapiTokenUnlock tokenUnlock(String token, String account, List<Long> serialNumbers) {
+        return new HapiTokenUnlock(token, account, serialNumbers);
+    }
 }
