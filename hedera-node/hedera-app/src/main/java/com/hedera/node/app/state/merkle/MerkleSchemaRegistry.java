@@ -252,17 +252,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         .get(TokenServiceImpl.ACCOUNTS_KEY)
                                         .size()
                                 : "null");
-                if (previousStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
-                        && writableStates.contains(TokenServiceImpl.ACCOUNTS_KEY)
-                        && previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).size()
-                                != writableStates
-                                        .get(TokenServiceImpl.ACCOUNTS_KEY)
-                                        .size()) {
-                    logger.info("Accounts before ");
-                    previousStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
-                    logger.info("Accounts after ");
-                    writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
-                }
             }
             final var statesToRemove = schema.statesToRemove();
             final var remainingStates = new HashSet<>(writableStates.stateKeys());
@@ -291,11 +280,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 mws.commit();
                 if (TokenService.NAME.equals(serviceName)) {
                     logger.info(
-                            "Token service accounts size after {}, account keys {}",
-                            mws.get(TokenServiceImpl.ACCOUNTS_KEY).size(),
-                            mws.get(TokenServiceImpl.ACCOUNTS_KEY).keys());
-                    logger.info("Accounts after ");
-                    writableStates.get(TokenServiceImpl.ACCOUNTS_KEY).keys().forEachRemaining(System.out::println);
+                            "Token service accounts size after {}",
+                            mws.get(TokenServiceImpl.ACCOUNTS_KEY).size());
                 }
             }
             // And finally we can remove any states we need to remove
