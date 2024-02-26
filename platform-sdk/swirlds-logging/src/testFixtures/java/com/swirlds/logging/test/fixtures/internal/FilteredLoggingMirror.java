@@ -26,30 +26,29 @@ import java.util.function.Predicate;
 
 /**
  * A concrete implementation of the {@link LoggingMirror} interface that represents a filtered view of log events based
- * on a provided filter function. This class extends {@link AbstractLoggingMirror} and allows you to create a filtered
- * mirror of log events.
+ * on a provided filter function.
  */
-public class FilteredLoggingMirror extends AbstractLoggingMirror {
+public class FilteredLoggingMirror implements LoggingMirror {
 
     private final Predicate<LogEvent> filter;
     private final List<LogEvent> list;
-    private final Runnable disposeAction;
+    private final Runnable closeAction;
 
     /**
      * Constructs a new {@code FilteredLoggingMirror} instance with the specified parameters.
      *
      * @param list          The list of log events to filter.
      * @param filter        The filter function used to select log events.
-     * @param disposeAction The action to be executed when this mirror is disposed.
+     * @param closeAction The action to be executed when this mirror is closed.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public FilteredLoggingMirror(
             @NonNull final List<LogEvent> list,
             @NonNull final Predicate<LogEvent> filter,
-            @NonNull final Runnable disposeAction) {
+            @NonNull final Runnable closeAction) {
         this.list = Objects.requireNonNull(list, "list must not be null");
         this.filter = Objects.requireNonNull(filter, "filter must not be null");
-        this.disposeAction = Objects.requireNonNull(disposeAction, "filter must not be null");
+        this.closeAction = Objects.requireNonNull(closeAction, "closeAction must not be null");
     }
 
     /**
@@ -66,7 +65,7 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
      */
     @Override
     @NonNull
-    protected LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
+    public LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
         Objects.requireNonNull(filter, "filter must not be null");
         final List<LogEvent> liveList = new AbstractList<>() {
             @Override
@@ -79,14 +78,14 @@ public class FilteredLoggingMirror extends AbstractLoggingMirror {
                 return list.get(index);
             }
         };
-        return new FilteredLoggingMirror(liveList, this.filter.and(filter), disposeAction);
+        return new FilteredLoggingMirror(liveList, this.filter.and(filter), closeAction);
     }
 
     /**
-     * {@inheritDoc}
+     * Clears the mirror and disposes it. This method is automatically called before and after a test.
      */
     @Override
-    public void dispose() {
-        disposeAction.run();
+    public void close() {
+        closeAction.run();
     }
 }
