@@ -34,6 +34,7 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
 
     final VirtualDataSource<TestKey, TestValue> delegate;
     private final BrokenBuilder builder;
+    private final Object monitor = new Object();
 
     public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource<TestKey, TestValue> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
@@ -52,12 +53,16 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
-            builder.numCalls += leaves.size();
-            if (builder.numCalls > builder.numCallsBeforeThrow) {
-                builder.numCalls = 0;
-                builder.numTimesBroken++;
-                delegate.close();
-                throw new IOException("Something bad on the DB!");
+            synchronized (monitor) {
+                if(builder.numTimesBroken < builder.numTimesToBreak) {
+                    builder.numCalls += leaves.size();
+                    if (builder.numCalls > builder.numCallsBeforeThrow) {
+                        builder.numCalls = 0;
+                        builder.numTimesBroken++;
+                        delegate.close();
+                        throw new IOException("Something bad on the DB!");
+                    }
+                }
             }
         }
 
