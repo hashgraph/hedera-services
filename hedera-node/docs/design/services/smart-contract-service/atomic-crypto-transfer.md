@@ -28,8 +28,10 @@ If the contract address of the current call is determined to be the contract add
 function signature to a signature known by the translator.  In the case of atomic crypto transfer calls, the `ClassicTransferTranslator` class will be responsible for processing the calls which has the following function signature: \
 ```cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])```
 4.  The `ClassicTransferTranslator` class will call the `ClassicTransferDecoder` class to decode the parameters of the call and translating the encoded parameter into a `TransactionBody` object.
-5.  A class called  `ClassicTransfersCall` will then take the created `TransactionBody` object and dispatches a new transaction to the Token Service Module for processing.  A `VerificationStrategy` class will be provided to the token service during dispatch in order to ensure that the security model is adhered to.
-It is also responsible for other miscellaneous tasks such as checking for sufficient gas and encoding the response.
+5.  A class called  `ClassicTransfersCall` will then take the created `TransactionBody` object and dispatches a new transaction to the Token Service Module for processing.  
+- Before dispatching the relevant feature flag `contracts.precompile.atomicCryptoTransfer.enabled=true` will be checked.
+- A `VerificationStrategy` class will be provided to the token service during dispatch in order to ensure that the security model is adhered to.
+- It is also responsible for other miscellaneous tasks such as checking for sufficient gas and encoding the response.
 
 ![image info](./class_diagram.drawio.png)
 
@@ -61,10 +63,6 @@ BDD tests are required to cover security concerns which require complex signing 
 are already implemented and need not be repeated as XTests.
 
 #### Positive Tests
-- Successful transfer of hbars and HTS tokens from sender account via contract when isApproval is false and contract is in the keyset of the sender. Transfer should fail otherwise.
-- Successful transfer of hbars and HTS tokens from contract account via contract when isApproval is false and contract is in the keyset of the debited contract. Transfer should fail otherwise.
-- Successful transfer of hbars and HTS tokens from sender account via contract when isApproval is true and contract is granted an allowance by the sender account. Transfer should fail otherwise.
-- Successful transfer of hbars and HTS tokens from contract account via contract when isApproval is true and contract is granted an allowance by the debited contract. Transfer should fail otherwise.
 - Successful transfer of hbars only and HTS tokens only between accounts from sender account via contract.
 - Successful transfer of hbars and HTS tokens with a custom fees (including fallback fee scenarios).
 - Successful transfer of hbars and HTS tokens with available auto token association slots on the receiver.
