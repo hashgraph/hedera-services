@@ -48,40 +48,6 @@ publishing {
                     organizationUrl.set("https://www.hedera.com")
                 }
             }
-
-            repositories {
-                maven {
-                    name = "sonatype"
-                    url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                    credentials {
-                        username = System.getenv("OSSRH_USERNAME")
-                        password = System.getenv("OSSRH_PASSWORD")
-                    }
-                }
-                maven {
-                    name = "sonatypeSnapshot"
-                    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                    credentials {
-                        username = System.getenv("OSSRH_USERNAME")
-                        password = System.getenv("OSSRH_PASSWORD")
-                    }
-                }
-            }
         }
     }
-}
-
-tasks.register("releaseEvmMavenCentral") {
-    group = "release"
-    dependsOn(tasks.named("publishMavenPublicationToSonatypeRepository"))
-}
-
-tasks.register("releaseEvmMavenCentralSnapshot") {
-    group = "release"
-    dependsOn(
-        project(":swirlds-common")
-            .tasks
-            .named("publishMavenPublicationToSonatypeSnapshotRepository")
-    )
-    dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
 }
