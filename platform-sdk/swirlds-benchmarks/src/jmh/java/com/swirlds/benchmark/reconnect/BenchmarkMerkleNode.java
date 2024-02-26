@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.appcomm;
+package com.swirlds.benchmark.reconnect;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.common.merkle.MerkleNode;
 
-/**
- * Configuration used to control the wiring of platform components.
- *
- * @param newLatestCompleteStateConsumerQueueSize
- * 		the size of the queue used to asynchronously invoke consumers of new latest complete states
- */
-@ConfigData("wiring")
-public record WiringConfig(@ConfigProperty(defaultValue = "1000") int newLatestCompleteStateConsumerQueueSize) {}
+public interface BenchmarkMerkleNode extends MerkleNode {
+
+    /**
+     * Get a String value representing this node.
+     */
+    String getValue();
+}

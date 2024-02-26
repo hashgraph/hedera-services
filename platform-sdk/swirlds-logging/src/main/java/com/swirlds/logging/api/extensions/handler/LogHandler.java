@@ -27,6 +27,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see LogHandlerFactory
  */
 public interface LogHandler extends LogEventConsumer {
+    String PROPERTY_HANDLER = "logging.handler.%s";
+    String PROPERTY_HANDLER_ENABLED = PROPERTY_HANDLER + ".enabled";
 
     /**
      * Returns the name of the log handler.
