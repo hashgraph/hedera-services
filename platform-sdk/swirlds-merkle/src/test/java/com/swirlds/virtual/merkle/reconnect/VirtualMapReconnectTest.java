@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,6 +53,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Virtual Map Reconnect Test")
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
@@ -127,6 +129,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.8")})
     @DisplayName("Teacher and Learner that are the same size but completely different")
+    @Tag(TIMING_SENSITIVE)
     void equalFullTeacherFullLearner() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -319,6 +322,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
+    @Tag(TIMING_SENSITIVE)
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
         configureReconnectToFailQuickly();
 

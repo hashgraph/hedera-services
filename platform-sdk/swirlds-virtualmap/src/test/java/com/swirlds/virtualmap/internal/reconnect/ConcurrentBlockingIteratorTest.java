@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,8 +32,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 public class ConcurrentBlockingIteratorTest {
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
@@ -215,6 +219,28 @@ public class ConcurrentBlockingIteratorTest {
         } catch (Exception e) {
             fail("Failed to submit all items", e);
         }
+    }
+
+    @RepeatedTest(1000)
+    @DisplayName("yield all elements even after closed")
+    void supplyBeforeClose() throws InterruptedException {
+        final ConcurrentBlockingIterator<Integer> iterator = new ConcurrentBlockingIterator<>(4, 10, SECONDS);
+        final Thread supplier = new Thread(() -> {
+            try {
+                iterator.supply(1);
+                iterator.supply(2);
+                iterator.close();
+            } catch (final InterruptedException e) {
+                fail("Supplier interrupted");
+            }
+        });
+        supplier.start();
+        assertTrue(iterator.hasNext(), "Iterator must have more than zero elements");
+        assertEquals(1, iterator.next());
+        assertTrue(iterator.hasNext(), "Iterator must have more than one element");
+        assertEquals(2, iterator.next());
+        assertFalse(iterator.hasNext(), "Iterator must not have more than two elements");
+        supplier.join();
     }
 
     private <T> Future<Class<T>> thrownByCall(Runnable lambda) {

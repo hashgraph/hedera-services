@@ -26,6 +26,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -38,7 +39,7 @@ public class EventCreationManagerWiring {
 
     private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
     private final BindableInputWire<NonAncientEventWindow, GossipEvent> nonAncientEventWindowInput;
-    private final BindableInputWire<Boolean, GossipEvent> pauseInput;
+    private final BindableInputWire<ClearTrigger, GossipEvent> clearInput;
     private final Bindable<Instant, GossipEvent> heartbeatBindable;
     private final OutputWire<GossipEvent> newEventOutput;
 
@@ -68,7 +69,7 @@ public class EventCreationManagerWiring {
 
         eventInput = taskScheduler.buildInputWire("possible parents");
         nonAncientEventWindowInput = taskScheduler.buildInputWire("non-ancient event window");
-        pauseInput = taskScheduler.buildInputWire("pause");
+        clearInput = taskScheduler.buildInputWire("clear");
         newEventOutput = taskScheduler.getOutputWire();
 
         final double frequency = platformContext
@@ -86,7 +87,7 @@ public class EventCreationManagerWiring {
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
         eventInput.bind(eventCreationManager::registerEvent);
         nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
-        pauseInput.bind(eventCreationManager::setPauseStatus);
+        clearInput.bind(eventCreationManager::clear);
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
@@ -113,13 +114,13 @@ public class EventCreationManagerWiring {
     }
 
     /**
-     * Get the input wire for pause operations.
+     * Get the input wire to clear the internal state of the event creation manager.
      *
-     * @return the input wire for pause operations
+     * @return the input wire to clear the internal state of the event creation manager
      */
     @NonNull
-    public InputWire<Boolean> pauseInput() {
-        return pauseInput;
+    public InputWire<ClearTrigger> clearInput() {
+        return clearInput;
     }
 
     /**
@@ -137,5 +138,19 @@ public class EventCreationManagerWiring {
      */
     public void flush() {
         taskScheduler.flush();
+    }
+
+    /**
+     * Start squelching the task scheduler.
+     */
+    public void startSquelching() {
+        taskScheduler.startSquelching();
+    }
+
+    /**
+     * Stop squelching the task scheduler.
+     */
+    public void stopSquelching() {
+        taskScheduler.stopSquelching();
     }
 }

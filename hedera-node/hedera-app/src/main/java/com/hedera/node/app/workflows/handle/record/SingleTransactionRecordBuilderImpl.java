@@ -246,8 +246,9 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (customizer != null) {
+        if (customizer != NOOP_EXTERNALIZED_RECORD_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
+            transactionBytes = transaction.signedTransactionBytes();
         }
         final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
         // FUTURE : In mono-service exchange rate is not set in preceding child records.
@@ -438,6 +439,15 @@ public class SingleTransactionRecordBuilderImpl
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
+    /**
+     * Gets the transaction object.
+     *
+     * @return the transaction object
+     */
+    @NonNull
+    public Transaction transaction() {
+        return transaction;
+    }
     /**
      * Gets the consensus instant.
      *

@@ -86,6 +86,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -93,6 +94,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -130,7 +132,6 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
-
     private final NetworkInfo networkInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
@@ -153,6 +154,8 @@ public class HandleWorkflow {
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final CacheWarmer cacheWarmer;
+    private final HandleWorkflowMetrics handleWorkflowMetrics;
+    private final ThrottleServiceManager throttleServiceManager;
 
     @Inject
     public HandleWorkflow(
@@ -177,7 +180,9 @@ public class HandleWorkflow {
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final ScheduleExpirationHook scheduleExpirationHook,
-            @NonNull final CacheWarmer cacheWarmer) {
+            @NonNull final CacheWarmer cacheWarmer,
+            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final ThrottleServiceManager throttleServiceManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -202,9 +207,10 @@ public class HandleWorkflow {
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
-        ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
+        this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
     }
 
     /**
@@ -289,6 +295,11 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
+        // user transaction
+        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
+        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
+
         // Setup record builder list
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
@@ -300,7 +311,8 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext =
+                new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
         // It's awful that we have to check this every time a transaction is handled, especially since this mostly
         // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
@@ -327,6 +339,7 @@ public class HandleWorkflow {
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
         }
 
+        final long handleStart = System.nanoTime();
         TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
@@ -401,6 +414,7 @@ public class HandleWorkflow {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    networkUtilizationManager,
                     synchronizedThrottleAccumulator);
 
             // Calculate the fee
@@ -415,7 +429,6 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
 
-            networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -528,18 +541,6 @@ public class HandleWorkflow {
                     }
                     recordBuilder.status(SUCCESS);
 
-                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
-                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
-                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-                        if (contractsConfig.throttleThrottleByGas()) {
-                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-                            final var gasLimitForContractTx =
-                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
-                            final var excessAmount = gasLimitForContractTx - gasUsed;
-                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-                        }
-                    }
-
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
@@ -561,14 +562,13 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
-            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                } catch (final HandleException chargeException) {
+                } catch (final Exception chargeException) {
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                             payer,
@@ -578,7 +578,22 @@ public class HandleWorkflow {
             }
         }
 
-        networkUtilizationManager.saveTo(stack);
+        // After a contract operation was handled (i.e., not throttled), update the
+        // gas throttle by leaking any unused gas
+        if (isGasThrottled(transactionInfo.functionality())
+                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                && recordBuilder.hasContractResult()) {
+            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+            if (contractsConfig.throttleThrottleByGas()) {
+                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                final var gasLimitForContractTx =
+                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                final var excessAmount = gasLimitForContractTx - gasUsed;
+                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+            }
+        }
+
+        throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
 
         // Commit all state changes
@@ -589,6 +604,9 @@ public class HandleWorkflow {
         recordCache.add(creator.nodeId(), payer, recordListResult.records());
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
+
+        final int handleDuration = (int) (System.nanoTime() - handleStart);
+        handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
     }
 
     /**

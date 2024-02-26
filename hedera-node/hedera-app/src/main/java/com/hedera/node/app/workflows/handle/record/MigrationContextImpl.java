@@ -24,7 +24,6 @@ import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
@@ -38,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param newStates The new states, preloaded with any new state definitions.
  * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
- * @param handleThrottling The instance responsible for handle throttling
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
  *                              migrations). Note that this is nullable only because it cannot exist
  *                              when the entity ID service itself is being migrated
@@ -49,7 +47,6 @@ public record MigrationContextImpl(
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
-        @NonNull HandleThrottleParser handleThrottling,
         @Nullable WritableEntityIdStore writableEntityIdStore)
         implements MigrationContext {
 
@@ -59,7 +56,6 @@ public record MigrationContextImpl(
         requireNonNull(configuration);
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
-        requireNonNull(handleThrottling);
     }
 
     @Override

@@ -22,9 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -79,50 +77,6 @@ public class SyncOutputStream extends SerializableDataOutputStream {
 
     public CountingStreamExtension getConnectionByteCounter() {
         return connectionByteCounter;
-    }
-
-    /**
-     * @return the time the last sync request was sent
-     */
-    public Instant getRequestSentTime() {
-        return requestSent.get();
-    }
-
-    /**
-     * Send a sync request
-     *
-     * @throws IOException if a stream exception occurs
-     */
-    public void requestSync() throws IOException {
-        writeByte(ByteConstants.COMM_SYNC_REQUEST);
-        requestSent.set(Instant.now());
-    }
-
-    /**
-     * Accepts a previously requested sync
-     *
-     * @throws IOException if a stream exception occurs
-     */
-    public void acceptSync() throws IOException {
-        writeByte(ByteConstants.COMM_SYNC_ACK);
-    }
-
-    /**
-     * Rejects a previously requested sync
-     *
-     * @throws IOException if a stream exception occurs
-     */
-    public void rejectSync() throws IOException {
-        writeByte(ByteConstants.COMM_SYNC_NACK);
-    }
-
-    /**
-     * Write this node's generation numbers to an output stream
-     *
-     * @throws IOException if a stream exception occurs
-     */
-    public void writeGenerations(final Generations generations) throws IOException {
-        writeSerializable(generations, false);
     }
 
     /**

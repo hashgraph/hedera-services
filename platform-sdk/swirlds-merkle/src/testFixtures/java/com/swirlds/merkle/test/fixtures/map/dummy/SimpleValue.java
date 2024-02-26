@@ -26,7 +26,7 @@ import java.util.Objects;
 
 public class SimpleValue extends PartialMerkleLeaf implements MerkleLeaf {
 
-    private static final long CLASS_ID = 0x9475f1a4061a5329L;
+    private static final long CLASS_ID = 0x9475f1a4061a532aL;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;

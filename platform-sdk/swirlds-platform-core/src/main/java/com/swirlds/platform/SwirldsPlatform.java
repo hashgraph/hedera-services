@@ -51,6 +51,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
@@ -60,9 +61,9 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.SavedStateController;
-import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.StateConfig;
@@ -114,16 +115,14 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
-import com.swirlds.platform.metrics.AddedEventMetrics;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.observers.EventObserver;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -142,6 +141,7 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
@@ -166,6 +166,7 @@ import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -174,7 +175,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -183,6 +183,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -292,6 +293,8 @@ public class SwirldsPlatform implements Platform {
     /** thread-queue responsible for hashing states */
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
 
+    private final AncientMode ancientMode;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -318,6 +321,11 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+
+        ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
@@ -365,7 +373,6 @@ public class SwirldsPlatform implements Platform {
 
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -376,13 +383,6 @@ public class SwirldsPlatform implements Platform {
         this.keysAndCerts = keysAndCerts;
 
         EventCounter.registerEventCounterMetrics(metrics);
-
-        final AppCommunicationComponent appCommunicationComponent =
-                new AppCommunicationComponent(notificationEngine, platformContext);
-
-        components.add(appCommunicationComponent);
-
-        metrics.addUpdater(appCommunicationComponent::updateLatestCompleteStateQueueSize);
 
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
@@ -409,20 +409,13 @@ public class SwirldsPlatform implements Platform {
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
-            final AncientMode currentFileType = platformContext
-                            .getConfiguration()
-                            .getConfigData(EventConfig.class)
-                            .useBirthRoundAncientThreshold()
-                    ? AncientMode.BIRTH_ROUND_THRESHOLD
-                    : AncientMode.GENERATION_THRESHOLD;
-
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
                     recycleBin,
                     databaseDirectory,
                     initialState.getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
-                    currentFileType);
+                    ancientMode);
 
             preconsensusEventFileManager =
                     new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
@@ -482,6 +475,23 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 
+        final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
+
+        final QueueThread<GossipEvent> oldStyleIntakeQueue;
+        if (useOldStyleIntakeQueue) {
+            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(AdHocThreadManager.getStaticThreadManager())
+                    .setCapacity(10_000)
+                    .setThreadName("old_style_intake_queue")
+                    .setComponent("platform")
+                    .setHandler(event -> platformWiring.getGossipEventInput().put(event))
+                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
+                    .build();
+            components.add(oldStyleIntakeQueue);
+
+        } else {
+            oldStyleIntakeQueue = null;
+        }
+
         savedStateController = new SavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
@@ -494,7 +504,11 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 platformWiring.getSignStateInput()::put,
                 platformWiring.getSignatureCollectorStateInput()::put,
-                signedStateMetrics);
+                signedStateMetrics,
+                platformWiring.getHashLoggerInput()::offer);
+
+        final LatestCompleteStateNotifier latestCompleteStateNotifier =
+                new LatestCompleteStateNotifier(notificationEngine);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
@@ -581,12 +595,7 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getIssDetectorWiring().roundCompletedInput()::put,
                 appVersion);
 
-        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PcesSequencer sequencer = new PcesSequencer();
-
-        final List<EventObserver> eventObservers = new ArrayList<>(List.of(addedEventMetrics, eventIntakeMetrics));
-
-        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
@@ -598,8 +607,7 @@ public class SwirldsPlatform implements Platform {
 
         final InternalEventValidator internalEventValidator = new InternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
-        final EventDeduplicator eventDeduplicator =
-                new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
+        final EventDeduplicator eventDeduplicator = new EventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
                 platformContext,
                 time,
@@ -610,27 +618,24 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                consensusRef::get,
-                eventObserverDispatcher,
-                shadowGraph,
-                intakeEventCounter,
-                platformWiring.getKeystoneEventSequenceNumberOutput());
+        final ConsensusEngine consensusEngine =
+                new ConsensusEngine(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
+
+        final LongSupplier intakeQueueSizeSupplier =
+                oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
-                time,
                 this,
                 currentAddressBook,
                 selfId,
                 appVersion,
                 transactionPool,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                intakeQueueSizeSupplier,
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
-        platformWiring.wireExternalComponents(
-                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
+        platformWiring.wireExternalComponents(platformStatusManager, transactionPool, latestCompleteState);
 
         final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
 
@@ -639,13 +644,28 @@ public class SwirldsPlatform implements Platform {
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
         final OutputWire<IssNotification> issOutput =
                 platformWiring.getIssDetectorWiring().issNotificationOutput();
-        issOutput.solderTo("issNotificationEngine", n -> notificationEngine.dispatch(IssListener.class, n));
-        issOutput.solderTo("statusManager", n -> {
+        issOutput.solderTo(
+                "issNotificationEngine", "ISS notification", n -> notificationEngine.dispatch(IssListener.class, n));
+        issOutput.solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
             if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
                 platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
             }
         });
-        issOutput.solderTo("issHandler", issHandler::issObserved);
+        issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
+
+        final OutputWire<StateSavingResult> stateSavingResultOutput = platformWiring.getStateSavingResultOutput();
+        stateSavingResultOutput.solderTo(
+                "stateSavingResultNotificationEngine",
+                "state saving result notification",
+                stateSavingResult -> notificationEngine.dispatch(
+                        StateWriteToDiskCompleteListener.class,
+                        new StateWriteToDiskCompleteNotification(
+                                stateSavingResult.round(),
+                                stateSavingResult.consensusTimestamp(),
+                                stateSavingResult.freezeState())));
+
+        final HashLogger hashLogger =
+                new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
         platformWiring.bind(
                 eventHasher,
@@ -654,7 +674,7 @@ public class SwirldsPlatform implements Platform {
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
-                linkedEventIntake,
+                consensusEngine,
                 signedStateFileManager,
                 stateSigner,
                 pcesReplayer,
@@ -668,7 +688,9 @@ public class SwirldsPlatform implements Platform {
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
-                issDetector);
+                issDetector,
+                hashLogger,
+                latestCompleteStateNotifier);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -688,6 +710,18 @@ public class SwirldsPlatform implements Platform {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final Consumer<GossipEvent> eventFromGossipConsumer = oldStyleIntakeQueue == null
+                ? platformWiring.getGossipEventInput()::put
+                : event -> {
+                    try {
+                        oldStyleIntakeQueue.put(event);
+                    } catch (final InterruptedException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
+                        Thread.currentThread().interrupt();
+                    }
+                };
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -700,9 +734,8 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
-                consensusRef,
-                platformWiring.getGossipEventInput()::put,
-                platformWiring.getIntakeQueueSizeSupplier(),
+                eventFromGossipConsumer,
+                intakeQueueSizeSupplier,
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
@@ -716,10 +749,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
                 getAddressBook(),
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .getAncientMode()));
+                ancientMode));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -862,7 +892,15 @@ public class SwirldsPlatform implements Platform {
         Objects.requireNonNull(signedState);
 
         consensusRef.get().loadFromSignedState(signedState);
-        shadowGraph.startWithExpiredThreshold(consensusRef.get().getMinGenerationNonAncient());
+
+        // FUTURE WORK: this needs to be updated for birth round compatibility.
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                signedState.getRound(),
+                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
+                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
+                ancientMode);
+
+        shadowGraph.startWithEventWindow(eventWindow);
 
         gossip.loadFromSignedState(signedState);
     }
@@ -910,10 +948,12 @@ public class SwirldsPlatform implements Platform {
             // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
             platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableState.setState(signedState.reserve("set latest immutable to reconnect state"));
-            stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
-            platformWiring.getSaveStateToDiskInput().put(signedState.reserve("save reconnect state to disk"));
+            // this will send the state to the signature collector which will send it to be written to disk.
+            // in the future, we might not send it to the collector because it already has all the signatures
+            // if this is the case, we must make sure to send it to the writer directly
+            stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensus(signedState);
 
@@ -927,7 +967,7 @@ public class SwirldsPlatform implements Platform {
                     signedState.getRound(),
                     signedState.getMinRoundGeneration(),
                     signedState.getMinRoundGeneration(),
-                    AncientMode.getAncientMode(platformContext)));
+                    ancientMode));
 
             platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());

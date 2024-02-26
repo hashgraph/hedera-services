@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
+import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -181,29 +182,6 @@ public class DumpUniqueTokensSubcommand {
 
     /** String that separates all fields in the CSV format */
     static final String FIELD_SEPARATOR = ";";
-
-    // Need to move this to a common location (copied here from DumpTokensSubcommand)
-    static class FieldBuilder {
-        final StringBuilder sb;
-        final String fieldSeparator;
-
-        FieldBuilder(@NonNull final String fieldSeparator) {
-            this.sb = new StringBuilder();
-            this.fieldSeparator = fieldSeparator;
-        }
-
-        void append(@NonNull final String v) {
-            sb.append(v);
-            sb.append(fieldSeparator);
-        }
-
-        @Override
-        @NonNull
-        public String toString() {
-            if (sb.length() > fieldSeparator.length()) sb.setLength(sb.length() - fieldSeparator.length());
-            return sb.toString();
-        }
-    }
 
     void reportOnUniques(@NonNull final Writer writer, @NonNull final Map<UniqueNFTId, UniqueNFT> uniques) {
         writer.writeln(formatHeader());

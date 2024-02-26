@@ -19,7 +19,10 @@ package com.hedera.node.app.workflows.handle;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
@@ -74,10 +77,16 @@ public class CacheWarmer {
     public void warm(@NonNull final HederaState state, @NonNull final Round round) {
         executor.execute(() -> {
             final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
+            final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
             for (final ConsensusEvent event : round) {
                 event.forEachTransaction(platformTransaction -> executor.execute(() -> {
                     final TransactionBody txBody = extractTransactionBody(platformTransaction);
                     if (txBody != null) {
+                        final AccountID payerID = txBody.transactionIDOrElse(TransactionID.DEFAULT)
+                                .accountID();
+                        if (payerID != null) {
+                            accountStore.warm(payerID);
+                        }
                         final var context = new WarmupContextImpl(txBody, storeFactory);
                         dispatcher.dispatchWarmup(context);
                     }
