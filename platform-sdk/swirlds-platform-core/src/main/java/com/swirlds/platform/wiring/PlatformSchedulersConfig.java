@@ -89,12 +89,13 @@ import com.swirlds.config.api.ConfigProperty;
  * @param hashLoggerSchedulerType                           the hash logger scheduler type
  * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
  *                                                          task scheduler
+ * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion notifier
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
-        @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
@@ -132,4 +133,5 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
         @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
-        @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity) {}
+        @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity) {}
