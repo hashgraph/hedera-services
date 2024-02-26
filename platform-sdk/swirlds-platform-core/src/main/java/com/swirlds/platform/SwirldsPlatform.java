@@ -515,6 +515,7 @@ public class SwirldsPlatform implements Platform {
                 .setCapacity(10_000)
                 .setThreadName("old_style_intake_queue")
                 .setComponent("platform")
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .setHandler(event -> platformWiring.getGossipEventInput().put(event))
                 .build();
         components.add(oldStyleIntakeQueue);
