@@ -69,7 +69,7 @@ public record IssDetectorWiring(
                         "consensus round",
                         new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =
-                taskScheduler.buildInputWire("handlePostconsensusSignatures");
+                taskScheduler.buildInputWire("post consensus signatures");
         roundTransformer.getOutputWire().solderTo(sigInput);
         return new IssDetectorWiring(
                 taskScheduler.buildInputWire("endOfPcesReplay"),
@@ -78,7 +78,7 @@ public record IssDetectorWiring(
                 sigInput,
                 taskScheduler.buildInputWire("newStateHashed"),
                 taskScheduler.buildInputWire("overridingState"),
-                taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "issNotificationList"));
+                taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "iss notifications"));
     }
 
     /**

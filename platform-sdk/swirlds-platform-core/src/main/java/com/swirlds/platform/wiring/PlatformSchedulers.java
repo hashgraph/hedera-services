@@ -57,6 +57,7 @@ import java.util.List;
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
+ * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
  * @param latestCompleteStateScheduler              the scheduler for the latest complete state notifier
  */
@@ -84,6 +85,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
+        @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateScheduler) {
 
@@ -256,6 +258,10 @@ public record PlatformSchedulers(
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("issHandler")
+                        .withType(TaskSchedulerType.DIRECT)
                         .build()
                         .cast(),
                 model.schedulerBuilder("hashLogger")

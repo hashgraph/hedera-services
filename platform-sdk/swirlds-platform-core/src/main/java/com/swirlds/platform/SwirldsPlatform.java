@@ -156,12 +156,8 @@ import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
-import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
-import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
@@ -170,6 +166,8 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
+import com.swirlds.platform.wiring.components.IssDetectorWiring;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -177,11 +175,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -291,7 +287,7 @@ public class SwirldsPlatform implements Platform {
      */
     private final PlatformWiring platformWiring;
     /** thread-queue responsible for hashing states */
-    private final QueueThread<ReservedSignedState> stateHashSignQueue;
+    private final QueueThread<StateAndRound> stateHashSignQueue;
 
     private final AncientMode ancientMode;
 
@@ -522,11 +518,6 @@ public class SwirldsPlatform implements Platform {
 
         components.add(stateManagementComponent);
 
-        final BiConsumer<State, ConsensusRound> roundAndStateConsumer = (state, round) -> {
-            platformWiring.getIssDetectorWiring().handleConsensusRound().put(round);
-            platformWiring.getSignatureCollectorConsensusInput().put(round);
-        };
-
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
@@ -561,23 +552,40 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 currentAddressBook,
                 selfId,
-                roundAndStateConsumer,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,
                 initialState.getState(),
                 appVersion);
 
-        final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
-            latestImmutableState.setState(rs.getAndReserve("newSignedStateFromTransactionsConsumer"));
-            latestCompleteState.newIncompleteState(rs.get().getRound());
-            savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
+        // FUTURE WORK: the lambda is an intermediate step toward passing the state and round over wires
+        // This is the handler method for the stateHashSignQueue, which the ConsensusRoundHandler pushes data onto.
+        final InterruptableConsumer<StateAndRound> newSignedStateFromTransactionsConsumer = stateAndRound -> {
+            final ReservedSignedState state = stateAndRound.reservedSignedState();
+            final long roundNumber = state.get().getRound();
+            final ConsensusRound consensusRound = stateAndRound.round();
+
+            latestImmutableState.setState(state.getAndReserve("newSignedStateFromTransactionsConsumer"));
+            latestCompleteState.newIncompleteState(roundNumber);
+            savedStateController.markSavedState(state.getAndReserve("savedStateController.markSavedState"));
+
+            // FUTURE WORK: this is where the state is currently being hashed. State hashing will be moved into a
+            // separate component. At that time, all subsequent method calls in this lambda will be wired to receive
+            // data from the hasher, since they require a strong guarantee that the state has been hashed.
             stateManagementComponent.newSignedStateFromTransactions(
-                    rs.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
-            platformWiring.getIssDetectorWiring().newStateHashed().put(rs.getAndReserve("issDetector"));
-            rs.close();
+                    state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
+
+            final IssDetectorWiring issDetectorWiring = platformWiring.getIssDetectorWiring();
+            // FUTURE WORK: these three method calls will be combined into a single method call
+            issDetectorWiring.roundCompletedInput().put(roundNumber);
+            issDetectorWiring.newStateHashed().put(state.getAndReserve("issDetector"));
+            issDetectorWiring.handleConsensusRound().put(consensusRound);
+
+            platformWiring.getSignatureCollectorConsensusInput().put(consensusRound);
+
+            stateAndRound.reservedSignedState().close();
         };
 
-        stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
+        stateHashSignQueue = components.add(new QueueThreadConfiguration<StateAndRound>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state_hash_sign")
@@ -592,7 +600,6 @@ public class SwirldsPlatform implements Platform {
                 stateHashSignQueue,
                 eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,
-                platformWiring.getIssDetectorWiring().roundCompletedInput()::put,
                 appVersion);
 
         final PcesSequencer sequencer = new PcesSequencer();
@@ -635,23 +642,13 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
-        platformWiring.wireExternalComponents(platformStatusManager, transactionPool, latestCompleteState);
+        platformWiring.wireExternalComponents(
+                platformStatusManager, transactionPool, latestCompleteState, notificationEngine);
 
         final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
 
-        // wire ISS output
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
-        final OutputWire<IssNotification> issOutput =
-                platformWiring.getIssDetectorWiring().issNotificationOutput();
-        issOutput.solderTo(
-                "issNotificationEngine", "ISS notification", n -> notificationEngine.dispatch(IssListener.class, n));
-        issOutput.solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
-            if (Set.of(IssType.SELF_ISS, IssType.CATASTROPHIC_ISS).contains(n.getIssType())) {
-                platformStatusManager.submitStatusAction(new CatastrophicFailureAction());
-            }
-        });
-        issOutput.solderTo("issHandler", "ISS notification", issHandler::issObserved);
 
         final OutputWire<StateSavingResult> stateSavingResultOutput = platformWiring.getStateSavingResultOutput();
         stateSavingResultOutput.solderTo(
@@ -689,6 +686,7 @@ public class SwirldsPlatform implements Platform {
                 eventStreamManager,
                 futureEventBuffer,
                 issDetector,
+                issHandler,
                 hashLogger,
                 latestCompleteStateNotifier);
 
@@ -787,10 +785,10 @@ public class SwirldsPlatform implements Platform {
         }
 
         final Clearable clearStateHashSignQueue = () -> {
-            ReservedSignedState signedState = stateHashSignQueue.poll();
-            while (signedState != null) {
-                signedState.close();
-                signedState = stateHashSignQueue.poll();
+            StateAndRound stateAndRound = stateHashSignQueue.poll();
+            while (stateAndRound != null) {
+                stateAndRound.reservedSignedState().close();
+                stateAndRound = stateHashSignQueue.poll();
             }
         };
 
