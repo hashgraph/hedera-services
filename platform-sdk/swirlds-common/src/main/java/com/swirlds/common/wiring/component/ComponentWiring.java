@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  */
 public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
-    private TaskScheduler<OUTPUT_TYPE> scheduler;
+    private final TaskScheduler<OUTPUT_TYPE> scheduler;
 
     private final WiringComponentProxy proxy = new WiringComponentProxy();
     private final COMPONENT_TYPE proxyComponent;

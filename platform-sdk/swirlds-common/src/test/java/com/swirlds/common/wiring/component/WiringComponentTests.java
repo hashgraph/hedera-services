@@ -47,21 +47,18 @@ public class WiringComponentTests {
 
         @Override
         public Long handleFoo(@NonNull final Integer foo) {
-            System.out.println("foo = " + foo);
             runningValue += foo;
             return runningValue;
         }
 
         @Override
         public Long handleBar(@NonNull final Boolean bar) {
-            System.out.println("bar = " + bar);
             runningValue *= bar ? 1 : -1;
             return runningValue;
         }
 
         @Override
         public void handleBaz(@NonNull final String baz) {
-            System.out.println("baz = " + baz);
             runningValue *= baz.hashCode();
         }
 
@@ -124,7 +121,6 @@ public class WiringComponentTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            System.out.println("i = " + i);
             if (i % 3 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
