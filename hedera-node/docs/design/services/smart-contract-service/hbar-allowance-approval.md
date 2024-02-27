@@ -17,7 +17,7 @@ The implementation for crypto allowance and approval in the Token Service Module
 
 In order to support both EOA and contract callers to these functions, a new interface `IHRC632` will be supported and implemented using the pattern established for token proxy contracts as discussed in the `Specification` section of [HIP-719](https://hips.hedera.com/hip/hip-719). 
 The difference is that `IHRC632` will act on an account address rather than a token address will be the account in view with respect to the allowance to the `spender` account for the specified amount.  
-A new proxy contract and a new system contract to handle these transaction requests will be implemented A new proxy contract and a new system contract to handle these transaction requests will be implemented similar to HIP 719 logic.
+A new proxy contract and a new system contract to handle these transaction requests will be implemented similar to the logic for tokens described in HIP-719.
 For security purposes, an EOA account sender must also sign the transaction.  If the sender is a contract that supports this interface then **any** caller will be able to grant an allowance to the contract's hbars.
 
 ## Implementation
