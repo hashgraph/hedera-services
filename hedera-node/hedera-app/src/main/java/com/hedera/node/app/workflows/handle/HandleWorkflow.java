@@ -80,6 +80,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -89,6 +90,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -578,12 +581,41 @@ public class HandleWorkflow {
                         .daggerApp
                         .workingStateAccessor()
                         .getHederaState();
+                final var creatorId = creator.accountId();
+                final var accountsMetadata = mhs.services.get(TokenService.NAME).get(TokenServiceImpl.ACCOUNTS_KEY);
+                final var onDiskKey = new OnDiskKey<>((StateMetadata<AccountID, ?>) accountsMetadata, creatorId);
+                logger.error(
+                        "Missing key {} had hashCode={} and classId={}",
+                        onDiskKey,
+                        onDiskKey.hashCode(),
+                        onDiskKey.getClassId());
+                final var mws = mhs.writableStatesMap.get(TokenService.NAME);
+                try {
+                    final WritableKVState<AccountID, Account> accountsState = mws.get(TokenServiceImpl.ACCOUNTS_KEY);
+                    logger.error("Underlying writable states map has {} entries", accountsState.size());
+                    final var maybeCreatorAccount = accountsState.get(creatorId);
+                    logger.error(
+                            "Account {} was {} found via direct lookup",
+                            creatorId,
+                            maybeCreatorAccount == null ? "not " : "");
+                } catch (Exception ex) {
+                    logger.error(
+                            "Could not directly lookup account {} in underlying writable states map", creatorId, ex);
+                }
                 try {
                     VirtualMapLike.from(requireNonNull(requireNonNull(mhs)
                                     .getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY))))
                             .extractVirtualMapData(
                                     AdHocThreadManager.getStaticThreadManager(),
-                                    entry -> logger.error("  {} -> {}", entry.key(), entry.value()),
+                                    entry -> {
+                                        final var key = (OnDiskKey<AccountID>) entry.key();
+                                        logger.error(
+                                                "  {} (hashCode={}, classId={}) -> {}",
+                                                key,
+                                                key.hashCode(),
+                                                key.getClassId(),
+                                                entry.value());
+                                    },
                                     1);
                 } catch (InterruptedException ex) {
                     throw new RuntimeException(ex);

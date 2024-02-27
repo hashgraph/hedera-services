@@ -133,7 +133,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
-    private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
+    public final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
     /**
      * Cache of used {@link ReadableStates}.
@@ -143,7 +143,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     /**
      * Cache of used {@link WritableStates}.
      */
-    private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
+    public final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
