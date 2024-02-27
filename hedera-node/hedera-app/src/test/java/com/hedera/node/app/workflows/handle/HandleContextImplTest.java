@@ -240,7 +240,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator, platformState);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -401,7 +401,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator, platformState);
         }
 
         @Test
@@ -934,7 +934,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator, platformState);
         }
 
         @SuppressWarnings("ConstantConditions")

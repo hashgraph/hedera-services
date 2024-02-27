@@ -96,6 +96,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -148,33 +149,35 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
+    private PlatformState platformState;
 
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txBody The {@link TransactionBody} of the transaction
-     * @param functionality The {@link HederaFunctionality} of the transaction
-     * @param signatureMapSize The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
-     * @param payer The {@link AccountID} of the payer
-     * @param payerKey The {@link Key} of the payer
-     * @param networkInfo The {@link NetworkInfo} of the network
-     * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack The {@link SavepointStackImpl} used to manage savepoints
-     * @param configuration The current {@link Configuration}
-     * @param verifier The {@link KeyVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
-     * @param checker The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
-     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
-     * @param feeManager The {@link FeeManager} used to convert usage into fees
-     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
-     * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
-     * @param authorizer The {@link Authorizer} used to authorize the transaction
-     * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
-     * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
-     * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
+     * @param txBody                          The {@link TransactionBody} of the transaction
+     * @param functionality                   The {@link HederaFunctionality} of the transaction
+     * @param signatureMapSize                The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
+     * @param payer                           The {@link AccountID} of the payer
+     * @param payerKey                        The {@link Key} of the payer
+     * @param networkInfo                     The {@link NetworkInfo} of the network
+     * @param category                        The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder                   The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack                           The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration                   The current {@link Configuration}
+     * @param verifier                        The {@link KeyVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder               The {@link RecordListBuilder} used to build the record stream
+     * @param checker                         The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher                      The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup              The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager                      The {@link FeeManager} used to convert usage into fees
+     * @param exchangeRateManager             The {@link ExchangeRateManager} used to obtain exchange rate information
+     * @param userTransactionConsensusTime    The consensus time of the user transaction, not any child transactions
+     * @param authorizer                      The {@link Authorizer} used to authorize the transaction
+     * @param solvencyPreCheck                The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
+     * @param childRecordFinalizer            The {@link ChildRecordFinalizer} used to finalize child records
+     * @param networkUtilizationManager       The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
+     * @param platformState
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -201,7 +204,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            final PlatformState platformState) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -253,6 +257,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.platformState = requireNonNull(platformState, "platformState must not be null");
     }
 
     private WrappedHederaState current() {
@@ -718,7 +723,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator, platformState);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);
@@ -1010,5 +1015,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
         this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
+    }
+
+    @Nullable
+    @Override
+    public Instant freezeTime() {
+        return platformState.getFreezeTime();
     }
 }

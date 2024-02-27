@@ -1538,6 +1538,10 @@ public final class PbjConverter {
         return protoToPbj(topicId, TopicID.class);
     }
 
+    public static FileID toPbj(com.hederahashgraph.api.proto.java.FileID fileID) {
+        return protoToPbj(fileID, FileID.class);
+    }
+
     public static SignatureMap toPbj(com.hederahashgraph.api.proto.java.SignatureMap sigMap) {
         return protoToPbj(sigMap, SignatureMap.class);
     }

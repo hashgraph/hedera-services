@@ -143,7 +143,7 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions =
-                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
+                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {

@@ -86,7 +86,7 @@ class FreezeUpgradeActionsTest {
 
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor);
+        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

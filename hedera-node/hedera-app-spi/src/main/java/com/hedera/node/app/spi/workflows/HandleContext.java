@@ -763,4 +763,7 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
+
+    @Nullable
+    Instant freezeTime();
 }

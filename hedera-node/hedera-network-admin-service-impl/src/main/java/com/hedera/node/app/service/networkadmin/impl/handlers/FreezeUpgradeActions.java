@@ -16,13 +16,19 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.FileID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -30,11 +36,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -57,13 +63,15 @@ public class FreezeUpgradeActions {
 
     private final NetworkAdminConfig adminServiceConfig;
     private final WritableFreezeStore freezeStore;
+    private final ReadableUpgradeFileStore upgradeFileStore;
 
     private final Executor executor;
 
     public FreezeUpgradeActions(
             @NonNull final NetworkAdminConfig adminServiceConfig,
             @NonNull final WritableFreezeStore freezeStore,
-            @NonNull final Executor executor) {
+            @NonNull final Executor executor,
+            @NonNull final ReadableUpgradeFileStore upgradeFileStore) {
         requireNonNull(adminServiceConfig);
         requireNonNull(freezeStore);
         requireNonNull(executor);
@@ -71,6 +79,7 @@ public class FreezeUpgradeActions {
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;
         this.executor = executor;
+        this.upgradeFileStore = upgradeFileStore;
     }
 
     public void externalizeFreezeIfUpgradePending() {
@@ -179,5 +188,47 @@ public class FreezeUpgradeActions {
             log.error("Failed to write NMT marker {}", filePath, e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
+    }
+
+    public void catchUpOnMissedSideEffects(final Instant freezeTime) {
+        catchUpOnMissedFreezeScheduling(freezeTime);
+        catchUpOnMissedUpgradePrep();
+    }
+
+    private void catchUpOnMissedFreezeScheduling(final Instant freezeTime) {
+        final var isUpgradePrepared = freezeStore.updateFileHash() != null;
+        if (isFreezeScheduled() && isUpgradePrepared) {
+            writeMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
+        }
+        /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
+        But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
+        us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
+        imminent PREPARE_UPGRADE. */
+    }
+
+    private void catchUpOnMissedUpgradePrep() {
+        if (freezeStore.updateFileHash() == null) {
+            return;
+        }
+
+        final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
+        final var curSpecialFiles = upgradeFileStore.peek(toPbj(upgradeFileId));
+        if (!isPreparedFileHashValidGiven(curSpecialFiles.contents())) {
+            log.error(
+                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
+                    () -> readableId(upgradeFileId));
+            log.error(MANUAL_REMEDIATION_ALERT);
+            return;
+        }
+        extractSoftwareUpgrade(curSpecialFiles.contents()).join();
+    }
+
+    public boolean isPreparedFileHashValidGiven(final byte[] givenBytes, final byte[] sha384Hash) {
+        final var fid = STATIC_PROPERTIES.scopedFileWith(150);
+        return specialFiles.hashMatches(fid, preparedUpdateFileHash);
+    }
+
+    public synchronized boolean hashMatches(final byte[] givenBytes, final byte[] sha384Hash) {
+        return Arrays.equals(givenBytes, freezeStore.updateFileHash().toByteArray());
     }
 }

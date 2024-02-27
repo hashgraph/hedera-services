@@ -290,7 +290,7 @@ public interface BaseScaffoldingModule {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator, platformState);
         };
     }
 

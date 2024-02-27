@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
@@ -53,12 +54,23 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
+import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import dagger.Binds;
 import dagger.BindsInstance;
 import dagger.Component;
+import dagger.Provides;
+
 import java.nio.charset.Charset;
 import java.time.InstantSource;
+import java.util.Optional;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -123,6 +135,21 @@ public interface HederaInjectionComponent {
     InitTrigger initTrigger();
 
     ThrottleServiceManager throttleServiceManager();
+
+    ReconnectCompleteListener reconnectListener();
+
+    StateWriteToDiskCompleteListener stateWriteToDiskListener();
+
+    PlatformStatusChangeListener statusChangeListener();
+
+    IssListener issListener();
+
+    NewSignedStateListener newSignedStateListener();
+
+    Optional<NewRecoveredStateListener> maybeNewRecoveredStateListener();
+
+    PlatformStateAccessor platformStateAccessor();
+
 
     @Component.Builder
     interface Builder {
