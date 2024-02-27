@@ -18,7 +18,7 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
-    id("java-test-fixtures")
+    id("com.hedera.hashgraph.java-test-fixtures")
 }
 
 mainModuleInfo {
@@ -44,7 +44,6 @@ testModuleInfo {
     requires("com.swirlds.platform.core")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
-    requires("awaitility")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

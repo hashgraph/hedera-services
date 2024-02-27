@@ -32,9 +32,9 @@ import java.util.function.DoubleSupplier;
  */
 public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAccumulator {
 
-    private final AtomicDouble container;
-    private final DoubleBinaryOperator accumulator;
-    private final DoubleSupplier initializer;
+    private final @NonNull AtomicDouble container;
+    private final @NonNull DoubleBinaryOperator accumulator;
+    private final @NonNull DoubleSupplier initializer;
 
     public DefaultDoubleAccumulator(@NonNull final Config config) {
         super(config);
@@ -58,6 +58,7 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public List<SnapshotEntry> takeSnapshot() {
         return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsDouble())));
     }

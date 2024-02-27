@@ -48,6 +48,7 @@ sourceSets {
     main { resources { srcDir("src/main/resource") } }
 
     create("rcdiff")
+    create("yahcli")
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -103,7 +104,7 @@ tasks.register<Test>("hapiTestCrypto") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("CRYPTO") }
+    useJUnitPlatform { includeTags("CRYPTO", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -118,7 +119,7 @@ tasks.register<Test>("hapiTestToken") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TOKEN") }
+    useJUnitPlatform { includeTags("TOKEN", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -133,7 +134,7 @@ tasks.register<Test>("hapiTestSmartContract") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("SMART_CONTRACT") }
+    useJUnitPlatform { includeTags("SMART_CONTRACT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -148,7 +149,7 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TIME_CONSUMING") }
+    useJUnitPlatform { includeTags("TIME_CONSUMING", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -163,7 +164,7 @@ tasks.register<Test>("hapiTestRestart") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("RESTART") }
+    useJUnitPlatform { includeTags("RESTART", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -177,7 +178,7 @@ tasks.register<Test>("hapiTestNDReconnect") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("ND_RECONNECT") }
+    useJUnitPlatform { includeTags("ND_RECONNECT", "RECORD_STREAM_VALIDATION") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -221,8 +222,9 @@ tasks.shadowJar {
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
-
+        from(sourceSets["yahcli"].output)
         archiveClassifier.set("yahcli")
+        configurations = listOf(project.configurations.getByName("yahcliRuntimeClasspath"))
 
         manifest {
             attributes(
@@ -272,7 +274,7 @@ val copyValidation =
 
 val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
     }
 
@@ -286,7 +288,7 @@ val copyYahCli =
 
 val cleanYahCli =
     tasks.register<Delete>("cleanYahCli") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 

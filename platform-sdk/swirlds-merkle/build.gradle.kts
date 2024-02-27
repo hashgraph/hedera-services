@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
-    id("java-test-fixtures")
+    id("com.hedera.hashgraph.java-test-fixtures")
 }
 
 testModuleInfo {
@@ -32,7 +32,6 @@ testModuleInfo {
     requires("com.swirlds.config.api.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    requires("com.swirlds.merkle.test")
     requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")
 }

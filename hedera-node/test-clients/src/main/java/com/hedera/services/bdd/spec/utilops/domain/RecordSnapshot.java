@@ -58,7 +58,7 @@ public class RecordSnapshot {
     public List<ParsedItem> parsedItems() {
         return encodedItems.stream()
                 .map(EncodedItem::asParsedItem)
-                .filter(pi -> !pi.isPropertyOverride())
+                .filter(pi -> !pi.isSpecialFileChange())
                 .toList();
     }
 }

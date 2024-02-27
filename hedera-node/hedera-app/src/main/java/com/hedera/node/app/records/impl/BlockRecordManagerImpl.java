@@ -201,6 +201,12 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return false;
     }
 
+    @Override
+    public void markMigrationRecordsStreamed() {
+        lastBlockInfo =
+                lastBlockInfo.copyBuilder().migrationRecordsStreamed(true).build();
+    }
+
     /**
      * We need this to preserve unit test expectations written that assumed a bug in the original implementation,
      * in which the first consensus time of the current block was not in state.
@@ -247,9 +253,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         runningHashesState.put(new RunningHashes(
                 currentRunningHash,
-                existingRunningHashes.runningHash(),
                 existingRunningHashes.nMinus1RunningHash(),
-                existingRunningHashes.nMinus2RunningHash()));
+                existingRunningHashes.nMinus2RunningHash(),
+                existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
     }
@@ -293,6 +299,18 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     @Override
     public Instant firstConsTimeOfLastBlock() {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Instant consTimeOfLastHandledTxn() {
+        final var lastHandledTxn = lastBlockInfo.consTimeOfLastHandledTxn();
+        return lastHandledTxn != null
+                ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
+                : Instant.EPOCH;
     }
 
     @Override
@@ -344,6 +362,26 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
         // Cache the updated block info
         this.lastBlockInfo = newBlockInfo;
+    }
+
+    /**
+     * Check if the consensus time of the last handled transaction is the default value. This is
+     * used to determine if migration records should be streamed
+     *
+     * @param blockInfo the block info object to test
+     * @return true if the given block info has a last handled transaction time that is considered a
+     * 'default' or 'unset' value, false otherwise.
+     */
+    public static boolean isDefaultConsTimeOfLastHandledTxn(@Nullable final BlockInfo blockInfo) {
+        if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+            return true;
+        }
+
+        // If there is a value, it is considered a 'default' value unless it is after Instant.EPOCH
+        var inst = Instant.ofEpochSecond(
+                blockInfo.consTimeOfLastHandledTxn().seconds(),
+                blockInfo.consTimeOfLastHandledTxn().nanos());
+        return !inst.isAfter(Instant.EPOCH);
     }
 
     // ========================================================================================================

@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
@@ -27,19 +28,18 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,38 +49,31 @@ import org.apache.logging.log4j.Logger;
  * <p>This is a temporary solution. In the future we want to have specific transactions
  * to update the data that is currently transmitted in these files.
  */
+@Singleton
 public class SystemFileUpdateFacility {
 
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
 
     private final ConfigProviderImpl configProvider;
-    private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
-    private final CongestionMultipliers congestionMultipliers;
-    private final ThrottleAccumulator backendThrottle;
-    private final ThrottleAccumulator frontendThrottle;
+    private final ThrottleServiceManager throttleServiceManager;
 
     /**
      * Creates a new instance of this class.
      *
      * @param configProvider the configuration provider
      */
+    @Inject
     public SystemFileUpdateFacility(
             @NonNull final ConfigProviderImpl configProvider,
-            @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final CongestionMultipliers congestionMultipliers,
-            @NonNull final ThrottleAccumulator backendThrottle,
-            @NonNull final ThrottleAccumulator frontendThrottle) {
+            @NonNull final ThrottleServiceManager throttleServiceManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
-        this.congestionMultipliers = requireNonNull(congestionMultipliers, "congestionMultipliers must not be null");
-        this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
-        this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
     }
 
     /**
@@ -115,40 +108,40 @@ public class SystemFileUpdateFacility {
 
         // If it is a special file, call the updater.
         // We load the file only, if there is an updater for it.
-        final var config = configuration.getConfigData(FilesConfig.class);
+        final var filesConfig = configuration.getConfigData(FilesConfig.class);
 
-        if (fileNum == config.feeSchedules()) {
+        if (fileNum == filesConfig.feeSchedules()) {
             return feeManager.update(FileUtilities.getFileContent(state, fileID));
-        } else if (fileNum == config.exchangeRates()) {
+        } else if (fileNum == filesConfig.exchangeRates()) {
             exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
-        } else if (fileNum == config.networkProperties()) {
-            final var networkProperties = FileUtilities.getFileContent(state, fileID);
-            final var permissions =
-                    FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
-            configProvider.update(networkProperties, permissions);
-            logContentsOf("Network properties", networkProperties);
-            backendThrottle.applyGasConfig();
-            frontendThrottle.applyGasConfig();
-
-            // Updating the multiplier source to use the new gas throttle
-            // values that are coming from the network properties
-            congestionMultipliers.resetExpectations();
-        } else if (fileNum == config.hapiPermissions()) {
-            final var networkProperties =
-                    FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
-            final var permissions = FileUtilities.getFileContent(state, fileID);
-            configProvider.update(networkProperties, permissions);
-            logContentsOf("API permissions", permissions);
-        } else if (fileNum == config.throttleDefinitions()) {
-            final var result = throttleManager.update(FileUtilities.getFileContent(state, fileID));
-            backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
-            frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
-
-            // Updating the multiplier source to use the new throttle definitions
-            congestionMultipliers.resetExpectations();
-            return result;
+        } else if (fileNum == filesConfig.networkProperties()) {
+            updateConfig(configuration, ConfigType.NETWORK_PROPERTIES, state);
+            throttleServiceManager.refreshThrottleConfiguration();
+        } else if (fileNum == filesConfig.hapiPermissions()) {
+            updateConfig(configuration, ConfigType.API_PERMISSIONS, state);
+        } else if (fileNum == filesConfig.throttleDefinitions()) {
+            return throttleServiceManager.recreateThrottles(FileUtilities.getFileContent(state, fileID));
         }
         return SUCCESS;
+    }
+
+    private enum ConfigType {
+        NETWORK_PROPERTIES,
+        API_PERMISSIONS,
+    }
+
+    private void updateConfig(
+            @NonNull final Configuration configuration,
+            @NonNull final ConfigType configType,
+            @NonNull final HederaState state) {
+        observePropertiesAndPermissions(state, configuration, (properties, permissions) -> {
+            configProvider.update(properties, permissions);
+            if (configType == ConfigType.NETWORK_PROPERTIES) {
+                logContentsOf("Network properties", properties);
+            } else {
+                logContentsOf("API permissions", permissions);
+            }
+        });
     }
 
     private void logContentsOf(@NonNull final String configFileName, @NonNull final Bytes contents) {
@@ -164,14 +157,5 @@ public class SystemFileUpdateFacility {
         } catch (ParseException ignore) {
             // If this isn't parseable we won't have updated anything, also don't log
         }
-    }
-
-    private FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
-        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-        return FileID.newBuilder()
-                .realmNum(hederaConfig.realm())
-                .shardNum(hederaConfig.shard())
-                .fileNum(fileNum)
-                .build();
     }
 }

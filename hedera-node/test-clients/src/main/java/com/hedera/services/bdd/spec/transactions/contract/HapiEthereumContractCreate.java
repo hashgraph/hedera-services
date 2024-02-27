@@ -58,12 +58,13 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private EthTxData.EthTransactionType type;
     private long nonce;
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private final BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
+    private Integer chainId = CHAIN_ID;
 
     @Nullable
     private BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec;
@@ -80,6 +81,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiEthereumContractCreate chainId(Integer chainId) {
+        this.chainId = chainId;
         return this;
     }
 
@@ -173,6 +179,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         return this;
     }
 
+    public HapiEthereumContractCreate maxFeePerGas(long maxFeePerGas) {
+        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
+        return this;
+    }
+
     public HapiEthereumContractCreate maxPriorityGas(long maxPriorityGas) {
         this.maxPriorityGas = maxPriorityGas;
         return this;
@@ -212,7 +223,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var ethTxData = new EthTxData(
                 null,
                 type,
-                Integers.toBytes(CHAIN_ID),
+                Integers.toBytes(chainId),
                 nonce,
                 gasPriceBytes,
                 maxPriorityGasBytes,

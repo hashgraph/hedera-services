@@ -23,7 +23,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -93,30 +92,15 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         return closed;
     }
 
-    /**
-     * Save a bulk set of changes to internal nodes and leaves.
-     *
-     * @param firstLeafPath
-     * 		the new path of first leaf node
-     * @param lastLeafPath
-     * 		the new path of last leaf node
-     * @param pathHashRecordsToUpdate
-     * 		stream of new internal nodes and updated internal nodes
-     * @param leafRecordsToAddOrUpdate
-     * 		stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete
-     * 		stream of new leaf nodes to delete, The leaf record's key and path have to be populated, all other data can
-     * 		be null.
-     */
     @Override
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
             final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            final boolean isReconnectContext)
             throws IOException {
-
         if (failureOnSave) {
             throw new IOException("Preconfigured failure on save");
         }
@@ -137,7 +121,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         }
 
         deleteInternalRecords(firstLeafPath);
-        deleteLeafRecords(leafRecordsToDelete);
+        deleteLeafRecords(leafRecordsToDelete, isReconnectContext);
         saveInternalRecords(lastLeafPath, pathHashRecordsToUpdate);
         saveLeafRecords(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate);
         // Save the leaf paths for later validation checks and to let us know when to delete internals
@@ -268,14 +252,6 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         // this database has no statistics
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualKeySet<K> buildKeySet() {
-        return new InMemoryKeySet<>();
-    }
-
     // =================================================================================================================
     // private methods
 
@@ -331,12 +307,18 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         }
     }
 
-    private void deleteLeafRecords(final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
+    private void deleteLeafRecords(
+            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete, final boolean isReconnectContext) {
         final var itr = leafRecordsToDelete.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
-            this.keyToPathMap.remove(rec.getKey());
-            this.leafRecords.remove(rec.getPath());
+            final long path = rec.getPath();
+            final K key = rec.getKey();
+            final long oldPath = keyToPathMap.get(key);
+            if (!isReconnectContext || path == oldPath) {
+                this.keyToPathMap.remove(key);
+                this.leafRecords.remove(path);
+            }
         }
     }
 

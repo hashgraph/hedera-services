@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +91,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private String account = null;
     private ByteString alias = null;
     private byte[] explicitTo = null;
+    private Integer chainId = CHAIN_ID;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
@@ -241,6 +243,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return this;
     }
 
+    public HapiEthereumCall chainId(@Nullable Integer chainId) {
+        this.chainId = chainId;
+        return this;
+    }
+
     public HapiEthereumCall gasPrice(long gasPrice) {
         this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
         return this;
@@ -330,7 +337,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var ethTxData = new EthTxData(
                 null,
                 type,
-                Integers.toBytes(CHAIN_ID),
+                Integers.toBytes(chainId),
                 nonce,
                 gasPriceBytes,
                 maxPriorityGasBytes,

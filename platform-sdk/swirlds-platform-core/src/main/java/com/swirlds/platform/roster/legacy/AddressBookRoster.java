@@ -49,23 +49,37 @@ public class AddressBookRoster implements Roster {
 
     private final Map<NodeId, RosterEntry> entries = new HashMap<>();
     private List<NodeId> nodeOrder;
+    private AddressBook addressBook;
 
     /**
      * Constructs a new {@link AddressBookRoster} from the given {@link AddressBook} and {@link KeysAndCerts} map.
      *
      * @param addressBook     the address book
-     * @param keysAndCertsMap the keys and certs map
      */
-    public AddressBookRoster(
-            @NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCertsMap) {
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(keysAndCertsMap);
+    public AddressBookRoster(@NonNull final AddressBook addressBook) {
+        this.addressBook = Objects.requireNonNull(addressBook);
+        setupRosterFromAddressBook();
+    }
 
+    /**
+     * Populates the AddressRosterEntry map from the AddressBook and determines the node order.
+     */
+    private void setupRosterFromAddressBook() {
         for (final Address address : addressBook) {
-            entries.put(address.getNodeId(), new AddressRosterEntry(address, keysAndCertsMap.get(address.getNodeId())));
+            entries.put(address.getNodeId(), new AddressRosterEntry(address));
         }
 
         nodeOrder = entries.keySet().stream().sorted().toList();
+    }
+
+    /**
+     * Returns the address book.
+     *
+     * @return the address book
+     */
+    @NonNull
+    public AddressBook getAddressBook() {
+        return addressBook;
     }
 
     /**
@@ -87,20 +101,13 @@ public class AddressBookRoster implements Roster {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(entries.size());
-        for (final RosterEntry entry : this) {
-            out.writeSerializable(entry, true);
-        }
+        out.writeSerializable(addressBook, false);
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        final int size = in.readInt();
-        for (int i = 0; i < size; i++) {
-            final RosterEntry entry = in.readSerializable();
-            entries.put(entry.getNodeId(), entry);
-        }
-        nodeOrder = entries.keySet().stream().sorted().toList();
+        addressBook = in.readSerializable(false, AddressBook::new);
+        setupRosterFromAddressBook();
     }
 
     @Override
@@ -147,12 +154,14 @@ public class AddressBookRoster implements Roster {
             return false;
         }
         final AddressBookRoster that = (AddressBookRoster) o;
-        return Objects.equals(entries, that.entries);
+        return Objects.equals(addressBook, that.addressBook)
+                && Objects.equals(entries, that.entries)
+                && Objects.equals(nodeOrder, that.nodeOrder);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entries);
+        return Objects.hash(addressBook);
     }
 
     @Override

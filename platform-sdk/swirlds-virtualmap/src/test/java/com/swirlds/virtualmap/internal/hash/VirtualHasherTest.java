@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,6 +53,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Tests for the {@link VirtualHasher}.
  */
+@Tag(TIMING_SENSITIVE)
 class VirtualHasherTest extends VirtualHasherTestBase {
 
     /**

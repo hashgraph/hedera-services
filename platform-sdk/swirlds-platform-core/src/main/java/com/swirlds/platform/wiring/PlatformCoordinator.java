@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
@@ -43,10 +44,11 @@ public class PlatformCoordinator {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final ConsensusEngineWiring consensusEngineWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
+    private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
 
     /**
      * Constructor
@@ -58,10 +60,11 @@ public class PlatformCoordinator {
      * @param orphanBufferWiring                     the orphan buffer wiring
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
-     * @param linkedEventIntakeWiring                the linked event intake wiring
+     * @param consensusEngineWiring                  the consensus engine wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
+     * @param consensusRoundHandlerWiring            the consensus round handler wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -71,10 +74,11 @@ public class PlatformCoordinator {
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
-            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
+            @NonNull final ConsensusEngineWiring consensusEngineWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
-            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
+            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
+            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -83,10 +87,11 @@ public class PlatformCoordinator {
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
-        this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
+        this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
+        this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
     }
 
     /**
@@ -105,42 +110,46 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        consensusEngineWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
     }
 
     /**
-     * Safely clears the intake pipeline
-     * <p>
-     * Future work: this method should be expanded to coordinate the clearing of the entire system
+     * Safely clears the system in preparation for reconnect
      */
     public void clear() {
-        // Phase 1: pause
-        // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
-        // pipeline.
-        linkedEventIntakeWiring.pauseInput().inject(true);
-        eventCreationManagerWiring.pauseInput().inject(true);
-        linkedEventIntakeWiring.flushRunnable().run();
+        // Phase 1: squelch
+        // Break cycles in the system. Flush squelched components just in case there is a task being executed when
+        // squelch is activated.
+        consensusEngineWiring.startSquelchingRunnable().run();
+        consensusEngineWiring.flushRunnable().run();
+        eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
 
+        // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
+        // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
+        // be handled.
+        consensusRoundHandlerWiring.startSquelchingRunnable().run();
+        consensusRoundHandlerWiring.flushRunnable().run();
+
         // Phase 2: flush
-        // Flush everything remaining in the intake pipeline out into the void.
+        // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
         stateSignatureCollectorWiring.flush();
+        consensusRoundHandlerWiring.flushRunnable().run();
 
-        // Phase 3: clear
-        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
+        // Phase 3: stop squelching
+        // Once everything has been flushed out of the system, it's safe to stop squelching.
+        consensusEngineWiring.stopSquelchingRunnable().run();
+        eventCreationManagerWiring.stopSquelching();
+        consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+
+        // Phase 4: clear
+        // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
-        eventDeduplicatorWiring.flushRunnable().run();
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
-        orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        inOrderLinkerWiring.flushRunnable().run();
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-
-        // Phase 4: unpause
-        // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.
-        linkedEventIntakeWiring.pauseInput().inject(false);
-        eventCreationManagerWiring.pauseInput().inject(false);
+        eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
     }
 }

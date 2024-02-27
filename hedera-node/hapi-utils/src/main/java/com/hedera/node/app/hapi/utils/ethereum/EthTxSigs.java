@@ -67,16 +67,17 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         final byte[] s = new byte[32];
         System.arraycopy(sig, 32, s, 0, 32);
 
-        BigInteger v;
+        BigInteger val;
+        // calulations originate from https://eips.ethereum.org/EIPS/eip-155
         if (ethTx.type() == LEGACY_ETHEREUM) {
             if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
-                v = BigInteger.valueOf(27L + recId.getValue());
+                val = BigInteger.valueOf(27L + recId.getValue());
             } else {
-                v = BigInteger.valueOf(35L + recId.getValue())
+                val = BigInteger.valueOf(35L + recId.getValue())
                         .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
             }
         } else {
-            v = null;
+            val = null;
         }
 
         return new EthTxData(
@@ -93,7 +94,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                 ethTx.callData(),
                 ethTx.accessList(),
                 (byte) recId.getValue(),
-                v == null ? null : v.toByteArray(),
+                val == null ? null : val.toByteArray(),
                 r,
                 s);
     }
@@ -182,11 +183,11 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(final Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
 
-        final EthTxSigs ethTxSigs = (EthTxSigs) o;
+        final EthTxSigs ethTxSigs = (EthTxSigs) other;
 
         if (!Arrays.equals(publicKey, ethTxSigs.publicKey)) return false;
         return Arrays.equals(address, ethTxSigs.address);

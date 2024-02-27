@@ -24,9 +24,9 @@ import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.Body
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -78,10 +78,10 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapVa
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
 import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
 import com.swirlds.logging.legacy.payload.SoftwareVersionPayload;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.TransactionState;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
+import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.state.PlatformState;
@@ -240,6 +240,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handles quorum determinations for all {@link ControlTransaction} processed by the handle method.
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
+
+    private long transactionsIgnoredByExpectedMap = 0;
 
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
@@ -538,7 +540,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         setChild(ChildIndices.FCM_FAMILY, fcmFamily);
     }
 
-    public List<TransactionCounter> getTransactionCounter() {
+    public TransactionCounterList getTransactionCounter() {
         return getChild(ChildIndices.TRANSACTION_COUNTER);
     }
 
@@ -650,6 +652,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public synchronized PlatformTestingToolState copy() {
         throwIfImmutable();
         roundCounter++;
+
+        logger.info(
+                DEMO_INFO.getMarker(),
+                "Copying round {}, transactions ignored by expected map: {}." + " This log is added to debug #11254",
+                roundCounter,
+                transactionsIgnoredByExpectedMap);
 
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
@@ -883,6 +891,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!expectedFCMFamily.shouldHandleForKeys(
                         keys, transactionType, getConfig(), entityType, epochMillis, originId)
                 && entityType != EntityType.NFT) {
+            transactionsIgnoredByExpectedMap++;
             return;
         }
 

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -42,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
@@ -52,7 +54,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -161,6 +162,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
@@ -214,6 +216,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
@@ -233,6 +236,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_ADMIN_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
@@ -240,11 +244,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 UPDATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(INVALID_TOKEN_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 NO_ADMIN_KEY,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(TOKEN_IS_IMMUTABLE)))));
+                                recordWith().status(TOKEN_IS_IMMUTABLE)))));
     }
 
     @HapiTest
@@ -298,10 +302,19 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 "InvalidTokenId",
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(INVALID_TOKEN_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 NO_ADMIN_KEY,
                                 CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith().status(KEY_NOT_PROVIDED)))));
+                                recordWith().status(KEY_NOT_PROVIDED)
+                                // .contractCallResult(ContractFnResultAsserts.resultWith()
+                                //
+                                // .contractCallResult(htsPrecompileResult()
+                                //
+                                // .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                                //                                                        .withStatus(KEY_NOT_PROVIDED)
+                                //
+                                // .withTokenKeyValue(Key.newBuilder().build()))))
+                                ))));
     }
 }

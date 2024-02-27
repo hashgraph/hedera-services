@@ -41,15 +41,17 @@ import java.time.Duration;
  *                                        during a sync
  * @param maxSyncTime                     the maximum amount of time to spend syncing with a peer, syncs that take
  *                                        longer than this will be aborted
+ * @param maxSyncEventCount               the maximum number of events to send in a sync, or 0 for no limit
  */
 @ConfigData("sync")
 public record SyncConfig(
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
-        @ConfigProperty(defaultValue = "true") boolean onePermitPerPeer,
+        @ConfigProperty(defaultValue = "false") boolean onePermitPerPeer,
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
-        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
+        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime,
+        @ConfigProperty(defaultValue = "0") int maxSyncEventCount) {}

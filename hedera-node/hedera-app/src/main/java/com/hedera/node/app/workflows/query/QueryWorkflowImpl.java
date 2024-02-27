@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.node.app.workflows.ParseExceptionWorkaround.getParseExceptionCause;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -190,8 +189,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var paymentRequired = handler.requiresNodePayment(responseType);
                 final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime, storeFactory);
                 final QueryContext context;
-                Transaction allegedPayment = null;
-                TransactionBody txBody = null;
+                Transaction allegedPayment;
+                TransactionBody txBody;
                 AccountID payerID = null;
                 if (paymentRequired) {
                     allegedPayment = queryHeader.paymentOrThrow();
@@ -202,7 +201,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     txBody = transactionInfo.txBody();
 
                     // get payer
-                    payerID = transactionInfo.payerID();
+                    payerID = requireNonNull(transactionInfo.payerID());
                     context = new QueryContextImpl(
                             state,
                             storeFactory,
@@ -215,7 +214,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                     // A super-user does not have to pay for a query and has all permissions
                     if (!authorizer.isSuperUser(payerID)) {
-
                         // 3.ii Validate CryptoTransfer
                         queryChecker.validateCryptoTransfer(transactionInfo);
 
@@ -261,8 +259,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 handler.validate(context);
 
                 // 5. Check query throttles
-                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
-                        && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
                     throw new PreCheckException(BUSY);
                 }
 
@@ -302,12 +299,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
         } catch (ParseException e) {
-
-            // Temporary workaround for unexpected behavior in PBJ. Can be removed if we agree that
-            // ParseException should not be wrapped.
-            final var cause = getParseExceptionCause(e);
-
-            switch (cause) {
+            switch (e.getCause()) {
                 case MalformedProtobufException ex:
                     break;
                 case UnknownFieldException ex:
