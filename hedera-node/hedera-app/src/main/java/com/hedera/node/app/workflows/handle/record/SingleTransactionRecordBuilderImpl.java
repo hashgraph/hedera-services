@@ -68,7 +68,6 @@ import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenUpdateNftsRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
@@ -131,8 +130,7 @@ public class SingleTransactionRecordBuilderImpl
                 GenesisAccountRecordBuilder,
                 ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder,
-                TokenUpdateNftsRecordBuilder {
+                CryptoUpdateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());

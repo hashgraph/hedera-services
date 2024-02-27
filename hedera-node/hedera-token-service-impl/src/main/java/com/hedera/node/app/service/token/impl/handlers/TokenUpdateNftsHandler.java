@@ -35,7 +35,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateNftsRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -103,8 +102,6 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }
         updateNftMetadata(nftSerialNums, nftStore, tokenNftId, op);
-        final var recordBuilder = context.recordBuilder(TokenUpdateNftsRecordBuilder.class);
-        recordBuilder.tokenType(token.tokenType());
     }
 
     private void updateNftMetadata(

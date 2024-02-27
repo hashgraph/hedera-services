@@ -26,7 +26,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPP
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -53,7 +52,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateNftsRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -93,9 +91,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
 
-    @Mock(strictness = LENIENT)
-    private TokenUpdateNftsRecordBuilder recordBuilder;
-
     private AttributeValidator attributeValidator;
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
@@ -108,7 +103,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         final TokenUpdateNftValidator validator = new TokenUpdateNftValidator(new TokenAttributesValidator());
         subject = new TokenUpdateNftsHandler(validator);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
     }
