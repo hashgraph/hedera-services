@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.state.output;
+package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * There is a new, most up-to-date and complete signed state.
+ * The tips and event window of the sync peer. This is the first thing sent/received during a sync (after protocol
+ * negotiation).
  */
-@FunctionalInterface
-public interface NewLatestCompleteStateConsumer {
-
-    /**
-     * There is a new latest complete signed state.
-     *
-     * @param signedState signed state
-     */
-    void newLatestCompleteStateEvent(@NonNull final SignedState signedState);
-}
+public record TheirTipsAndEventWindow(@NonNull NonAncientEventWindow eventWindow, @NonNull List<Hash> tips) {}

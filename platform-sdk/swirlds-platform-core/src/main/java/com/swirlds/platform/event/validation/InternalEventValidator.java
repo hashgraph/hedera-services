@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -231,7 +231,7 @@ public class InternalEventValidator {
                 inconsistentSelfParentAccumulator.update(1);
                 return false;
             }
-            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && selfParent.getBirthRound() < ROUND_FIRST) {
+            if (selfParent.getBirthRound() < ROUND_FIRST) {
                 inconsistentSelfParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has self parent with birth round less than the ROUND_FIRST. self-parent birth round: %s"
@@ -250,7 +250,7 @@ public class InternalEventValidator {
                 inconsistentOtherParentAccumulator.update(1);
                 return false;
             }
-            if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && otherParent.getBirthRound() < ROUND_FIRST) {
+            if (otherParent.getBirthRound() < ROUND_FIRST) {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with birth round less than the ROUND_FIRST. other-parent: %s"
@@ -323,7 +323,7 @@ public class InternalEventValidator {
     private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
         final long eventBirthRound = event.getDescriptor().getBirthRound();
 
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD && eventBirthRound < ROUND_FIRST) {
+        if (eventBirthRound < ROUND_FIRST) {
             invalidBirthRoundLogger.error(
                     EXCEPTION.getMarker(),
                     "Event %s has an invalid birth round. Event birth round: %s, the min birth round is: %s"

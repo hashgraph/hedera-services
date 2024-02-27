@@ -88,7 +88,7 @@ public class FileUtilities {
                 getFileContent(state, propertiesId), getFileContent(state, permissionsId));
     }
 
-    private static FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
+    public static FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
         return FileID.newBuilder()
                 .realmNum(hederaConfig.realm())
