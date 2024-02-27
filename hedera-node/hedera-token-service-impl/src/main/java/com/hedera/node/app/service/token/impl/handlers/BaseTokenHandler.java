@@ -388,7 +388,6 @@ public class BaseTokenHandler {
         }
         final var copyAccount = account.copyBuilder();
         accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
-        // TODO: Need to track units change in record in finalize method for this
     }
 
     protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {

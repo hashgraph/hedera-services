@@ -101,10 +101,19 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
+    private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     @Inject
     public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
+        this(validator, true);
+    }
+
+    public CryptoTransferHandler(
+            @NonNull final CryptoTransferValidator validator,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.validator = validator;
+        this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
+                enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
 
     @Override
@@ -213,7 +222,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
         // create a new transfer context that is specific only for this transaction
-        final var transferContext = new TransferContextImpl(context);
+        final var transferContext =
+                new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
 
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
