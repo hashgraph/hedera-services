@@ -25,6 +25,9 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link WritableStates} implementation that delegates to the current {@link WritableStates} in a
@@ -35,6 +38,8 @@ import java.util.Set;
  * state. This class delegates to the current {@link WritableStates} on top of such a stack.
  */
 public class WritableStatesStack implements WritableStates {
+    private static final Logger log = LogManager.getLogger(WritableStatesStack.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private final SavepointStackImpl stack;
     private final String statesName;
@@ -76,6 +81,9 @@ public class WritableStatesStack implements WritableStates {
     @Override
     @NonNull
     public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
+        if (LOG_READS.get()) {
+            log.info("Creating a WritableKVStateStack from {} state: {}", statesName, stateKey);
+        }
         return new WritableKVStateStack<>(this, stateKey);
     }
 

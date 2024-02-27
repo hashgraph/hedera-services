@@ -23,12 +23,17 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link HederaState} that wraps another {@link HederaState} and provides a {@link #commit()} method that
  * commits all modifications to the underlying state.
  */
 public class WrappedHederaState implements HederaState {
+    private static final Logger log = LogManager.getLogger(WrappedHederaState.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private final HederaState delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
@@ -82,8 +87,15 @@ public class WrappedHederaState implements HederaState {
     @Override
     @NonNull
     public WritableStates getWritableStates(@NonNull String serviceName) {
-        return writableStatesMap.computeIfAbsent(
-                serviceName, s -> new WrappedWritableStates(delegate.getWritableStates(s)));
+        return writableStatesMap.computeIfAbsent(serviceName, s -> {
+            if (LOG_READS.get()) {
+                log.error(
+                        "Creating new WrappedWritableStates for {} from delegate of type {}",
+                        s,
+                        delegate.getClass().getName());
+            }
+            return new WrappedWritableStates(delegate.getWritableStates(s));
+        });
     }
 
     /**

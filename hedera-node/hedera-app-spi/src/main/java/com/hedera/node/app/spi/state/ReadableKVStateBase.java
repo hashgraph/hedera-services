@@ -21,6 +21,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A base class for implementations of {@link ReadableKVState} and {@link WritableKVState}.
@@ -29,6 +32,8 @@ import java.util.concurrent.ConcurrentMap;
  * @param <V> The value type
  */
 public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
+    private static final Logger log = LogManager.getLogger(ReadableKVStateBase.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -69,11 +74,20 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
         // We need to cache the item because somebody may perform business logic basic on this
         // contains call, even if they never need the value itself!
         Objects.requireNonNull(key);
+        if (LOG_READS.get()) {
+            log.info("Reading key {} from state {} - hasBeenRead={}", key, stateKey, hasBeenRead(key));
+        }
         if (!hasBeenRead(key)) {
             final var value = readFromDataSource(key);
+            if (LOG_READS.get()) {
+                log.info("Read key {} from state {} - data source value={}", key, stateKey, value);
+            }
             markRead(key, value);
         }
         final var value = readCache.get(key);
+        if (LOG_READS.get()) {
+            log.info("Returning key {} from state {} - value={}", key, stateKey, (value == marker) ? null : value);
+        }
         return (value == marker) ? null : value;
     }
 
