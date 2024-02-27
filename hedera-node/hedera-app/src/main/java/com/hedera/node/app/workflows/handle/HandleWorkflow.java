@@ -65,6 +65,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
@@ -582,6 +583,14 @@ public class HandleWorkflow {
                         .workingStateAccessor()
                         .getHederaState();
                 final var creatorId = creator.accountId();
+                final var manufacturedStore =
+                        (ReadableAccountStoreImpl) readableStoreFactory.getStore(ReadableAccountStore.class);
+                final var creatorFromStore = manufacturedStore.getAccountById(creatorId);
+                logger.error(
+                        "Creator {} was {} found in the readable store",
+                        creatorId,
+                        creatorFromStore == null ? "not " : "");
+                logger.error("Underlying readable store has {} entries", manufacturedStore.accountState.size());
                 final var accountsMetadata = mhs.services.get(TokenService.NAME).get(TokenServiceImpl.ACCOUNTS_KEY);
                 final var onDiskKey = new OnDiskKey<>((StateMetadata<AccountID, ?>) accountsMetadata, creatorId);
                 logger.error(

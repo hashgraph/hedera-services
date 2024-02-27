@@ -38,7 +38,7 @@ import java.util.Optional;
  */
 public class ReadableAccountStoreImpl implements ReadableAccountStore {
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<AccountID, Account> accountState;
+    public final ReadableKVState<AccountID, Account> accountState;
     /**
      * The underlying data storage class that holds the aliases data built from the state. An alias can only be defined
      * at the time an account (or contract account) is created, and cannot be changed (except when the contract or
