@@ -84,4 +84,22 @@ public enum Level {
             return defaultLevel;
         }
     }
+
+    public String nameWithFixedSize() {
+        if (this == OFF) {
+            return "OFF  ";
+        } else if (this == ERROR) {
+            return "ERROR ";
+        } else if (this == WARN) {
+            return "WARN  ";
+        } else if (this == INFO) {
+            return "INFO  ";
+        } else if (this == DEBUG) {
+            return "DEBUG ";
+        } else if (this == TRACE) {
+            return "TRACE ";
+        } else {
+            return "      ";
+        }
+    }
 }

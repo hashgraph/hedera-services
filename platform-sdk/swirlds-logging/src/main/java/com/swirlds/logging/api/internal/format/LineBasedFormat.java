@@ -27,7 +27,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * A utility class that formats a {@link LogEvent} as a line based format.
@@ -44,6 +46,9 @@ public class LineBasedFormat {
      */
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
+
+    private static final ConcurrentDateFormat DATE_FORMAT =
+            new ConcurrentDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US, TimeZone.getTimeZone("UTC"));
 
     /**
      * Converts the given object to a string. If the object is {@code null}, the given default value is used.
@@ -120,7 +125,7 @@ public class LineBasedFormat {
         if (level == null) {
             return "UNDEFINED";
         } else {
-            return "%-5s".formatted(level.name());
+            return level.nameWithFixedSize();
         }
     }
 
@@ -153,6 +158,7 @@ public class LineBasedFormat {
         try {
             final StringBuilder sb = new StringBuilder(26);
             sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
+            // sb.append(DATE_FORMAT.format(timestamp));
             while (sb.length() < 26) {
                 sb.append(' ');
             }

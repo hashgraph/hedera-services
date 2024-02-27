@@ -19,8 +19,6 @@ package com.swirlds.logging.api.extensions.handler;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An abstract log handler that synchronizes the handling of log events. This handler is used as a base class for all
@@ -28,11 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * console or to a file.
  */
 public abstract class AbstractSyncedHandler extends AbstractLogHandler {
-
-    /**
-     * The write lock that is used to synchronize the handling of log events.
-     */
-    private final Lock writeLock = new ReentrantLock();
 
     /**
      * True if the log handler is stopped, false otherwise.
@@ -51,8 +44,6 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
 
     @Override
     public final void accept(@NonNull LogEvent event) {
-        //   try {
-        //       writeLock.lock();
         if (stopped) {
             // FUTURE: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
             // the emergency logger will be called multiple times.
@@ -60,9 +51,6 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
         } else {
             handleEvent(event);
         }
-        //     } finally {
-        //          writeLock.unlock();
-        //      }
     }
 
     /**
@@ -74,13 +62,8 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
 
     @Override
     public final void stopAndFinalize() {
-        try {
-            writeLock.lock();
-            stopped = true;
-            handleStopAndFinalize();
-        } finally {
-            writeLock.unlock();
-        }
+        stopped = true;
+        handleStopAndFinalize();
     }
 
     /**
