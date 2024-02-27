@@ -102,8 +102,6 @@ public class BlockInfoDumpUtils {
             System.out.printf(
                     "=== mono running hashes and block info report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
-        } catch (Exception exception) {
-            // todo handle errors
         }
     }
 
@@ -141,8 +139,6 @@ public class BlockInfoDumpUtils {
                 .forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
         writer.writeln(fb);
     }
-
-    // todo create static formatter class
     static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
         return t -> null != t ? formatter.apply(t) : "";
     }

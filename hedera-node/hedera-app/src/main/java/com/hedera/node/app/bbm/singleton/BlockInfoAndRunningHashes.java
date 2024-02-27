@@ -47,8 +47,7 @@ record BlockInfoAndRunningHashes(
 
     public static BlockInfoAndRunningHashes combineFromMono(
             @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf)
-            throws IOException {
+            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf) {
         requireNonNull(merkleNetworkContext);
         requireNonNull(recordsRunningHashLeaf);
 
@@ -103,13 +102,15 @@ record BlockInfoAndRunningHashes(
                 runningHashes.nMinus3RunningHash());
     }
 
-    private static Bytes getBlockHashes(FCQueue<BytesElement> queue) throws IOException {
+    private static Bytes getBlockHashes(FCQueue<BytesElement> queue) {
         ByteArrayOutputStream collector = new ByteArrayOutputStream();
-        final var iterator = queue.iterator();
-        while (iterator.hasNext()) {
-            final var element = iterator.next();
-            collector.write(element.getData());
+        try{
+            for (BytesElement element : queue) {
+                collector.write(element.getData());
+            }
+            return Bytes.wrap(collector.toByteArray());
+        } catch (IOException ioException) {
+            return Bytes.EMPTY;
         }
-        return Bytes.wrap(collector.toByteArray());
     }
 }
