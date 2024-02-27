@@ -109,9 +109,9 @@ public class FileHandler extends AbstractSyncedHandler {
             } catch (final Exception exception) {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file", exception);
             }
-
-            buffer.append(msgBuffer);
         }
+
+        buffer.append(msgBuffer);
     }
 
     @Override
