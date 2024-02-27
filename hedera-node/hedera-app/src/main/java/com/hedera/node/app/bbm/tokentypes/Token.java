@@ -118,38 +118,34 @@ record Token(
 
     static Token fromMod(@NonNull final com.hedera.hapi.node.state.token.Token token) {
         Token tokenRes;
-        try {
-            tokenRes = new Token(
-                    TokenType.valueOf(token.tokenType().protoName()),
-                    token.supplyType(),
-                    token.tokenId().tokenNum(),
-                    token.symbol(),
-                    token.name(),
-                    token.memo(),
-                    token.deleted(),
-                    token.paused(),
-                    token.decimals(),
-                    token.maxSupply(),
-                    token.totalSupply(),
-                    token.lastUsedSerialNumber(),
-                    token.expirationSecond(),
-                    token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
-                    token.accountsFrozenByDefault(),
-                    token.accountsKycGrantedByDefault(),
-                    idFromMod(token.treasuryAccountId()),
-                    idFromMod(token.autoRenewAccountId()),
-                    customFeesFromMod(token.customFees()),
-                    keyFromMod(token.adminKey()),
-                    keyFromMod(token.feeScheduleKey()),
-                    keyFromMod(token.freezeKey()),
-                    keyFromMod(token.kycKey()),
-                    keyFromMod(token.pauseKey()),
-                    keyFromMod(token.supplyKey()),
-                    keyFromMod(token.wipeKey()));
-        } catch (InvalidKeyException e) {
-            // todo check how to handle invalid key exceptions
-            throw new RuntimeException(e);
-        }
+
+        tokenRes = new Token(
+                TokenType.valueOf(token.tokenType().protoName()),
+                token.supplyType(),
+                token.tokenId().tokenNum(),
+                token.symbol(),
+                token.name(),
+                token.memo(),
+                token.deleted(),
+                token.paused(),
+                token.decimals(),
+                token.maxSupply(),
+                token.totalSupply(),
+                token.lastUsedSerialNumber(),
+                token.expirationSecond(),
+                token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
+                token.accountsFrozenByDefault(),
+                token.accountsKycGrantedByDefault(),
+                idFromMod(token.treasuryAccountId()),
+                idFromMod(token.autoRenewAccountId()),
+                customFeesFromMod(token.customFees()),
+                keyFromMod(token.adminKey()),
+                keyFromMod(token.feeScheduleKey()),
+                keyFromMod(token.freezeKey()),
+                keyFromMod(token.kycKey()),
+                keyFromMod(token.pauseKey()),
+                keyFromMod(token.supplyKey()),
+                keyFromMod(token.wipeKey()));
 
         Objects.requireNonNull(tokenRes.tokenType, "tokenType");
         Objects.requireNonNull(tokenRes.tokenSupplyType, "tokenSupplyType");
@@ -187,8 +183,23 @@ record Token(
                 : TokenSupplyType.FINITE;
     }
 
-    private static Optional<JKey> keyFromMod(@Nullable Key key) throws InvalidKeyException {
-        return key == null ? Optional.empty() : Optional.ofNullable(JKey.mapKey(key));
+    private static Optional<JKey> keyFromMod(@Nullable Key key) {
+        try {
+            return key == null ? Optional.empty() : Optional.ofNullable(JKey.mapKey(key));
+        } catch (InvalidKeyException invalidKeyException) {
+            // return invalid JKey
+            return Optional.of(new JKey() {
+                @Override
+                public boolean isEmpty() {
+                    return true;
+                }
+
+                @Override
+                public boolean isValid() {
+                    return false;
+                }
+            });
+        }
     }
 
     @NonNull

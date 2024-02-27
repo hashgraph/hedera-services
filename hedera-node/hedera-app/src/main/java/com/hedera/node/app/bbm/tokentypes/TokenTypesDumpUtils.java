@@ -79,13 +79,13 @@ public class TokenTypesDumpUtils {
             Pair.of("autoRenewAccount", getFieldFormatter(Token::autoRenewAccount, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
             Pair.of("feeSchedule", getFieldFormatter(Token::feeSchedule,
                     getNullableFormatter(getListFormatter(ThingsToStrings::toStringOfFcCustomFee, SUBFIELD_SEPARATOR)))),
-            Pair.of("adminKey", getFieldFormatter(Token::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("feeScheduleKey", getFieldFormatter(Token::feeScheduleKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("frezeKey", getFieldFormatter(Token::freezeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("kycKey", getFieldFormatter(Token::kycKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("pauseKey", getFieldFormatter(Token::pauseKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("supplyKey", getFieldFormatter(Token::supplyKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("wipeKey", getFieldFormatter(Token::wipeKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))));
+            Pair.of("adminKey", getFieldFormatter(Token::adminKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("feeScheduleKey", getFieldFormatter(Token::feeScheduleKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("frezeKey", getFieldFormatter(Token::freezeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("kycKey", getFieldFormatter(Token::kycKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("pauseKey", getFieldFormatter(Token::pauseKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("supplyKey", getFieldFormatter(Token::supplyKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("wipeKey", getFieldFormatter(Token::wipeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))));
     // spotless:on
 
     public static void dumpModTokenType(
@@ -222,7 +222,7 @@ public class TokenTypesDumpUtils {
         final var histogram = new HashMap<String, Integer>();
         for (@NonNull var token : tokens.values()) {
             final var fees = token.feeSchedule();
-            if (null == fees) continue;
+            if (null == fees || fees.isEmpty()) continue;
             final var feeProfile = fees.stream()
                     .map(ThingsToStrings::toSketchyStringOfFcCustomFee)
                     .sorted()
@@ -280,6 +280,15 @@ public class TokenTypesDumpUtils {
 
     static <T> Function<Optional<T>, String> getOptionalFormatter(@NonNull final Function<T, String> formatter) {
         return ot -> ot.isPresent() ? formatter.apply(ot.get()) : "";
+    }
+
+    static Function<Optional<JKey>, String> getOptionalJKeyFormatter(@NonNull final Function<JKey, String> formatter) {
+        return ot -> {
+            if (ot.isPresent()) {
+                return ot.get().isValid() ? formatter.apply(ot.get()) : "<invalid-key>";
+            }
+            return "";
+        };
     }
 
     @NonNull
