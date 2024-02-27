@@ -38,7 +38,8 @@ public interface LoggingMirror extends AutoCloseable {
      * @param logEventPredicate the level to filter by
      * @return a mirror that only contains log events with the given level
      */
-    @NonNull LoggingMirror filter(@NonNull Predicate<LogEvent> logEventPredicate);
+    @NonNull
+    LoggingMirror filter(@NonNull Predicate<LogEvent> logEventPredicate);
 
     /**
      * Returns a mirror that only contains log events with the given logger name (based on the class name).
@@ -88,7 +89,8 @@ public interface LoggingMirror extends AutoCloseable {
     @NonNull
     default LoggingMirror filterAboveLevel(@NonNull final Level level) {
         Objects.requireNonNull(level, "level must not be null");
-        final Predicate<LogEvent> filter = event -> level.ordinal() >= event.level().ordinal();
+        final Predicate<LogEvent> filter =
+                event -> level.ordinal() >= event.level().ordinal();
         return filter(filter);
     }
 
