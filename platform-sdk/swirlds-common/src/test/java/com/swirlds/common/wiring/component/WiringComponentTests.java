@@ -85,8 +85,7 @@ public class WiringComponentTests {
                 .build()
                 .cast();
 
-        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring = new ComponentWiring<>(FooBarBaz.class, scheduler);
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 

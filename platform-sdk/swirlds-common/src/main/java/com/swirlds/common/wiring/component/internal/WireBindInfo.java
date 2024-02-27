@@ -16,25 +16,18 @@
 
 package com.swirlds.common.wiring.component.internal;
 
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 /**
- * Information that describes a component's input wire
+ * Contains information necessary to bind an input wire when we eventually get the implementation of the component.
  *
- * @param wire                 the wire, may need to be bound
  * @param handlerWithReturn    null if initially bound. If not initially bound, will be non-null if the method has a
  *                             non-void return type.
  * @param handlerWithoutReturn null if initially bound. If not initially bound, will be non-null if the method has a
  *                             void return type
- * @param initiallyBound       true if the wire was bound when it was first created, false if it was initially created
- *                             without being bound
  */
-public record ComponentInputWire(
-        @NonNull BindableInputWire<Object, Object> wire,
+public record WireBindInfo(
         @Nullable BiFunction<Object, Object, Object> handlerWithReturn,
-        @Nullable BiConsumer<Object, Object> handlerWithoutReturn,
-        boolean initiallyBound) {}
+        @Nullable BiConsumer<Object, Object> handlerWithoutReturn) {}

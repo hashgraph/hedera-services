@@ -16,9 +16,8 @@
 
 package com.swirlds.common.wiring.component;
 
-import com.swirlds.common.wiring.component.internal.ComponentInputWire;
+import com.swirlds.common.wiring.component.internal.WireBindInfo;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
-import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -49,20 +48,18 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
     private COMPONENT_TYPE component;
 
-    private final Map<Method, ComponentInputWire> inputWires = new HashMap<>();
+    private final Map<Method, WireBindInfo> bindInfo = new HashMap<>();
+    private final Map<Method, BindableInputWire<Object, Object>> inputWires = new HashMap<>();
 
     /**
      * Create a new component wiring.
      *
-     * @param model     the wiring model
      * @param clazz     the class of the component
      * @param scheduler the task scheduler that will run the component
      */
     @SuppressWarnings("unchecked")
     public ComponentWiring(
-            @NonNull final WiringModel model,
-            @NonNull final Class<COMPONENT_TYPE> clazz,
-            @NonNull final TaskScheduler<OUTPUT_TYPE> scheduler) {
+            @NonNull final Class<COMPONENT_TYPE> clazz, @NonNull final TaskScheduler<OUTPUT_TYPE> scheduler) {
 
         this.scheduler = Objects.requireNonNull(scheduler);
 
@@ -138,20 +135,17 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         if (inputWires.containsKey(method)) {
             // We've already created this wire
-            return (InputWire<INPUT_TYPE>) inputWires.get(method).wire();
+            return (InputWire<INPUT_TYPE>) inputWires.get(method);
         }
 
         final BindableInputWire<INPUT_TYPE, OUTPUT_TYPE> inputWire = scheduler.buildInputWire(method.getName());
+        inputWires.put(method, (BindableInputWire<Object, Object>) inputWire);
 
         if (component == null) {
             // we will bind this later
-            inputWires.put(
-                    method,
-                    new ComponentInputWire(
-                            (BindableInputWire<Object, Object>) inputWire,
-                            (BiFunction<Object, Object, Object>) handlerWithReturn,
-                            (BiConsumer<Object, Object>) handlerWithoutReturn,
-                            false));
+            bindInfo.put(method, new WireBindInfo((BiFunction<Object, Object, Object>) handlerWithReturn, (BiConsumer<
+                            Object, Object>)
+                    handlerWithoutReturn));
         } else {
             // bind this now
             if (handlerWithReturn != null) {
@@ -164,16 +158,13 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
                     handlerWithoutReturn.accept(component, x);
                 });
             }
-
-            // TODO can we do this cleaner?
-            inputWires.put(
-                    method, new ComponentInputWire((BindableInputWire<Object, Object>) inputWire, null, null, true));
         }
 
         return inputWire;
     }
 
-    // TODO this is necessary to support primitives. Remove this method once we agree to not support primitives.
+    // TODO use of the method below was the only way I could get unboxed primitive types to work.
+    //  Once there is agreement on how to handle primitive types, this method should be removed.
 
     /**
      * Try calling the proxy function with different input types until we find one that works.
@@ -291,20 +282,21 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         this.component = component;
 
-        for (final ComponentInputWire wireToBeBound : inputWires.values()) {
-            if (wireToBeBound.initiallyBound()) {
-                continue;
-            }
+        for (final Map.Entry<Method, WireBindInfo> entry : bindInfo.entrySet()) {
 
-            if (wireToBeBound.handlerWithReturn() != null) {
-                final BiFunction<Object, Object, Object> handlerWithReturn = wireToBeBound.handlerWithReturn();
-                wireToBeBound.wire().bind(x -> {
+            final Method method = entry.getKey();
+            final WireBindInfo wireBindInfo = entry.getValue();
+            final BindableInputWire<Object, Object> wire = inputWires.get(method);
+
+            if (wireBindInfo.handlerWithReturn() != null) {
+                final BiFunction<Object, Object, Object> handlerWithReturn = wireBindInfo.handlerWithReturn();
+                wire.bind(x -> {
                     return handlerWithReturn.apply(component, x);
                 });
             } else {
                 final BiConsumer<Object, Object> handlerWithoutReturn =
-                        Objects.requireNonNull(wireToBeBound.handlerWithoutReturn());
-                wireToBeBound.wire().bind(x -> {
+                        Objects.requireNonNull(wireBindInfo.handlerWithoutReturn());
+                wire.bind(x -> {
                     handlerWithoutReturn.accept(component, x);
                 });
             }
