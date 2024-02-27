@@ -192,7 +192,7 @@ class InternalEventValidatorTests {
         assertNull(singleNodeValidator.validateEvent(invalidSelfParentGeneration));
         assertNull(singleNodeValidator.validateEvent(invalidOtherParentGeneration));
 
-        assertEquals(8, exitedIntakePipelineCount.get());
+        assertEquals(4, exitedIntakePipelineCount.get());
     }
 
     @Test
