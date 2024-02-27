@@ -28,7 +28,6 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
@@ -506,10 +505,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     private boolean isNotPriority(
             final Address address, final @NonNull com.hedera.hapi.node.state.token.Account account) {
-        final var alias = requireNonNull(account).alias();
-        return alias != null
-                && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG
-                && !address.equals(pbjToBesuAddress(alias));
+        requireNonNull(account);
+        final var maybeEvmAddress = extractEvmAddress(account.alias());
+        return maybeEvmAddress != null && !address.equals(pbjToBesuAddress(maybeEvmAddress));
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final AccountID accountID) {
