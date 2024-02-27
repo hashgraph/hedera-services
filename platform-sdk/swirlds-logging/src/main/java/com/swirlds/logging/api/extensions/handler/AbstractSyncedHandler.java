@@ -51,18 +51,18 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
 
     @Override
     public final void accept(@NonNull LogEvent event) {
-        try {
-            writeLock.lock();
-            if (stopped) {
-                // FUTURE: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
-                // the emergency logger will be called multiple times.
-                EMERGENCY_LOGGER.log(event);
-            } else {
-                handleEvent(event);
-            }
-        } finally {
-            writeLock.unlock();
+        //   try {
+        //       writeLock.lock();
+        if (stopped) {
+            // FUTURE: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
+            // the emergency logger will be called multiple times.
+            EMERGENCY_LOGGER.log(event);
+        } else {
+            handleEvent(event);
         }
+        //     } finally {
+        //          writeLock.unlock();
+        //      }
     }
 
     /**

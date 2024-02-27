@@ -151,7 +151,12 @@ public class LineBasedFormat {
      */
     private static String timestampAsString(long timestamp) {
         try {
-            return "%-26s".formatted(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
+            final StringBuilder sb = new StringBuilder(26);
+            sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
+            while (sb.length() < 26) {
+                sb.append(' ');
+            }
+            return sb.toString();
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
             return "BROKEN-TIMESTAMP          ";
