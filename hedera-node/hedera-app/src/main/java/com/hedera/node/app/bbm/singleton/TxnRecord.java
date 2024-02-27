@@ -20,24 +20,32 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record TxnRecord(RichInstant consensusTime, EntityId payer, RichInstant txnValidStart) {
+import java.util.Objects;
 
-    public static TxnRecord fromMod(TransactionRecordEntry recordEntry) {
-        // todo fix possible null pointer exceptions!!!
+public record TxnRecord(TxnId transactionId, RichInstant consensusTime, EntityId payer) {
+
+    public static TxnRecord fromMod(@NonNull TransactionRecordEntry recordEntry) {
+        Objects.requireNonNull(recordEntry.transactionRecord(), "Record is null");
+
+        var modTransactionId = recordEntry.transactionRecord().transactionID();
+        var accountId = EntityId.fromPbjAccountId(modTransactionId.accountID());
+        var validStartTimestamp = modTransactionId.transactionValidStart();
+        var txnId = new TxnId(accountId, new RichInstant(validStartTimestamp.seconds(), validStartTimestamp.nanos()), modTransactionId.scheduled(), modTransactionId.nonce());
         var consensusTimestamp = recordEntry.transactionRecord().consensusTimestamp();
-        var validStartTimestamp =
-                recordEntry.transactionRecord().transactionID().transactionValidStart();
+
         return new TxnRecord(
+                txnId,
                 new RichInstant(consensusTimestamp.seconds(), consensusTimestamp.nanos()),
-                EntityId.fromPbjAccountId(recordEntry.payerAccountId()),
-                new RichInstant(validStartTimestamp.seconds(), validStartTimestamp.nanos()));
+                EntityId.fromPbjAccountId(recordEntry.payerAccountId()));
     }
 
-    public static TxnRecord fromMono(ExpirableTxnRecord record) {
+    public static TxnRecord fromMono(@NonNull ExpirableTxnRecord record) {
         return new TxnRecord(
+                record.getTxnId(),
                 record.getConsensusTime(),
-                record.getTxnId().getPayerAccount(),
-                record.getTxnId().getValidStart());
+                record.getTxnId().getPayerAccount());
     }
 }

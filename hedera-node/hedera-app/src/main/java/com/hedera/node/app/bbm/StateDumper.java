@@ -48,6 +48,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NE
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.throttle.CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -169,7 +170,7 @@ public class StateDumper {
         dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue(), checkpoint);
         // Dump txn record queue
         final QueueNode<TransactionRecordEntry> queue = requireNonNull(
-                state.getChild(state.findNodeIndex(RecordCacheService.NAME, RecordCacheService.TXN_RECORD_QUEUE)));
+                state.getChild(state.findNodeIndex(RecordCacheService.NAME, TXN_RECORD_QUEUE)));
         dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue, checkpoint);
         // Dump congestion snapshots
         final SingletonNode<CongestionLevelStarts> congestionLevelStartsSingletonNode = requireNonNull(

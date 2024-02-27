@@ -22,11 +22,13 @@ import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -38,13 +40,11 @@ public class TxnRecordQueueDumpUtils {
 
     @NonNull
     static List<Pair<String, BiConsumer<FieldBuilder, TxnRecord>>> fieldFormatters = List.of(
+            Pair.of("txnId", getFieldFormatter(TxnRecord::transactionId, Object::toString)),
             Pair.of(
                     "consensusTime",
                     getFieldFormatter(TxnRecord::consensusTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("payer", getFieldFormatter(TxnRecord::payer, ThingsToStrings::toStringOfEntityId)),
-            Pair.of(
-                    "txnValidStart",
-                    getFieldFormatter(TxnRecord::txnValidStart, ThingsToStrings::toStringOfRichInstant)));
+            Pair.of("payer", getFieldFormatter(TxnRecord::payer, ThingsToStrings::toStringOfEntityId)));
 
     public static void dumpMonoPayerRecords(
             @NonNull final Path path,
@@ -90,8 +90,7 @@ public class TxnRecordQueueDumpUtils {
 
     static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<TxnRecord> records) {
         writer.writeln(formatHeader());
-        // todo sort records (maybe by consensus time)
-        records.stream().forEach(e -> formatRecords(writer, e));
+        records.stream().sorted(Comparator.comparing(TxnRecord::consensusTime)).forEach(e -> formatRecords(writer, e));
         writer.writeln("");
     }
 
