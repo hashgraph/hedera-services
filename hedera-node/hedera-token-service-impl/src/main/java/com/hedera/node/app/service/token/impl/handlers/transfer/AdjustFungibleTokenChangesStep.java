@@ -192,6 +192,15 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             try {
                 adjustBalance(rel, account, amount, tokenRelStore, accountStore);
             } catch (HandleException e) {
+                // Whenever mono-service assessed a fixed fee to an account, it would
+                // update the "metadata" of that pending balance change to use
+                // INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE instead of
+                // INSUFFICIENT_TOKEN_BALANCE in the case of an insufficient balance.
+                // We don't have an equivalent place to store such "metadata" in the
+                // mod-service implementation; so instead if INSUFFICIENT_TOKEN_BALANCE
+                // happens, we check if there were any custom fee payments that could
+                // have contributed to the insufficient balance, and translate the
+                // error to INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE if so.
                 if (e.getStatus() == INSUFFICIENT_TOKEN_BALANCE
                         && effectivePaymentWasMade(rel.accountIdOrThrow(), rel.tokenIdOrThrow(), assessedCustomFees)) {
                     throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
