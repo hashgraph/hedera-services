@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
@@ -27,17 +29,21 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -111,13 +117,15 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         }
 
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
-        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
+        modifyAggregatedTokenBalances(
+                aggregatedFungibleTokenChanges, tokenRelStore, accountStore, transferContext.getAssessedCustomFees());
     }
 
     /**
      * Puts all the aggregated token allowances changes into the accountStore.
+     *
      * @param allowanceTransfers - map of aggregated token allowances to be modified
-     * @param accountStore  - account store
+     * @param accountStore - account store
      * @param transferContext - transfer context
      */
     private void modifyAggregatedAllowances(
@@ -164,21 +172,54 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
     /**
      * Puts all the aggregated token balances changes into the tokenRelStore and accountStore.
+     *
      * @param aggregatedFungibleTokenChanges - map of aggregated token balances to be modified
      * @param tokenRelStore - token relation store
      * @param accountStore - account store
+     * @param assessedCustomFees - list of assessed custom fees in the transfer context
      */
     private void modifyAggregatedTokenBalances(
             @NonNull final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final WritableAccountStore accountStore) {
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
             final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
             final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
-            adjustBalance(rel, account, amount, tokenRelStore, accountStore);
+            try {
+                adjustBalance(rel, account, amount, tokenRelStore, accountStore);
+            } catch (HandleException e) {
+                // Whenever mono-service assessed a fixed fee to an account, it would
+                // update the "metadata" of that pending balance change to use
+                // INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE instead of
+                // INSUFFICIENT_TOKEN_BALANCE in the case of an insufficient balance.
+                // We don't have an equivalent place to store such "metadata" in the
+                // mod-service implementation; so instead if INSUFFICIENT_TOKEN_BALANCE
+                // happens, we check if there were any custom fee payments that could
+                // have contributed to the insufficient balance, and translate the
+                // error to INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE if so.
+                if (e.getStatus() == INSUFFICIENT_TOKEN_BALANCE
+                        && effectivePaymentWasMade(rel.accountIdOrThrow(), rel.tokenIdOrThrow(), assessedCustomFees)) {
+                    throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                }
+                throw e;
+            }
         }
+    }
+
+    private boolean effectivePaymentWasMade(
+            @NonNull final AccountID payer,
+            @NonNull final TokenID denom,
+            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
+        for (final var fee : assessedCustomFees) {
+            if (denom.equals(fee.tokenId())
+                    && fee.effectivePayerAccountIdOrElse(emptyList()).contains(payer)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
