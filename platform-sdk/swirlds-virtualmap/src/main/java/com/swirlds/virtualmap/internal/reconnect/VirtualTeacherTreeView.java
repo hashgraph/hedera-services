@@ -253,7 +253,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
         nodeStatusTracker.set(node, status);
         if (node == lastNodeAwaitingReporting) {
             synchronized (node) {
-                node.notify();
+                node.notifyAll();
             }
         }
     }
