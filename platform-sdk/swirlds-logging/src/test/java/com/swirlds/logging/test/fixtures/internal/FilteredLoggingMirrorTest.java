@@ -38,7 +38,7 @@ class FilteredLoggingMirrorTest {
     private final Logger logger = Loggers.getLogger(FilteredLoggingMirrorTest.class);
     private static final String KEY = UUID.randomUUID().toString();
     private static final String VALUE = "VALUE";
-    static final String KEY2 = UUID.randomUUID().toString();
+    private static final String KEY2 = UUID.randomUUID().toString();
     private static final String TEST_THREAD = UUID.randomUUID().toString();
     private static final String VALUE2 = "OTHER VALUE";
 
