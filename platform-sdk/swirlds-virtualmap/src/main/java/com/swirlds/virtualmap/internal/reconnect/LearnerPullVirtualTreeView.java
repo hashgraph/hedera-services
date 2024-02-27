@@ -40,6 +40,9 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -161,6 +164,19 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return path >= reconnectState.getFirstLeafPath();
     }
 
+    private static int completelyRead(final InputStream in, final byte[] dst) throws IOException {
+        int totalBytesRead = 0;
+        while (totalBytesRead < dst.length) {
+            final int bytesRead = in.read(dst, totalBytesRead, dst.length - totalBytesRead);
+            if (bytesRead < 0) {
+                // Reached EOF
+                break;
+            }
+            totalBytesRead += bytesRead;
+        }
+        return totalBytesRead;
+    }
+
     @Override
     public void readNode(final SerializableDataInputStream in, final long path) throws IOException {
         if (path == Path.ROOT_PATH) {
@@ -175,7 +191,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             }
         }
         final Hash hash = new Hash(DigestType.SHA_384);
-        if (in.read(hash.getValue()) != DigestType.SHA_384.digestLength()) {
+        if (completelyRead(in, hash.getValue()) != DigestType.SHA_384.digestLength()) {
             throw new IOException("Failed to read node hash from the teacher");
         }
         final boolean isLeaf = isLeaf(path);
