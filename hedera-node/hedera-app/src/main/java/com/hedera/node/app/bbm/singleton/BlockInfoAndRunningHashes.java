@@ -39,6 +39,7 @@ record BlockInfoAndRunningHashes(
         @Nullable Timestamp consTimeOfLastHandledTxn,
         boolean migrationRecordsStreamed,
         @Nullable Timestamp firstConsTimeOfCurrentBlock,
+        long entityId,
         @NonNull Bytes runningHash,
         @NonNull Bytes nMinus1RunningHash,
         @NonNull Bytes nMinus2RunningHash,
@@ -81,11 +82,13 @@ record BlockInfoAndRunningHashes(
                 .nMinus3RunningHash(Bytes.wrap(
                         recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getValue()));
 
-        return combineFromMod(blockInfoBuilder.build(), runningHashesBuilder.build());
+        var entityId = merkleNetworkContext.seqNo().current();
+
+        return combineFromMod(blockInfoBuilder.build(), runningHashesBuilder.build(), entityId);
     }
 
     public static BlockInfoAndRunningHashes combineFromMod(
-            @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes) {
+            @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes, final long entityId) {
         return new BlockInfoAndRunningHashes(
                 blockInfo.lastBlockNumber(),
                 blockInfo.firstConsTimeOfLastBlock(),
@@ -93,6 +96,7 @@ record BlockInfoAndRunningHashes(
                 Objects.requireNonNull(blockInfo.consTimeOfLastHandledTxn(), "consTimeOfLastHandledTxn"),
                 blockInfo.migrationRecordsStreamed(),
                 blockInfo.firstConsTimeOfCurrentBlock(),
+                entityId,
                 runningHashes.runningHash(),
                 runningHashes.nMinus1RunningHash(),
                 runningHashes.nMinus2RunningHash(),

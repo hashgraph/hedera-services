@@ -18,6 +18,7 @@ package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
@@ -65,7 +66,11 @@ public class BlockInfoDumpUtils {
                     getFieldFormatter(BlockInfoAndRunningHashes::nMinus2RunningHash, Objects::toString)),
             Pair.of(
                     "nMinus3RunningHash",
-                    getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, Objects::toString))
+                    getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, Objects::toString)),
+            Pair.of(
+                    "entityNum",
+                    getFieldFormatter(BlockInfoAndRunningHashes::entityId, Objects::toString)
+            )
     );
     // spotless:on
 
@@ -73,9 +78,10 @@ public class BlockInfoDumpUtils {
             @NonNull final Path path,
             @NonNull final RunningHashes runningHashes,
             @NonNull final BlockInfo blockInfo,
+            @NonNull final EntityNumber entityNumber,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            var combined = BlockInfoAndRunningHashes.combineFromMod(blockInfo, runningHashes);
+            var combined = BlockInfoAndRunningHashes.combineFromMod(blockInfo, runningHashes, entityNumber.number());
             reportOnBlockInfo(writer, combined);
             System.out.printf(
                     "=== mod running hashes and block info report is %d bytes at checkpoint %s%n",

@@ -991,7 +991,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return consensusTimeOfLastHandledTxn;
     }
 
-    DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
+    public DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
         return usageSnapshots;
     }
 
@@ -1008,7 +1008,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @Nullable
-    MultiplierSources getMultiplierSources() {
+    public MultiplierSources getMultiplierSources() {
         return multiplierSources;
     }
 
@@ -1016,7 +1016,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return throttling;
     }
 
-    DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+    public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
         return gasThrottleUsageSnapshot;
     }
 
