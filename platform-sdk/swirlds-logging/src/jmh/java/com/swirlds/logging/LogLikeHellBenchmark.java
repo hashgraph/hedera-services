@@ -15,6 +15,7 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.console.ConsoleHandlerFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -90,7 +91,7 @@ public class LogLikeHellBenchmark {
                 .withValue("logging.handler.console.active", "true")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
-        final LogHandler consoleHandler = new FileHandlerFactory().create("console", configuration);
+        final LogHandler consoleHandler = new ConsoleHandlerFactory().create("console", configuration);
         loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(consoleHandler);
     }
@@ -109,7 +110,7 @@ public class LogLikeHellBenchmark {
                 .withValue("logging.handler.console.level", "trace")
                 .build();
         final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);
-        final LogHandler consoleHandler = new FileHandlerFactory().create("console", configuration);
+        final LogHandler consoleHandler = new ConsoleHandlerFactory().create("console", configuration);
         loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(fileHandler);
         loggingSystem.addHandler(consoleHandler);
