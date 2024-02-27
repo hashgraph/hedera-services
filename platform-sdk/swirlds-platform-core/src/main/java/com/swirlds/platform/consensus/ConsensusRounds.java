@@ -130,7 +130,7 @@ public class ConsensusRounds {
      * Notifies the instance that the current elections have been decided. This will start the next election.
      */
     public void currentElectionDecided() {
-        minimumJudgeStorage.add(roundElections.getRound(), roundElections.creatMinimumJudgeInfo());
+        minimumJudgeStorage.add(roundElections.getRound(), roundElections.createMinimumJudgeInfo());
         roundElections.startNextElection();
         // Delete the oldest rounds with round number which is expired
         minimumJudgeStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
