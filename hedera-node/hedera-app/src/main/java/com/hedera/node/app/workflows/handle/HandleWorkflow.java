@@ -52,16 +52,20 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -84,6 +88,7 @@ import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -106,6 +111,7 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
@@ -130,6 +136,7 @@ import org.apache.logging.log4j.Logger;
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
+    private static final AtomicBoolean haveLoggedCatastrophe = new AtomicBoolean(false);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
     private final NetworkInfo networkInfo;
@@ -563,6 +570,25 @@ public class HandleWorkflow {
             }
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
+            if (!haveLoggedCatastrophe.getAndSet(true)) {
+                logger.error("Contents of TokenService -> ACCOUNTS map follows");
+                final var mhs = (MerkleHederaState) Hedera.ALL_INSTANCES
+                        .iterator()
+                        .next()
+                        .daggerApp
+                        .workingStateAccessor()
+                        .getHederaState();
+                try {
+                    VirtualMapLike.from(requireNonNull(requireNonNull(mhs)
+                                    .getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY))))
+                            .extractVirtualMapData(
+                                    AdHocThreadManager.getStaticThreadManager(),
+                                    entry -> logger.error("  {} -> {}", entry.key(), entry.value()),
+                                    1);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
