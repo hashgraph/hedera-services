@@ -45,8 +45,8 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
-    static final Logger log = LogManager.getLogger(HapiTokenNftsUpdate.class);
+public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
+    static final Logger log = LogManager.getLogger(HapiTokenUpdateNfts.class);
     private Optional<List<Long>> serialNumbers;
     private String token;
     private final SubType subType;
@@ -56,25 +56,25 @@ public class HapiTokenNftsUpdate extends HapiTxnOp<HapiTokenNftsUpdate> {
         return HederaFunctionality.TokenUpdateNfts;
     }
 
-    public HapiTokenNftsUpdate(final String token, final String metadata, final List<Long> serialNumbers) {
+    public HapiTokenUpdateNfts(final String token, final String metadata, final List<Long> serialNumbers) {
         this.token = token;
         this.metadata = Optional.of(metadata);
         this.serialNumbers = Optional.of(serialNumbers);
         this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
     }
 
-    public HapiTokenNftsUpdate metadata(String metadata) {
+    public HapiTokenUpdateNfts metadata(String metadata) {
         this.metadata = Optional.of(metadata);
         return this;
     }
 
-    public HapiTokenNftsUpdate serialNumbers(List<Long> serialNumbers) {
+    public HapiTokenUpdateNfts serialNumbers(List<Long> serialNumbers) {
         this.serialNumbers = Optional.of(serialNumbers);
         return this;
     }
 
     @Override
-    protected HapiTokenNftsUpdate self() {
+    protected HapiTokenUpdateNfts self() {
         return this;
     }
 
