@@ -68,7 +68,7 @@ The implementation can be found in the `CryptoApproveAllowanceHandler` class.
 
 #### Negative Tests
 - Test that an EOA calling the `hbarApprove` function without the correct signature will fail.
-- Test that a contract calling the `hbarApprove` function without the correct signature will fail.
+- Test that a contract calling the `hbarApprove` function without the correct contract key will fail.
 - Test that an attempt to transfer more hbars that the spender has been granted will fail.
 
 
