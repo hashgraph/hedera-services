@@ -30,7 +30,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -40,6 +43,8 @@ import java.util.function.Consumer;
  * @param <V> The type of value for the state
  */
 public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
+    private static final Logger log = LogManager.getLogger(OnDiskReadableKVState.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private static final Consumer<Runnable> DEFAULT_RUNNER = Thread::startVirtualThread;
 
@@ -78,6 +83,9 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
         final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.get(k);
         final var value = v == null ? null : v.getValue();
+        if (LOG_READS.get()) {
+            log.info("Read {} from {} for key {}", value, getStateKey(), key);
+        }
         // Log to transaction state log, what was read
         logMapGet(getStateKey(), key, value);
         return value;

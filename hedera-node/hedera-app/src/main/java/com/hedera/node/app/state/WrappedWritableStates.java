@@ -26,16 +26,22 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A wrapper around a {@link WritableStates} that provides a wrapped instances of {@link WritableKVState} and
  * {@link WritableSingletonState} of a given {@link WritableStates} delegate.
  */
 public class WrappedWritableStates implements WritableStates {
+    private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private final WritableStates delegate;
     private final Map<String, WrappedWritableKVState<?, ?>> writableKVStateMap = new HashMap<>();
@@ -67,8 +73,15 @@ public class WrappedWritableStates implements WritableStates {
     @Override
     @NonNull
     public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
-        return (WritableKVState<K, V>)
-                writableKVStateMap.computeIfAbsent(stateKey, s -> new WrappedWritableKVState<>(delegate.get(stateKey)));
+        return (WritableKVState<K, V>) writableKVStateMap.computeIfAbsent(stateKey, s -> {
+            if (LOG_READS.get()) {
+                log.info(
+                        "Creating a new WrappedWritableKVState state {} from delegate of type {}",
+                        stateKey,
+                        delegate.getClass().getSimpleName());
+            }
+            return new WrappedWritableKVState<>(delegate.get(stateKey));
+        });
     }
 
     @SuppressWarnings("unchecked")

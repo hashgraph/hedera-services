@@ -19,6 +19,9 @@ package com.hedera.node.app.spi.state;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A base class for implementations of {@link WritableKVState}.
@@ -29,6 +32,9 @@ import java.util.*;
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new LinkedHashMap<>();
+
+    private static final Logger log = LogManager.getLogger(WritableKVStateBase.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     /**
      * Create a new StateBase.
@@ -73,11 +79,18 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     @Nullable
     public final V get(@NonNull K key) {
+        if (LOG_READS.get()) {
+            log.info("Reading from state {} key: {}", getStateKey(), key);
+        }
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
         if (modifications.containsKey(key)) {
+            if (LOG_READS.get()) {
+                log.info("  (Modifications) Reading from {} key: {} => {}", getStateKey(), key, modifications.get(key));
+            }
             return modifications.get(key);
         } else {
+            log.info("  (Unmodified) Reading from {} key: {} => {}", getStateKey(), key, super.get(key));
             return super.get(key);
         }
     }

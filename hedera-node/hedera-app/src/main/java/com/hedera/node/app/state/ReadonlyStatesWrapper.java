@@ -29,7 +29,6 @@ import java.util.Set;
  * writable state, which is needed in some scenarios to make changes visible.
  */
 public class ReadonlyStatesWrapper implements ReadableStates {
-
     private final WritableStates delegate;
 
     /**

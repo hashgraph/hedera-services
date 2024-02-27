@@ -23,6 +23,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link WritableKVState} that delegates to the current {@link WritableKVState} in a
@@ -40,6 +43,8 @@ import java.util.Set;
  * @param <V> the type of the values
  */
 public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
+    private static final Logger log = LogManager.getLogger(WritableKVStateStack.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private final WritableStatesStack writableStatesStack;
     private final String stateKey;
@@ -74,6 +79,11 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     @Override
     @Nullable
     public V get(@NonNull final K key) {
+        if (LOG_READS.get()) {
+            final var current = getCurrent();
+            final var value = current.get(key);
+            log.error("Reading from {} state (size {}): {} => {}", stateKey, current.size(), key, value);
+        }
         return getCurrent().get(key);
     }
 

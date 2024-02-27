@@ -29,11 +29,16 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link SavepointStack}.
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
+    private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
+    public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
 
     private final HederaState root;
     private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
@@ -152,6 +157,11 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
-        return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
+        return writableStatesMap.computeIfAbsent(serviceName, s -> {
+            if (LOG_READS.get()) {
+                log.error("Creating new WritableStatesStack for {}", s);
+            }
+            return new WritableStatesStack(this, s);
+        });
     }
 }

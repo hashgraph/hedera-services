@@ -81,7 +81,9 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -90,9 +92,12 @@ import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedWritableStates;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -108,6 +113,8 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.stack.WritableKVStateStack;
+import com.hedera.node.app.workflows.handle.stack.WritableStatesStack;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -575,6 +582,14 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (!haveLoggedCatastrophe.getAndSet(true)) {
+                ReadableKVStateBase.LOG_READS.set(true);
+                WritableKVStateBase.LOG_READS.set(true);
+                WrappedHederaState.LOG_READS.set(true);
+                WrappedWritableStates.LOG_READS.set(true);
+                OnDiskReadableKVState.LOG_READS.set(true);
+                SavepointStackImpl.LOG_READS.set(true);
+                WritableKVStateStack.LOG_READS.set(true);
+                WritableStatesStack.LOG_READS.set(true);
                 logger.error("Contents of TokenService -> ACCOUNTS map follows");
                 final var mhs = (MerkleHederaState) Hedera.ALL_INSTANCES
                         .iterator()
@@ -629,6 +644,14 @@ public class HandleWorkflow {
                 } catch (InterruptedException ex) {
                     throw new RuntimeException(ex);
                 }
+                ReadableKVStateBase.LOG_READS.set(false);
+                WritableKVStateBase.LOG_READS.set(false);
+                WrappedHederaState.LOG_READS.set(false);
+                WrappedWritableStates.LOG_READS.set(false);
+                OnDiskReadableKVState.LOG_READS.set(false);
+                SavepointStackImpl.LOG_READS.set(false);
+                WritableKVStateStack.LOG_READS.set(false);
+                WritableStatesStack.LOG_READS.set(false);
             }
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
