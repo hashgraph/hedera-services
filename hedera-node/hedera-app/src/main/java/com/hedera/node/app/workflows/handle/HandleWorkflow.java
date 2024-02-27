@@ -86,6 +86,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -93,6 +94,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -152,6 +154,8 @@ public class HandleWorkflow {
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final CacheWarmer cacheWarmer;
+    private final HandleWorkflowMetrics handleWorkflowMetrics;
+    private final ThrottleServiceManager throttleServiceManager;
 
     @Inject
     public HandleWorkflow(
@@ -176,7 +180,9 @@ public class HandleWorkflow {
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final ScheduleExpirationHook scheduleExpirationHook,
-            @NonNull final CacheWarmer cacheWarmer) {
+            @NonNull final CacheWarmer cacheWarmer,
+            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final ThrottleServiceManager throttleServiceManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -201,9 +207,10 @@ public class HandleWorkflow {
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
-        ;
         this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
+        this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
     }
 
     /**
@@ -332,6 +339,7 @@ public class HandleWorkflow {
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
         }
 
+        final long handleStart = System.nanoTime();
         TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
@@ -421,7 +429,6 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
 
-            networkUtilizationManager.resetFrom(stack);
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -555,14 +562,13 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
-            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                } catch (final HandleException chargeException) {
+                } catch (final Exception chargeException) {
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                             payer,
@@ -587,7 +593,7 @@ public class HandleWorkflow {
             }
         }
 
-        networkUtilizationManager.saveTo(stack);
+        throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
 
         // Commit all state changes
@@ -598,6 +604,9 @@ public class HandleWorkflow {
         recordCache.add(creator.nodeId(), payer, recordListResult.records());
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
+
+        final int handleDuration = (int) (System.nanoTime() - handleStart);
+        handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
     }
 
     /**
