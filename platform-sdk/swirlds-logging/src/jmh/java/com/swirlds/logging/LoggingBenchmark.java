@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -221,52 +220,52 @@ public class LoggingBenchmark {
         }
     }
 
-    @Benchmark
+    
     public void executeSimpleLog() {
         logger.info(MESSAGE);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithMarker() {
         logger.withMarker(MARKER_1).info(MESSAGE);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithMultipleMarkers() {
         logger.withMarker(MARKER_1).withMarker(MARKER_2).withMarker(MARKER_3).info(MESSAGE);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithLongMessage() {
         logger.info(LONG_MESSAGE);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithException() {
         logger.info(MESSAGE, exceptionWithNormalStackTrace);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithExceptionWithLongMessage() {
         logger.info(MESSAGE, exceptionWithNormalStackTraceAndLongMessage);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithExceptionWithDeepStackTrace() {
         logger.info(MESSAGE, exceptionWithDeepStackTrace);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithExceptionWithDeepStackTraceAndDeepCause() {
         logger.info(MESSAGE, exceptionWithDeepStackTraceAndDeepCause);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithMessageWithPlaceholder() {
         logger.info(MESSAGE_WITH_PLACEHOLDER, PLACEHOLDER_1);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithMessageWithMultiplePlaceholders() {
         logger.info(
                 MESSAGE_WITH_MANY_PLACEHOLDERS,
@@ -284,12 +283,12 @@ public class LoggingBenchmark {
                 PLACEHOLDER_12);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithContextValue() {
         logger.withContext(CONTEXT_1_KEY, CONTEXT_1_VALUE).info(MESSAGE);
     }
 
-    @Benchmark
+    
     public void executeSimpleLogWithMultiplyContextValues() {
         logger.withContext(CONTEXT_1_KEY, CONTEXT_1_VALUE)
                 .withContext(CONTEXT_2_KEY, CONTEXT_3_VALUE)
