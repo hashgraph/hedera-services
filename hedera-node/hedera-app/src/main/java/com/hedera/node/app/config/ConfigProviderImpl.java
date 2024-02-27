@@ -96,7 +96,6 @@ import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -120,7 +119,6 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     /**
      * Create a new instance, particularly from dependency injection.
      */
-    @Inject
     public ConfigProviderImpl() {
         this(false);
     }

@@ -68,11 +68,6 @@ on:
         type: boolean
         required: false
         default: false
-      enable-sonar-analysis:
-        description: "Sonar Analysis Enabled"
-        type: boolean
-        required: false
-        default: false
       enable-spotless-check:
         description: "Spotless Check Enabled"
         type: boolean
@@ -124,9 +119,6 @@ on:
       gradle-cache-password:
         description: "The password used to authenticate with the Gradle Build Cache Node."
         required: true
-      sonar-token:
-        description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
-        required: false
       snyk-token:
         description: "The Snyk access token is used by Snyk to analyze the code for vulnerabilities "
         required: false
@@ -160,8 +152,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Expand Shallow Clone for SonarQube and Spotless
-        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
+      - name: Expand Shallow Clone for and Spotless
+        if: ${{ (inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
         run: git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
@@ -490,46 +482,6 @@ jobs:
         with:
           name: Test Reports
           path: "**/build/reports/tests/**"
-
-      - name: SonarCloud Options
-        id: sonar-cloud
-        env:
-          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        if: >-
-          ${{
-            inputs.enable-sonar-analysis &&
-            steps.gradle-build.conclusion == 'success' &&
-            (
-              github.event.pull_request.head.repo.full_name == github.repository ||
-              github.event_name == 'push' ||
-              github.event_name == 'workflow_dispatch'
-            ) &&
-            !cancelled()
-          }}
-        run: |
-          SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
-          if [[ "${IS_PULL_REQUEST}" == true ]]; then
-            SONAR_OPTS=""
-          fi
-
-          echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
-
-      - name: SonarCloud Scan
-        env:
-          GITHUB_TOKEN: ${{ secrets.access-token }}
-          SONAR_TOKEN: ${{ secrets.sonar-token }}
-        if: >-
-          ${{
-            inputs.enable-sonar-analysis &&
-            steps.gradle-build.conclusion == 'success' &&
-            (
-              github.event.pull_request.head.repo.full_name == github.repository ||
-              github.event_name == 'push' ||
-              github.event_name == 'workflow_dispatch'
-            ) &&
-            !cancelled()
-          }}
-        run: ${GRADLE_EXEC} sonar --info --scan --no-parallel ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Disable Gradle Configuration Cache
         if: >-

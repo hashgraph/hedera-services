@@ -31,6 +31,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.*;
+import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
@@ -42,17 +43,23 @@ import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * An implementation wrapping a {@link ThrottleMultiplier} and applying an additional scaling factor based on
- * the number of entities saved in state.
+ * A modification of a {@link ThrottleMultiplier} that applies an additional
+ * scaling factor to entity creations based on the current percent utilization
+ * in state.
  */
-public class EntityUtilizationMultiplier {
+@Singleton
+public class UtilizationScaledThrottleMultiplier {
     private final ThrottleMultiplier delegate;
     private final ConfigProvider configProvider;
 
-    public EntityUtilizationMultiplier(
-            @NonNull final ThrottleMultiplier delegate, @NonNull final ConfigProvider configProvider) {
+    @Inject
+    public UtilizationScaledThrottleMultiplier(
+            @NonNull @CryptoTransferThrottleMultiplier final ThrottleMultiplier delegate,
+            @NonNull final ConfigProvider configProvider) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
