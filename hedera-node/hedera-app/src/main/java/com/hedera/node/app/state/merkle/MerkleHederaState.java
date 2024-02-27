@@ -64,7 +64,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,7 +71,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,7 +154,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 "MerkleHederaState {} constructed with lifecycles Hedera instance {} (of all instances {})",
                 System.identityHashCode(this),
                 System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera),
-                Hedera.ALL_INSTANCES);
+                Hedera.ALL_INSTANCES.stream().mapToInt(System::identityHashCode).toArray());
         this.classId = CLASS_ID;
     }
 
@@ -318,8 +316,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
-        logger.info("Handling consensus round "
-                + " in MHS instance {} via lifecycles {}",
+        logger.info(
+                "Handling consensus round " + " in MHS instance {} via lifecycles {}",
                 System.identityHashCode(this),
                 System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera));
         lifecycles.onHandleConsensusRound(round, platformState, this);

@@ -197,7 +197,7 @@ public final class Hedera implements SwirldMain {
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
      * and used to initialize the system, and more concrete dependencies are used from there.
      */
-    private HederaInjectionComponent daggerApp;
+    public HederaInjectionComponent daggerApp;
     /**
      * Indicates whether the platform is active
      */
@@ -225,7 +225,7 @@ public final class Hedera implements SwirldMain {
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
 
-    public static final Set<Integer> ALL_INSTANCES = new HashSet<>();
+    public static final Set<Hedera> ALL_INSTANCES = new HashSet<>();
 
     /*==================================================================================================================
     *
@@ -318,7 +318,7 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-        ALL_INSTANCES.add(System.identityHashCode(this));
+        ALL_INSTANCES.add(this);
     }
 
     /**
