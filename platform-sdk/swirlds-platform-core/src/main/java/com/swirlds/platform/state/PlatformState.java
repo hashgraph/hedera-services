@@ -334,35 +334,35 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the minimum event generation for each node within this state.
+     * Get the minimum ancient indicator for all judges for each round.
      *
-     * @return minimum generation info list, or null if this is a genesis state
+     * @return minimum judge info list, or null if this is a genesis state
      */
     @Nullable
-    public List<MinGenInfo> getMinGenInfo() {
-        return snapshot == null ? null : snapshot.minGens();
+    public List<MinimumJudgeInfo> getMinimumJudgeInfoList() {
+        return snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
     }
 
     /**
-     * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
-     * contained within this state.
+     * The minimum ancient indicator of famous witnesses (i.e. judges) for the round specified. This method only looks
+     * at non-ancient rounds contained within this state.
      *
-     * @param round the round whose minimum generation will be returned
-     * @return the minimum generation for the round specified
-     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
+     * @param round the round whose minimum judge ancient indicator will be returned
+     * @return the minimum judge ancient indicator for the round specified
+     * @throws NoSuchElementException if the judge information for this round is not contained withing this state
      */
-    public long getMinGen(final long round) {
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
-            throw new IllegalStateException("No MinGen info found in state for round " + round);
+    public long getMinimumJudgeAncientIndicator(final long round) {
+        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinimumJudgeInfoList();
+        if (minimumJudgeInfo == null) {
+            throw new IllegalStateException("No minimum judge info found in state for round " + round);
         }
 
-        for (final MinGenInfo info : minGenInfo) {
+        for (final MinimumJudgeInfo info : minimumJudgeInfo) {
             if (info.round() == round) {
-                return info.minimumGeneration();
+                return info.minimumJudgeAncientThreshold();
             }
         }
-        throw new NoSuchElementException("No minimum generation found for round: " + round);
+        throw new NoSuchElementException("No minimum judge info found for round: " + round);
     }
 
     /**
@@ -372,15 +372,15 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public long getMinRoundGeneration() {
 
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
+        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinimumJudgeInfoList();
+        if (minimumJudgeInfo == null) {
             throw new IllegalStateException("No MinGen info found in state for round " + round);
         }
 
-        return getMinGenInfo().stream()
+        return getMinimumJudgeInfoList().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+                .minimumJudgeAncientThreshold();
     }
 
     /**
@@ -445,7 +445,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @return the minimum generation of non-ancient events
      */
     public long getMinimumGenerationNonAncient() {
-        return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
+        return RoundCalculationUtils.getMinGenNonAncient(
+                roundsNonAncient, round, this::getMinimumJudgeAncientIndicator);
     }
 
     /**

@@ -476,7 +476,7 @@ public class SignedState implements SignedStateInfo {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        return getState().getPlatformState().getMinGen(round);
+        return getState().getPlatformState().getMinimumJudgeAncientIndicator(round);
     }
 
     /**

@@ -32,7 +32,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import java.io.ByteArrayInputStream;
@@ -58,10 +58,10 @@ class PlatformDataTests {
     private static PlatformData generateRandomPlatformData(final Random random) {
         final int randomBound = 10_000;
 
-        final List<MinGenInfo> minGenInfo = new LinkedList<>();
-        final int minGenInfoSize = random.nextInt(1, MinGenInfo.MAX_MINGEN_INFO_SIZE);
-        for (int i = 0; i < minGenInfoSize; i++) {
-            minGenInfo.add(new MinGenInfo(random.nextLong(randomBound), random.nextLong(randomBound)));
+        final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
+        final int minimumJudgeInfoSize = random.nextInt(1, MinimumJudgeInfo.MAX_MINIMUM_JUDGE_INFO_SIZE);
+        for (int i = 0; i < minimumJudgeInfoSize; i++) {
+            minimumJudgeInfo.add(new MinimumJudgeInfo(random.nextLong(randomBound), random.nextLong(randomBound)));
         }
 
         return new PlatformData()
@@ -73,7 +73,7 @@ class PlatformDataTests {
                 .setSnapshot(new ConsensusSnapshot(
                         random.nextLong(),
                         List.of(randomHash(random), randomHash(random), randomHash(random)),
-                        minGenInfo,
+                        minimumJudgeInfo,
                         random.nextLong(),
                         randomInstant(random)));
     }

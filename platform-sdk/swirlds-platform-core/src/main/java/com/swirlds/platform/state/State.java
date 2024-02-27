@@ -256,7 +256,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         final PlatformState platformState = getPlatformState();
         final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getRunningEventHash();
-        final List<MinGenInfo> minGenInfo = platformState.getMinGenInfo();
+        final List<MinimumJudgeInfo> minimumJudgeInfo = platformState.getMinimumJudgeInfoList();
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
 
         final StringBuilder sb = new StringBuilder();
@@ -272,7 +272,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Epoch hash:", epochHash)
-                .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
                 .addRow("Root hash:", getHash())
                 .render(sb);
 

@@ -88,9 +88,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private Instant consensusTimestamp;
 
     /**
-     * the minimum generation of famous witnesses per round
+     * the minimum ancient indicators of the judges for each round
      */
-    private List<MinGenInfo> minGenInfo;
+    private List<MinimumJudgeInfo> minimumJudgeInfoList;
 
     /**
      * The version of the application software that was responsible for creating this state.
@@ -131,8 +131,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             this.events = Arrays.copyOf(that.events, that.events.length);
         }
         this.consensusTimestamp = that.consensusTimestamp;
-        if (that.minGenInfo != null) {
-            this.minGenInfo = new ArrayList<>(that.minGenInfo);
+        if (that.minimumJudgeInfoList != null) {
+            this.minimumJudgeInfoList = new ArrayList<>(that.minimumJudgeInfoList);
         }
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
@@ -212,7 +212,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         consensusTimestamp = in.readInstant();
 
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            minGenInfo = MinGenInfo.deserializeList(in);
+            minimumJudgeInfoList = MinimumJudgeInfo.deserializeList(in);
 
             // previously this was the last transaction timestamp
             in.readInstant();
@@ -339,11 +339,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return minimum generation info list
      */
-    public List<MinGenInfo> getMinGenInfo() {
+    public List<MinimumJudgeInfo> getMinimumJudgeInfoList() {
         if (snapshot != null) {
-            return snapshot.minGens();
+            return snapshot.getMinimumJudgeInfoList();
         }
-        return minGenInfo;
+        return minimumJudgeInfoList;
     }
 
     /**
@@ -355,9 +355,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo info : getMinGenInfo()) {
+        for (final MinimumJudgeInfo info : getMinimumJudgeInfoList()) {
             if (info.round() == round) {
-                return info.minimumGeneration();
+                return info.minimumJudgeAncientThreshold();
             }
         }
         throw new NoSuchElementException("No minimum generation found for round: " + round);
@@ -369,10 +369,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getMinGenInfo().stream()
+        return getMinimumJudgeInfoList().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+                .minimumJudgeAncientThreshold();
     }
 
     /**
@@ -477,7 +477,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 && Objects.equals(hashEventsCons, that.hashEventsCons)
                 && Arrays.equals(events, that.events)
                 && Objects.equals(consensusTimestamp, that.consensusTimestamp)
-                && Objects.equals(minGenInfo, that.minGenInfo)
+                && Objects.equals(minimumJudgeInfoList, that.minimumJudgeInfoList)
                 && Objects.equals(epochHash, that.epochHash)
                 && Objects.equals(roundsNonAncient, that.roundsNonAncient)
                 && Objects.equals(snapshot, that.snapshot);
@@ -501,7 +501,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append("hashEventsCons", hashEventsCons)
                 .append("events", events)
                 .append("consensusTimestamp", consensusTimestamp)
-                .append("minGenInfo", minGenInfo)
+                .append("minimumJudgeInfoList", minimumJudgeInfoList)
                 .append("epochHash", epochHash)
                 .append("roundsNonAncient", roundsNonAncient)
                 .append("snapshot", snapshot)
