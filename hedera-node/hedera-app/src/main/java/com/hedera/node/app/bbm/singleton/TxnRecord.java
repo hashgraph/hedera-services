@@ -22,7 +22,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 public record TxnRecord(TxnId transactionId, RichInstant consensusTime, EntityId payer) {
@@ -33,7 +32,11 @@ public record TxnRecord(TxnId transactionId, RichInstant consensusTime, EntityId
         var modTransactionId = recordEntry.transactionRecord().transactionID();
         var accountId = EntityId.fromPbjAccountId(modTransactionId.accountID());
         var validStartTimestamp = modTransactionId.transactionValidStart();
-        var txnId = new TxnId(accountId, new RichInstant(validStartTimestamp.seconds(), validStartTimestamp.nanos()), modTransactionId.scheduled(), modTransactionId.nonce());
+        var txnId = new TxnId(
+                accountId,
+                new RichInstant(validStartTimestamp.seconds(), validStartTimestamp.nanos()),
+                modTransactionId.scheduled(),
+                modTransactionId.nonce());
         var consensusTimestamp = recordEntry.transactionRecord().consensusTimestamp();
 
         return new TxnRecord(
@@ -44,8 +47,6 @@ public record TxnRecord(TxnId transactionId, RichInstant consensusTime, EntityId
 
     public static TxnRecord fromMono(@NonNull ExpirableTxnRecord record) {
         return new TxnRecord(
-                record.getTxnId(),
-                record.getConsensusTime(),
-                record.getTxnId().getPayerAccount());
+                record.getTxnId(), record.getConsensusTime(), record.getTxnId().getPayerAccount());
     }
 }

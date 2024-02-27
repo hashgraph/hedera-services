@@ -104,7 +104,7 @@ record BlockInfoAndRunningHashes(
 
     private static Bytes getBlockHashes(FCQueue<BytesElement> queue) {
         ByteArrayOutputStream collector = new ByteArrayOutputStream();
-        try{
+        try {
             for (BytesElement element : queue) {
                 collector.write(element.getData());
             }

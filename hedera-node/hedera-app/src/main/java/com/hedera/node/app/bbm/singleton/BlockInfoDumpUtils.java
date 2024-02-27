@@ -139,6 +139,7 @@ public class BlockInfoDumpUtils {
                 .forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
         writer.writeln(fb);
     }
+
     static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
         return t -> null != t ? formatter.apply(t) : "";
     }
