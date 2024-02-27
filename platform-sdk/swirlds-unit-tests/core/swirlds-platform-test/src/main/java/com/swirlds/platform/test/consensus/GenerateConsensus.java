@@ -58,8 +58,6 @@ public final class GenerateConsensus {
             intake.addEvent(generator.generateEvent().getBaseEvent());
         }
 
-        intake.flush();
-
         // return the rounds
         return intake.getConsensusRounds();
     }

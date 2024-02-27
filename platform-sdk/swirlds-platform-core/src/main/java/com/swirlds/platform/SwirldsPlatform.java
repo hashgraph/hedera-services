@@ -610,8 +610,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final ConsensusEngine consensusEngine =
-                new ConsensusEngine(platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter);
+        final ConsensusEngine consensusEngine = new ConsensusEngine(
+                platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter, e -> {});
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,

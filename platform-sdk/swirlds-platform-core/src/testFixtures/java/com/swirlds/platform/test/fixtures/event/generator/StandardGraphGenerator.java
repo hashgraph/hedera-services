@@ -428,8 +428,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final boolean shouldRepeatTimestamp = getRandom().nextDouble() < simultaneousEventFraction;
 
         // don't repeat a timestamp if the previously emitted event is either parent of the new event
-        final boolean forbidRepeatTimestamp =
-                previousCreatorId.equals(source.getNodeId()) || previousCreatorId.equals(otherParentId);
+        final boolean forbidRepeatTimestamp = previousCreatorId != null
+                && (previousCreatorId.equals(source.getNodeId()) || previousCreatorId.equals(otherParentId));
         if (!previousTimestampForSource.equals(previousTimestamp) && shouldRepeatTimestamp && !forbidRepeatTimestamp) {
             return previousTimestamp;
         } else {
