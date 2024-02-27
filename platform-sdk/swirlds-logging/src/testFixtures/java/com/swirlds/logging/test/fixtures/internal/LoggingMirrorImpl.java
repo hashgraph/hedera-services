@@ -61,6 +61,7 @@ public class LoggingMirrorImpl implements LoggingMirror, LogHandler {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
         return new FilteredLoggingMirror(events, filter, this::close);
