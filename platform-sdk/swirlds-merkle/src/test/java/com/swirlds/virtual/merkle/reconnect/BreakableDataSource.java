@@ -54,14 +54,12 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
         if (builder.numTimesBroken < builder.numTimesToBreak) {
             // Syncronization block is not required here, as this code is never called in parallel
             // (though from different threads). `volatile` modifier is sufficient to ensure visibility.
-            if (builder.numTimesBroken < builder.numTimesToBreak) {
-                builder.numCalls += leaves.size();
-                if (builder.numCalls > builder.numCallsBeforeThrow) {
-                    builder.numCalls = 0;
-                    builder.numTimesBroken++;
-                    delegate.close();
-                    throw new IOException("Something bad on the DB!");
-                }
+            builder.numCalls += leaves.size();
+            if (builder.numCalls > builder.numCallsBeforeThrow) {
+                builder.numCalls = 0;
+                builder.numTimesBroken++;
+                delegate.close();
+                throw new IOException("Something bad on the DB!");
             }
         }
 
