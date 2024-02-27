@@ -83,7 +83,7 @@ record ScheduledTransaction(
         return new ScheduledTransaction(
                 scheduleVirtualValue.getKey().getKeyAsLong(),
                 scheduleVirtualValue.adminKey(),
-                scheduleVirtualValue.memo().orElse(""),
+                scheduleVirtualValue.memo().orElse("<EMPTY>"),
                 scheduleVirtualValue.isDeleted(),
                 scheduleVirtualValue.isExecuted(),
                 scheduleVirtualValue.calculatedWaitForExpiry(),
