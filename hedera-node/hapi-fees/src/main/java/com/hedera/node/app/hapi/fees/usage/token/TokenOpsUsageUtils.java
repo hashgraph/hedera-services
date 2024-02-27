@@ -133,8 +133,7 @@ public enum TokenOpsUsageUtils {
 
     public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TransactionBody txn) {
         final var op = txn.getTokenUpdateNfts();
-        final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
-        return tokenUpdateNftUsageFrom(op, subType);
+        return tokenUpdateNftUsageFrom(op, TOKEN_NON_FUNGIBLE_UNIQUE);
     }
 
     public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TokenUpdateNftsTransactionBody op, final SubType subType) {

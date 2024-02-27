@@ -115,5 +115,5 @@ public record TransactionHandlers(
         @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
-        TokenUpdateNftsHandler tokenUpdateNftsHandler,
+        @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

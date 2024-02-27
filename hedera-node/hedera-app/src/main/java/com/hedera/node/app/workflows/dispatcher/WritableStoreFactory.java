@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -46,6 +47,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
@@ -57,6 +60,7 @@ public class WritableStoreFactory {
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = createFactoryMap();
+    private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     private static Map<Class<?>, StoreEntry> createFactoryMap() {
         final Map<Class<?>, StoreEntry> newMap = new HashMap<>();
@@ -128,6 +132,12 @@ public class WritableStoreFactory {
             }
             return storeInterface.cast(store);
         }
+        logger.info(
+                "Creating store for {},entry {}, serviceName {}, all stores {}",
+                storeInterface,
+                entry.name(),
+                serviceName,
+                STORE_FACTORY.keySet());
         throw new IllegalArgumentException("No store of the given class is available");
     }
 
