@@ -15,19 +15,15 @@
  *
  */
 
-package com.swirlds.logging.util;
+package com.swirlds.logging.benchmark;
 
-public class BenchmarkConstants {
+public enum LoggingHandlingType {
 
-    public static final int WARMUP_ITERATIONS = 3;
+    CONSOLE, FILE, CONSOLE_AND_FILE;
 
-    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 3;
+    public static final String CONSOLE_TYPE = "CONSOLE";
 
-    public static final int MEASUREMENT_ITERATIONS = 4;
+    public static final String FILE_TYPE = "FILE";
 
-    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 3;
-
-    public static final int PARALLEL_THREAD_COUNT = 4;
-
-    public static final int FORK_COUNT = 4;
+    public static final String CONSOLE_AND_FILE_TYPE = "CONSOLE_AND_FILE";
 }

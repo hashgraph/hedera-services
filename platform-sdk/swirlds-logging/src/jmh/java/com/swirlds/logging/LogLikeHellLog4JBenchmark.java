@@ -17,6 +17,9 @@
 
 package com.swirlds.logging;
 
+import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
+import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_TYPE;
+import static com.swirlds.logging.benchmark.LoggingHandlingType.FILE_TYPE;
 import static com.swirlds.logging.util.BenchmarkConstants.FORK_COUNT;
 import static com.swirlds.logging.util.BenchmarkConstants.MEASUREMENT_ITERATIONS;
 import static com.swirlds.logging.util.BenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
@@ -27,11 +30,11 @@ import static com.swirlds.logging.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS
 import com.swirlds.logging.benchmark.ConfigureLog4J;
 import com.swirlds.logging.benchmark.LogLikeHellLog4J;
 import java.util.Objects;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
@@ -44,21 +47,19 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Benchmark)
 public class LogLikeHellLog4JBenchmark {
 
-    @Param({"FILE", "CONSOLE", "FILE_AND_CONSOLE"})
+    @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
-
-    private final static String PATTERN = "%d %c [%t] %-5level: %msg [%marker] %X %n%throwable";
 
     Logger logger;
     LogLikeHellLog4J logLikeHell;
 
-    @Setup(org.openjdk.jmh.annotations.Level.Iteration)
+    @Setup(Level.Trial)
     public void init() throws Exception {
-        if (Objects.equals(loggingType, "FILE")) {
+        if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = ConfigureLog4J.configureFileLogging().getLogger("BenchmarkLogging4J");
-        } else if (Objects.equals(loggingType, "CONSOLE")) {
+        } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
             logger = ConfigureLog4J.configureConsoleLogging().getLogger("BenchmarkLogging4J");
-        } else if (Objects.equals(loggingType, "FILE_AND_CONSOLE")) {
+        } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
             logger = ConfigureLog4J.configureFileAndConsoleLogging().getLogger("BenchmarkLogging4J");
         }
         logLikeHell = new LogLikeHellLog4J(logger);
@@ -72,16 +73,6 @@ public class LogLikeHellLog4JBenchmark {
     @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
     public void runLogLikeHell() {
         logLikeHell.run();
-    }
-
-    @Benchmark
-    @Fork(FORK_COUNT)
-    @Threads(PARALLEL_THREAD_COUNT)
-    @BenchmarkMode(Mode.Throughput)
-    @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
-    @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
-    public void runSingleSimpleLog() {
-        logger.log(Level.INFO, "Hello World");
     }
 
 }

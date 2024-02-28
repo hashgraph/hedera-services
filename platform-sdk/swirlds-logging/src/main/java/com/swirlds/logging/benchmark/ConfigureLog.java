@@ -25,24 +25,12 @@ import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.console.ConsoleHandlerFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class ConfigureLog {
 
-    public static final String LOG_FILE = "logging-out/log-like-hell-benchmark.log";
-
-    public static void deleteOldLogFiles() {
-        try {
-            Files.deleteIfExists(Path.of(LOG_FILE));
-        } catch (IOException e) {
-            throw new RuntimeException("Can not delete old log file", e);
-        }
-    }
-
     public static LoggingSystem configureFileLogging() {
-        deleteOldLogFiles();
+        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.SWIRLDS,
+                LoggingHandlingType.FILE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -51,7 +39,7 @@ public class ConfigureLog {
                 .withValue("logging.handler.file.active", "true")
                 .withValue("logging.handler.file.formatTimestamp", "false")
                 .withValue("logging.handler.file.level", "trace")
-                .withValue("logging.handler.file.file", LOG_FILE)
+                .withValue("logging.handler.file.file", logFile)
                 .build();
         final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
@@ -76,7 +64,8 @@ public class ConfigureLog {
     }
 
     public static LoggingSystem configureFileAndConsoleLogging() {
-        deleteOldLogFiles();
+        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.SWIRLDS,
+                LoggingHandlingType.CONSOLE_AND_FILE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -85,7 +74,7 @@ public class ConfigureLog {
                 .withValue("logging.handler.file.active", "true")
                 .withValue("logging.handler.file.formatTimestamp", "false")
                 .withValue("logging.handler.file.level", "trace")
-                .withValue("logging.handler.file.file", LOG_FILE)
+                .withValue("logging.handler.file.file", logFile)
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.active", "true")
                 .withValue("logging.handler.console.formatTimestamp", "false")
@@ -98,4 +87,6 @@ public class ConfigureLog {
         loggingSystem.addHandler(consoleHandler);
         return loggingSystem;
     }
+
+
 }

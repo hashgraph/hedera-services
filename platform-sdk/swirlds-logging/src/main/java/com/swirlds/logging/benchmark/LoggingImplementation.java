@@ -15,19 +15,8 @@
  *
  */
 
-package com.swirlds.logging.util;
+package com.swirlds.logging.benchmark;
 
-public class BenchmarkConstants {
-
-    public static final int WARMUP_ITERATIONS = 3;
-
-    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 3;
-
-    public static final int MEASUREMENT_ITERATIONS = 4;
-
-    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 3;
-
-    public static final int PARALLEL_THREAD_COUNT = 4;
-
-    public static final int FORK_COUNT = 4;
+public enum LoggingImplementation {
+    SWIRLDS, LOG4J2;
 }

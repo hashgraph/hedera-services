@@ -17,10 +17,8 @@
 
 package com.swirlds.logging.benchmark;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -34,67 +32,54 @@ import org.apache.logging.log4j.spi.LoggerContext;
 public class ConfigureLog4J {
 
     private final static String PATTERN = "%d %c [%t] %-5level: %msg [%marker] %X %n%throwable";
-    public static final String LOG_FILE = "logging-out/log-like-hell-benchmark-log4j2.log";
+    public static final String CONSOLE_APPENDER_NAME = "console";
+    public static final String FILE_APPENDER_NAME = "file";
 
     public static LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
-
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
         builder.setConfigurationName("consoleLoggingConfig");
-
-        builder.add(createConsoleAppender("console", builder));
-
+        builder.add(createConsoleAppender(CONSOLE_APPENDER_NAME, builder));
         builder.add(builder.newRootLogger(Level.DEBUG)
-                .add(builder.newAppenderRef("console")));
+                .add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
         return create(builder);
     }
 
     public static LoggerContext configureFileLogging() {
-        deleteOldLogFiles();
+        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.LOG4J2,
+                LoggingHandlingType.FILE);
         System.clearProperty("log4j2.contextSelector");
-
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-        builder.setStatusLevel(Level.ERROR);
+        builder.setStatusLevel(Level.DEBUG);
         builder.setConfigurationName("fileLoggingConfig");
-
-        builder.add(createFileAppender("file", builder));
-
+        builder.add(createFileAppender(FILE_APPENDER_NAME, builder, logFile));
         builder.add(builder.newRootLogger(Level.DEBUG)
-                .add(builder.newAppenderRef("file")));
+                .add(builder.newAppenderRef(FILE_APPENDER_NAME)));
         return create(builder);
     }
 
     public static LoggerContext configureFileAndConsoleLogging() {
-        deleteOldLogFiles();
+        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.LOG4J2,
+                LoggingHandlingType.CONSOLE_AND_FILE);
         System.clearProperty("log4j2.contextSelector");
-
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
         builder.setConfigurationName("fileAndConsoleLoggingConfig");
-
-        builder.add(createFileAppender("file", builder));
-        builder.add(createConsoleAppender("console", builder));
-
+        builder.add(createFileAppender(FILE_APPENDER_NAME, builder, logFile));
+        builder.add(createConsoleAppender(CONSOLE_APPENDER_NAME, builder));
         builder.add(builder.newRootLogger(Level.DEBUG)
-                .add(builder.newAppenderRef("file"))
-                .add(builder.newAppenderRef("console")));
+                .add(builder.newAppenderRef(FILE_APPENDER_NAME))
+                .add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
         return create(builder);
-    }
-
-    private static void deleteOldLogFiles() {
-        try {
-            Files.deleteIfExists(Path.of(LOG_FILE));
-        } catch (IOException e) {
-            throw new RuntimeException("Can not delete old log file", e);
-        }
     }
 
     private static LoggerContext create(ConfigurationBuilder<BuiltConfiguration> builder) {
         Configuration configuration = builder.build();
         org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
-        context.reconfigure(configuration);
-        return context;
+        LogManager.getFactory().removeContext(context);
+        //context.reconfigure(configuration);
+        return Configurator.initialize(configuration);
     }
 
     private static AppenderComponentBuilder createConsoleAppender(final String name,
@@ -107,11 +92,11 @@ public class ConfigureLog4J {
     }
 
     private static AppenderComponentBuilder createFileAppender(final String name,
-            final ConfigurationBuilder<BuiltConfiguration> builder) {
+            final ConfigurationBuilder<BuiltConfiguration> builder, final String path) {
         LayoutComponentBuilder layoutBuilder = builder.newLayout("PatternLayout")
                 .addAttribute("pattern", PATTERN);
         return builder.newAppender(name, "File")
-                .addAttribute("fileName", LOG_FILE)
+                .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
     }
