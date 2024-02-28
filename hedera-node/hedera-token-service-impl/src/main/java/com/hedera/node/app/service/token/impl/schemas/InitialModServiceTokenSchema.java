@@ -62,6 +62,7 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -341,6 +342,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
+                                        if (toAcct.alias().toByteArray().length > 20) {
+                                            final var result = AliasUtils.extractEvmAddress(toAcct.alias());
+                                            if (result != null) {
+                                                aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
+                                            }
+                                        }
                                         if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
                                             // Make sure we are flushing data to disk as we go
                                             ((WritableKVStateBase) aliasesState.get()).commit();

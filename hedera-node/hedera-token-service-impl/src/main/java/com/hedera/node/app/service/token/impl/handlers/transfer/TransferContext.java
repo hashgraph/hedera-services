@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,4 +89,24 @@ public interface TransferContext {
      * @param assessedCustomFee the assessed custom fee
      */
     void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee);
+
+    /**
+     * Returns the custom fees assessed so far in this transfer context.
+     *
+     * @return the custom fees assessed so far in this transfer context
+     */
+    List<AssessedCustomFee> getAssessedCustomFees();
+
+    /**
+     * Indicates if this transfer context enforces mono-service
+     * restrictions on whether auto-created accounts can pay custom fees
+     * in the same transaction where they are created.
+     *
+     * <p>The default is true for mono-service fidelity. But many (quite
+     * complicated!) unit tests were written before this was enforced; and
+     * they need to be able to turn it off.
+     *
+     * @return whether certain restrictions on custom fees are enforced
+     */
+    boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
 }

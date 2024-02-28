@@ -103,7 +103,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     private static final String MINT_TOKEN_VIA_DELEGATE_CALL = "MixedMintToken";
 
     public static void main(final String... args) {
-        new ContractMintHTSV2SecurityModelSuite().runSuiteSync();
+        new ContractMintHTSV2SecurityModelSuite().runSuiteAsync();
     }
 
     public List<HapiSpec> getSpecsInSuite() {

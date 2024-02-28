@@ -17,11 +17,7 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.MerkleDb;
-import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
-import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.virtualmap.VirtualMap;
 import java.nio.file.Path;
 import org.openjdk.jmh.annotations.Setup;
 
@@ -44,17 +40,6 @@ public class CryptoBenchMerkleDb extends CryptoBench {
         // the previous run that re-create the folder, and it results in a total mess
         final Path merkleDbPath = getTestDir().resolve("merkledb" + dbIndex++);
         MerkleDb.setDefaultPath(merkleDbPath);
-    }
-
-    protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
-        MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
-                        (short) 1, DigestType.SHA_384,
-                        (short) 1, new BenchmarkKeySerializer(),
-                        (short) 1, new BenchmarkValueSerializer())
-                .preferDiskIndices(false);
-        MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
-        return new VirtualMap<>(LABEL, dataSourceBuilder);
     }
 
     public static void main(String[] args) throws Exception {

@@ -34,6 +34,7 @@ public interface DoubleGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -42,6 +43,7 @@ public interface DoubleGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.FLOAT;
@@ -50,6 +52,7 @@ public interface DoubleGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -59,8 +62,9 @@ public interface DoubleGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     default Double get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -79,8 +83,7 @@ public interface DoubleGauge extends Metric {
      * <p>
      * {@link Double#NaN}, {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY} are supported.
      *
-     * @param newValue
-     * 		the new value
+     * @param newValue the new value
      */
     void set(final double newValue);
 
@@ -93,23 +96,34 @@ public interface DoubleGauge extends Metric {
 
         /**
          * Constructor of {@code DoubleGauge.Config}
-         *
+         * <p>
          * The {@link #getInitialValue() initialValue} is by default set to {@code 0.0}
-         *
+         * <p>
          * The initial value is set to {@code 0.0}.
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name     a short name for the metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
             this.initialValue = 0.0;
         }
 
+        /**
+         * Constructor of {@code DoubleGauge.Config}
+         *
+         *
+         * @param category     the kind of metric (metrics are grouped or filtered by this)
+         * @param name         a short name for the metric
+         * @param description  metric description
+         * @param unit         metric unit
+         * @param format       format for metric
+         * @param initialValue initialValue for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -125,6 +139,7 @@ public interface DoubleGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public DoubleGauge.Config withDescription(@NonNull final String description) {
             return new DoubleGauge.Config(
@@ -134,6 +149,7 @@ public interface DoubleGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public DoubleGauge.Config withUnit(@NonNull final String unit) {
             return new DoubleGauge.Config(
@@ -143,11 +159,10 @@ public interface DoubleGauge extends Metric {
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format
-         * 		the format-string
+         * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if {@code format} is {@code null}
+         * @throws IllegalArgumentException if {@code format} consists only of whitespaces
          */
         @NonNull
         public DoubleGauge.Config withFormat(@NonNull final String format) {
@@ -167,8 +182,7 @@ public interface DoubleGauge extends Metric {
         /**
          * Fluent-style setter of the initial value.
          *
-         * @param initialValue
-         * 		the initial value
+         * @param initialValue the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
         @NonNull
@@ -180,6 +194,7 @@ public interface DoubleGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<DoubleGauge> getResultClass() {
             return DoubleGauge.class;

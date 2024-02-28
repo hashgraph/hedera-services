@@ -24,7 +24,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -41,8 +42,10 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.util.HashLogger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +68,7 @@ class PlatformWiringTests {
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
-                mock(LinkedEventIntake.class),
+                mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
@@ -79,7 +82,10 @@ class PlatformWiringTests {
                 mock(ConsensusRoundHandler.class),
                 mock(EventStreamManager.class),
                 mock(FutureEventBuffer.class),
-                mock(IssDetector.class));
+                mock(IssDetector.class),
+                mock(IssHandler.class),
+                mock(HashLogger.class),
+                mock(LatestCompleteStateNotifier.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
