@@ -33,13 +33,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class ConsoleHandler extends AbstractSyncedHandler {
 
+    private final LineBasedFormat format;
+
     /**
      * Constructs a new ConsoleHandler with the specified configuration.
      *
+     * @param handlerName   The unique name of this handler.
      * @param configuration The configuration for this handler.
      */
-    public ConsoleHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
-        super(configKey, configuration);
+    public ConsoleHandler(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+        super(handlerName, configuration);
+        format = LineBasedFormat.createForHandler(handlerName, configuration);
     }
 
     /**
@@ -50,7 +54,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        LineBasedFormat.print(System.out, event);
+        format.print(System.out, event);
         System.out.flush();
     }
 }

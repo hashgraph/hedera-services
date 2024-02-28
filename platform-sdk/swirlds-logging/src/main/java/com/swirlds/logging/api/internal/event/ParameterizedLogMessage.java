@@ -27,19 +27,39 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * The implementation is copied from slf4j for first tests. need to be replaced in future. SLF4J is using MIT license
  * (https://github.com/qos-ch/slf4j/blob/master/LICENSE.txt). Based on that we can use it in our project for now
  *
- * @param messagePattern the message pattern
- * @param args           the arguments
  * @see LogMessage
  */
-public record ParameterizedLogMessage(@Nullable String messagePattern, @Nullable Object... args) implements LogMessage {
+public class ParameterizedLogMessage implements LogMessage {
 
-    static final char DELIM_START = '{';
-    static final String DELIM_STR = "{}";
+    private static final char DELIM_START = '{';
+    private static final String DELIM_STR = "{}";
     private static final char ESCAPE_CHAR = '\\';
+
+    private final String messagePattern;
+
+    private final Object[] args;
+
+    private volatile String message = null;
+
+    /**
+     * @param messagePattern the message pattern
+     * @param args           the arguments
+     */
+    public ParameterizedLogMessage(final String messagePattern, final Object... args) {
+        this.messagePattern = messagePattern;
+        this.args = args;
+    }
 
     @NonNull
     @Override
     public String getMessage() {
+        if (message == null) {
+            message = createMessage();
+        }
+        return message;
+    }
+
+    private String createMessage() {
         if (messagePattern == null) {
             return "";
         }

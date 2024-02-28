@@ -40,7 +40,7 @@ public class ConsoleHandlerFactory implements LogHandlerFactory {
     /**
      * Creates a new {@link ConsoleHandler} instance with the specified {@link Configuration}.
      *
-     * @param configKey The name of the handler instance.
+     * @param handlerName The name of the handler instance.
      * @param configuration The configuration for the new handler instance.
      * @return A new {@link ConsoleHandler} instance.
      *
@@ -48,8 +48,8 @@ public class ConsoleHandlerFactory implements LogHandlerFactory {
      */
     @Override
     @NonNull
-    public LogHandler create(@NonNull final String configKey, @NonNull final Configuration configuration) {
-        return new ConsoleHandler(configKey, configuration);
+    public LogHandler create(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+        return new ConsoleHandler(handlerName, configuration);
     }
 
     @NonNull

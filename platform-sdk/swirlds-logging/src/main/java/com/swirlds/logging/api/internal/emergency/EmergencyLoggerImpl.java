@@ -98,6 +98,8 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
     private final Lock handleLock;
 
+    private final LineBasedFormat lineBasedFormat;
+
     /**
      * Creates the singleton instance of the logger.
      */
@@ -108,6 +110,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         logEventsAddLock = new ReentrantLock();
         logEventFactory = new SimpleLogEventFactory();
         handleLock = new ReentrantLock();
+        lineBasedFormat = new LineBasedFormat(false);
     }
 
     /**
@@ -251,7 +254,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                LineBasedFormat.print(printStream, logEvent);
+                lineBasedFormat.print(printStream, logEvent);
             } finally {
                 handleLock.unlock();
             }

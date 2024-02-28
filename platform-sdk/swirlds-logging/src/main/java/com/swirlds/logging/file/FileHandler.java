@@ -49,16 +49,20 @@ public class FileHandler extends AbstractSyncedHandler {
     private final BufferedWriter bufferedWriter;
     private StringBuffer buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
 
+    private final LineBasedFormat format;
+
     /**
      * Creates a new file handler.
      *
-     * @param configKey     the configuration key
+     * @param handlerName     the unique handler name
      * @param configuration the configuration
      */
-    public FileHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
-        super(configKey, configuration);
+    public FileHandler(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+        super(handlerName, configuration);
 
-        final String propertyPrefix = PROPERTY_HANDLER.formatted(configKey);
+        format = LineBasedFormat.createForHandler(handlerName, configuration);
+
+        final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
         final Path filePath = Objects.requireNonNullElse(
                 configuration.getValue(FILE_NAME_PROPERTY.formatted(propertyPrefix), Path.class, null),
                 Path.of(DEFAULT_FILE_NAME));
@@ -96,9 +100,9 @@ public class FileHandler extends AbstractSyncedHandler {
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
         final StringBuffer msgBuffer = new StringBuffer(SMALL_BUFFER);
-        LineBasedFormat.print(msgBuffer, event);
+        format.print(msgBuffer, event);
 
-        if(buffer.capacity() < msgBuffer.length()) {
+        if (buffer.capacity() < msgBuffer.length()) {
             try {
                 if (bufferedWriter != null) {
                     bufferedWriter.write(buffer.toString().toCharArray());

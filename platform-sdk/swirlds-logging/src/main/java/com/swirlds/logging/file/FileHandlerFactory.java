@@ -45,7 +45,7 @@ public class FileHandlerFactory implements LogHandlerFactory {
     /**
      * Creates a new {@link FileHandler} instance with the specified {@link Configuration}.
      *
-     * @param configKey The name of the handler instance.
+     * @param handlerName The name of the handler instance.
      * @param configuration The configuration for the new handler instance.
      * @return A new {@link FileHandler} instance.
      *
@@ -53,8 +53,8 @@ public class FileHandlerFactory implements LogHandlerFactory {
      */
     @NonNull
     @Override
-    public LogHandler create(@NonNull final String configKey, @NonNull final Configuration configuration) {
-        return new FileHandler(configKey, configuration);
+    public LogHandler create(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+        return new FileHandler(handlerName, configuration);
     }
 
     /**

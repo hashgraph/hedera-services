@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal.format;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
@@ -23,13 +24,8 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
+import java.util.Objects;
 
 /**
  * A utility class that formats a {@link LogEvent} as a line based format.
@@ -41,21 +37,21 @@ public class LineBasedFormat {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
-    /**
-     * The formatter for the timestamp.
-     */
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
+    public static final String THREAD_SUFFIX = "THREAD";
+    public static final String LOGGER_SUFFIX = "LOGGER";
 
-    private static final ConcurrentDateFormat DATE_FORMAT =
-            new ConcurrentDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US, TimeZone.getTimeZone("UTC"));
+    private final boolean formatTimestamp;
+
+    public LineBasedFormat(boolean formatTimestamp) {
+        this.formatTimestamp = formatTimestamp;
+    }
 
     /**
      * Converts the given object to a string. If the object is {@code null}, the given default value is used.
      *
      * @param event
      */
-    public static void print(@NonNull final Appendable writer, @NonNull final LogEvent event) {
+    public void print(@NonNull final Appendable writer, @NonNull final LogEvent event) {
         if (writer == null) {
             EMERGENCY_LOGGER.logNPE("printer");
             return;
@@ -65,15 +61,17 @@ public class LineBasedFormat {
             return;
         }
         try {
-            writer.append(timestampAsString(event.timestamp()));
+            if (formatTimestamp) {
+                writer.append(DateFormatUtils.timestampAsString(event.timestamp()));
+            } else {
+                writer.append(event.timestamp() + "");
+            }
             writer.append(' ');
             writer.append(asString(event.level()));
-            writer.append(' ');
-            writer.append('[');
-            writer.append(asString(event.threadName(), "THREAD"));
-            writer.append(']');
-            writer.append(' ');
-            writer.append(asString(event.loggerName(), "LOGGER"));
+            writer.append(" [");
+            writer.append(asString(event.threadName(), THREAD_SUFFIX));
+            writer.append("] ");
+            writer.append(asString(event.loggerName(), LOGGER_SUFFIX));
             writer.append(" - ");
             writer.append(asString(event.message()));
 
@@ -121,9 +119,10 @@ public class LineBasedFormat {
      * @param level The level
      * @return The string
      */
-    private static String asString(Level level) {
+    private static String asString(@NonNull Level level) {
         if (level == null) {
-            return "UNDEFINED";
+            EMERGENCY_LOGGER.logNPE("level");
+            return "NO_DEF"; // Must be 6 chars long to fit in pattern
         } else {
             return level.nameWithFixedSize();
         }
@@ -135,8 +134,9 @@ public class LineBasedFormat {
      * @param message The message
      * @return The string
      */
-    private static String asString(LogMessage message) {
+    private static String asString(@NonNull final LogMessage message) {
         if (message == null) {
+            EMERGENCY_LOGGER.logNPE("message");
             return "UNDEFINED-MESSAGE";
         } else {
             try {
@@ -151,35 +151,24 @@ public class LineBasedFormat {
     /**
      * Converts the given object to a string.
      *
-     * @param timestamp The timestamp
-     * @return The string
-     */
-    private static String timestampAsString(long timestamp) {
-        try {
-            final StringBuilder sb = new StringBuilder(26);
-            sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
-            // sb.append(DATE_FORMAT.format(timestamp));
-            while (sb.length() < 26) {
-                sb.append(' ');
-            }
-            return sb.toString();
-        } catch (final Throwable e) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
-            return "BROKEN-TIMESTAMP          ";
-        }
-    }
-
-    /**
-     * Converts the given object to a string.
-     *
      * @param marker The marker
      * @return The string
      */
-    private static String asString(@Nullable final Marker marker) {
+    private static String asString(@NonNull final Marker marker) {
         if (marker == null) {
+            EMERGENCY_LOGGER.logNPE("marker");
             return "null";
         } else {
             return String.join(", ", marker.getAllMarkerNames());
         }
+    }
+
+    public static LineBasedFormat createForHandler(
+            @NonNull final String handlerName, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(handlerName, "handlerName must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        final String formatTimestampKey = "logging.handler." + handlerName + ".formatTimestamp";
+        final Boolean formatTimestamp = configuration.getValue(formatTimestampKey, Boolean.class, true);
+        return new LineBasedFormat(formatTimestamp);
     }
 }

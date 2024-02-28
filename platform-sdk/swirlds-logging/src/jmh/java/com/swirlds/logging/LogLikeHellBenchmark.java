@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.logging;
 
 import static com.swirlds.logging.BenchmarkConstants.FORK_COUNT;
@@ -35,7 +51,6 @@ import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
 public class LogLikeHellBenchmark {
-    
 
     @Param({"FILE", "CONSOLE", "FILE_AND_CONSOLE"})
     public String loggingType;
@@ -64,7 +79,6 @@ public class LogLikeHellBenchmark {
         } else {
             throw new IllegalStateException("Invalid logging type: " + loggingType);
         }
-
     }
 
     private void configureFileLogging() {
@@ -116,7 +130,6 @@ public class LogLikeHellBenchmark {
         loggingSystem.addHandler(consoleHandler);
     }
 
-
     @Benchmark
     @Fork(FORK_COUNT)
     @Threads(PARALLEL_THREAD_COUNT)
@@ -126,7 +139,6 @@ public class LogLikeHellBenchmark {
     public void runLogLikeHell() {
         logLikeHell.run();
     }
-
 
     @Benchmark
     @Fork(FORK_COUNT)
@@ -145,13 +157,13 @@ public class LogLikeHellBenchmark {
     @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
     @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
     public void runSingleComplexLog() {
-        logger.withMarker("MARKER1").
-                withMarker("MARKER2").
-                withMarker("MARKER3").
-                withContext("user", "user1").
-                withContext("transaction", "t34").
-                withContext("session", "session56").
-                log(Level.INFO, "Hello {}", new RuntimeException("OHOH"), "World");
+        logger.withMarker("MARKER1")
+                .withMarker("MARKER2")
+                .withMarker("MARKER3")
+                .withContext("user", "user1")
+                .withContext("transaction", "t34")
+                .withContext("session", "session56")
+                .log(Level.INFO, "Hello {}", new RuntimeException("OHOH"), "World");
     }
 
     @Benchmark
@@ -175,5 +187,4 @@ public class LogLikeHellBenchmark {
         final Logger logger1 = loggingSystem.getLogger(LogLikeHellBenchmark.class.getSimpleName());
         logger1.log(Level.INFO, "Hello World");
     }
-
 }
