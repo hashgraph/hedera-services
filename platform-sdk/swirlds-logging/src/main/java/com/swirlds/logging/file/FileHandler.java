@@ -23,9 +23,11 @@ import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,10 +47,10 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-    private static final int STRING_BUFFER_CAPACITY = 8 * 1024;
+    private static final int BUFFER_CAPACITY = 8 * 1024;
     private static final int SMALL_BUFFER = 4 * 1024;
-    private final BufferedWriter bufferedWriter;
-    private final StringBuffer buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
+    private OutputStream writer;
+    private final ByteBuffer buffer = ByteBuffer.wrap(new byte[BUFFER_CAPACITY]);
 
     private final Lock bufferLock = new ReentrantLock();
 
@@ -75,24 +77,26 @@ public class FileHandler extends AbstractSyncedHandler {
         BufferedWriter bufferedWriter = null;
         try {
             if (!Files.exists(filePath) || Files.isWritable(filePath)) {
-                if (append) {
-                    bufferedWriter = Files.newBufferedWriter(
-                            filePath,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.APPEND,
-                            StandardOpenOption.WRITE,
-                            StandardOpenOption.DSYNC);
-                } else {
-                    bufferedWriter = Files.newBufferedWriter(
-                            filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
-                }
+                writer = new FileOutputStream(filePath.toFile(), append);
+
+//                if (append) {
+//                    bufferedWriter = Files.newBufferedWriter(
+//                            filePath,
+//                            StandardOpenOption.CREATE,
+//                            StandardOpenOption.APPEND,
+//                            StandardOpenOption.WRITE,
+//                            StandardOpenOption.DSYNC);
+//                } else {
+//                    bufferedWriter = Files.newBufferedWriter(
+//                            filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+//                }
             } else {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
             }
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to create FileHandler", exception);
         }
-        this.bufferedWriter = bufferedWriter;
+        //this.writer = bufferedWriter;
     }
 
     /**
@@ -106,12 +110,12 @@ public class FileHandler extends AbstractSyncedHandler {
         format.print(msgBuffer, event);
         bufferLock.lock();
         try {
-            final int available = buffer.capacity() - buffer.length();
+            final int available = buffer.capacity() - buffer.position();
             if (available < msgBuffer.length()) {
                 try {
-                    if (bufferedWriter != null) {
-                        bufferedWriter.write(buffer.toString().toCharArray());
-                        buffer.setLength(0);
+                    if (writer != null) {
+                        writer.write(buffer.array());
+                        buffer.clear();
                     } else {
                         throw new IllegalStateException("BufferedWriter is null");
                     }
@@ -120,7 +124,7 @@ public class FileHandler extends AbstractSyncedHandler {
                 }
             }
 
-            buffer.append(msgBuffer);
+            buffer.put(msgBuffer.toString().getBytes());
         } finally {
             bufferLock.unlock();
         }
@@ -130,10 +134,10 @@ public class FileHandler extends AbstractSyncedHandler {
     protected void handleStopAndFinalize() {
         super.handleStopAndFinalize();
         try {
-            if (bufferedWriter != null) {
-                bufferedWriter.write(buffer.toString().toCharArray());
-                bufferedWriter.flush();
-                bufferedWriter.close();
+            if (writer != null) {
+                writer.write(buffer.array());
+                writer.flush();
+                writer.close();
             }
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
