@@ -102,7 +102,8 @@ public class FileHandler extends AbstractSyncedHandler {
         final StringBuffer msgBuffer = new StringBuffer(SMALL_BUFFER);
         format.print(msgBuffer, event);
 
-        if (buffer.capacity() < msgBuffer.length()) {
+        final int available = buffer.capacity() - buffer.length();
+        if (available < msgBuffer.length()) {
             try {
                 if (bufferedWriter != null) {
                     bufferedWriter.write(buffer.toString().toCharArray());
@@ -123,6 +124,7 @@ public class FileHandler extends AbstractSyncedHandler {
         super.handleStopAndFinalize();
         try {
             if (bufferedWriter != null) {
+                bufferedWriter.write(buffer.toString().toCharArray());
                 bufferedWriter.flush();
                 bufferedWriter.close();
             }
