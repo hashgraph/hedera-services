@@ -17,7 +17,7 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +30,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private static final Logger LOG = LogManager.getLogger(ThreadSafeConsensusInfo.class);
 
     private final ConsensusConfig config;
-    private final SequentialRingBuffer<MinGenInfo> storage;
+    private final SequentialRingBuffer<MinimumJudgeInfo> storage;
 
     /**
      * The minimum judge generation number from the oldest non-expired round, if we have expired any
@@ -70,7 +70,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * @param storage round storage
      */
     public ThreadSafeConsensusInfo(
-            @NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinGenInfo> storage) {
+            @NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinimumJudgeInfo> storage) {
         this.config = config;
         this.storage = storage;
     }
@@ -78,7 +78,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     /**
      * @return the instance that stores all round and generation information
      */
-    protected @NonNull SequentialRingBuffer<MinGenInfo> getStorage() {
+    protected @NonNull SequentialRingBuffer<MinimumJudgeInfo> getStorage() {
         return storage;
     }
 
@@ -111,7 +111,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * <p>Executed only on consensus thread.
      */
     private void updateMaxRoundGeneration() {
-        final MinGenInfo info = storage.get(getLastRoundDecided());
+        final MinimumJudgeInfo info = storage.get(getLastRoundDecided());
         if (info == null) {
             // this should never happen
             LOG.error(
@@ -120,7 +120,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
                     getLastRoundDecided());
             return;
         }
-        long newMaxRoundGeneration = info.minimumGeneration();
+        long newMaxRoundGeneration = info.minimumJudgeAncientThreshold();
 
         // Guarantee that the round generation is non-decreasing.
         // Once we remove support for states with events, this can be removed
@@ -137,7 +137,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private void updateMinGenNonAncient() {
         final long nonAncientRound =
                 RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
-        final MinGenInfo info = storage.get(nonAncientRound);
+        final MinimumJudgeInfo info = storage.get(nonAncientRound);
         if (info == null) {
             // should never happen
             LOG.error(
@@ -146,12 +146,12 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
                     nonAncientRound);
             return;
         }
-        minGenNonAncient = info.minimumGeneration();
+        minGenNonAncient = info.minimumJudgeAncientThreshold();
     }
 
     /** Update the min round judge generation. Executed only on consensus thread. */
     private void updateMinRoundGeneration() {
-        final MinGenInfo info = storage.get(getMinRound());
+        final MinimumJudgeInfo info = storage.get(getMinRound());
         if (info == null) {
             // this should never happen
             LOG.error(
@@ -161,7 +161,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
             return;
         }
 
-        long newMinRoundGeneration = info.minimumGeneration();
+        long newMinRoundGeneration = info.minimumJudgeAncientThreshold();
 
         // Guarantee that the round generation is non-decreasing.
         // Once we remove support for states with events, this can be removed

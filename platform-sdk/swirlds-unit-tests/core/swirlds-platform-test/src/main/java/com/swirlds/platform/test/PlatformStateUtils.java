@@ -20,7 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -56,14 +56,14 @@ public final class PlatformStateUtils {
         platformState.setRound(random.nextLong());
         platformState.setConsensusTimestamp(randomInstant(random));
 
-        final List<MinGenInfo> minGenInfo = new LinkedList<>();
+        final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
-            minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
+            minimumJudgeInfo.add(new MinimumJudgeInfo(random.nextLong(), random.nextLong()));
         }
         platformState.setSnapshot(new ConsensusSnapshot(
                 random.nextLong(),
                 List.of(randomHash(random), randomHash(random), randomHash(random)),
-                minGenInfo,
+                minimumJudgeInfo,
                 random.nextLong(),
                 randomInstant(random)));
 
