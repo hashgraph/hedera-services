@@ -23,14 +23,17 @@ import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A file handler that writes log events to a file.
@@ -47,12 +50,7 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-    private static final int BUFFER_CAPACITY = 8 * 1024;
-    private static final int SMALL_BUFFER = 4 * 1024;
-    private OutputStream writer;
-    private final ByteBuffer buffer = ByteBuffer.wrap(new byte[BUFFER_CAPACITY]);
-
-    private final Lock bufferLock = new ReentrantLock();
+    private final WriterWithBuffer writer;
 
     private final LineBasedFormat format;
 
@@ -73,30 +71,18 @@ public class FileHandler extends AbstractSyncedHandler {
                 Path.of(DEFAULT_FILE_NAME));
         final boolean append = Objects.requireNonNullElse(
                 configuration.getValue(APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, null), true);
-
-        BufferedWriter bufferedWriter = null;
         try {
-            if (!Files.exists(filePath) || Files.isWritable(filePath)) {
-                writer = new FileOutputStream(filePath.toFile(), append);
-
-//                if (append) {
-//                    bufferedWriter = Files.newBufferedWriter(
-//                            filePath,
-//                            StandardOpenOption.CREATE,
-//                            StandardOpenOption.APPEND,
-//                            StandardOpenOption.WRITE,
-//                            StandardOpenOption.DSYNC);
-//                } else {
-//                    bufferedWriter = Files.newBufferedWriter(
-//                            filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
-//                }
-            } else {
-                EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
+            Files.createDirectories(filePath.getParent());
+            if (Files.exists(filePath) && !(append && Files.isWritable(filePath))) {
+                throw new IOException("log file exist and is not writable or is not append mode");
             }
-        } catch (final Exception exception) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to create FileHandler", exception);
+        } catch (IOException e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
+            throw new RuntimeException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
-        //this.writer = bufferedWriter;
+
+        this.writer = new WriterWithBuffer(filePath, append, getName());
+
     }
 
     /**
@@ -106,27 +92,11 @@ public class FileHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        final StringBuilder msgBuffer = new StringBuilder(SMALL_BUFFER);
-        format.print(msgBuffer, event);
-        bufferLock.lock();
-        try {
-            final int available = buffer.capacity() - buffer.position();
-            if (available < msgBuffer.length()) {
-                try {
-                    if (writer != null) {
-                        writer.write(buffer.array());
-                        buffer.clear();
-                    } else {
-                        throw new IllegalStateException("BufferedWriter is null");
-                    }
-                } catch (final Exception exception) {
-                    EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file", exception);
-                }
-            }
 
-            buffer.put(msgBuffer.toString().getBytes());
-        } finally {
-            bufferLock.unlock();
+        if (writer != null) {
+            final StringBuilder writer = new StringBuilder(4 * 1024);
+            format.print(writer, event);
+            this.writer.write(writer.toString().getBytes(StandardCharsets.UTF_8), writer.length());
         }
     }
 
@@ -135,12 +105,108 @@ public class FileHandler extends AbstractSyncedHandler {
         super.handleStopAndFinalize();
         try {
             if (writer != null) {
-                writer.write(buffer.array());
                 writer.flush();
                 writer.close();
             }
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
+        }
+    }
+
+    /**
+     * A Writer that uses a ByteBuffer before writing to an OutputStream
+     */
+    private static class WriterWithBuffer implements Closeable {
+
+        private static final int BUFFER_CAPACITY = 8192 * 4;
+        private final ByteBuffer buffer;
+        private final OutputStream writer;
+        private final String name;
+
+        public WriterWithBuffer(@NonNull final Path logFilePath, final boolean append, @NonNull final String name) {
+            try {
+                this.writer = new FileOutputStream(
+                        Objects.requireNonNull(logFilePath, "logFilePath must not be null").toFile(), append);
+            } catch (final FileNotFoundException exception) {
+                EMERGENCY_LOGGER.log(Level.ERROR, "Failed to create WriterWithBuffer", exception);
+                throw new RuntimeException("Failed to create WriterWithBuffer", exception);
+            }
+            this.buffer = ByteBuffer.wrap(new byte[BUFFER_CAPACITY]);
+            this.name = name;
+        }
+
+        private String getName() {
+            return name;
+        }
+
+        public synchronized void write(
+                final byte[] bytes, final int length) {
+
+            if (length >= buffer.capacity()) {
+                // if request length exceeds buffer capacity, flush the buffer and write the data directly
+                flush();
+                writeToDestination(bytes, 0, length);
+            } else {
+                if (length > buffer.remaining()) {
+                    flush();
+                }
+                buffer.put(bytes);
+            }
+        }
+
+        /**
+         * Writes the specified section of the specified byte array to the stream.
+         *
+         * @param bytes  the array containing data
+         * @param offset from where to write
+         * @param length how many bytes to write
+         */
+        private void writeToDestination(final byte[] bytes, final int offset, final int length) {
+            if (writer != null) {
+                try {
+                    writer.write(bytes, offset, length);
+                } catch (final IOException ex) {
+                    throw new RuntimeException("Error writing to stream " + getName(), ex);
+                }
+            }
+        }
+
+        /**
+         * Calls {@code flush()} on the underlying output stream.
+         */
+        public synchronized void flush() {
+            flushBuffer(buffer);
+            flushDestination();
+        }
+
+        private void flushDestination() {
+            if (writer != null) {
+                try {
+                    writer.flush();
+                } catch (final IOException ex) {
+                    throw new RuntimeException("Error flushing stream " + getName(), ex);
+                }
+            }
+        }
+
+
+        private void flushBuffer(final ByteBuffer buf) {
+            ((Buffer) buf).flip();
+            try {
+                if (buf.remaining() > 0) {
+                    writeToDestination(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
+                }
+            } finally {
+                buf.clear();
+            }
+        }
+
+        /**
+         * Closes and releases any system resources associated with this instance.
+         */
+        @Override
+        public void close() {
+
         }
     }
 }
