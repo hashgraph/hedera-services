@@ -52,7 +52,6 @@ public class StateWriteToDiskListener implements StateWriteToDiskCompleteListene
             @NonNull final WorkingStateAccessor stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider) {
-
         this.stateAccessor = stateAccessor;
         this.executor = executor;
         this.configProvider = configProvider;
@@ -67,13 +66,13 @@ public class StateWriteToDiskListener implements StateWriteToDiskCompleteListene
                     notification.getConsensusTimestamp(),
                     notification.getRoundNumber(),
                     notification.getSequence());
-            final var writableStoreFactory =
-                    new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
+            final var writableStoreFactory = new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
             final var upgradeActions = new FreezeUpgradeActions(
                     configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
                     writableStoreFactory.getStore(WritableFreezeStore.class),
                     executor,
                     writableStoreFactory.getStore(WritableUpgradeFileStore.class));
+            log.info("Externalizing freeze if upgrade is pending");
             upgradeActions.externalizeFreezeIfUpgradePending();
         }
     }

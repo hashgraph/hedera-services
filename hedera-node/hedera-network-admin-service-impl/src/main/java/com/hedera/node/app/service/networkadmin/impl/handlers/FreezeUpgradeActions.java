@@ -81,7 +81,9 @@ public class FreezeUpgradeActions {
     }
 
     public void externalizeFreezeIfUpgradePending() {
-        // @todo('Issue #8660') this code is not currently triggered anywhere
+        log.info("Externalizing freeze if upgrade pending, freezeStore: {}, updateFileHash: {}",
+                freezeStore,
+                freezeStore.updateFileHash());
         if (freezeStore.updateFileHash() != null) {
             writeCheckMarker(NOW_FROZEN_MARKER);
         }

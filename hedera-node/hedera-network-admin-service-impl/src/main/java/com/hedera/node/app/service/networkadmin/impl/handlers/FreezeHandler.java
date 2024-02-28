@@ -48,6 +48,9 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -61,6 +64,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FreezeHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(FreezeHandler.class);
     // length of the hash of the update file included in the FreezeTransactionBody
     // used for a quick sanity check that the file hash is not invalid
     public static final int UPDATE_FILE_HASH_LEN = 48;
@@ -150,6 +154,7 @@ public class FreezeHandler implements TransactionHandler {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
                 freezeStore.updateFileHash(freezeTxn.fileHash());
+                log.info("Preparing upgrade with file {}, hash {}", updateFileID, freezeTxn.fileHash());
                 try {
                     if (updateFileID != null
                             && updateFileID.fileNum()
@@ -166,6 +171,7 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
                 freezeStore.updateFileHash(null);
+                log.info("Preparing freeze abort with file {}, hash null", updateFileID);
             }
             case TELEMETRY_UPGRADE -> {
                 try {
