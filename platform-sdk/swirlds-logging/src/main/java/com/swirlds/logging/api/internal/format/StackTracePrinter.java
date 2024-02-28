@@ -99,11 +99,16 @@ public class StackTracePrinter {
         final int skippedFrames = stackTrace.length - 1 - m;
         for (int i = 0; i <= m; i++) {
             final StackTraceElement stackTraceElement = stackTrace[i];
+            final String moduleName = stackTraceElement.getModuleName();
             final String className = stackTraceElement.getClassName();
             final String methodName = stackTraceElement.getMethodName();
             final String fileName = stackTraceElement.getFileName();
             final int line = stackTraceElement.getLineNumber();
             writer.append("\tat ");
+            if (moduleName != null) {
+                writer.append(moduleName);
+                writer.append("/");
+            }
             writer.append(className);
             writer.append(".");
             writer.append(methodName);

@@ -22,7 +22,7 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
-public class TestLogging {
+public class TestLogSL {
 
     @Test
     void testFile() {

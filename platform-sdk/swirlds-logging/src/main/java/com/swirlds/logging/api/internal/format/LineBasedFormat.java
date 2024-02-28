@@ -77,14 +77,14 @@ public class LineBasedFormat {
 
             Marker marker = event.marker();
             if (marker != null) {
-                writer.append(" - [M:");
+                writer.append(" - [");
                 writer.append(asString(marker));
                 writer.append("]");
             }
 
             final Map<String, String> context = event.context();
             if (context != null && !context.isEmpty()) {
-                writer.append(" - C:");
+                writer.append(" - ");
                 writer.append(context.toString());
             }
             writer.append(System.lineSeparator());
@@ -122,7 +122,7 @@ public class LineBasedFormat {
     private static String asString(@NonNull Level level) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
-            return "NO_DEF"; // Must be 6 chars long to fit in pattern
+            return "NO_LV"; // Must be 5 chars long to fit in pattern
         } else {
             return level.nameWithFixedSize();
         }

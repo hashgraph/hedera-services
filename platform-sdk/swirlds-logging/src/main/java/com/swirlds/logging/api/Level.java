@@ -89,17 +89,17 @@ public enum Level {
         if (this == OFF) {
             return "OFF  ";
         } else if (this == ERROR) {
-            return "ERROR ";
+            return "ERROR";
         } else if (this == WARN) {
-            return "WARN  ";
+            return "WARN ";
         } else if (this == INFO) {
-            return "INFO  ";
+            return "INFO ";
         } else if (this == DEBUG) {
-            return "DEBUG ";
+            return "DEBUG";
         } else if (this == TRACE) {
-            return "TRACE ";
+            return "TRACE";
         } else {
-            return "      ";
+            return "     ";
         }
     }
 }

@@ -31,7 +31,7 @@ import org.apache.logging.log4j.spi.LoggerContext;
 
 public class ConfigureLog4J {
 
-    private final static String PATTERN = "%d %c [%t] %-5level: %msg [%marker] %X %n%throwable";
+    private final static String PATTERN = "%d{UNIX_MILLIS} %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
 
