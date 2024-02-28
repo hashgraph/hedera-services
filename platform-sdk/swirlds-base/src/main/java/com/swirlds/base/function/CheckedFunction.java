@@ -34,12 +34,12 @@ public interface CheckedFunction<T, R, E extends Exception> {
     /**
      * Apply the function.
      *
-     * @param t the input to the function
+     * @param value the input to the function
      * @return the value returned by the function
      * @throws E the exception type thrown by the function
      */
     @Nullable
-    R apply(@Nullable T t) throws E;
+    R apply(@Nullable T value) throws E;
 
     /**
      * Convert a {@link Function} to a {@link CheckedFunction}.

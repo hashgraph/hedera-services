@@ -32,8 +32,8 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -70,9 +70,9 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -334,7 +334,7 @@ public interface BaseScaffoldingModule {
             @NotNull ConfigProvider configProvider,
             ThrottleMultiplier genericFeeMultiplier,
             ThrottleAccumulator backendThrottle) {
-        final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
+        final var txnRateMultiplier = new UtilizationScaledThrottleMultiplier(genericFeeMultiplier, configProvider);
 
         final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",

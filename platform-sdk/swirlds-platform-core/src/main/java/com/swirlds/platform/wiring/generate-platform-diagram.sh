@@ -3,29 +3,33 @@
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
-    -s 'eventWindowManager:non-ancient event window:ʘ' \
-    -s 'heartbeat:heartbeat:♡' \
-    -s 'eventCreationManager:non-validated events:†' \
-    -s 'applicationTransactionPrehandler:futures:★' \
+    -s 'eventWindowManager:non-ancient event window:🌀' \
+    -s 'heartbeat:heartbeat:❤️' \
+    -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \
-    -s 'pcesReplayer:done streaming pces:@' \
-    -s 'inOrderLinker:events to gossip:g' \
-    -s 'runningHashUpdate:running hash update:§' \
-    -s 'getKeystoneEventSequenceNumber:flush request:Ξ' \
+    -s 'pcesReplayer:done streaming pces:✅' \
+    -s 'inOrderLinker:events to gossip:📬' \
+    -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
-    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
+    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer,Event Hashing' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake,g,ʘ,Ξ' \
+    -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,📬,🌀,🚽' \
     -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
     -g 'Gossip:gossip,shadowgraph' \
+    -g 'Iss Detector:extractSignaturesForIssDetector,issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
+    -g 'Heartbeat:heartbeat,❤️' \
+    -g 'PCES Replay:pcesReplayer,✅' \
+    -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
+    -g 'Signature Management:State Signature Collection,stateSigner,Iss Detector' \
+    -g 'State Modification:consensusRoundHandler,runningHashUpdate' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
-    -c 'Linked Event Intake' \
+    -c 'Consensus Engine' \
     -c 'State Signature Collection' \
     -c 'State File Management'

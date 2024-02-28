@@ -17,22 +17,24 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -47,17 +49,14 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.wiring.ConsensusEngineWiring;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
-import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
-import com.swirlds.platform.wiring.PlatformSchedulers;
-import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
@@ -73,9 +72,8 @@ public class TestIntake implements LoadableFromSignedState {
     private final EventHasherWiring hasherWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
-    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
-
-    private final BackpressureObjectCounter hashingObjectCounter;
+    private final ConsensusEngineWiring consensusEngineWiring;
+    private final WiringModel model;
 
     /**
      * @param addressBook the address book used by this intake
@@ -88,7 +86,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
         consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, AncientMode.GENERATION_THRESHOLD);
+                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, GENERATION_THRESHOLD);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
@@ -96,49 +94,43 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-        final WiringModel model = WiringModel.create(platformContext, time, ForkJoinPool.commonPool());
-
-        hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter",
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
-
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
+        model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
 
         final EventHasher eventHasher = new EventHasher(platformContext);
-        hasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
+        hasherWiring = EventHasherWiring.create(directScheduler("eventHasher"));
         hasherWiring.bind(eventHasher);
 
         final PostHashCollectorWiring postHashCollectorWiring =
-                PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
+                PostHashCollectorWiring.create(directScheduler("postHashCollector"));
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+        orphanBufferWiring = OrphanBufferWiring.create(directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
         final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
+        linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        final LinkedEventIntake linkedEventIntake =
-                new LinkedEventIntake(platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter);
+        final ConsensusEngine consensusEngine = new ConsensusEngine(
+                platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter, output::staleEvent);
 
-        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-        linkedEventIntakeWiring.bind(linkedEventIntake);
+        consensusEngineWiring = ConsensusEngineWiring.create(directScheduler("consensusEngine"));
+        consensusEngineWiring.bind(consensusEngine);
 
         final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         hasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
-        linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
+        linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
+        linkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
 
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        linkedEventIntakeWiring.consensusRoundOutput().solderTo("consensusOutputTestTool", output::consensusRound);
+        consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusEngineWiring
+                .consensusRoundOutput()
+                .solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
         eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
@@ -172,7 +164,11 @@ public class TestIntake implements LoadableFromSignedState {
      * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
      */
     public void addLinkedEvent(@NonNull final EventImpl event) {
-        linkedEventIntakeWiring.eventInput().put(event);
+        output.eventAdded(event);
+        if (!consensus.isExpired(event.getBaseEvent())) {
+            shadowGraph.addEvent(event);
+        }
+        consensusEngineWiring.eventInput().put(event);
     }
 
     /**
@@ -218,24 +214,24 @@ public class TestIntake implements LoadableFromSignedState {
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
-                        AncientMode.GENERATION_THRESHOLD));
+                        GENERATION_THRESHOLD));
         linkerWiring
                 .nonAncientEventWindowInput()
                 .put(new NonAncientEventWindow(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
-                        AncientMode.GENERATION_THRESHOLD));
+                        GENERATION_THRESHOLD));
 
         shadowGraph.clear();
-        shadowGraph.startWithExpiredThreshold(consensus.getMinGenerationNonAncient());
-    }
 
-    public void flush() {
-        hashingObjectCounter.waitUntilEmpty();
-        orphanBufferWiring.flushRunnable().run();
-        linkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                ROUND_FIRST,
+                consensus.getMinGenerationNonAncient(),
+                consensus.getMinGenerationNonAncient(),
+                GENERATION_THRESHOLD);
+
+        shadowGraph.startWithEventWindow(eventWindow);
     }
 
     public @NonNull ConsensusOutput getOutput() {
@@ -246,5 +242,12 @@ public class TestIntake implements LoadableFromSignedState {
         consensus.reset();
         shadowGraph.clear();
         output.clear();
+    }
+
+    public <X> TaskScheduler<X> directScheduler(final String name) {
+        return model.schedulerBuilder(name)
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
     }
 }

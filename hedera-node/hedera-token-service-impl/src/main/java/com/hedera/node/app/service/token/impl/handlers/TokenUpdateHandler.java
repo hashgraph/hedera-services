@@ -237,8 +237,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
         adjustBalance(fromTreasuryRel, fromTreasury, -adjustment, tokenRelStore, accountStore);
         adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
-        // TODO: If any of the above fail, need to rollback only token transfer balances for record.
-        // Not sure how it will be done yet
     }
 
     /**

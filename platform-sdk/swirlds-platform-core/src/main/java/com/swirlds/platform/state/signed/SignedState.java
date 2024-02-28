@@ -35,7 +35,6 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.system.SwirldState;
@@ -469,15 +468,6 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get information about the minimum generation in this round.
-     *
-     * @return the minimum generation of famous witnesses per round
-     */
-    public @NonNull List<MinGenInfo> getMinGenInfo() {
-        return state.getPlatformState().getMinGenInfo();
-    }
-
-    /**
      * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
      * contained within this state.
      *
@@ -486,7 +476,7 @@ public class SignedState implements SignedStateInfo {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        return getState().getPlatformState().getMinGen(round);
+        return getState().getPlatformState().getMinimumJudgeAncientIndicator(round);
     }
 
     /**

@@ -559,7 +559,7 @@ public class InitialModFileGenesisSchema extends Schema {
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis throttle definitions file");
 
-        byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
+        byte[] throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
 
         // Store the configuration in state
         final var fileNum = filesConfig.throttleDefinitions();
@@ -580,7 +580,7 @@ public class InitialModFileGenesisSchema extends Schema {
                         .build());
     }
 
-    public static byte[] readThrottleDefinitionsBytes(@NonNull BootstrapConfig bootstrapConfig) {
+    public static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
         final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);

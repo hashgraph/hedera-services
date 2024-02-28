@@ -126,6 +126,8 @@ public class RcDiff implements Callable<Integer> {
                     recordDiffSummarizer,
                     inclusionTest,
                     "from " + start + ", before " + end);
+
+            System.out.println(" ➡️ Found " + diffsHere.size() + " diffs from " + start + " to " + end);
             diffs.addAll(diffsHere);
         }
         return diffs;

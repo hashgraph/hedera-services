@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
@@ -73,8 +72,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
+        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
         assertEquals(0, eventWasCreatedCount.get());
 
         final GossipEvent e0 = manager.maybeCreateEvent();
@@ -125,8 +123,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
+        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
 
         assertEquals(0, eventWasCreatedCount.get());
 
