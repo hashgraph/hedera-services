@@ -5,13 +5,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.swirlds.logging;
@@ -23,14 +24,12 @@ import static com.swirlds.logging.util.BenchmarkConstants.PARALLEL_THREAD_COUNT;
 import static com.swirlds.logging.util.BenchmarkConstants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.Logger;
-import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.benchmark.ConfigureLog;
-import com.swirlds.logging.benchmark.LogLikeHell;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.swirlds.logging.benchmark.ConfigureLog4J;
+import com.swirlds.logging.benchmark.LogLikeHellLog4J;
 import java.util.Objects;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -44,33 +43,27 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class LogLikeHellBenchmark {
+public class LogLikeHellLog4JBenchmark {
 
     @Param({"FILE", "CONSOLE", "FILE_AND_CONSOLE"})
     public String loggingType;
 
+    private final static String PATTERN = "%d %c [%t] %-5level: %msg [%marker] %X %n%throwable";
+
     Logger logger;
-    LoggingSystem loggingSystem;
-    LogLikeHell logLikeHell;
+    LogLikeHellLog4J logLikeHell;
 
     @Setup(org.openjdk.jmh.annotations.Level.Iteration)
     public void init() throws Exception {
-        Files.deleteIfExists(Path.of("log-like-hell-benchmark.log"));
-
         if (Objects.equals(loggingType, "FILE")) {
-            loggingSystem = ConfigureLog.configureFileLogging();
+            ConfigureLog4J.configureFileLogging();
         } else if (Objects.equals(loggingType, "CONSOLE")) {
-            loggingSystem = ConfigureLog.configureConsoleLogging();
+            ConfigureLog4J.configureConsoleLogging();
         } else if (Objects.equals(loggingType, "FILE_AND_CONSOLE")) {
-            loggingSystem = ConfigureLog.configureFileAndConsoleLogging();
+            ConfigureLog4J.configureFileAndConsoleLogging();
         }
-
-        if (loggingSystem != null) {
-            logger = loggingSystem.getLogger(LogLikeHellBenchmark.class.getSimpleName());
-            logLikeHell = new LogLikeHell(logger);
-        } else {
-            throw new IllegalStateException("Invalid logging type: " + loggingType);
-        }
+        logger = LogManager.getLogger(LogLikeHellLog4JBenchmark.class);
+        logLikeHell = new LogLikeHellLog4J(logger);
     }
 
     @Benchmark
@@ -92,6 +85,5 @@ public class LogLikeHellBenchmark {
     public void runSingleSimpleLog() {
         logger.log(Level.INFO, "Hello World");
     }
-
 
 }

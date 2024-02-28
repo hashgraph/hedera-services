@@ -36,7 +36,7 @@ public class StackTracePrinter {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
-    private static final int MAX_STACK_TRACE_DEPTH = 10;
+    private static final int MAX_STACK_TRACE_DEPTH = -1;
 
     /**
      * Prints the stack trace of a throwable to a provided Appendable writer.
@@ -93,27 +93,29 @@ public class StackTracePrinter {
             m--;
             n--;
         }
-        m = Math.min(m, MAX_STACK_TRACE_DEPTH);
-        final int framesInCommon = stackTrace.length - 1 - m;
+        if (MAX_STACK_TRACE_DEPTH >= 0) {
+            m = Math.min(m, MAX_STACK_TRACE_DEPTH);
+        }
+        final int skippedFrames = stackTrace.length - 1 - m;
         for (int i = 0; i <= m; i++) {
             final StackTraceElement stackTraceElement = stackTrace[i];
             final String className = stackTraceElement.getClassName();
             final String methodName = stackTraceElement.getMethodName();
+            final String fileName = stackTraceElement.getFileName();
             final int line = stackTraceElement.getLineNumber();
             writer.append("\tat ");
             writer.append(className);
             writer.append(".");
             writer.append(methodName);
             writer.append("(");
-            writer.append(className);
-            writer.append(".java:");
+            writer.append(fileName);
             writer.append(Integer.toString(line));
             writer.append(")");
             writer.append(System.lineSeparator());
         }
-        if (framesInCommon != 0) {
+        if (skippedFrames != 0) {
             writer.append("\t... ");
-            writer.append(Integer.toString(framesInCommon));
+            writer.append(Integer.toString(skippedFrames));
             writer.append(" more");
             writer.append(System.lineSeparator());
         }
