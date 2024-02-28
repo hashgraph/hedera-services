@@ -12,7 +12,7 @@ public class BenchmarkConstants {
 
     public final static int PARALLEL_THREAD_COUNT = 4;
 
-    public final static int FORK_COUNT = 1;
+    public final static int FORK_COUNT = 0;
 
 
 }
