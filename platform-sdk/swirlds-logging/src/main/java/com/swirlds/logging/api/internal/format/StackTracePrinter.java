@@ -36,6 +36,8 @@ public class StackTracePrinter {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
+    private static final int MAX_STACK_TRACE_DEPTH = 10;
+
     /**
      * Prints the stack trace of a throwable to a provided Appendable writer.
      * Avoids printing circular references and handles already printed traces.
@@ -91,6 +93,7 @@ public class StackTracePrinter {
             m--;
             n--;
         }
+        m = Math.min(m, MAX_STACK_TRACE_DEPTH);
         final int framesInCommon = stackTrace.length - 1 - m;
         for (int i = 0; i <= m; i++) {
             final StackTraceElement stackTraceElement = stackTrace[i];
