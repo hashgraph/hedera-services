@@ -17,6 +17,11 @@
 package com.hedera.node.app.bbm.utils;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -28,6 +33,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,6 +57,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ThingsToStrings {
+
+    private ThingsToStrings() {
+        // Utility class
+    }
 
     /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in RFC-4180
      * (https://datatracker.ietf.org/doc/html/rfc4180) _except_ that we allow the field separator to
@@ -122,6 +133,26 @@ public class ThingsToStrings {
     public static String toStringOfEntityId(@NonNull EntityId entityId) {
         if (entityId.equals(EntityId.MISSING_ENTITY_ID)) return "";
         return entityId.toAbbrevString();
+    }
+
+    public static boolean toStringOfAccountId(@NonNull final StringBuilder sb, @Nullable AccountID accountID) {
+        if (accountID == null) {
+            return false;
+        }
+
+        sb.append(String.format(
+                "%d.%d.%s",
+                accountID.shardNum(), accountID.realmNum(), accountID.account().value()));
+        return true;
+    }
+
+    public static boolean toStringOfTokenId(StringBuilder sb, TokenID tokenID) {
+        if (tokenID == null) {
+            return false;
+        }
+
+        sb.append(String.format("%d.%d.%s", tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()));
+        return true;
     }
 
     public static boolean toStringOfEntityId(@NonNull final StringBuilder sb, @Nullable final EntityId entityId) {
@@ -235,6 +266,19 @@ public class ThingsToStrings {
         return true;
     }
 
+    public static boolean toStringOfKey(
+            @NonNull final StringBuilder sb, @Nullable final com.hedera.hapi.node.base.Key key) {
+        if (key == null) {
+            return false;
+        }
+        try {
+            return toStringOfJKey(sb, JKey.convertKey(key, 15 /*JKey.MAX_KEY_DEPTH*/));
+        } catch (final InvalidKeyException ignored) {
+            sb.append("<INVALID KEY>");
+            return true;
+        }
+    }
+
     public static boolean toStringOfFcTokenAllowanceId(
             @NonNull final StringBuilder sb, @Nullable final FcTokenAllowanceId id) {
         if (id == null) return false;
@@ -261,6 +305,96 @@ public class ThingsToStrings {
         sb.setLength(sb.length() - 1);
         sb.append(")");
         return true;
+    }
+
+    public static boolean toStringOfApprovalForAllAllowances(
+            @NonNull final StringBuilder sb, @Nullable List<AccountApprovalForAllAllowance> approvals) {
+        if (approvals == null || approvals.isEmpty()) {
+            return false;
+        }
+
+        final var orderedApprovals = approvals.stream().sorted().toList();
+        sb.append("(");
+        for (final var approval : orderedApprovals) {
+            toStringOfApprovalForAllAllowance(sb, approval);
+            sb.append(",");
+        }
+        sb.setLength(sb.length() - 1);
+        sb.append(")");
+        return true;
+    }
+
+    private static void toStringOfApprovalForAllAllowance(StringBuilder sb, AccountApprovalForAllAllowance approval) {
+        if (approval == null) {
+            return;
+        }
+
+        sb.append("(");
+        toStringOfTokenId(sb, approval.tokenId());
+        sb.append(",");
+        toStringOfAccountId(sb, approval.spenderId());
+        sb.append(")");
+    }
+
+    public static boolean toStringOfAccountCryptoAllowances(
+            @NonNull final StringBuilder sb, @Nullable List<AccountCryptoAllowance> allowances) {
+        if (allowances == null || allowances.isEmpty()) {
+            return false;
+        }
+
+        final var orderedAllowances = allowances.stream().sorted().toList();
+        sb.append("(");
+        for (final var allowance : orderedAllowances) {
+            toStringOfAccountCryptoAllowance(sb, allowance);
+            sb.append(",");
+        }
+        sb.setLength(sb.length() - 1);
+        sb.append(")");
+        return true;
+    }
+
+    private static void toStringOfAccountCryptoAllowance(StringBuilder sb, AccountCryptoAllowance allowance) {
+        if (allowance == null) {
+            return;
+        }
+
+        sb.append("(");
+        toStringOfAccountId(sb, allowance.spenderId());
+        sb.append(",");
+        sb.append(allowance.amount());
+        sb.append(")");
+    }
+
+    public static boolean toStringOfAccountFungibleTokenAllowances(
+            @NonNull final StringBuilder sb, @Nullable List<AccountFungibleTokenAllowance> allowances) {
+        if (allowances == null || allowances.isEmpty()) {
+            return false;
+        }
+
+        final var orderedAllowances = allowances.stream().sorted().toList();
+        sb.append("(");
+        for (final var allowance : orderedAllowances) {
+            toStringOfAccountFungibleTokenAllowance(sb, allowance);
+            sb.append(",");
+        }
+        sb.setLength(sb.length() - 1);
+        sb.append(")");
+        return true;
+    }
+
+    private static void toStringOfAccountFungibleTokenAllowance(
+            StringBuilder sb, AccountFungibleTokenAllowance allowance) {
+        if (allowance == null) {
+            return;
+        }
+
+        sb.append("(");
+        toStringOfTokenId(sb, allowance.tokenId());
+        sb.append(",");
+        toStringOfAccountId(sb, allowance.spenderId());
+        sb.append(",");
+        sb.append(allowance.amount());
+        sb.append(")");
     }
 
     public static boolean toStringOfMapEnLong(
@@ -424,5 +558,11 @@ public class ThingsToStrings {
         return bs -> toStringPossibleHumanReadableByteArray(fieldSeparator, bs);
     }
 
-    private ThingsToStrings() {}
+    public static boolean getMaybeStringifyByteString(@NonNull final StringBuilder sb, @Nullable final Bytes bytes) {
+        if (bytes == null) {
+            return false;
+        }
+        sb.append(toStringPossibleHumanReadableByteArray(";", bytes.toByteArray()));
+        return true;
+    }
 }
