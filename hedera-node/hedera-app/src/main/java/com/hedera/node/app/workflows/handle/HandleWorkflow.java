@@ -644,6 +644,7 @@ public class HandleWorkflow {
                 } catch (InterruptedException ex) {
                     throw new RuntimeException(ex);
                 }
+                ReadableKVStateBase.LOG_MISSES.set(false);
                 ReadableKVStateBase.LOG_READS.set(false);
                 WritableKVStateBase.LOG_READS.set(false);
                 WrappedHederaState.LOG_READS.set(false);

@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
     private static final Logger log = LogManager.getLogger(ReadableKVStateBase.class);
     public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
+    public static final AtomicBoolean LOG_MISSES = new AtomicBoolean(true);
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -79,6 +80,15 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
         }
         if (!hasBeenRead(key)) {
             final var value = readFromDataSource(key);
+            if (value == null && LOG_MISSES.get()) {
+                log.warn(
+                        "In thread {}, missed key {} from state {} (delegate is a {})",
+                        Thread.currentThread().getName(),
+                        key,
+                        stateKey,
+                        getClass().getSimpleName());
+                Thread.dumpStack();
+            }
             if (LOG_READS.get()) {
                 log.info("Read key {} from state {} - data source value={}", key, stateKey, value);
             }
