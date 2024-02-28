@@ -18,16 +18,16 @@
 package com.swirlds.logging.benchmark;
 
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.spi.LoggerContext;
 import org.junit.jupiter.api.Test;
 
 public class TestLog4J {
 
     @Test
     void testFile() {
-        ConfigureLog4J.configureFileLogging();
-        Logger logger = LogManager.getLogger("TestLogging4J");
+        final LoggerContext loggerContext = ConfigureLog4J.configureFileLogging();
+        Logger logger = loggerContext.getLogger("TestLogging4J");
         LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
@@ -35,8 +35,8 @@ public class TestLog4J {
 
     @Test
     void testConsole() {
-        ConfigureLog4J.configureConsoleLogging();
-        Logger logger = LogManager.getLogger("TestLogging4J");
+        final LoggerContext loggerContext = ConfigureLog4J.configureConsoleLogging();
+        Logger logger = loggerContext.getLogger("TestLogging4J");
         LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
@@ -44,8 +44,8 @@ public class TestLog4J {
 
     @Test
     void testFileAndConsole() {
-        ConfigureLog4J.configureFileAndConsoleLogging();
-        Logger logger = LogManager.getLogger("TestLogging4J");
+        final LoggerContext loggerContext = ConfigureLog4J.configureFileAndConsoleLogging();
+        Logger logger = loggerContext.getLogger("TestLogging4J");
         LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());

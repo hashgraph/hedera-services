@@ -22,62 +22,56 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
 import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
+import org.apache.logging.log4j.spi.LoggerContext;
 
 public class ConfigureLog4J {
 
     private final static String PATTERN = "%d %c [%t] %-5level: %msg [%marker] %X %n%throwable";
     public static final String LOG_FILE = "logging-out/log-like-hell-benchmark-log4j2.log";
 
-    public static void deleteOldLogFiles() {
-        try {
-            Files.deleteIfExists(Path.of(LOG_FILE));
-        } catch (IOException e) {
-            throw new RuntimeException("Can not delete old log file", e);
-        }
-    }
-
-    public static void configureConsoleLogging() {
+    public static LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
 
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
-        builder.setConfigurationName("loggingConfig");
+        builder.setConfigurationName("consoleLoggingConfig");
 
         builder.add(createConsoleAppender("console", builder));
 
         builder.add(builder.newRootLogger(Level.DEBUG)
                 .add(builder.newAppenderRef("console")));
-        Configurator.initialize(builder.build());
+        return create(builder);
     }
 
-    public static void configureFileLogging() {
+    public static LoggerContext configureFileLogging() {
         deleteOldLogFiles();
         System.clearProperty("log4j2.contextSelector");
 
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
-        builder.setConfigurationName("loggingConfig");
+        builder.setConfigurationName("fileLoggingConfig");
 
         builder.add(createFileAppender("file", builder));
 
         builder.add(builder.newRootLogger(Level.DEBUG)
                 .add(builder.newAppenderRef("file")));
-        Configurator.initialize(builder.build());
+        return create(builder);
     }
 
-    public static void configureFileAndConsoleLogging() {
+    public static LoggerContext configureFileAndConsoleLogging() {
         deleteOldLogFiles();
         System.clearProperty("log4j2.contextSelector");
 
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
-        builder.setConfigurationName("loggingConfig");
+        builder.setConfigurationName("fileAndConsoleLoggingConfig");
 
         builder.add(createFileAppender("file", builder));
         builder.add(createConsoleAppender("console", builder));
@@ -85,10 +79,25 @@ public class ConfigureLog4J {
         builder.add(builder.newRootLogger(Level.DEBUG)
                 .add(builder.newAppenderRef("file"))
                 .add(builder.newAppenderRef("console")));
-        Configurator.initialize(builder.build());
+        return create(builder);
     }
 
-    public static AppenderComponentBuilder createConsoleAppender(final String name,
+    private static void deleteOldLogFiles() {
+        try {
+            Files.deleteIfExists(Path.of(LOG_FILE));
+        } catch (IOException e) {
+            throw new RuntimeException("Can not delete old log file", e);
+        }
+    }
+
+    private static LoggerContext create(ConfigurationBuilder<BuiltConfiguration> builder) {
+        Configuration configuration = builder.build();
+        org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
+        context.reconfigure(configuration);
+        return context;
+    }
+
+    private static AppenderComponentBuilder createConsoleAppender(final String name,
             final ConfigurationBuilder<BuiltConfiguration> builder) {
         final LayoutComponentBuilder layoutComponentBuilder = builder.newLayout("PatternLayout")
                 .addAttribute("pattern", PATTERN);
@@ -97,13 +106,13 @@ public class ConfigureLog4J {
                 .add(layoutComponentBuilder);
     }
 
-    public static AppenderComponentBuilder createFileAppender(final String name,
+    private static AppenderComponentBuilder createFileAppender(final String name,
             final ConfigurationBuilder<BuiltConfiguration> builder) {
         LayoutComponentBuilder layoutBuilder = builder.newLayout("PatternLayout")
                 .addAttribute("pattern", PATTERN);
         return builder.newAppender(name, "File")
                 .addAttribute("fileName", LOG_FILE)
-                .addAttribute("append", false)
+                .addAttribute("append", true)
                 .add(layoutBuilder);
     }
 

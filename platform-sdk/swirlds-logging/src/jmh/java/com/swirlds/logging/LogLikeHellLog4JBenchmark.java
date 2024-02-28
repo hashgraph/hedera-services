@@ -28,7 +28,6 @@ import com.swirlds.logging.benchmark.ConfigureLog4J;
 import com.swirlds.logging.benchmark.LogLikeHellLog4J;
 import java.util.Objects;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -56,13 +55,12 @@ public class LogLikeHellLog4JBenchmark {
     @Setup(org.openjdk.jmh.annotations.Level.Iteration)
     public void init() throws Exception {
         if (Objects.equals(loggingType, "FILE")) {
-            ConfigureLog4J.configureFileLogging();
+            logger = ConfigureLog4J.configureFileLogging().getLogger("BenchmarkLogging4J");
         } else if (Objects.equals(loggingType, "CONSOLE")) {
-            ConfigureLog4J.configureConsoleLogging();
+            logger = ConfigureLog4J.configureConsoleLogging().getLogger("BenchmarkLogging4J");
         } else if (Objects.equals(loggingType, "FILE_AND_CONSOLE")) {
-            ConfigureLog4J.configureFileAndConsoleLogging();
+            logger = ConfigureLog4J.configureFileAndConsoleLogging().getLogger("BenchmarkLogging4J");
         }
-        logger = LogManager.getLogger(LogLikeHellLog4JBenchmark.class);
         logLikeHell = new LogLikeHellLog4J(logger);
     }
 
