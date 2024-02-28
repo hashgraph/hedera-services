@@ -22,7 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.RoundCalculationUtils;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.uptime.UptimeDataImpl;
@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -366,53 +365,31 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the minimum ancient indicator for all judges for each round.
+     * For the oldest non-ancient round, get the lowest ancient indicator out of all of those round's judges. This is
+     * the ancient threshold at the moment after this state's round reached consensus. All events with an ancient
+     * indicator that is greater than or equal to this value are non-ancient. All events with an ancient indicator less
+     * than this value are ancient.
      *
-     * @return minimum judge info list, or null if this is a genesis state
-     */
-    @Nullable
-    public List<MinimumJudgeInfo> getMinimumJudgeInfoList() {
-        return snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
-    }
-
-    /**
-     * The minimum ancient indicator of famous witnesses (i.e. judges) for the round specified. This method only looks
-     * at non-ancient rounds contained within this state.
+     * <p>
+     * When running in {@link AncientMode#GENERATION_THRESHOLD}, this value is the minimum generation non-ancient. When
+     * running in {@link AncientMode#BIRTH_ROUND_THRESHOLD}, this value is the minimum birth round non-ancient.
+     * </p>
      *
-     * @param round the round whose minimum judge ancient indicator will be returned
-     * @return the minimum judge ancient indicator for the round specified
-     * @throws NoSuchElementException if the judge information for this round is not contained withing this state
+     * @return the ancient threshold after this round has reached consensus
      */
-    public long getMinimumJudgeAncientIndicator(final long round) {
-        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinimumJudgeInfoList();
-        if (minimumJudgeInfo == null) {
-            throw new IllegalStateException("No minimum judge info found in state for round " + round);
+    public long getAncientThreshold() {
+        if (snapshot == null) {
+            throw new IllegalStateException(
+                    "No minimum judge info found in state for round " + round + ", snapshot is null");
         }
 
-        for (final MinimumJudgeInfo info : minimumJudgeInfo) {
-            if (info.round() == round) {
-                return info.minimumJudgeAncientThreshold();
-            }
-        }
-        throw new NoSuchElementException("No minimum judge info found for round: " + round);
-    }
-
-    /**
-     * Return the round generation of the oldest round in this state
-     *
-     * @return the generation of the oldest round
-     */
-    public long getMinRoundGeneration() {
-
-        final List<MinimumJudgeInfo> minimumJudgeInfo = getMinimumJudgeInfoList();
-        if (minimumJudgeInfo == null) {
-            throw new IllegalStateException("No MinGen info found in state for round " + round);
+        final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot.getMinimumJudgeInfoList();
+        if (minimumJudgeInfo.isEmpty()) {
+            throw new IllegalStateException(
+                    "No minimum judge info found in state for round " + round + ", list is empty");
         }
 
-        return getMinimumJudgeInfoList().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumJudgeAncientThreshold();
+        return minimumJudgeInfo.getFirst().minimumJudgeAncientThreshold();
     }
 
     /**
@@ -469,16 +446,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public int getRoundsNonAncient() {
         return roundsNonAncient;
-    }
-
-    /**
-     * Gets the minimum generation of non-ancient events.
-     *
-     * @return the minimum generation of non-ancient events
-     */
-    public long getMinimumGenerationNonAncient() {
-        return RoundCalculationUtils.getMinGenNonAncient(
-                roundsNonAncient, round, this::getMinimumJudgeAncientIndicator);
     }
 
     /**

@@ -23,6 +23,7 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
@@ -60,6 +61,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -67,7 +69,10 @@ import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
@@ -81,6 +86,7 @@ import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
+import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.LatestCompleteStateNotifierWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
@@ -94,6 +100,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -133,6 +140,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventStreamManagerWiring eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
+    private final IssHandlerWiring issHandlerWiring;
     private final HashLoggerWiring hashLoggerWiring;
     private final LatestCompleteStateNotifierWiring latestCompleteStateNotifierWiring;
     private final PlatformCoordinator platformCoordinator;
@@ -228,6 +236,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
         issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
+        issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
         hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
 
         latestCompleteStateNotifierWiring =
@@ -333,6 +342,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
         runningHashUpdaterWiring.runningHashUpdateOutput().solderTo(eventStreamManagerWiring.runningHashUpdateInput());
 
+        issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
+
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
@@ -344,13 +355,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param statusManager     the status manager to wire
-     * @param transactionPool   the transaction pool to wire
+     * @param statusManager      the status manager to wire
+     * @param transactionPool    the transaction pool to wire
+     * @param notificationEngine the notification engine to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus) {
+            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
+            @NonNull final NotificationEngine notificationEngine) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -366,6 +379,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo("latestCompleteStateNexus", "complete state", latestCompleteStateNexus::setStateIfNewer);
+
+        issDetectorWiring
+                .issNotificationOutput()
+                .solderTo(
+                        "issNotificationEngine",
+                        "ISS notification",
+                        n -> notificationEngine.dispatch(IssListener.class, n));
+        issDetectorWiring
+                .issNotificationOutput()
+                .solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
+                    if (Set.of(IssNotification.IssType.SELF_ISS, IssNotification.IssType.CATASTROPHIC_ISS)
+                            .contains(n.getIssType())) {
+                        statusManager.submitStatusAction(new CatastrophicFailureAction());
+                    }
+                });
     }
 
     /**
@@ -392,6 +420,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventStreamManager      the event stream manager to bind
      * @param futureEventBuffer       the future event buffer to bind
      * @param issDetector             the ISS detector to bind
+     * @param issHandler              the ISS handler to bind
      * @param hashLogger              the hash logger to bind
      * @param birthRoundMigrationShim the birth round migration shim to bind, ignored if birth round migration has not
      *                                yet happened, must not be null if birth round migration has happened
@@ -419,6 +448,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
+            @NonNull final IssHandler issHandler,
             @NonNull final HashLogger hashLogger,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
             @NonNull final LatestCompleteStateNotifier completeStateNotifier) {
@@ -444,6 +474,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring.bind(eventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
+        issHandlerWiring.bind(issHandler);
         hashLoggerWiring.bind(hashLogger);
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
