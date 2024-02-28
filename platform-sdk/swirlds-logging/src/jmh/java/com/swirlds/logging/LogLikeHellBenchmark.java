@@ -88,6 +88,7 @@ public class LogLikeHellBenchmark {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
                 .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.formatTimestamp", "false")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", "benchmark.log")
                 .build();
@@ -103,6 +104,7 @@ public class LogLikeHellBenchmark {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.formatTimestamp", "false")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
         final LogHandler consoleHandler = new ConsoleHandlerFactory().create("console", configuration);
@@ -117,10 +119,12 @@ public class LogLikeHellBenchmark {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
                 .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.formatTimestamp", "false")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", "benchmark.log")
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.formatTimestamp", "false")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
         final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);

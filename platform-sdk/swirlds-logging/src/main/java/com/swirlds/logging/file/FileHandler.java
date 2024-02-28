@@ -109,7 +109,7 @@ public class FileHandler extends AbstractSyncedHandler {
                     bufferedWriter.write(buffer.toString().toCharArray());
                     buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
                 } else {
-                    EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file");
+                    throw new IllegalStateException("BufferedWriter is null");
                 }
             } catch (final Exception exception) {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file", exception);
