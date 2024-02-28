@@ -90,7 +90,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             }
             return modifications.get(key);
         } else {
-            log.info("  (Unmodified) Reading from {} key: {} => {}", getStateKey(), key, super.get(key));
+            if (LOG_READS.get()) {
+                log.info("  (Unmodified) Reading from {} key: {} => {}", getStateKey(), key, super.get(key));
+            }
             return super.get(key);
         }
     }
