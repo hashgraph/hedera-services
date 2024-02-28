@@ -114,7 +114,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)

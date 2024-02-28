@@ -16,23 +16,24 @@
 
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
-import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -115,23 +116,21 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
         return super.toStringHelper().add("token", token);
     }
 
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
+        final UsageAccumulator accumulator = new UsageAccumulator();
+        final var tokenUpdateNftsMeta =
+                TOKEN_OPS_USAGE_UTILS.tokenUpdateNftUsageFrom(txn.getTokenUpdateNfts(), subType);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+        tokenOpsUsage.tokenUpdateNftsUsage(suFrom(svo), baseTransactionMeta, tokenUpdateNftsMeta, accumulator);
+        return AdapterUtils.feeDataFrom(accumulator);
+    }
+
     @Override
-    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        try {
-            final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
-            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
-                var estimate =
-                        TokenUpdateUsage.newEstimate(_txn, new TxnUsageEstimator(suFrom(svo), _txn, ESTIMATOR_UTILS));
-                estimate.givenCurrentExpiry(info.getExpiry().getSeconds());
-                if (info.hasMetadataKey()) {
-                    estimate.givenCurrentFreezeKey(Optional.of(info.getMetadataKey()));
-                }
-                return estimate.get();
-            };
-            return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdateNfts, metricsCalc, txn, numPayerKeys);
-        } catch (Throwable t) {
-            log.warn("Couldn't estimate usage", t);
-            return HapiSuite.ONE_HBAR;
-        }
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees()
+                .forActivityBasedOp(
+                        HederaFunctionality.TokenUpdateNfts, subType, this::usageEstimate, txn, numPayerKeys);
     }
 }
