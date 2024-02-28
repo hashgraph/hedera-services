@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state;
 
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
@@ -65,8 +66,11 @@ public class ReconnectListener implements ReconnectCompleteListener {
         final ServicesState state = (ServicesState) notification.getState();
         state.logSummary();
         final var writableStoreFactory = new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
-        final var upgradeActions = new FreezeUpgradeActions(configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
-                writableStoreFactory.getStore(WritableFreezeStore.class), executor, upgradeFileStore);
+        final var upgradeActions = new FreezeUpgradeActions(
+                configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
+                writableStoreFactory.getStore(WritableFreezeStore.class),
+                executor,
+                writableStoreFactory.getStore(WritableUpgradeFileStore.class));
         upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState().getFreezeTime());
     }
 }

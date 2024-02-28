@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
@@ -198,7 +199,10 @@ public class FreezeUpgradeActions {
     private void catchUpOnMissedFreezeScheduling(final Instant freezeTime) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled() && isUpgradePrepared) {
-            writeMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
+            writeMarker(FREEZE_SCHEDULED_MARKER,
+                    Timestamp.newBuilder()
+                            .nanos(freezeTime.getNano())
+                            .seconds(freezeTime.getEpochSecond()).build());
         }
         /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
         But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
@@ -212,23 +216,24 @@ public class FreezeUpgradeActions {
         }
 
         final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
-        final var curSpecialFiles = upgradeFileStore.peek(toPbj(upgradeFileId));
-        if (!isPreparedFileHashValidGiven(curSpecialFiles.contents())) {
-            log.error(
-                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-                    () -> readableId(upgradeFileId));
+        try{
+            final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
+            if (!isPreparedFileHashValidGiven(noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
+                    freezeStore.updateFileHash().toByteArray())) {
+                log.error(
+                        "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
+                        () -> readableId(upgradeFileId));
+                log.error(MANUAL_REMEDIATION_ALERT);
+                return;
+            }
+            extractSoftwareUpgrade(curSpecialFileContents).join();
+        } catch (final IOException e) {
+            log.error("Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
             log.error(MANUAL_REMEDIATION_ALERT);
-            return;
         }
-        extractSoftwareUpgrade(curSpecialFiles.contents()).join();
     }
 
-    public boolean isPreparedFileHashValidGiven(final byte[] givenBytes, final byte[] sha384Hash) {
-        final var fid = STATIC_PROPERTIES.scopedFileWith(150);
-        return specialFiles.hashMatches(fid, preparedUpdateFileHash);
-    }
-
-    public synchronized boolean hashMatches(final byte[] givenBytes, final byte[] sha384Hash) {
-        return Arrays.equals(givenBytes, freezeStore.updateFileHash().toByteArray());
+    public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
+        return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
     }
 }

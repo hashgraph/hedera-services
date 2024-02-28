@@ -114,15 +114,6 @@ public interface StateModule {
         @Nullable
         Console createConsole(Platform platform, int winNum, boolean visible);
     }
-
-    @Binds
-    @Singleton
-    IssListener bindIssListener(ServicesIssListener servicesIssListener);
-
-    @Binds
-    @Singleton
-    NewSignedStateListener bindNewSignedStateListener(ServicesSignedStateListener servicesSignedStateListener);
-
     @Binds
     @Singleton
     SystemExits bindSystemExits(JvmSystemExits systemExits);
@@ -138,6 +129,15 @@ public interface StateModule {
     @Binds
     @Singleton
     PlatformStatusChangeListener bindStatusChangeListener(StatusChangeListener statusChangeListener);
+
+    @Binds
+    @Singleton
+    IssListener bindIssListener(ServicesIssListener servicesIssListener);
+
+    @Binds
+    @Singleton
+    NewSignedStateListener bindNewSignedStateListener(ServicesSignedStateListener servicesSignedStateListener);
+
 
     @Binds
     @Singleton

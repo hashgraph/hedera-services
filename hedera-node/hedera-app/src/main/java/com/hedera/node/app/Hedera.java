@@ -593,7 +593,7 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state);
+                case GENESIS -> genesis(state, platformState);
                 case RECONNECT -> reconnect(state, deserializedVersion, platformState);
                 case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger, platformState);
             }
@@ -780,21 +780,18 @@ public final class Hedera implements SwirldMain {
             // ANSWER: We need to look and see if there is an update to the upgrade file that happened on other nodes
             // that we reconnected with. In that case, we need to save the file to disk. Similar to how we have to hook
             // for all the other special files on restart / genesis / reconnect.
-
-            notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
             notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
-            notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
-            notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
-            notifications.register(IssListener.class, daggerApp.issListener());
+            notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
             // It looks like this notification is handled by
             // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
             // which looks like it is related to freeze / upgrade.
             // see issue #8660
-
-            // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
+            notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
             // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
             // caused us to export balance files on a certain schedule.
+            notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
+            notifications.register(IssListener.class, daggerApp.issListener());
         } catch (final Throwable th) {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
@@ -942,7 +939,7 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state) {
+    private void genesis(@NonNull final MerkleHederaState state, final PlatformState platformState) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null, GENESIS);

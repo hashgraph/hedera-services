@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
@@ -69,6 +70,9 @@ class FreezeUpgradeActionsTest {
 
     @Mock
     private WritableFreezeStore freezeStore;
+
+    @Mock
+    private WritableUpgradeFileStore upgradeFileStore;
 
     @Mock
     private NetworkAdminConfig adminServiceConfig;
