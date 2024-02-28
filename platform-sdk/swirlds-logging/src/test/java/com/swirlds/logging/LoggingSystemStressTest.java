@@ -25,7 +25,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
-import com.swirlds.logging.util.LoggingUtils;
+import com.swirlds.logging.util.LoggingTestUtils;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -47,7 +47,7 @@ public class LoggingSystemStressTest {
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
                 .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
-                .map(l -> (Runnable) () -> LoggingUtils.generateExtensiveLogMessages(l))
+                .map(l -> (Runnable) () -> LoggingTestUtils.generateExtensiveLogMessages(l))
                 .collect(Collectors.toList());
 
         // when
@@ -72,7 +72,7 @@ public class LoggingSystemStressTest {
         final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
-                .mapToObj(l -> (Runnable) () -> LoggingUtils.generateExtensiveLogMessages(logger))
+                .mapToObj(l -> (Runnable) () -> LoggingTestUtils.generateExtensiveLogMessages(logger))
                 .collect(Collectors.toList());
 
         // when

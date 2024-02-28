@@ -23,7 +23,45 @@ import java.util.stream.IntStream;
 /**
  * Utility class for logging related operations.
  */
-public final class LoggingUtils {
+public final class LoggingTestUtils {
+
+    public static Throwable createThrowableWithCause() {
+        try {
+            throw createThrowable();
+        } catch (Throwable t) {
+            return new RuntimeException("test", t);
+        }
+    }
+
+    public static Throwable createThrowableWithDeepCause(int myDepth, int causeDepth) {
+        if (myDepth > 0) {
+            return createThrowableWithDeepCause(myDepth - 1, causeDepth);
+        }
+        try {
+            throw createDeepThrowable(causeDepth);
+        } catch (Throwable t) {
+            return new RuntimeException("test", t);
+        }
+    }
+
+    public static Throwable createThrowableWithDeepCause(int depth) {
+        try {
+            throw createDeepThrowable(depth);
+        } catch (Throwable t) {
+            return new RuntimeException("test", t);
+        }
+    }
+
+    public static Throwable createDeepThrowable(int depth) {
+        if (depth <= 0) {
+            return new RuntimeException("test");
+        }
+        return createDeepThrowable(depth - 1);
+    }
+
+    public static Throwable createThrowable() {
+        return new RuntimeException("test");
+    }
 
     /**
      * Generates extensive log messages for testing and debugging purposes.
