@@ -19,6 +19,9 @@ package com.swirlds.logging.benchmark;
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -49,5 +52,24 @@ public class TestLogSL {
         LogLikeHell logLikeHell = new LogLikeHell(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
+    }
+
+    @Test
+    void testFileAsync() {
+        LoggingSystem loggingSystem = ConfigureLog.configureFileLogging();
+        Logger logger = loggingSystem.getLogger("TestLoggingSL");
+
+        final List<LogLikeHell> list = IntStream.range(0, 100)
+                .mapToObj(i -> new LogLikeHell(logger))
+                .toList();
+
+        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        list.forEach(executorService::submit);
+        try {
+            Thread.sleep(5_000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        loggingSystem.stopAndFinalize();
     }
 }
