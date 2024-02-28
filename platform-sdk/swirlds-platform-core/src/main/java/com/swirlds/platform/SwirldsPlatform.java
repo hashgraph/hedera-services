@@ -70,6 +70,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -125,6 +126,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.MinimumJudgeInfo;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
@@ -175,6 +177,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -838,13 +841,16 @@ public class SwirldsPlatform implements Platform {
         final boolean alreadyMigrated =
                 initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode() != null;
 
+        final State state = initialState.getState();
+        final PlatformState platformState = state.getPlatformState();
+
         if (alreadyMigrated) {
             // if we've migrated in the past then need to use the configuration in the state
             logger.info(STARTUP.getMarker(), "Using birth round migration shim configuration from state.");
             return new BirthRoundMigrationShim(
-                    initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode(),
-                    initialState.getState().getPlatformState().getLastRoundBeforeBirthRoundMode(),
-                    initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+                    platformState.getFirstVersionInBirthRoundMode(),
+                    platformState.getLastRoundBeforeBirthRoundMode(),
+                    platformState.getLowestJudgeGenerationBeforeBirthRoundMode());
         }
 
         logger.info(STARTUP.getMarker(), "Birth round migration in progress. Creating shim.");
@@ -852,26 +858,34 @@ public class SwirldsPlatform implements Platform {
         final long lastRoundBeforeMigration =
                 initialState.getState().getPlatformState().getRound();
 
-        final List<MinimumJudgeInfo> judgeInfoList =
-                initialState.getState().getPlatformState().getSnapshot().getMinimumJudgeInfoList();
+        final ConsensusSnapshot consensusSnapshot = Objects.requireNonNull(platformState.getSnapshot());
+        final List<MinimumJudgeInfo> judgeInfoList = consensusSnapshot.getMinimumJudgeInfoList();
         final long lowestJudgeGenerationBeforeMigration =
                 judgeInfoList.getLast().minimumJudgeAncientThreshold();
 
         // update the state so that we properly initiate the shim if we restart in the future
-        initialState.getState().getPlatformState().setFirstVersionInBirthRoundMode(appVersion);
-        initialState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
-        initialState
-                .getState()
-                .getPlatformState()
-                .setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
+        platformState.setFirstVersionInBirthRoundMode(appVersion);
+        platformState.setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
+        platformState.setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
 
-        // TODO doctor the generations object
+        final List<MinimumJudgeInfo> modifiedJudgeInfoList = new ArrayList<>(judgeInfoList.size());
+        for (final MinimumJudgeInfo judgeInfo : judgeInfoList) {
+            modifiedJudgeInfoList.add(new MinimumJudgeInfo(
+                    judgeInfo.round(),
+                    initialState.getState().getPlatformState().getRound()));
+        }
+        final ConsensusSnapshot modifiedConsensusSnapshot = new ConsensusSnapshot(
+                consensusSnapshot.round(),
+                consensusSnapshot.judgeHashes(),
+                modifiedJudgeInfoList,
+                consensusSnapshot.nextConsensusNumber(),
+                consensusSnapshot.consensusTimestamp());
+        platformState.setSnapshot(modifiedConsensusSnapshot);
 
         // rehash the state
-        initialState.getState().getPlatformState().invalidateHash();
-        initialState.getState().getPlatformState().invalidateHash();
-        initialState.getState().invalidateHash();
-        MerkleCryptoFactory.getInstance().digestTreeSync(initialState.getState());
+        platformState.invalidateHash();
+        state.invalidateHash();
+        MerkleCryptoFactory.getInstance().digestTreeSync(state);
 
         return new BirthRoundMigrationShim(appVersion, lastRoundBeforeMigration, lowestJudgeGenerationBeforeMigration);
     }
