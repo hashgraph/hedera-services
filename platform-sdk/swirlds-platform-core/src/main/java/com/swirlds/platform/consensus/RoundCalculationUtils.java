@@ -75,6 +75,6 @@ public final class RoundCalculationUtils {
         return getMinGenNonAncient(
                 roundsNonAncient,
                 signedState.getRound(),
-                round -> signedState.getState().getPlatformState().getMinGen(round));
+                round -> signedState.getState().getPlatformState().getMinimumJudgeAncientIndicator(round));
     }
 }
