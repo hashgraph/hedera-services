@@ -32,11 +32,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesApp;
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.logic.StatusChangeListener;
@@ -46,6 +44,8 @@ import com.hedera.node.app.service.mono.stats.ServicesStatsManager;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.ConfigurationException;
@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -153,6 +154,7 @@ final class ServicesMainTest {
     private final ServicesMain subject = new ServicesMain();
 
     @Test
+    @Disabled("Mono-specific behavior")
     void throwsErrorOnMissingApp() {
         // expect:
         Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, unselfId));
@@ -202,10 +204,11 @@ final class ServicesMainTest {
 
     @Test
     void returnsSerializableVersion() {
-        assertInstanceOf(SerializableSemVers.class, subject.getSoftwareVersion());
+        assertInstanceOf(HederaSoftwareVersion.class, subject.getSoftwareVersion());
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void failsOnWrongNativeCharset() {
         withDoomedApp();
 
@@ -219,6 +222,7 @@ final class ServicesMainTest {
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void failsOnUnavailableDigest() throws NoSuchAlgorithmException {
         withDoomedApp();
 
@@ -234,6 +238,7 @@ final class ServicesMainTest {
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
         withRunnableApp(app);
         withChangeableApp();
@@ -264,10 +269,11 @@ final class ServicesMainTest {
     @Test
     void createsNewState() {
         // expect:
-        assertThat(subject.newState(), instanceOf(ServicesState.class));
+        assertThat(subject.newState(), instanceOf(MerkleHederaState.class));
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
@@ -281,6 +287,7 @@ final class ServicesMainTest {
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
@@ -295,6 +302,7 @@ final class ServicesMainTest {
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
@@ -309,6 +317,7 @@ final class ServicesMainTest {
     }
 
     @Test
+    @Disabled("Mono-specific behavior")
     void failsHardIfCannotInit() throws NoSuchAlgorithmException {
         withFailingApp();
 
