@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link BigDecimal} values in the
- * configuration
+ * configuration.
  */
 public final class BigDecimalConverter implements ConfigConverter<BigDecimal> {
 

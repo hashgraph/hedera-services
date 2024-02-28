@@ -109,17 +109,15 @@ public class ConcurrentBlockingIterator<T> implements Iterator<T> {
         // if closed and buffer.poll != null || !closed
         final long waitMillis = maxWaitTimeUnit.toMillis(maxWaitTime);
         final long timeOutWhenMillisAre = System.currentTimeMillis() + waitMillis;
-        while ((next = buffer.poll()) == null) {
-            if (closed.get()) {
-                return false;
-            } else {
-                if (System.currentTimeMillis() > timeOutWhenMillisAre) {
-                    throw new RuntimeException(new TimeoutException("Timed out trying to read from buffer"));
-                }
+        boolean isOpen = !closed.get();
+        while (((next = buffer.poll()) == null) && isOpen) {
+            if (System.currentTimeMillis() > timeOutWhenMillisAre) {
+                throw new RuntimeException(new TimeoutException("Timed out trying to read from buffer"));
             }
+            isOpen = !closed.get();
         }
 
-        return true;
+        return next != null;
     }
 
     /**

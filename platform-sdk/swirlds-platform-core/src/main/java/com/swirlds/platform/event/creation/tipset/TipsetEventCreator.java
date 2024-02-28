@@ -28,7 +28,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
@@ -77,6 +76,9 @@ public class TipsetEventCreator implements EventCreator {
      */
     private final AddressBook addressBook;
 
+    /**
+     * The size of the current address book.
+     */
     private final int networkSize;
 
     /**
@@ -86,6 +88,9 @@ public class TipsetEventCreator implements EventCreator {
      */
     private final double antiSelfishnessFactor;
 
+    /**
+     * The metrics for the tipset algorithm.
+     */
     private final TipsetMetrics tipsetMetrics;
 
     /**
@@ -103,6 +108,11 @@ public class TipsetEventCreator implements EventCreator {
      */
     private int lastSelfEventTransactionCount;
 
+    /**
+     * Defines the current ancient mode.
+     */
+    private final AncientMode ancientMode;
+
     private final RateLimitedLogger zeroAdvancementWeightLogger;
     private final RateLimitedLogger noParentFoundLogger;
 
@@ -110,7 +120,6 @@ public class TipsetEventCreator implements EventCreator {
      * Create a new tipset event creator.
      *
      * @param platformContext     the platform context
-     * @param time                provides wall clock time
      * @param random              a source of randomness, does not need to be cryptographically secure
      * @param signer              used for signing things with this node's private key
      * @param addressBook         the current address book
@@ -120,7 +129,6 @@ public class TipsetEventCreator implements EventCreator {
      */
     public TipsetEventCreator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
@@ -128,7 +136,7 @@ public class TipsetEventCreator implements EventCreator {
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
 
-        this.time = Objects.requireNonNull(time);
+        this.time = platformContext.getTime();
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
         this.selfId = Objects.requireNonNull(selfId);
@@ -142,14 +150,14 @@ public class TipsetEventCreator implements EventCreator {
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        final AncientMode ancientMode = platformContext
+        ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
         tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
         networkSize = addressBook.getSize();
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -428,9 +436,7 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
-                        ? nonAncientEventWindow.pendingConsensusRound()
-                        : ConsensusConstants.ROUND_FIRST,
+                nonAncientEventWindow.getPendingConsensusRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
@@ -454,6 +460,20 @@ public class TipsetEventCreator implements EventCreator {
         } else {
             return descriptor.getCreator();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        tipsetTracker.clear();
+        childlessOtherEventTracker.clear();
+        tipsetWeightCalculator.clear();
+        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        lastSelfEvent = null;
+        lastSelfEventCreationTime = null;
+        lastSelfEventTransactionCount = 0;
     }
 
     @NonNull

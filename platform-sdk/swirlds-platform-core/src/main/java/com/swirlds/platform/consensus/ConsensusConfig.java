@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 
 /**
  * Configuration for the consensus algorithm
@@ -28,7 +29,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                         become ancient. Events, whose generation is older than the last non-ancient round generation,
  *                         are ancient. If they don't have consensus yet, they're stale, and will never reach consensus
  *                         and never have their transactions handled. Must not exceed the constant
- *                         {@link com.swirlds.platform.state.MinGenInfo#MAX_MINGEN_INFO_SIZE}.
+ *                         {@link MinimumJudgeInfo#MAX_MINIMUM_JUDGE_INFO_SIZE}.
  * @param roundsExpired    Events this many rounds old are expired, and can be deleted from memory
  * @param coinFreq         a coin round happens every coinFreq rounds during an election (every other one is all true)
  */
