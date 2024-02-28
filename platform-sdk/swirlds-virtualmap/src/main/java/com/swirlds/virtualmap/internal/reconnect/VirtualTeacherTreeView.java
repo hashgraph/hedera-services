@@ -96,6 +96,12 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     private static final long AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 100;
 
     /**
+     * The maximum total time for the `while (!hasReported) { wait() }` loop.
+     * This is used to protect the teacher from a dying learner.
+     */
+    private static final long MAX_TOTAL_AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 5000;
+
+    /**
      * A queue of the nodes (by path) that we expect responses for.
      */
     private final ConcurrentBitSetQueue expectedResponseQueue = new ConcurrentBitSetQueue();
@@ -186,7 +192,10 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
             if (lastNodeAwaitingReporting != null) {
                 try {
                     synchronized (lastNodeAwaitingReporting) {
-                        while (!hasLearnerReportedFor(lastNodeAwaitingReporting)) {
+                        final long waitStartMillis = System.currentTimeMillis();
+                        while (!hasLearnerReportedFor(lastNodeAwaitingReporting)
+                                && System.currentTimeMillis() - waitStartMillis
+                                        < MAX_TOTAL_AWAIT_FOR_REPORT_TIMEOUT_MILLIS) {
                             lastNodeAwaitingReporting.wait(AWAIT_FOR_REPORT_TIMEOUT_MILLIS);
                         }
                     }
