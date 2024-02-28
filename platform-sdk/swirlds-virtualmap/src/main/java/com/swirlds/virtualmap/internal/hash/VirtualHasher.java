@@ -453,7 +453,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         assert siblingPath == 2;
                         parentTask.setHash((int) (siblingPath - firstSiblingPath), NULL_HASH);
                     } else if ((siblingPath < curPath) && !firstLeaf) {
-                        curTask.complete();
+                        // Mark the sibling as clean, reducing the number of dependencies
+                        parentTask.send();
                     } else {
                         // Get or create a sibling task
                         final int siblingHeight;
