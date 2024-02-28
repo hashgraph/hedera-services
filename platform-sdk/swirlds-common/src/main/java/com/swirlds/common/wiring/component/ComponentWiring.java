@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 /**
  * Builds and manages input/output wires for a component.
@@ -87,6 +86,8 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     public <INPUT_TYPE> InputWire<INPUT_TYPE> getInputWire(
             @NonNull final BiFunction<COMPONENT_TYPE, INPUT_TYPE, OUTPUT_TYPE> handler) {
 
+        Objects.requireNonNull(handler);
+
         try {
             handler.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
@@ -107,6 +108,8 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      */
     public <INPUT_TYPE> InputWire<INPUT_TYPE> getInputWire(
             @NonNull final BiConsumer<COMPONENT_TYPE, INPUT_TYPE> handler) {
+
+        Objects.requireNonNull(handler);
 
         try {
             handler.accept(proxyComponent, null);
@@ -161,86 +164,6 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         }
 
         return inputWire;
-    }
-
-    // TODO use of the method below was the only way I could get unboxed primitive types to work.
-    //  Once there is agreement on how to handle primitive types, this method should be removed.
-
-    /**
-     * Try calling the proxy function with different input types until we find one that works.
-     *
-     * @param consumer the function to call
-     */
-    @SuppressWarnings("unchecked")
-    private void tryApply(@NonNull final Consumer<?> consumer) {
-
-        // We don't know what kind of data the function is expecting. Brute force it
-        // by checking all primitive types. If not a primitive, null will work.
-
-        try {
-            consumer.accept(null);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Byte>) consumer).accept((byte) 0);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Short>) consumer).accept((short) 0);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Character>) consumer).accept((char) 0);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Integer>) consumer).accept(0);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Long>) consumer).accept(0L);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Float>) consumer).accept(0.0f);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Double>) consumer).accept(0.0d);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        try {
-            ((Consumer<Boolean>) consumer).accept(false);
-            return;
-        } catch (final ClassCastException | NullPointerException ignored) {
-
-        }
-
-        throw new IllegalStateException("Unsupported type");
     }
 
     /**
