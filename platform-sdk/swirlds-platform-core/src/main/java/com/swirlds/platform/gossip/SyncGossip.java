@@ -82,7 +82,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -134,11 +133,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
     protected final ReconnectMetrics reconnectMetrics;
-
-    /**
-     * Enables submitting platform status actions
-     */
-    protected final StatusActionSubmitter statusActionSubmitter;
+    protected final PlatformStatusManager platformStatusManager;
 
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -162,7 +157,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
      * @param platformStatusManager         the platform status manager
-     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
@@ -186,7 +180,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final PlatformStatusManager platformStatusManager,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter,
@@ -195,7 +188,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+
         Objects.requireNonNull(time);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
@@ -310,6 +304,46 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
             thingsToStart.addFirst(reconnectController::start);
         }
 
+        buildSyncProtocolThreads(
+                platformContext,
+                threadManager,
+                time,
+                notificationEngine,
+                selfId,
+                appVersion,
+                epochHash,
+                emergencyRecoveryManager,
+                intakeQueueSizeSupplier,
+                latestCompleteState,
+                syncMetrics,
+                platformStatusManager,
+                emergencyStateSupplier,
+                hangingThreadDuration,
+                protocolConfig,
+                reconnectConfig,
+                eventConfig);
+
+        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
+    }
+
+    private void buildSyncProtocolThreads(
+            final PlatformContext platformContext,
+            final ThreadManager threadManager,
+            final Time time,
+            final NotificationEngine notificationEngine,
+            final NodeId selfId,
+            final SoftwareVersion appVersion,
+            final Hash epochHash,
+            final EmergencyRecoveryManager emergencyRecoveryManager,
+            final LongSupplier intakeQueueSizeSupplier,
+            final SignedStateNexus latestCompleteState,
+            final SyncMetrics syncMetrics,
+            final PlatformStatusManager platformStatusManager,
+            final Supplier<ReservedSignedState> emergencyStateSupplier,
+            final Duration hangingThreadDuration,
+            final ProtocolConfig protocolConfig,
+            final ReconnectConfig reconnectConfig,
+            final EventConfig eventConfig) {
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -373,8 +407,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                                             platformStatusManager)))))
                     .build());
         }
-
-        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
 
     private static SocketFactory socketFactory(
@@ -409,10 +441,10 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                statusActionSubmitter,
-                //this fallen behind impl is different from that of
+                platformStatusManager,
+                // this fallen behind impl is different from that of
                 // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls
-                //which only logged (but they do more here)
+                // which only logged (but they do more here)
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
@@ -501,11 +533,10 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         return false;
     }
 
-
     /**
      * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
      */
-    protected void pause(){
+    protected void pause() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
@@ -514,7 +545,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     /**
      * Resume gossiping. If called when already running then this has no effect.
      */
-    protected void resume(){
+    protected void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         intakeEventCounter.reset();
         gossipHalted.set(false);

@@ -706,12 +706,10 @@ public class SwirldsPlatform implements Platform {
                 latestCompleteState,
                 syncMetrics,
                 platformStatusManager,
-                null,
                 this::loadReconnectState,
                 this::clearAllPipelines,
                 intakeEventCounter,
-                () -> emergencyState.getState("emergency reconnect")) {
-        };
+                () -> emergencyState.getState("emergency reconnect")) {};
 
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
