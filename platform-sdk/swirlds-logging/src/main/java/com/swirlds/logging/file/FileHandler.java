@@ -48,9 +48,9 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final int STRING_BUFFER_CAPACITY = 8 * 1024;
     private static final int SMALL_BUFFER = 4 * 1024;
     private final BufferedWriter bufferedWriter;
-    private StringBuffer buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
+    private final StringBuffer buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
 
-    private Lock bufferLock = new ReentrantLock();
+    private final Lock bufferLock = new ReentrantLock();
 
     private final LineBasedFormat format;
 
@@ -102,7 +102,7 @@ public class FileHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        final StringBuffer msgBuffer = new StringBuffer(SMALL_BUFFER);
+        final StringBuilder msgBuffer = new StringBuilder(SMALL_BUFFER);
         format.print(msgBuffer, event);
         bufferLock.lock();
         try {
