@@ -243,7 +243,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     @Override
     public void loadFromSignedState(final SignedState signedState) {
-        shiftWindow(signedState.getMinRoundGeneration());
+        shiftWindow(signedState.getState().getPlatformState().getAncientThreshold());
     }
 
     /**
