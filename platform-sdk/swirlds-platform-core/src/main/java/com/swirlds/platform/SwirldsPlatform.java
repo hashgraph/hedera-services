@@ -898,8 +898,6 @@ public class SwirldsPlatform implements Platform {
                 ancientMode);
 
         shadowGraph.startWithEventWindow(eventWindow);
-
-        gossip.loadFromSignedState(signedState);
     }
 
     /**
