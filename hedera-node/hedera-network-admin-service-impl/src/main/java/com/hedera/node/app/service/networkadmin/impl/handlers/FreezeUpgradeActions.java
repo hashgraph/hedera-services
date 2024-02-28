@@ -25,11 +25,9 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
-import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.FileID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -42,7 +40,6 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -199,10 +196,12 @@ public class FreezeUpgradeActions {
     private void catchUpOnMissedFreezeScheduling(final Instant freezeTime) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled() && isUpgradePrepared) {
-            writeMarker(FREEZE_SCHEDULED_MARKER,
+            writeMarker(
+                    FREEZE_SCHEDULED_MARKER,
                     Timestamp.newBuilder()
                             .nanos(freezeTime.getNano())
-                            .seconds(freezeTime.getEpochSecond()).build());
+                            .seconds(freezeTime.getEpochSecond())
+                            .build());
         }
         /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
         But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
@@ -216,9 +215,10 @@ public class FreezeUpgradeActions {
         }
 
         final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
-        try{
+        try {
             final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
-            if (!isPreparedFileHashValidGiven(noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
+            if (!isPreparedFileHashValidGiven(
+                    noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
                     freezeStore.updateFileHash().toByteArray())) {
                 log.error(
                         "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
@@ -228,7 +228,8 @@ public class FreezeUpgradeActions {
             }
             extractSoftwareUpgrade(curSpecialFileContents).join();
         } catch (final IOException e) {
-            log.error("Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
+            log.error(
+                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }

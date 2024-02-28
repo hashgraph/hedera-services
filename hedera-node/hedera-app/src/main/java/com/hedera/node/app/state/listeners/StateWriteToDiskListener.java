@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.hedera.node.app.state.listeners;
 
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.concurrent.Executor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Listener that will be notified with {@link
@@ -49,9 +48,10 @@ public class StateWriteToDiskListener implements StateWriteToDiskCompleteListene
     private final ConfigProvider configProvider;
 
     @Inject
-    public StateWriteToDiskListener(@NonNull final WorkingStateAccessor stateAccessor,
-                                    @NonNull @Named("FreezeService") final Executor executor,
-                                    @NonNull final ConfigProvider configProvider) {
+    public StateWriteToDiskListener(
+            @NonNull final WorkingStateAccessor stateAccessor,
+            @NonNull @Named("FreezeService") final Executor executor,
+            @NonNull final ConfigProvider configProvider) {
 
         this.stateAccessor = stateAccessor;
         this.executor = executor;
@@ -67,7 +67,8 @@ public class StateWriteToDiskListener implements StateWriteToDiskCompleteListene
                     notification.getConsensusTimestamp(),
                     notification.getRoundNumber(),
                     notification.getSequence());
-            final var writableStoreFactory = new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
+            final var writableStoreFactory =
+                    new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
             final var upgradeActions = new FreezeUpgradeActions(
                     configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
                     writableStoreFactory.getStore(WritableFreezeStore.class),

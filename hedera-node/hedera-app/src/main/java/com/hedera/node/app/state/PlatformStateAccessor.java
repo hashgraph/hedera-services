@@ -17,7 +17,6 @@
 package com.hedera.node.app.state;
 
 import com.swirlds.platform.state.PlatformState;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

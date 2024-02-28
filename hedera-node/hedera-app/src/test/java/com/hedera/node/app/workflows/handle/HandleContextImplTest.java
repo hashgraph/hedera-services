@@ -100,6 +100,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -189,6 +190,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Mock
     private SelfNodeInfo selfNodeInfo;
 
+    @Mock
+    private PlatformState platformState;
+
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -240,7 +244,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator, platformState);
+                synchronizedThrottleAccumulator,
+                platformState);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -401,7 +406,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator, platformState);
+                    synchronizedThrottleAccumulator,
+                    platformState);
         }
 
         @Test
@@ -934,7 +940,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator, platformState);
+                    synchronizedThrottleAccumulator,
+                    platformState);
         }
 
         @SuppressWarnings("ConstantConditions")

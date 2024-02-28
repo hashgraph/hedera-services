@@ -114,6 +114,7 @@ public interface StateModule {
         @Nullable
         Console createConsole(Platform platform, int winNum, boolean visible);
     }
+
     @Binds
     @Singleton
     SystemExits bindSystemExits(JvmSystemExits systemExits);
@@ -137,7 +138,6 @@ public interface StateModule {
     @Binds
     @Singleton
     NewSignedStateListener bindNewSignedStateListener(ServicesSignedStateListener servicesSignedStateListener);
-
 
     @Binds
     @Singleton

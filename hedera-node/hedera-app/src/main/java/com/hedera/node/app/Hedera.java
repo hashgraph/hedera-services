@@ -122,8 +122,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
@@ -781,17 +779,11 @@ public final class Hedera implements SwirldMain {
             // that we reconnected with. In that case, we need to save the file to disk. Similar to how we have to hook
             // for all the other special files on restart / genesis / reconnect.
             notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
-            notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
             // It looks like this notification is handled by
             // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
             // which looks like it is related to freeze / upgrade.
             // see issue #8660
             notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
-            // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
-            // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
-            // caused us to export balance files on a certain schedule.
-            notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
-            notifications.register(IssListener.class, daggerApp.issListener());
         } catch (final Throwable th) {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
@@ -982,7 +974,8 @@ public final class Hedera implements SwirldMain {
      * @param deserializedVersion version of deserialized state
      */
     private void reconnect(
-            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final PlatformState platformState) {
         initializeForTrigger(state, deserializedVersion, RECONNECT, platformState);
     }
@@ -1032,7 +1025,10 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger, final PlatformState platformState) {
+    private void initializeDagger(
+            @NonNull final MerkleHederaState state,
+            @NonNull final InitTrigger trigger,
+            final PlatformState platformState) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);

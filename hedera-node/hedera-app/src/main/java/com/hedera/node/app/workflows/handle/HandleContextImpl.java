@@ -723,7 +723,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator, platformState);
+                synchronizedThrottleAccumulator,
+                platformState);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);

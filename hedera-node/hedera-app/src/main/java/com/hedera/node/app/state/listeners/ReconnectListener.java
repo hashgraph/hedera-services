@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.hedera.node.app.state.listeners;
 
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
+import com.hedera.node.app.state.PlatformStateAccessor;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.concurrent.Executor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ReconnectListener implements ReconnectCompleteListener {
@@ -45,10 +46,11 @@ public class ReconnectListener implements ReconnectCompleteListener {
     private final PlatformStateAccessor platformStateAccessor;
 
     @Inject
-    public ReconnectListener(@NonNull final WorkingStateAccessor stateAccessor,
-                             @NonNull @Named("FreezeService") final Executor executor,
-                             @NonNull final ConfigProvider configProvider,
-                             @NonNull final PlatformStateAccessor platformStateAccessor) {
+    public ReconnectListener(
+            @NonNull final WorkingStateAccessor stateAccessor,
+            @NonNull @Named("FreezeService") final Executor executor,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final PlatformStateAccessor platformStateAccessor) {
 
         this.stateAccessor = stateAccessor;
         this.executor = executor;
@@ -71,6 +73,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 writableStoreFactory.getStore(WritableFreezeStore.class),
                 executor,
                 writableStoreFactory.getStore(WritableUpgradeFileStore.class));
-        upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState().getFreezeTime());
+        upgradeActions.catchUpOnMissedSideEffects(
+                platformStateAccessor.getPlatformState().getFreezeTime());
     }
 }
