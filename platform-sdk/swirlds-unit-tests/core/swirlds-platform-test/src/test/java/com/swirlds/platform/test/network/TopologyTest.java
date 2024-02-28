@@ -115,7 +115,7 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource("fullyConnected")
-    void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+    void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator().setSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
@@ -129,8 +129,9 @@ class TopologyTest {
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
-                assertTrue(topology.shouldConnectTo(neighbor), "I should connect to all neighbors");
-                assertTrue(topology.shouldConnectToMe(neighbor), "all neighbors should connect to me");
+                assertTrue(
+                        topology.shouldConnectTo(neighbor) ^ topology.shouldConnectToMe(neighbor),
+                        "I should connect to all neighbors but not all neighbors should connect to me & vice versa");
             }
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
