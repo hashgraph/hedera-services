@@ -94,6 +94,7 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -745,13 +746,12 @@ public final class Hedera implements SwirldMain {
                         startGrpcServer();
                     }
 
-                    case REPLAYING_EVENTS,
-                            STARTING_UP,
-                            OBSERVING,
-                            RECONNECT_COMPLETE,
-                            CHECKING,
-                            FREEZING,
-                            BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+                    case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING, BEHIND -> {
+                        if (platformStatus == PlatformStatus.REPLAYING_EVENTS) {
+                            OnDiskReadableKVState.LOG_CONSTRUCTIONS.set(true);
+                        }
+                        logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+                    }
 
                     case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());

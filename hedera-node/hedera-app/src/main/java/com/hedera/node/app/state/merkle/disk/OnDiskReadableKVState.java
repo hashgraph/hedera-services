@@ -21,6 +21,9 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapIterate;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -45,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
     private static final Logger log = LogManager.getLogger(OnDiskReadableKVState.class);
     public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
+    public static final AtomicBoolean LOG_CONSTRUCTIONS = new AtomicBoolean(false);
 
     private static final Consumer<Runnable> DEFAULT_RUNNER = Thread::startVirtualThread;
 
@@ -64,6 +68,21 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     public OnDiskReadableKVState(
             @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
         this(md, virtualMap, DEFAULT_RUNNER);
+        if (LOG_CONSTRUCTIONS.get()) {
+            log.info(
+                    "In thread {}, constructing OnDiskReadableKVState for {} with virtualMap {} of size {}",
+                    Thread.currentThread().getName(),
+                    md.stateDefinition().stateKey(),
+                    virtualMap,
+                    virtualMap.size());
+            if (md.serviceName().equals(TokenService.NAME)
+                    && md.stateDefinition().stateKey().equals(TokenServiceImpl.ACCOUNTS_KEY)) {
+                final var onDiskKey = new OnDiskKey<>(
+                        (StateMetadata<AccountID, ?>) md,
+                        AccountID.newBuilder().accountNum(1L).build());
+                log.info("OnDiskValue for account 1: {}", virtualMap.get((OnDiskKey<K>) onDiskKey));
+            }
+        }
     }
 
     @VisibleForTesting
