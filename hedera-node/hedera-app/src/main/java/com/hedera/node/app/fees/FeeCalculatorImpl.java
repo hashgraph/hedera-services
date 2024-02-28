@@ -206,6 +206,13 @@ public class FeeCalculatorImpl implements FeeCalculator {
     }
 
     @NonNull
+    public FeeCalculator addSbpr(long amount) {
+        failIfLegacyOnly();
+        usage.addSbpr(amount);
+        return this;
+    }
+
+    @NonNull
     @Override
     public FeeCalculator addStorageBytesSeconds(long seconds) {
         failIfLegacyOnly();
