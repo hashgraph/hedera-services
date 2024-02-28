@@ -91,6 +91,11 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
+    public SoftwareVersion buildForDeserialization() {
+        return new HederaSoftwareVersion();
+    }
+
+    @Override
     public void deserialize(SerializableDataInputStream in, int i) throws IOException {
         hapiVersion = deserializeSemVer(in);
         servicesVersion = deserializeSemVer(in);

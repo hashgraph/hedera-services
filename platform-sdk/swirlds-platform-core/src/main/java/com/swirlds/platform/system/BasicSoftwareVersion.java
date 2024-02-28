@@ -18,6 +18,7 @@ package com.swirlds.platform.system;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
@@ -106,6 +107,15 @@ public class BasicSoftwareVersion implements SoftwareVersion {
             throw new IllegalArgumentException(
                     "Can not compare BasicSoftwareVersion to " + that.getClass().getName());
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public SoftwareVersion buildForDeserialization() {
+        return new BasicSoftwareVersion();
     }
 
     // Intentionally do not implement equals() or hashCode(). Although it is legal to do so, it is not required,

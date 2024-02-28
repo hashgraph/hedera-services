@@ -166,6 +166,11 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @Override
+    public SoftwareVersion buildForDeserialization() {
+        return new SerializableSemVers();
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(proto, services);
     }

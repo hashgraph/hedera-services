@@ -29,8 +29,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Exchanges software versions with the peer, either throws a {@link HandshakeException} or logs an error if the versions
- * do not match
+ * Exchanges software versions with the peer, either throws a {@link HandshakeException} or logs an error if the
+ * versions do not match
  */
 public class VersionCompareHandshake implements ProtocolRunnable {
     private static final Logger logger = LogManager.getLogger(VersionCompareHandshake.class);
@@ -45,14 +45,13 @@ public class VersionCompareHandshake implements ProtocolRunnable {
     }
 
     /**
-     * @param version
-     * 		the version of software this node is running
-     * @param throwOnMismatch
-     * 		if set to true, the protocol will throw an exception on a version mismatch. if set to false, it will log an
-     * 		error and continue
+     * @param version         the version of software this node is running
+     * @param throwOnMismatch if set to true, the protocol will throw an exception on a version mismatch. if set to
+     *                        false, it will log an error and continue
      * @throws NullPointerException in case {@code version} parameter is {@code null}
      */
     public VersionCompareHandshake(final SoftwareVersion version, final boolean throwOnMismatch) {
+
         Objects.requireNonNull(version, "version must not be null");
         this.version = version;
         this.throwOnMismatch = throwOnMismatch;
@@ -61,9 +60,10 @@ public class VersionCompareHandshake implements ProtocolRunnable {
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
-        connection.getDos().writeSerializable(version, true);
+        connection.getDos().writeSerializable(version, false);
         connection.getDos().flush();
-        final SelfSerializable peerVersion = connection.getDis().readSerializable();
+        final SelfSerializable peerVersion =
+                connection.getDis().readSerializable(false, version::buildForDeserialization);
         if (!(peerVersion instanceof SoftwareVersion sv) || version.compareTo(sv) != 0) {
             final String message = String.format(
                     "Incompatible versions. Self version is '%s', peer version is '%s'", version, peerVersion);
