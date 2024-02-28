@@ -19,7 +19,6 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
-import static com.swirlds.virtualmap.internal.Path.getRank;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
@@ -414,16 +413,17 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         curStackPath++;
                     }
                     /*
-                       It may happen that curPath is actually in the same chunk as stack[curRank].
-                       In this case, stack[curRank] should be set to curPath - 1 to prevent a situation in which all
+                       It may happen that curPath is actually in the same chunk as lastPathInCurStackChunk.
+                       In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which all
                        existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
                        processed only after the last leaf (in the loop to set null data for all tasks remaining in the map),
                         despite these tasks being known to be clear.
                     */
-                    if (getRank(curStackPath) == curRank) {
-                        stack[curRank] = curPath - 1;
+                    if (curPath < lastPathInCurStackChunk) {
+                        stack[curRank] = curPath + 1;
+                    } else {
+                        stack[curRank] = INVALID_PATH;
                     }
-                    stack[curRank] = INVALID_PATH;
                 }
 
                 // If the out is already set at this rank, all parent tasks and siblings are already
