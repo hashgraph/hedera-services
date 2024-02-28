@@ -59,7 +59,7 @@ public class TestLogSL {
         LoggingSystem loggingSystem = ConfigureLog.configureFileLogging();
         Logger logger = loggingSystem.getLogger("TestLoggingSL");
 
-        final List<LogLikeHell> list = IntStream.range(0, 100)
+        final List<LogLikeHell> list = IntStream.range(0, 1000)
                 .mapToObj(i -> new LogLikeHell(logger))
                 .toList();
 

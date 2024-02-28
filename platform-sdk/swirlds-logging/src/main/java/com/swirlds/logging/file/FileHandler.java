@@ -27,17 +27,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A file handler that writes log events to a file.
  * <p>
- * This handler use a {@link BufferedWriter} to write {@link LogEvent}s to a file.
- * You can configure the following properties:
+ * This handler use a {@link BufferedWriter} to write {@link LogEvent}s to a file. You can configure the following
+ * properties:
  * <ul>
  *     <li>{@code file} - the {@link Path} of the file</li>
  *     <li>{@code append} - whether to append to the file or not</li>
  * </ul>
- *
  */
 public class FileHandler extends AbstractSyncedHandler {
 
@@ -49,12 +50,14 @@ public class FileHandler extends AbstractSyncedHandler {
     private final BufferedWriter bufferedWriter;
     private StringBuffer buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
 
+    private Lock bufferLock = new ReentrantLock();
+
     private final LineBasedFormat format;
 
     /**
      * Creates a new file handler.
      *
-     * @param handlerName     the unique handler name
+     * @param handlerName   the unique handler name
      * @param configuration the configuration
      */
     public FileHandler(@NonNull final String handlerName, @NonNull final Configuration configuration) {
@@ -101,22 +104,26 @@ public class FileHandler extends AbstractSyncedHandler {
     protected void handleEvent(@NonNull final LogEvent event) {
         final StringBuffer msgBuffer = new StringBuffer(SMALL_BUFFER);
         format.print(msgBuffer, event);
-
-        final int available = buffer.capacity() - buffer.length();
-        if (available < msgBuffer.length()) {
-            try {
-                if (bufferedWriter != null) {
-                    bufferedWriter.write(buffer.toString().toCharArray());
-                    buffer = new StringBuffer(STRING_BUFFER_CAPACITY);
-                } else {
-                    throw new IllegalStateException("BufferedWriter is null");
+        bufferLock.lock();
+        try {
+            final int available = buffer.capacity() - buffer.length();
+            if (available < msgBuffer.length()) {
+                try {
+                    if (bufferedWriter != null) {
+                        bufferedWriter.write(buffer.toString().toCharArray());
+                        buffer.setLength(0);
+                    } else {
+                        throw new IllegalStateException("BufferedWriter is null");
+                    }
+                } catch (final Exception exception) {
+                    EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file", exception);
                 }
-            } catch (final Exception exception) {
-                EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file", exception);
             }
-        }
 
-        buffer.append(msgBuffer);
+            buffer.append(msgBuffer);
+        } finally {
+            bufferLock.unlock();
+        }
     }
 
     @Override

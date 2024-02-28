@@ -17,17 +17,18 @@
 
 package com.swirlds.logging.util;
 
-public class BenchmarkConstants {
+public class
+BenchmarkConstants {
 
-    public static final int WARMUP_ITERATIONS = 3;
+    public static final int WARMUP_ITERATIONS = 1;
 
-    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 3;
+    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 1;
 
-    public static final int MEASUREMENT_ITERATIONS = 4;
+    public static final int MEASUREMENT_ITERATIONS = 1;
 
-    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 3;
+    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 1;
 
-    public static final int PARALLEL_THREAD_COUNT = 4;
+    public static final int PARALLEL_THREAD_COUNT = 1;
 
-    public static final int FORK_COUNT = 4;
+    public static final int FORK_COUNT = 1;
 }
