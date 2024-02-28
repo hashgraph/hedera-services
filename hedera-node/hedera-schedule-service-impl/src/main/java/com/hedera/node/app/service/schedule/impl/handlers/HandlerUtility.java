@@ -149,6 +149,7 @@ public final class HandlerUtility {
             case CRYPTO_DELETE_ALLOWANCE -> HederaFunctionality.CRYPTO_DELETE_ALLOWANCE;
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
+            case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case UNSET -> HederaFunctionality.NONE;
         };
     }
