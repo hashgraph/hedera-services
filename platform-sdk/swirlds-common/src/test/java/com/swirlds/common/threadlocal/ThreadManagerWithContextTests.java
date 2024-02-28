@@ -15,7 +15,7 @@ public class ThreadManagerWithContextTests {
 
     @Test
     void threadPoolTest() {
-        final ThreadManager tm = new ThreadManager(new NodeId(0), true);
+        final ThreadManager tm = new ThreadManager(new NodeId(0));
         final Executor e = Executors.newFixedThreadPool(5, tm);
         e.execute(() -> {
             logger.info("hello");
@@ -24,7 +24,7 @@ public class ThreadManagerWithContextTests {
 
     @Test
     void dedicatedThreadTest() {
-        final ThreadManager tm = new ThreadManager(new NodeId(0), true);
+        final ThreadManager tm = new ThreadManager(new NodeId(0));
         final Thread thread = tm.newThread(() -> {
             logger.info("hello");
         });
@@ -36,10 +36,10 @@ public class ThreadManagerWithContextTests {
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> logger.error("uncaught exception in FJP", t);
         final Runnable logHello = () -> logger.info("hello");
 
-        final ThreadManager threadManager0 = new ThreadManager(new NodeId(0), true);
+        final ThreadManager threadManager0 = new ThreadManager(new NodeId(0));
         final ForkJoinPool pool0 = new ForkJoinPool(5, threadManager0, exceptionHandler, false);
 
-        final ThreadManager threadManager1 = new ThreadManager(new NodeId(1), true);
+        final ThreadManager threadManager1 = new ThreadManager(new NodeId(1));
         final ForkJoinPool pool1 = threadManager1.newForkJoinPool(5, exceptionHandler);
 
         pool0.execute(logHello);
