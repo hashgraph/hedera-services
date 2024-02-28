@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
+import static com.swirlds.virtualmap.internal.Path.getRank;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
@@ -94,11 +95,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     private VirtualHashListener<K, V> listener;
 
     /**
-     * A task holding the resulting hash. Used to synchronize all parallel computations.
-     */
-    private HashHoldingTask resultTask;
-
-    /**
      * An instance of {@link Cryptography} used to hash leaves. This should be a static final
      * field, but it doesn't work very well as platform configs aren't loaded at the time when
      * this class is initialized. It would result in a cryptography instance with default (and
@@ -166,7 +162,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             return true;
         }
 
-        void setHash(int index, Hash hash) {
+        void setHash(final int index, final Hash hash) {
             ins[index] = hash;
             send();
         }
@@ -348,9 +344,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         /**
          * A task holding the resulting hash. Used to synchronize all parallel computations.
          */
-        HashHoldingTask resultTask = new HashHoldingTask(HASHING_POOL, 1, 1);
-        int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        ChunkHashTask rootTask = new ChunkHashTask(HASHING_POOL, ROOT_PATH, rootTaskHeight);
+        final HashHoldingTask resultTask = new HashHoldingTask(HASHING_POOL, 1, 1);
+        final int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
+        final ChunkHashTask rootTask = new ChunkHashTask(HASHING_POOL, ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -416,6 +412,16 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         assert t != null;
                         t.complete();
                         curStackPath++;
+                    }
+                    /*
+                       It may happen that curPath is actually in the same chunk as stack[curRank].
+                       In this case, stack[curRank] should be set to curPath - 1 to prevent a situation in which all
+                       existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
+                       processed only after the last leaf (in the loop to set null data for all tasks remaining in the map),
+                        despite these tasks being known to be clear.
+                    */
+                    if (getRank(curStackPath) == curRank) {
+                        stack[curRank] = curPath - 1;
                     }
                     stack[curRank] = INVALID_PATH;
                 }
