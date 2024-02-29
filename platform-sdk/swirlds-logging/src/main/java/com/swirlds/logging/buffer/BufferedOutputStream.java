@@ -48,23 +48,6 @@ public class BufferedOutputStream extends OutputStream {
         this.buffer = ByteBuffer.wrap(new byte[bufferCapacity]);
     }
 
-    @Override
-    public synchronized void write(@NonNull final byte[] bytes, final int offset, final int length) throws IOException {
-
-        if (length >= buffer.capacity()) {
-            // if request length exceeds buffer capacity, flush the buffer and write the data directly
-            flush();
-            writeToDestination(bytes, offset, length);
-        } else {
-            if (length > buffer.remaining()) {
-                flush();
-            }
-            for (int i = offset; i < length; i++) {
-                buffer.put(bytes[i]);
-            }
-        }
-    }
-
     /**
      * if {@code length} is less than the remaining capacity of the buffer, buffers the {@code bytes} and eventually
      * writes it to the underlying stream. if the buffer is full or {@code length} is greater than buffers capacity,
@@ -74,22 +57,26 @@ public class BufferedOutputStream extends OutputStream {
      * @throws IOException in case there was an error writing to the underlying outputStream
      */
     @Override
-    public synchronized void write(@NonNull final byte[] bytes) throws IOException {
+    public synchronized void write(@NonNull final byte[] bytes, final int offset, final int length) throws IOException {
+        internalWrite(bytes, offset, length);
+    }
 
-        if (bytes.length >= buffer.capacity()) {
-            // if request length exceeds buffer capacity, flush the buffer and write the data directly
-            flush();
-            writeToDestination(bytes, 0, bytes.length);
-        } else {
-            if (bytes.length > buffer.remaining()) {
-                flush();
-            }
-            buffer.put(bytes);
-        }
+
+    /**
+     * if {@code bytes} length is less than the remaining capacity of the buffer, buffers the {@code bytes} and
+     * eventually writes it to the underlying stream. if the buffer is full or {@code buffer} length  is greater than
+     * buffers capacity, writes bytes and the buffer content to the underlying output stream
+     *
+     * @param bytes information to write
+     * @throws IOException in case there was an error writing to the underlying outputStream
+     */
+    @Override
+    public synchronized void write(@NonNull final byte[] bytes) throws IOException {
+        internalWrite(bytes, 0, bytes.length);
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     @Override
     public synchronized void write(final int b) throws IOException {
@@ -103,7 +90,7 @@ public class BufferedOutputStream extends OutputStream {
     }
 
     /**
-     * Calls {@code flush()} on the underlying output stream.
+     * {@inheritDoc}
      */
     @Override
     public synchronized void flush() throws IOException {
@@ -112,21 +99,34 @@ public class BufferedOutputStream extends OutputStream {
     }
 
     /**
-     * Writes the specified section of the specified byte array to the stream.
-     *
-     * @param bytes  the array containing data
-     * @param offset from where to write
-     * @param length how many bytes to write
+     * {@inheritDoc}
      */
+    @Override
+    public void close() throws IOException {
+        outputStream.close();
+    }
+
+
+    private void internalWrite(final @NonNull byte[] bytes, final int offset, final int length) throws IOException {
+        if (length >= buffer.capacity()) {
+            // if request length exceeds buffer capacity, flush the buffer and write the data directly
+            flush();
+            writeToDestination(bytes, offset, length);
+        } else {
+            if (length > buffer.remaining()) {
+                flush();
+            }
+            buffer.put(bytes, offset, length);
+        }
+    }
+
     private void writeToDestination(final byte[] bytes, final int offset, final int length) throws IOException {
         outputStream.write(bytes, offset, length);
     }
 
-
     private void flushDestination() throws IOException {
         outputStream.flush();
     }
-
 
     private void flushBuffer(final ByteBuffer buf) throws IOException {
         ((Buffer) buf).flip();
@@ -139,11 +139,4 @@ public class BufferedOutputStream extends OutputStream {
         }
     }
 
-    /**
-     * Closes and releases any system resources associated with this instance.
-     */
-    @Override
-    public void close() throws IOException {
-        outputStream.close();
-    }
 }
