@@ -16,15 +16,16 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.utility.MerkleUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
@@ -46,6 +47,7 @@ class BirthRoundStateMigrationTests {
 
         final State state = new State();
         final PlatformState platformState = new PlatformState();
+        state.setPlatformState(platformState);
 
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt(1, 100));
         platformState.setCreationSoftwareVersion(softwareVersion);
@@ -64,12 +66,15 @@ class BirthRoundStateMigrationTests {
         final long nextConsensusNumber = random.nextLong(0, Long.MAX_VALUE);
 
         final List<MinimumJudgeInfo> minimumJudgeInfoList = new ArrayList<>();
+        long generation = random.nextLong(1, 1_000_000);
         for (int i = 0; i < 26; i++) {
-            // TODO
+            final long judgeRound = round - 25 + i;
+            minimumJudgeInfoList.add(new MinimumJudgeInfo(judgeRound, generation));
+            generation += random.nextLong(1, 100);
         }
 
-        final ConsensusSnapshot snapshot =
-                new ConsensusSnapshot(round, judgeHashes, null, nextConsensusNumber, consensusTimestamp);
+        final ConsensusSnapshot snapshot = new ConsensusSnapshot(
+                round, judgeHashes, minimumJudgeInfoList, nextConsensusNumber, consensusTimestamp);
 
         platformState.setSnapshot(snapshot);
 
@@ -83,7 +88,6 @@ class BirthRoundStateMigrationTests {
         final Random random = getRandomPrintSeed();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        ;
 
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
@@ -100,14 +104,84 @@ class BirthRoundStateMigrationTests {
         assertEquals(originalHash, signedState.getState().getHash());
 
         // Rehash the state, just in case
-        MerkleUtils.rehashTree(signedState.getState());
+        rehashTree(signedState.getState());
 
         assertEquals(originalHash, signedState.getState().getHash());
     }
 
     @Test
-    void alreadyMigratedTest() {}
+    void alreadyMigratedTest() {
+        final Random random = getRandomPrintSeed();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SignedState signedState = generateSignedState(random, platformContext);
+
+        final BasicSoftwareVersion previousSoftwareVersion =
+                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+
+        final BasicSoftwareVersion newSoftwareVersion =
+                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+
+        signedState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
+        signedState.getState().getPlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
+        signedState.getState().getPlatformState().setLowestJudgeGenerationBeforeBirthRoundMode(100);
+        rehashTree(signedState.getState());
+        final Hash originalHash = signedState.getState().getHash();
+
+        BirthRoundStateMigration.modifyStateForBirthRoundMigration(
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
+
+        assertEquals(originalHash, signedState.getState().getHash());
+
+        // Rehash the state, just in case
+        rehashTree(signedState.getState());
+
+        assertEquals(originalHash, signedState.getState().getHash());
+    }
 
     @Test
-    void migrationTest() {}
+    void migrationTest() {
+        final Random random = getRandomPrintSeed();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SignedState signedState = generateSignedState(random, platformContext);
+        final Hash originalHash = signedState.getState().getHash();
+
+        final BasicSoftwareVersion previousSoftwareVersion =
+                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+
+        final BasicSoftwareVersion newSoftwareVersion =
+                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+
+        final long lastRoundMinimumJudgeGeneration = signedState
+                .getState()
+                .getPlatformState()
+                .getSnapshot()
+                .getMinimumJudgeInfoList()
+                .getLast()
+                .minimumJudgeAncientThreshold();
+
+        BirthRoundStateMigration.modifyStateForBirthRoundMigration(
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
+
+        assertNotEquals(originalHash, signedState.getState().getHash());
+
+        // We expect these fields to be populated at the migration boundary
+        assertEquals(
+                newSoftwareVersion, signedState.getState().getPlatformState().getFirstVersionInBirthRoundMode());
+        assertEquals(
+                lastRoundMinimumJudgeGeneration,
+                signedState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+        assertEquals(
+                signedState.getRound(),
+                signedState.getState().getPlatformState().getLastRoundBeforeBirthRoundMode());
+
+        // All of the judge info objects should now be using a birth round equal to the round of the state
+        for (final MinimumJudgeInfo minimumJudgeInfo :
+                signedState.getState().getPlatformState().getSnapshot().getMinimumJudgeInfoList()) {
+            assertEquals(signedState.getRound(), minimumJudgeInfo.minimumJudgeAncientThreshold());
+        }
+    }
 }
