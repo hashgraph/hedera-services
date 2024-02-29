@@ -261,8 +261,6 @@ public class HandleWorkflow {
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
-                    System.out.println("OUTER CATCH");
-                    e.printStackTrace();
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -568,7 +566,6 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
-            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
@@ -603,7 +600,7 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         final var function = transactionInfo.functionality();
         transactionFinalizer.finalizeParentRecord(
-                payer, tokenServiceContext, function, explicitRewardReceivers(transactionInfo, recordBuilder));
+                payer, tokenServiceContext, function, extraRewardReceivers(transactionInfo, recordBuilder));
 
         // Commit all state changes
         stack.commitFullStack();
@@ -620,22 +617,27 @@ public class HandleWorkflow {
 
     /**
      * Returns a set of "extra" account ids that should be considered as eligible for
-     * staking rewards with the given transaction info and record builder. Needed for
-     * mono-service fidelity.
+     * collecting their accrued staking rewards with the given transaction info and
+     * record builder.
      *
-     * <p>There are two cases.
+     * <p><b>IMPORTANT:</b> Needed only for mono-service fidelity.
+     *
+     * <p>There are three cases, none of which HIP-406 defined as a reward situation;
+     * but were "false positives" in the original mono-service implementation:
      * <ol>
-     *     <li>For a crypto transfer, any account explicitly given a zero amount
-     *     should be considered as eligible for staking rewards.</li>
-     *     <li>For a contract operation, any account that is a called contract should
-     *     be considered as eligible for staking rewards.</li>
+     *     <li>For a crypto transfer, any account explicitly listed in the HBAR
+     *     transfer list, even with a zero balance adjustment.</li>
+     *     <li>For a contract operation, any called contract.</li>
+     *     <li>For a contract operation, any account loaded in a child
+     *     transaction (primarily, any account involved in a child
+     *     token transfer).</li>
      * </ol>
      *
      * @param transactionInfo the transaction info
      * @param recordBuilder the record builder
-     * @return the set of account ids that should be considered as eligible for staking rewards
+     * @return the set of extra account ids
      */
-    private Set<AccountID> explicitRewardReceivers(
+    private Set<AccountID> extraRewardReceivers(
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         if (recordBuilder.status() != SUCCESS) {
