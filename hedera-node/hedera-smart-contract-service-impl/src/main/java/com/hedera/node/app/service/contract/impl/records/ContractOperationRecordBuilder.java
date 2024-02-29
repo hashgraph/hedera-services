@@ -18,12 +18,14 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 public interface ContractOperationRecordBuilder extends DeleteCapableTransactionRecordBuilder {
     /**
@@ -33,6 +35,20 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @return the updated {@link ContractOperationRecordBuilder}
      */
     ContractOperationRecordBuilder transactionFee(long transactionFee);
+
+    /**
+     * Tracks the ID of a contract called during the transaction.
+     *
+     * @param contractId the account called during the transaction
+     */
+    void trackCalled(@NonNull AccountID contractId);
+
+    /**
+     * Gets the set of contract IDs called during the transaction.
+     *
+     * @return the set of contract IDs called during the transaction
+     */
+    Set<AccountID> calledContractIds();
 
     /**
      * Updates this record builder to include the standard contract fields from the given outcome.

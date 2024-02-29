@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -48,9 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,7 +76,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final AccountID payer,
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
-            @Nullable final List<AccountAmount> explicitHbarAdjustments) {
+            @NonNull final Set<AccountID> explicitRewardReceivers) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -98,8 +95,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // a node. They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
-            final var rewardsPaid =
-                    stakingRewardsHandler.applyStakingRewards(context, zeroAdjustIdsFrom(explicitHbarAdjustments));
+            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context, explicitRewardReceivers);
             if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
@@ -176,22 +172,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                                 "\tOriginal : %s%n\tModified : %s",
                                 accountStore.getOriginalValue(accountId), accountStore.get(accountId)))
                         .collect(Collectors.joining("%n")));
-    }
-
-    private @NonNull Set<AccountID> zeroAdjustIdsFrom(@Nullable final List<AccountAmount> explicitHbarAdjustments) {
-        if (explicitHbarAdjustments == null) {
-            return emptySet();
-        }
-        Set<AccountID> zeroAdjustmentAccounts = null;
-        for (final var aa : explicitHbarAdjustments) {
-            if (aa.amount() == 0) {
-                if (zeroAdjustmentAccounts == null) {
-                    zeroAdjustmentAccounts = new LinkedHashSet<>();
-                }
-                zeroAdjustmentAccounts.add(aa.accountID());
-            }
-        }
-        return zeroAdjustmentAccounts == null ? emptySet() : zeroAdjustmentAccounts;
     }
 
     private void deductChangesFromChildRecords(

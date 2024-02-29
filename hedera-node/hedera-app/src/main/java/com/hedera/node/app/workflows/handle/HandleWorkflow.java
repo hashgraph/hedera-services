@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -42,8 +41,10 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAY
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -118,6 +119,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -598,16 +600,7 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         final var function = transactionInfo.functionality();
         transactionFinalizer.finalizeParentRecord(
-                payer,
-                tokenServiceContext,
-                function,
-                function == CRYPTO_TRANSFER
-                        ? transactionInfo
-                                .txBody()
-                                .cryptoTransferOrThrow()
-                                .transfersOrElse(TransferList.DEFAULT)
-                                .accountAmountsOrElse(emptyList())
-                        : null);
+                payer, tokenServiceContext, function, explicitRewardReceivers(transactionInfo, recordBuilder));
 
         // Commit all state changes
         stack.commitFullStack();
@@ -620,6 +613,42 @@ public class HandleWorkflow {
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
         handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
+    }
+
+    private Set<AccountID> explicitRewardReceivers(
+            @NonNull final TransactionInfo transactionInfo,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        if (recordBuilder.status() != SUCCESS) {
+            return emptySet();
+        }
+        return switch (transactionInfo.functionality()) {
+            case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(transactionInfo
+                    .txBody()
+                    .cryptoTransferOrThrow()
+                    .transfersOrElse(TransferList.DEFAULT)
+                    .accountAmountsOrElse(emptyList()));
+            case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.calledContractIds();
+            default -> emptySet();
+        };
+    }
+
+    /**
+     * Returns any ids from the given list of explicit hbar adjustments that have a zero amount.
+     *
+     * @param explicitHbarAdjustments the list of explicit hbar adjustments
+     * @return the set of account ids that have a zero amount
+     */
+    private @NonNull Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
+        Set<AccountID> zeroAdjustmentAccounts = null;
+        for (final var aa : explicitHbarAdjustments) {
+            if (aa.amount() == 0) {
+                if (zeroAdjustmentAccounts == null) {
+                    zeroAdjustmentAccounts = new LinkedHashSet<>();
+                }
+                zeroAdjustmentAccounts.add(aa.accountID());
+            }
+        }
+        return zeroAdjustmentAccounts == null ? emptySet() : zeroAdjustmentAccounts;
     }
 
     /**

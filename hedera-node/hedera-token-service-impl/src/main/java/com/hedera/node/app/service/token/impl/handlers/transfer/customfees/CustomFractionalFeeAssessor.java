@@ -83,6 +83,7 @@ public class CustomFractionalFeeAssessor {
         validateTrue(initialAdjustment < 0, CUSTOM_FEE_MUST_BE_POSITIVE);
 
         var unitsLeft = -initialAdjustment;
+        final var creditsForToken = getFungibleTokenCredits(nonMutableInputTokenTransfers.get(denom));
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -91,7 +92,6 @@ public class CustomFractionalFeeAssessor {
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
                 continue;
             }
-            final var creditsForToken = getFungibleTokenCredits(nonMutableInputTokenTransfers.get(denom));
             final var filteredCredits = filteredByExemptions(creditsForToken, feeMeta, fee);
             if (filteredCredits.isEmpty()) {
                 continue;
