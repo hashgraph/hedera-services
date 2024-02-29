@@ -90,7 +90,9 @@ public class PayerRecordsDumpUtils {
 
     static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<PayerRecord> records) {
         writer.writeln(formatHeader());
-        records.stream().sorted(Comparator.comparing(PayerRecord::consensusTime)).forEach(e -> formatRecords(writer, e));
+        records.stream()
+                .sorted(Comparator.comparing(PayerRecord::consensusTime))
+                .forEach(e -> formatRecords(writer, e));
         writer.writeln("");
     }
 
