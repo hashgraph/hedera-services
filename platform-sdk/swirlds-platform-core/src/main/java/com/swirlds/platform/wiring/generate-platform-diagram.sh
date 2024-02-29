@@ -3,6 +3,7 @@
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
+    -l 'eventCreationManager:get transactions:transactionPool' \
     -s 'eventWindowManager:non-ancient event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
@@ -11,6 +12,7 @@ pcli diagram \
     -s 'inOrderLinker:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
+    -s 'eventCreationManager:non-validated events:🍎' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -20,13 +22,13 @@ pcli diagram \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Consensus Event Stream:getEvents,eventStreamManager' \
     -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,📬,🌀,🚽' \
-    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager' \
+    -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager,transactionPool,🍎' \
     -g 'Gossip:gossip,shadowgraph' \
     -g 'Iss Detector:extractSignaturesForIssDetector,issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
-    -g 'Signature Management:State Signature Collection,stateSigner,Iss Detector' \
+    -g 'Signature Management:State Signature Collection,stateSigner,Iss Detector,latestCompleteStateNotification,latestCompleteStateNexus' \
     -g 'State Modification:consensusRoundHandler,runningHashUpdate' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \

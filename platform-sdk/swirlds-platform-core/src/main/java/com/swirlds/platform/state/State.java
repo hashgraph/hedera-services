@@ -256,8 +256,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         final PlatformState platformState = getPlatformState();
         final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getRunningEventHash();
-        final List<MinimumJudgeInfo> minimumJudgeInfo = platformState.getMinimumJudgeInfoList();
+
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
+        final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
 
         final StringBuilder sb = new StringBuilder();
 
