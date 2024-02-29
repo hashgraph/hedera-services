@@ -141,8 +141,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
         final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
 
-        topology = new StaticTopology(
-                addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
+        topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
 
         final SocketFactory socketFactory = socketFactory(keysAndCerts, cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
@@ -236,11 +235,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      */
     @NonNull
     protected abstract FallenBehindManagerImpl buildFallenBehindManager();
-
-    /**
-     * If true, use unidirectional connections between nodes.
-     */
-    protected abstract boolean unidirectionalConnectionsEnabled();
 
     /**
      * {@inheritDoc}
