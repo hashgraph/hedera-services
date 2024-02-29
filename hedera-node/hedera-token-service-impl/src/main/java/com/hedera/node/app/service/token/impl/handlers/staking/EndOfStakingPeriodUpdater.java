@@ -26,7 +26,6 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -428,9 +427,7 @@ public class EndOfStakingPeriodUpdater {
                 .totalStakedStart(networkRewardsStore.totalStakedStart());
     }
 
-    private static NodeStake fromStakingInfo(
-            final long rewardRate,
-            StakingNodeInfo stakingNodeInfo) {
+    private static NodeStake fromStakingInfo(final long rewardRate, StakingNodeInfo stakingNodeInfo) {
         return NodeStake.newBuilder()
                 .nodeId(stakingNodeInfo.nodeNumber())
                 .stake(stakingNodeInfo.stake())

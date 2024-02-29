@@ -152,17 +152,17 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         var schedule = schedulesById.get(
                                 ScheduleID.newBuilder().scheduleNum(scheduleId).build());
                         if (schedule != null) {
-                            final var equalityKey = new ProtoString(
-                                    ScheduleStoreUtility.calculateStringHash(schedule));
+                            final var equalityKey = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
                             final var existingList = schedulesByEquality.get(equalityKey);
-                            final List<Schedule> existingSchedules =
-                                     existingList == null
-                                            ? new ArrayList<>()
-                                            : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
+                            final List<Schedule> existingSchedules = existingList == null
+                                    ? new ArrayList<>()
+                                    : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
                             existingSchedules.add(schedule);
                             schedulesByEquality.put(
                                     equalityKey,
-                                    ScheduleList.newBuilder().schedules(existingSchedules).build());
+                                    ScheduleList.newBuilder()
+                                            .schedules(existingSchedules)
+                                            .build());
                         } else {
                             log.error("BBM: ERROR: no schedule for scheduleObjHash->id "
                                     + scheduleObjHash + " -> "
@@ -170,7 +170,6 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         }
                     }
                 });
-
             });
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
             log.info("BBM: finished schedule by equality migration");
