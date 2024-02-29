@@ -29,6 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -205,11 +206,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
         serializedVersion = version;
-        if (version >= ClassVersion.SOFTWARE_VERSION) {
-            softwareVersion = in.readSerializable(); // TODO
-        } else {
-            softwareVersion = SoftwareVersion.NO_VERSION;
-        }
+        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
         if (version < ClassVersion.BIRTH_ROUND) {
             // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
