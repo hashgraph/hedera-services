@@ -108,7 +108,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param serializableConstructor a constructor for the instance written in the stream
      * @param readClassId             set to true if the class ID was written to the stream
      * @param permissibleClassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the implementation of {@link SelfSerializable} used
      * @return the same object that was passed in, returned for convenience
      * @throws IOException thrown if any IO problems occur
@@ -225,9 +226,9 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * Read a sequence of serializable objects and pass them to a callback method.
      *
-     * @param maxSize             the maximum allowed size
-     * @param callback            this method is passed each object in the sequence
-     * @param <T>                 the type of the objects in the sequence
+     * @param maxSize  the maximum allowed size
+     * @param callback this method is passed each object in the sequence
+     * @param <T>      the type of the objects in the sequence
      */
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
             final int maxSize, @NonNull final Consumer<T> callback) throws IOException {
@@ -243,7 +244,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param serializableConstructor a method that takes a class ID and provides a constructor
      * @param callback                the callback method where each object is passed when it is deserialized
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the type of the objects being deserialized
      */
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
@@ -285,7 +287,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param serializableConstructor a method that takes a class ID and provides a constructor
      * @param callback                the callback method where each object is passed when it is deserialized
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the type of the objects being deserialized
      */
     private <T extends SelfSerializable> void readSerializableIterableWithSizeInternal(
@@ -327,7 +330,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param version                 the version if known, otherwise ignored
      * @param serializableConstructor given a class ID, returns a constructor for that class
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the type of the elements in the sequence
      * @return true if the class ID has already been read
      */
@@ -384,8 +388,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * Read a list of serializable objects from the stream
      *
-     * @param maxListSize         maximal number of object to read
-     * @param <T>                 the implementation of {@link SelfSerializable} used
+     * @param maxListSize maximal number of object to read
+     * @param <T>         the implementation of {@link SelfSerializable} used
      * @return A list of the instances of the class previously written
      * @throws IOException thrown if any IO problems occur
      */
@@ -400,7 +404,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param readClassId             set to true if the class ID was written to the stream
      * @param serializableConstructor the constructor to use when instantiating list elements
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the implementation of {@link SelfSerializable} used
      * @return A list of the instances of the class previously written
      * @throws IOException thrown if any IO problems occur
@@ -438,7 +443,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param readClassId             set to true if the class ID was written to the stream
      * @param serializableConstructor a method that takes a class ID and returns a constructor
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this set, all class IDs are permitted if null
+     *                                to deserialize a class not in this set, all class IDs are permitted if null.
+     *                                Ignored if readClassId is false.
      * @param <T>                     the implementation of {@link SelfSerializable} used
      * @return A list of the instances of the class previously written
      * @throws IOException thrown if any IO problems occur
@@ -473,7 +479,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param maxListSize         maximal number of object should read
      * @param readClassId         set to true if the class ID was written to the stream
      * @param permissibleCLassIds a set of class IDs that are allowed to be read, will throw an IOException if asked to
-     *                            deserialize a class not in this set, all class IDs are permitted if null
+     *                            deserialize a class not in this set, all class IDs are permitted if null. Ignored if
+     *                            readClassId is false.
      * @param <T>                 the implementation of {@link SelfSerializable} used
      * @return An array of the instances of the class previously written
      * @throws IOException thrown if any IO problems occur
@@ -497,28 +504,12 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * Read an array of serializable objects from the stream.
      *
-     * @param arrayConstructor    a method that returns an array of the requested size
-     * @param maxListSize         maximal number of object should read
-     * @param readClassId         set to true if the class ID was written to the stream
-     * @param <T>                 the implementation of {@link SelfSerializable} used
-     * @return An array of the instances of the class previously written
-     * @throws IOException thrown if any IO problems occur
-     */
-    public <T extends SelfSerializable> T[] readSerializableArray(
-            @NonNull final IntFunction<T[]> arrayConstructor, final int maxListSize, final boolean readClassId)
-            throws IOException {
-
-        return readSerializableArray(arrayConstructor, maxListSize, readClassId, (Set<Long>) null);
-    }
-
-    /**
-     * Read an array of serializable objects from the stream.
-     *
      * @param arrayConstructor        a method that returns an array of the requested size
      * @param maxListSize             maximal number of object should read
      * @param readClassId             set to true if the class ID was written to the stream
      * @param permissibleCLassIds     a set of class IDs that are allowed to be read, will throw an IOException if asked
-     *                                to deserialize a class not in this, all class IDs are permitted if null
+     *                                to deserialize a class not in this, all class IDs are permitted if null. Ignored
+     *                                if readClassId is false.
      * @param serializableConstructor an object that returns new instances of the class
      * @param <T>                     the implementation of {@link SelfSerializable} used
      * @return An array of the instances of the class previously written
