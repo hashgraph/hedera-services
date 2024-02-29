@@ -47,7 +47,7 @@ public final class StaticSoftwareVersion {
     /**
      * Reset this object. Required for testing.
      */
-    public void reset() {
+    public static void reset() {
         softwareVersionClassIdSet = null;
     }
 

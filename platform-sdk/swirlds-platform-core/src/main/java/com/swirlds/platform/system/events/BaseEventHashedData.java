@@ -112,11 +112,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Class IDs of permitted transaction types.
      */
-    private static final Set<Long> TRANSACTION_TYPES = Set.of(
-            StateSignatureTransaction.CLASS_ID,
-            SwirldTransaction.CLASS_ID,
-            0x4509c61070fdcc93L // DummySystemTransaction.CLASS_ID, for testing purposes TODO
-            );
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     public BaseEventHashedData() {}
 
