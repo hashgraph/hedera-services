@@ -258,7 +258,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the creation version
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getCreationSoftwareVersion() {
         return creationSoftwareVersion;
     }
