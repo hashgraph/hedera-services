@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * A topology that never changes. Can be either unidirectional or bidirectional.
+ * A bidirectional topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
@@ -75,7 +75,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && (addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId);
     }
 
     /**
@@ -99,7 +99,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && (addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId);
     }
 
     /**

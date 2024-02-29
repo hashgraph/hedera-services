@@ -130,8 +130,11 @@ class TopologyTest {
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
-                assertTrue(topology.shouldConnectTo(neighbor), "I should connect to all neighbors");
-                assertFalse(topology.shouldConnectToMe(neighbor), "all neighbors should connect to me");
+                assertTrue(
+                        topology.shouldConnectTo(neighbor) ^ topology.shouldConnectToMe(neighbor),
+                        String.format(
+                                "Exactly one connection should be specified between nodes %s and %s%n",
+                                thisNodeId, neighbor));
             }
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
@@ -141,19 +144,6 @@ class TopologyTest {
             testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
-
-    @ParameterizedTest
-    @MethodSource("fullyConnected")
-    void shouldConnectToMe(final int numNodes, final int numNeighbors) {
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(numNodes).build();
-        final NodeId outOfBoundsId = addressBook.getNextNodeId();
-        final NodeId thisNodeId = addressBook.getNodeId(0);
-        final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
-    }
-
-    @Test
-    void shouldConnectTo() {}
 
     /** test a single random matrix with the given number of nodes and neighbors, created using the given seed */
     private void testRandomGraphTestIterative(
