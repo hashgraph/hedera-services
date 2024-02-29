@@ -220,7 +220,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             return new TcpFactory(socketConfig);
         }
         try {
-            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
+            return new TlsFactory(null, null, null, keysAndCerts, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException

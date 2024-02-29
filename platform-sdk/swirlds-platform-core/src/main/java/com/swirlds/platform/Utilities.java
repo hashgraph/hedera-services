@@ -18,14 +18,20 @@ package com.swirlds.platform;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
+import com.swirlds.platform.network.PeerInfo;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -352,5 +358,13 @@ public final class Utilities {
             cause = cause.getCause();
         }
         return false;
+    }
+
+    public static List<PeerInfo> getPeerInfos(final AddressBook addressBook, final NodeId selfId) {
+        return StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(addressBook.iterator(), Spliterator.ORDERED), false)
+                .filter(address -> !address.getNodeId().equals(selfId))
+                .map(address -> new PeerInfo(address.getNodeId(), address.getSelfName(), address.getHostnameExternal(), address.getSigCert()))
+                .toList();
     }
 }

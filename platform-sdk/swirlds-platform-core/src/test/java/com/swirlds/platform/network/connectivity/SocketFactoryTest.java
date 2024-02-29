@@ -17,21 +17,30 @@
 package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Tag;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -123,7 +132,7 @@ class SocketFactoryTest {
      * Tests the functionality {@link KeysAndCerts} are currently used for, signing and establishing TLS connections.
      *
      * @param addressBook
-     * 		address book of the network
+     * 		the address book of the network
      * @param keysAndCerts
      * 		keys and certificates to use for testing
      * @throws Throwable
@@ -131,19 +140,48 @@ class SocketFactoryTest {
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    @Tag(TestQualifierTags.TIME_CONSUMING)
-    void tlsFactoryTest(final AddressBook addressBook, final KeysAndCerts[] keysAndCerts) throws Throwable {
+    void tlsFactoryTest(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts) throws Throwable {
+        assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
         final Random random = new Random();
-        final int node1 = random.nextInt(addressBook.getSize());
-        final int node2 = random.nextInt(addressBook.getSize());
+        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize()).distinct().limit(2).boxed().toList();
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+        System.out.println("Testing TLS connection between " + node1 + " and " + node2);
+        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
+        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
+
 
         testSocketsBoth(
-                new TlsFactory(keysAndCerts[node1], NO_IP_TOS, CRYPTO_CONFIG),
-                new TlsFactory(keysAndCerts[node2], NO_IP_TOS, CRYPTO_CONFIG));
+                new TlsFactory(
+                        keysAndCerts1.agrCert(),
+                        keysAndCerts1.agrKeyPair().getPrivate(),
+                        Utilities.getPeerInfos(addressBook, node1),
+                        keysAndCerts1,
+                        NO_IP_TOS,
+                        CRYPTO_CONFIG),
+                new TlsFactory(
+                        keysAndCerts2.agrCert(),
+                        keysAndCerts2.agrKeyPair().getPrivate(),
+                        Utilities.getPeerInfos(addressBook, node2),
+                        keysAndCerts2,
+                        NO_IP_TOS,
+                        CRYPTO_CONFIG));
         testSocketsBoth(
-                new TlsFactory(keysAndCerts[node1], IP_TOS, CRYPTO_CONFIG),
-                new TlsFactory(keysAndCerts[node2], IP_TOS, CRYPTO_CONFIG));
+                new TlsFactory(
+                        keysAndCerts1.agrCert(),
+                        keysAndCerts1.agrKeyPair().getPrivate(),
+                        Utilities.getPeerInfos(addressBook, node1),
+                        keysAndCerts1,
+                        IP_TOS,
+                        CRYPTO_CONFIG),
+                new TlsFactory(
+                        keysAndCerts2.agrCert(),
+                        keysAndCerts2.agrKeyPair().getPrivate(),
+                        Utilities.getPeerInfos(addressBook, node2),
+                        keysAndCerts2,
+                        IP_TOS,
+                        CRYPTO_CONFIG));
     }
 
     @Test
@@ -151,4 +189,5 @@ class SocketFactoryTest {
         testSocketsBoth(new TcpFactory(NO_IP_TOS), new TcpFactory(NO_IP_TOS));
         testSocketsBoth(new TcpFactory(IP_TOS), new TcpFactory(IP_TOS));
     }
+
 }
