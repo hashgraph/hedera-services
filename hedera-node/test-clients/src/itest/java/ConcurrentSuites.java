@@ -39,6 +39,7 @@ import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInterac
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
 import com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileV2SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
@@ -169,6 +170,7 @@ public class ConcurrentSuites {
             TokenInfoHTSSuite::new,
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
+            AssociatePrecompileV2SecurityModelSuite::new,
             // contract.records
             LogsSuite::new,
             RecordsSuite::new,
