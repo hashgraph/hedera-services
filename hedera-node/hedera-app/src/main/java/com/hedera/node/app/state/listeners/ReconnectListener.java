@@ -16,20 +16,20 @@
 
 package com.hedera.node.app.state.listeners;
 
-import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
-import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
+import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.PlatformStateAccessor;
-import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -40,14 +40,14 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectListener implements ReconnectCompleteListener {
     private static final Logger log = LogManager.getLogger(ReconnectListener.class);
 
-    private final WorkingStateAccessor stateAccessor;
+    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
     private final PlatformStateAccessor platformStateAccessor;
 
     @Inject
     public ReconnectListener(
-            @NonNull final WorkingStateAccessor stateAccessor,
+            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final PlatformStateAccessor platformStateAccessor) {
@@ -61,19 +61,20 @@ public class ReconnectListener implements ReconnectCompleteListener {
     @Override
     public void notify(final ReconnectCompleteNotification notification) {
         log.info(
-                "ReconnectCompleteNotification Received: Reconnect Finished. " + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
+                "ReconnectCompleteNotification Received: Reconnect Finished. "
+                        + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
                 notification.getConsensusTimestamp(),
                 notification.getRoundNumber(),
                 notification.getSequence());
-        final ServicesState state = (ServicesState) notification.getState();
-        state.logSummary();
-        final var writableStoreFactory = new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
-        final var upgradeActions = new FreezeUpgradeActions(
-                configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
-                writableStoreFactory.getStore(WritableFreezeStore.class),
-                executor,
-                writableStoreFactory.getStore(WritableUpgradeFileStore.class));
-        upgradeActions.catchUpOnMissedSideEffects(
-                platformStateAccessor.getPlatformState().getFreezeTime());
+        try (final var wrappedState = stateAccessor.get()) {
+            final var readableStoreFactory = new ReadableStoreFactory(wrappedState.get());
+            final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
+            final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
+            final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
+            final var upgradeActions =
+                    new ReadableFreezeUpgradeActions(networkAdminConfig, freezeStore, executor, upgradeFileStore);
+            upgradeActions.catchUpOnMissedSideEffects(
+                    platformStateAccessor.getPlatformState().getFreezeTime());
+        }
     }
 }
