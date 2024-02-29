@@ -60,11 +60,15 @@ public class StakingRewardsHelper {
      *
      * @param writableAccountStore The store to write to for updated values and original values
      * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
+     * @param explicitRewardReceivers Extra accounts to consider for rewards
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
     public static Set<AccountID> getAllRewardReceivers(
-            final WritableAccountStore writableAccountStore, final Set<AccountID> specialRewardReceivers) {
+            final WritableAccountStore writableAccountStore,
+            final Set<AccountID> specialRewardReceivers,
+            @NonNull final Set<AccountID> explicitRewardReceivers) {
         final var possibleRewardReceivers = new LinkedHashSet<>(specialRewardReceivers);
+        possibleRewardReceivers.addAll(explicitRewardReceivers);
         for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(id);
             final var originalAcct = writableAccountStore.getOriginalValue(id);

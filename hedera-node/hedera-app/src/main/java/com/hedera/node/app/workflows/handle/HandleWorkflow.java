@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -49,6 +50,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -594,7 +596,18 @@ public class HandleWorkflow {
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
+        final var function = transactionInfo.functionality();
+        transactionFinalizer.finalizeParentRecord(
+                payer,
+                tokenServiceContext,
+                function,
+                function == CRYPTO_TRANSFER
+                        ? transactionInfo
+                                .txBody()
+                                .cryptoTransferOrThrow()
+                                .transfersOrElse(TransferList.DEFAULT)
+                                .accountAmountsOrElse(emptyList())
+                        : null);
 
         // Commit all state changes
         stack.commitFullStack();
