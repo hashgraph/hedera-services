@@ -17,20 +17,32 @@
 
 package com.swirlds.logging.benchmark;
 
+import static com.swirlds.logging.benchmark.LogFileUtlis.getLogStatementsFromLogFile;
+import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
+
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.test.fixtures.WithLoggingMirror;
+import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@WithLoggingMirror
 public class TestLogSL {
+
+    public static final String TEST_LOGGING_SL = "TestLoggingSL";
 
     @Test
     void testFile() {
         LoggingSystem loggingSystem = ConfigureLog.configureFileLogging();
-        Logger logger = loggingSystem.getLogger("TestLoggingSL");
+        Logger logger = loggingSystem.getLogger(TEST_LOGGING_SL);
         LogLikeHell logLikeHell = new LogLikeHell(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
@@ -39,7 +51,7 @@ public class TestLogSL {
     @Test
     void testConsole() {
         LoggingSystem loggingSystem = ConfigureLog.configureConsoleLogging();
-        Logger logger = loggingSystem.getLogger("TestLoggingSL");
+        Logger logger = loggingSystem.getLogger(TEST_LOGGING_SL);
         LogLikeHell logLikeHell = new LogLikeHell(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
@@ -48,18 +60,21 @@ public class TestLogSL {
     @Test
     void testFileAndConsole() {
         LoggingSystem loggingSystem = ConfigureLog.configureFileAndConsoleLogging();
-        Logger logger = loggingSystem.getLogger("TestLoggingSL");
+        Logger logger = loggingSystem.getLogger(TEST_LOGGING_SL);
         LogLikeHell logLikeHell = new LogLikeHell(logger);
 
         IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
     }
 
     @Test
-    void testFileAsync() {
+    void testFileAsync() throws IOException {
         LoggingSystem loggingSystem = ConfigureLog.configureFileLogging();
-        Logger logger = loggingSystem.getLogger("TestLoggingSL");
+        Logger logger = loggingSystem.getLogger(TEST_LOGGING_SL);
+        final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
+        loggingSystem.addHandler(mirror);
 
-        final List<LogLikeHell> list = IntStream.range(0, 1000)
+        final int TOTAL = 10;
+        final List<LogLikeHell> list = IntStream.range(0, TOTAL)
                 .mapToObj(i -> new LogLikeHell(logger))
                 .toList();
 
@@ -71,5 +86,27 @@ public class TestLogSL {
             throw new RuntimeException(e);
         }
         loggingSystem.stopAndFinalize();
+
+        final List<String> logStatementsFromLogFile = getLogStatementsFromLogFile(
+                LoggingImplementation.SWIRLDS,
+                LoggingHandlingType.FILE);
+
+        Assertions.assertEquals(75 * TOTAL, (long) logStatementsFromLogFile.size());
+        final List<String> statementsInFile = linesToStatements(TEST_LOGGING_SL, logStatementsFromLogFile);
+        final LineBasedFormat formattedEvents = new LineBasedFormat(false);
+        final List<String> collect = mirror.getEvents().stream()
+                .map(e -> {
+                    final StringBuilder stringBuilder = new StringBuilder();
+                    formattedEvents.print(stringBuilder, e);
+                    stringBuilder.setLength(stringBuilder.length() - 1);
+                    return stringBuilder.toString();
+                })
+                .collect(Collectors.toList());
+
+        Assertions.assertEquals(statementsInFile.size(), (long) mirror.getEventCount());
+        org.assertj.core.api.
+                Assertions.assertThat(collect).isSubsetOf(statementsInFile);
     }
+
+
 }

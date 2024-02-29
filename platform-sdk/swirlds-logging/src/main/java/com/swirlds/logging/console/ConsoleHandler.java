@@ -21,12 +21,15 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * A handler that logs events to the console.
- *
- * This class extends the {@link AbstractSyncedHandler} and provides a simple way to log
- * {@link LogEvent}s to the console using a {@link LineBasedFormat}.
+ * <p>
+ * This class extends the {@link AbstractSyncedHandler} and provides a simple way to log {@link LogEvent}s to the
+ * console using a {@link LineBasedFormat}.
  *
  * @see AbstractSyncedHandler
  * @see LineBasedFormat
@@ -34,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class ConsoleHandler extends AbstractSyncedHandler {
 
     private final LineBasedFormat format;
+    private final OutputStream outputStream;
 
     /**
      * Constructs a new ConsoleHandler with the specified configuration.
@@ -41,20 +45,40 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      * @param handlerName   The unique name of this handler.
      * @param configuration The configuration for this handler.
      */
-    public ConsoleHandler(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+    public ConsoleHandler(@NonNull final String handlerName, @NonNull final Configuration configuration,
+            final boolean buffered) {
         super(handlerName, configuration);
         format = LineBasedFormat.createForHandler(handlerName, configuration);
+        this.outputStream = buffered ? new BufferedOutputStream(System.out,1024) : System.out;
     }
 
     /**
-     * Handles a log event by printing it to the console using the {@link LineBasedFormat},
-     * followed by flushing the console output.
+     * Handles a log event by printing it to the console using the {@link LineBasedFormat}, followed by flushing the
+     * console output.
      *
      * @param event The log event to be printed.
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        format.print(System.out, event);
-        System.out.flush();
+        StringBuilder builder = new StringBuilder();
+        format.print(builder, event);
+        try {
+            outputStream.write(builder.toString().getBytes());
+        } catch (IOException e) {
+            //Should not happen
+        }
+    }
+
+    /**
+     * Implementations can override this method to handle the stop and finalize of the handler. The method will be
+     * called synchronously to the handling of log events.
+     */
+    @Override
+    protected void handleStopAndFinalize() {
+        try {
+            outputStream.flush();
+        } catch (IOException e) {
+            //Should Not happen
+        }
     }
 }

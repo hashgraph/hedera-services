@@ -21,16 +21,14 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedWriter;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -38,7 +36,7 @@ import java.util.Objects;
 /**
  * A file handler that writes log events to a file.
  * <p>
- * This handler use a {@link BufferedWriter} to write {@link LogEvent}s to a file. You can configure the following
+ * This handler use a {@link BufferedOutputStream} to write {@link LogEvent}s to a file. You can configure the following
  * properties:
  * <ul>
  *     <li>{@code file} - the {@link Path} of the file</li>
@@ -50,9 +48,9 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-    private final WriterWithBuffer writer;
-
+    private final BufferedOutputStream writer;
     private final LineBasedFormat format;
+    private static final int BUFFER_CAPACITY = 8192 * 4;
 
     /**
      * Creates a new file handler.
@@ -60,7 +58,8 @@ public class FileHandler extends AbstractSyncedHandler {
      * @param handlerName   the unique handler name
      * @param configuration the configuration
      */
-    public FileHandler(@NonNull final String handlerName, @NonNull final Configuration configuration) {
+    public FileHandler(@NonNull final String handlerName, @NonNull final Configuration configuration)
+            throws IOException {
         super(handlerName, configuration);
 
         format = LineBasedFormat.createForHandler(handlerName, configuration);
@@ -72,18 +71,17 @@ public class FileHandler extends AbstractSyncedHandler {
         final boolean append = Objects.requireNonNullElse(
                 configuration.getValue(APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, null), true);
         try {
-            Files.createDirectories(filePath.getParent());
             if (Files.exists(filePath) && !(append && Files.isWritable(filePath))) {
                 throw new IOException("log file exist and is not writable or is not append mode");
             }
+            Files.createDirectories(filePath.getParent());
+            final OutputStream outputStream = new FileOutputStream(filePath.toFile(), append);
+            this.writer = new BufferedOutputStream(outputStream,BUFFER_CAPACITY);
         } catch (IOException e) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Log file could not be created or written to");
-            throw new RuntimeException("Could not create log file " + filePath.toAbsolutePath(), e);
+            throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
-
-        this.writer = new WriterWithBuffer(filePath, append, getName());
-
     }
+
 
     /**
      * Handles a log event by appending it to the file using the {@link LineBasedFormat}.
@@ -92,26 +90,28 @@ public class FileHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-
-        if (writer != null) {
-            final StringBuilder writer = new StringBuilder(4 * 1024);
-            format.print(writer, event);
-            this.writer.write(writer.toString().getBytes(StandardCharsets.UTF_8), writer.length());
+        final StringBuilder writer = new StringBuilder(4 * 1024);
+        format.print(writer, event);
+        try {
+            this.writer.write(writer.toString().getBytes());
+        } catch (final Exception exception) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to output stream", exception);
         }
     }
 
+    /**
+     * Stops the handler and no further elements are processed
+     */
     @Override
     protected void handleStopAndFinalize() {
         super.handleStopAndFinalize();
         try {
-            if (writer != null) {
-                writer.flush();
-                writer.close();
-            }
+            writer.flush();
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
         }
     }
+
 
     /**
      * A Writer that uses a ByteBuffer before writing to an OutputStream
@@ -121,23 +121,12 @@ public class FileHandler extends AbstractSyncedHandler {
         private static final int BUFFER_CAPACITY = 8192 * 4;
         private final ByteBuffer buffer;
         private final OutputStream writer;
-        private final String name;
 
-        public WriterWithBuffer(@NonNull final Path logFilePath, final boolean append, @NonNull final String name) {
-            try {
-                this.writer = new FileOutputStream(
-                        Objects.requireNonNull(logFilePath, "logFilePath must not be null").toFile(), append);
-            } catch (final FileNotFoundException exception) {
-                EMERGENCY_LOGGER.log(Level.ERROR, "Failed to create WriterWithBuffer", exception);
-                throw new RuntimeException("Failed to create WriterWithBuffer", exception);
-            }
+        public WriterWithBuffer(@NonNull OutputStream stream) {
+            this.writer = stream;
             this.buffer = ByteBuffer.wrap(new byte[BUFFER_CAPACITY]);
-            this.name = name;
         }
 
-        private String getName() {
-            return name;
-        }
 
         public synchronized void write(
                 final byte[] bytes, final int length) {
@@ -166,7 +155,7 @@ public class FileHandler extends AbstractSyncedHandler {
                 try {
                     writer.write(bytes, offset, length);
                 } catch (final IOException ex) {
-                    throw new RuntimeException("Error writing to stream " + getName(), ex);
+                    throw new RuntimeException("Error writing to stream " + "getName()", ex);
                 }
             }
         }
@@ -184,7 +173,7 @@ public class FileHandler extends AbstractSyncedHandler {
                 try {
                     writer.flush();
                 } catch (final IOException ex) {
-                    throw new RuntimeException("Error flushing stream " + getName(), ex);
+                    throw new RuntimeException("Error flushing stream " + "getName()", ex);
                 }
             }
         }
@@ -206,7 +195,6 @@ public class FileHandler extends AbstractSyncedHandler {
          */
         @Override
         public void close() {
-
         }
     }
 }
