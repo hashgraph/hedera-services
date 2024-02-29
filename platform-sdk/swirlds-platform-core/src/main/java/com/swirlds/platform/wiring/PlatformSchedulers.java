@@ -59,7 +59,7 @@ import java.util.List;
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
- * @param latestCompleteStateScheduler              the scheduler for the latest complete state notifier
+ * @param latestCompleteStateNotificationScheduler  the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -87,7 +87,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
-        @NonNull TaskScheduler<Void> latestCompleteStateScheduler) {
+        @NonNull TaskScheduler<Void> latestCompleteStateNotificationScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -270,7 +270,7 @@ public record PlatformSchedulers(
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
-                model.schedulerBuilder("latestCompleteStateScheduler")
+                model.schedulerBuilder("latestCompleteStateNotification")
                         .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
