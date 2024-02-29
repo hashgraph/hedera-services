@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -63,6 +64,7 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
                 attempt.enhancement(),
                 attempt.systemContractGasCalculator(),
                 attempt.senderId(),
-                attempt.addressIdConverter());
+                attempt.addressIdConverter(),
+                SPECIAL_REWARD_RECEIVERS);
     }
 }

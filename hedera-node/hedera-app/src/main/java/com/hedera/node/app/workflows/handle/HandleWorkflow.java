@@ -647,7 +647,7 @@ public class HandleWorkflow {
                     .cryptoTransferOrThrow()
                     .transfersOrElse(TransferList.DEFAULT)
                     .accountAmountsOrElse(emptyList()));
-            case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.calledContractIds();
+            case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
             default -> emptySet();
         };
     }

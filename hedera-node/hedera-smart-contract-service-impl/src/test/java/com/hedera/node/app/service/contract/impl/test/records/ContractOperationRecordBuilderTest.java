@@ -45,10 +45,10 @@ class ContractOperationRecordBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
             @Override
-            public void trackCalled(@NotNull AccountID contractId) {}
+            public void trackExplicitRewardSituation(@NotNull AccountID accountId) {}
 
             @Override
-            public Set<AccountID> calledContractIds() {
+            public Set<AccountID> explicitRewardSituationIds() {
                 return Collections.emptySet();
             }
 

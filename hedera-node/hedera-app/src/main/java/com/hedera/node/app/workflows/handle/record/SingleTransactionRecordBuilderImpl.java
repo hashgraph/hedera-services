@@ -495,7 +495,7 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @Override
-    public void trackCalled(@NonNull final AccountID contractId) {
+    public void trackExplicitRewardSituation(@NonNull final AccountID contractId) {
         if (calledContractIds == null) {
             calledContractIds = new LinkedHashSet<>();
         }
@@ -503,7 +503,7 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @Override
-    public Set<AccountID> calledContractIds() {
+    public Set<AccountID> explicitRewardSituationIds() {
         return calledContractIds != null ? calledContractIds : emptySet();
     }
 

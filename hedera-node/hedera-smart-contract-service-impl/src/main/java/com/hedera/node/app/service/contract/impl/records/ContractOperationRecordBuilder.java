@@ -37,18 +37,20 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
     ContractOperationRecordBuilder transactionFee(long transactionFee);
 
     /**
-     * Tracks the ID of a contract called during the transaction.
+     * Tracks the ID of an account that should be explicitly considered
+     * as in a "reward situation"; that is, to collect any pending native
+     * staking rewards it has accrued.
      *
-     * @param contractId the account called during the transaction
+     * @param accountId the account ID
      */
-    void trackCalled(@NonNull AccountID contractId);
+    void trackExplicitRewardSituation(@NonNull AccountID accountId);
 
     /**
      * Gets the set of contract IDs called during the transaction.
      *
      * @return the set of contract IDs called during the transaction
      */
-    Set<AccountID> calledContractIds();
+    Set<AccountID> explicitRewardSituationIds();
 
     /**
      * Updates this record builder to include the standard contract fields from the given outcome.

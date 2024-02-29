@@ -151,7 +151,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         // as a special case eligible for staking rewards
         final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
         if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
-            recordBuilderFor(frame).trackCalled(a.hederaId());
+            recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
         }
 
         frame.setState(MessageFrame.State.CODE_EXECUTING);

@@ -75,10 +75,7 @@ public class StakingRewardsHelper {
                 possibleRewardReceivers,
                 FilterType.IS_CANONICAL_REWARD_SITUATION);
         addIdsInRewardSituation(
-                writableAccountStore,
-                explicitRewardReceivers,
-                possibleRewardReceivers,
-                FilterType.IS_STAKED_TO_NODE);
+                writableAccountStore, explicitRewardReceivers, possibleRewardReceivers, FilterType.IS_STAKED_TO_NODE);
         return possibleRewardReceivers;
     }
 
