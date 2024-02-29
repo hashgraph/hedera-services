@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * A topology that never changes. Can be either unidirectional or bidirectional.
+ * A bidirectional topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
