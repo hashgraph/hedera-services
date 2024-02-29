@@ -17,8 +17,8 @@
 package com.hedera.node.app.bbm.utils;
 
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;

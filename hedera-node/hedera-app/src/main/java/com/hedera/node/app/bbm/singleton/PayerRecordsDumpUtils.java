@@ -24,6 +24,7 @@ import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,21 +34,21 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class TxnRecordQueueDumpUtils {
+public class PayerRecordsDumpUtils {
 
     static final String FIELD_SEPARATOR = ";";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, TxnRecord>>> fieldFormatters = List.of(
-            Pair.of("txnId", getFieldFormatter(TxnRecord::transactionId, Object::toString)),
+    static List<Pair<String, BiConsumer<FieldBuilder, PayerRecord>>> fieldFormatters = List.of(
+            Pair.of("txnId", getFieldFormatter(PayerRecord::transactionId, Object::toString)),
             Pair.of(
                     "consensusTime",
-                    getFieldFormatter(TxnRecord::consensusTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("payer", getFieldFormatter(TxnRecord::payer, ThingsToStrings::toStringOfEntityId)));
+                    getFieldFormatter(PayerRecord::consensusTime, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("payer", getFieldFormatter(PayerRecord::payer, ThingsToStrings::toStringOfEntityId)));
 
     public static void dumpMonoPayerRecords(
             @NonNull final Path path,
-            @NonNull final List<ExpirableTxnRecord> records,
+            @NonNull final FCQueue<ExpirableTxnRecord> records,
             @NonNull final DumpCheckpoint checkpoint) {
         var transactionRecords = gatherTxnRecordsFromMono(records);
         int reportSize;
@@ -55,7 +56,7 @@ public class TxnRecordQueueDumpUtils {
             reportOnTxnRecords(writer, transactionRecords);
             reportSize = writer.getSize();
         }
-        System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
+        System.out.printf("=== payer records report is %d bytes %n", reportSize);
     }
 
     public static void dumpModTxnRecordQueue(
@@ -68,32 +69,32 @@ public class TxnRecordQueueDumpUtils {
             reportOnTxnRecords(writer, transactionRecords);
             reportSize = writer.getSize();
         }
-        System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
+        System.out.printf("=== payer records report is %d bytes %n", reportSize);
     }
 
-    private static List<TxnRecord> gatherTxnRecordsFromMod(QueueNode<TransactionRecordEntry> queue) {
+    private static List<PayerRecord> gatherTxnRecordsFromMod(QueueNode<TransactionRecordEntry> queue) {
         var iterator = queue.iterator();
-        var records = new ArrayList<TxnRecord>();
+        var records = new ArrayList<PayerRecord>();
         while (iterator.hasNext()) {
-            records.add(TxnRecord.fromMod(iterator.next()));
+            records.add(PayerRecord.fromMod(iterator.next()));
         }
 
         return records;
     }
 
-    private static List<TxnRecord> gatherTxnRecordsFromMono(List<ExpirableTxnRecord> records) {
-        var listTxnRecords = new ArrayList<TxnRecord>();
-        records.stream().forEach(p -> listTxnRecords.add(TxnRecord.fromMono(p)));
+    private static List<PayerRecord> gatherTxnRecordsFromMono(FCQueue<ExpirableTxnRecord> records) {
+        var listTxnRecords = new ArrayList<PayerRecord>();
+        records.stream().forEach(p -> listTxnRecords.add(PayerRecord.fromMono(p)));
         return listTxnRecords;
     }
 
-    static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<TxnRecord> records) {
+    static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<PayerRecord> records) {
         writer.writeln(formatHeader());
-        records.stream().sorted(Comparator.comparing(TxnRecord::consensusTime)).forEach(e -> formatRecords(writer, e));
+        records.stream().sorted(Comparator.comparing(PayerRecord::consensusTime)).forEach(e -> formatRecords(writer, e));
         writer.writeln("");
     }
 
-    static void formatRecords(@NonNull final Writer writer, @NonNull final TxnRecord record) {
+    static void formatRecords(@NonNull final Writer writer, @NonNull final PayerRecord record) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, record));
         writer.writeln(fb);
@@ -104,8 +105,8 @@ public class TxnRecordQueueDumpUtils {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    private static <T> BiConsumer<FieldBuilder, TxnRecord> getFieldFormatter(
-            @NonNull final Function<TxnRecord, T> fun, @NonNull final Function<T, String> formatter) {
+    private static <T> BiConsumer<FieldBuilder, PayerRecord> getFieldFormatter(
+            @NonNull final Function<PayerRecord, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
@@ -115,8 +116,8 @@ public class TxnRecordQueueDumpUtils {
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final TxnRecord transaction,
-            @NonNull final Function<TxnRecord, T> fun,
+            @NonNull final PayerRecord transaction,
+            @NonNull final Function<PayerRecord, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(transaction)));
     }
