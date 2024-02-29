@@ -18,6 +18,7 @@ package com.hedera.services.cli.signedstate;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -26,7 +27,6 @@ import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,9 +72,11 @@ public class DumpPayerRecordsSubcommand {
         System.out.printf("=== payer records report is %d bytes%n", reportSize);
     }
 
-    private static List<PayerRecord> gatherTxnRecordsFromMono(FCQueue<ExpirableTxnRecord> records) {
-        var listTxnRecords = new ArrayList<PayerRecord>();
-        records.stream().forEach(p -> listTxnRecords.add(PayerRecord.fromExpirableTxnRecord(p)));
+    private static List<PayerRecord> gatherTxnRecordsFromMono(RecordsStorageAdapter recordsStorageAdapter) {
+        final var listTxnRecords = new ArrayList<PayerRecord>();
+        recordsStorageAdapter.doForEach((payer, fcq) -> {
+            fcq.stream().forEach(p -> listTxnRecords.add(PayerRecord.fromExpirableTxnRecord(p)));
+        });
         return listTxnRecords;
     }
 
