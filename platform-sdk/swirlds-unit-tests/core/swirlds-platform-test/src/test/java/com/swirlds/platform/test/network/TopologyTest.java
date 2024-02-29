@@ -131,7 +131,9 @@ class TopologyTest {
             for (final NodeId neighbor : neighbors) {
                 assertTrue(
                         topology.shouldConnectTo(neighbor) ^ topology.shouldConnectToMe(neighbor),
-                        "I should connect to all neighbors but not all neighbors should connect to me & vice versa");
+                        String.format(
+                                "Exactly one connection should be specified between nodes %s and %s%n",
+                                thisNodeId, neighbor));
             }
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
