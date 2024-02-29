@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static java.time.Instant.EPOCH;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -30,6 +31,8 @@ import java.util.concurrent.Executor;
  */
 public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
     private final WritableFreezeStore freezeStore;
+    public static Timestamp EPOCH_FREEZE_TIME =
+            Timestamp.newBuilder().seconds(EPOCH.getEpochSecond()).build();
 
     public FreezeUpgradeActions(
             @NonNull final NetworkAdminConfig adminServiceConfig,
@@ -55,7 +58,7 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
 
     public void abortScheduledFreeze() {
         requireNonNull(freezeStore, "Cannot abort freeze without access to the dual state");
-        freezeStore.freezeTime(null);
+        freezeStore.freezeTime(EPOCH_FREEZE_TIME);
         writeCheckMarker(FREEZE_ABORTED_MARKER);
     }
 }

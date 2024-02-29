@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EPOCH_FREEZE_TIME;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -57,9 +58,9 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      *
      * @param freezeTime the freeze time to set; if null, clears the freeze time
      */
-    public void freezeTime(@Nullable final Timestamp freezeTime) {
+    public void freezeTime(@NonNull final Timestamp freezeTime) {
         freezeTimeState.put(freezeTime);
-        if (freezeTime != null) {
+        if (!freezeTime.equals(EPOCH_FREEZE_TIME)) {
             lastFrozenTimeState.put(freezeTime);
         }
     }
@@ -70,7 +71,7 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      * Gets the scheduled freeze time. If no freeze has been scheduled, returns null.
      */
     public Timestamp freezeTime() {
-        return freezeTimeState.get();
+        return freezeTimeState.get() == EPOCH_FREEZE_TIME ? null : freezeTimeState.get();
     }
 
     @Override
