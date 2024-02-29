@@ -19,14 +19,17 @@ package com.hedera.node.app.state.merkle.disk;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetSize;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapIterate;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,6 +52,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     private static final Logger log = LogManager.getLogger(OnDiskReadableKVState.class);
     public static final AtomicBoolean LOG_READS = new AtomicBoolean(false);
     public static final AtomicBoolean LOG_CONSTRUCTIONS = new AtomicBoolean(false);
+    public static final AtomicBoolean HAVE_LOGGED_MISSING_CONTENTS = new AtomicBoolean(false);
 
     private static final Consumer<Runnable> DEFAULT_RUNNER = Thread::startVirtualThread;
 
@@ -72,7 +76,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
             log.info(
                     "In thread {}, constructing OnDiskReadableKVState for {} with virtualMap {} of size {}",
                     Thread.currentThread().getName(),
-                    md.stateDefinition().stateKey(),
+                    md,
                     virtualMap,
                     virtualMap.size());
             if (md.serviceName().equals(TokenService.NAME)
@@ -80,7 +84,33 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
                 final var onDiskKey = new OnDiskKey<>(
                         (StateMetadata<AccountID, ?>) md,
                         AccountID.newBuilder().accountNum(1L).build());
+                final var value = virtualMap.get((OnDiskKey<K>) onDiskKey);
                 log.info("OnDiskValue for account 1: {}", virtualMap.get((OnDiskKey<K>) onDiskKey));
+                if (value == null && !HAVE_LOGGED_MISSING_CONTENTS.get()) {
+                    log.error(
+                            "Missing key {} had hashCode={} and classId={}",
+                            onDiskKey,
+                            onDiskKey.hashCode(),
+                            onDiskKey.getClassId());
+                    try {
+                        VirtualMapLike.from(requireNonNull(virtualMap))
+                                .extractVirtualMapData(
+                                        AdHocThreadManager.getStaticThreadManager(),
+                                        entry -> {
+                                            final var key = (OnDiskKey<AccountID>) entry.key();
+                                            log.error(
+                                                    "  {} (hashCode={}, classId={}) -> {}",
+                                                    key,
+                                                    key.hashCode(),
+                                                    key.getClassId(),
+                                                    entry.value());
+                                        },
+                                        1);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    HAVE_LOGGED_MISSING_CONTENTS.set(true);
+                }
             }
         }
     }

@@ -121,4 +121,19 @@ public final class StateMetadata<K, V> {
     public long queueNodeClassId() {
         return queueNodeClassId;
     }
+
+    @Override
+    public String toString() {
+        return "StateMetadata{" + "serviceName='"
+                + serviceName + '\'' + ", schema="
+                + schema + ", stateDefinition="
+                + stateDefinition + ", onDiskKeyClassId="
+                + onDiskKeyClassId + ", onDiskKeySerializerClassId="
+                + onDiskKeySerializerClassId + ", onDiskValueClassId="
+                + onDiskValueClassId + ", onDiskValueSerializerClassId="
+                + onDiskValueSerializerClassId + ", inMemoryValueClassId="
+                + inMemoryValueClassId + ", singletonClassId="
+                + singletonClassId + ", queueNodeClassId="
+                + queueNodeClassId + '}';
+    }
 }
