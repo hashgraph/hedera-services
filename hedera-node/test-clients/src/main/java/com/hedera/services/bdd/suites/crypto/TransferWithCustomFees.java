@@ -89,6 +89,8 @@ public class TransferWithCustomFees extends HapiSuite {
             transferErc721WithFixedHtsCustomFees(),
             transferApprovedErc20WithFixedHbarCustomFee(),
             transferApprovedErc721WithFixedHtsCustomFees(),
+            transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
+            transferErc20WithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
             transferWithFractionalCustomFee(),
             transferWithInsufficientCustomFees()
         });
@@ -287,11 +289,10 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee));
     }
 
-    // is it valid?
     @HapiTest
-    public HapiSpec transferErc20WithThreeFixedHtsCustomFees() {
+    public HapiSpec transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt() {
         final long amountToSend = 400L;
-        return defaultHapiSpec("transferErc20WithThreeFixedHtsCustomFees")
+        return defaultHapiSpec("transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt")
                 .given(
                         cryptoCreate(alice).balance(0L),
                         cryptoCreate(bob).balance(0L),
@@ -319,16 +320,53 @@ public class TransferWithCustomFees extends HapiSuite {
                         cryptoTransfer(moving(1000, feeDenom).between(tokenOwner, bob)),
                         cryptoTransfer(moving(1000, feeDenom).between(tokenOwner, carol)))
                 .when(
-                        cryptoTransfer(moving(amountToSend, token)
-                                .between(tokenTreasury, alice)), // treasury does not have balance of `feeDenom`
-                        cryptoTransfer(moving(amountToSend / 2, token)
-                                .between(alice, bob)), // alice - 500, bob - 1200, carol - 1300
-                        cryptoTransfer(moving(amountToSend / 4, token)
-                                .between(bob, carol))) // alice - 600, bob - 800, carol - 1600
+                        cryptoTransfer(moving(amountToSend, token).between(tokenTreasury, alice)),
+                        cryptoTransfer(moving(amountToSend / 2, token).between(alice, bob)),
+                        cryptoTransfer(moving(amountToSend / 4, token).between(bob, carol)))
                 .then(
-                        getAccountBalance(alice).hasTokenBalance(token, 200).hasTokenBalance(feeDenom, 1000), // 600
-                        getAccountBalance(bob).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 1000), // 800
-                        getAccountBalance(carol).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 1000)); // 1600
+                        getAccountBalance(alice).hasTokenBalance(token, 200).hasTokenBalance(feeDenom, 600),
+                        getAccountBalance(bob).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 800),
+                        getAccountBalance(carol).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 1600));
+    }
+
+    @HapiTest
+    public HapiSpec transferErc20WithThreeFixedHtsCustomFeesWithAllCollectorsExempt() {
+        final long amountToSend = 400L;
+        return defaultHapiSpec("transferErc20WithThreeFixedHtsCustomFeesAndAllCollectorsExempt")
+                .given(
+                        cryptoCreate(alice).balance(0L),
+                        cryptoCreate(bob).balance(0L),
+                        cryptoCreate(carol).balance(0L),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(tokenTotal * 10L),
+                        tokenAssociate(alice, feeDenom),
+                        tokenAssociate(bob, feeDenom),
+                        tokenAssociate(carol, feeDenom),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(tokenTotal)
+                                .withCustom(fixedHtsFee(aliceFee, feeDenom, alice, true))
+                                .withCustom(fixedHtsFee(bobFee, feeDenom, bob, true))
+                                .withCustom(fixedHtsFee(carolFee, feeDenom, carol, true)),
+                        tokenAssociate(tokenReceiver, token),
+                        tokenAssociate(tokenOwner, token),
+                        tokenAssociate(alice, token),
+                        tokenAssociate(bob, token),
+                        tokenAssociate(carol, token),
+                        cryptoTransfer(moving(1000, feeDenom).between(tokenOwner, alice)),
+                        cryptoTransfer(moving(1000, feeDenom).between(tokenOwner, bob)),
+                        cryptoTransfer(moving(1000, feeDenom).between(tokenOwner, carol)))
+                .when(
+                        cryptoTransfer(moving(amountToSend, token).between(tokenTreasury, alice)),
+                        cryptoTransfer(moving(amountToSend / 2, token).between(alice, bob)),
+                        cryptoTransfer(moving(amountToSend / 4, token).between(bob, carol)))
+                .then(
+                        getAccountBalance(alice).hasTokenBalance(token, 200).hasTokenBalance(feeDenom, 1000),
+                        getAccountBalance(bob).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 1000),
+                        getAccountBalance(carol).hasTokenBalance(token, 100).hasTokenBalance(feeDenom, 1000));
     }
 
     @HapiTest
