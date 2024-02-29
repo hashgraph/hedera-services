@@ -104,6 +104,17 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
                                                     key.hashCode(),
                                                     key.getClassId(),
                                                     entry.value());
+                                            if (key.getKey().accountNumOrElse(0L) == 1L) {
+                                                log.error("----------------");
+                                                log.error(
+                                                        "  Found missing key {}  (class {})"
+                                                                + ", but equals lookup key (class {})?",
+                                                        key,
+                                                        key.getClass().getName(),
+                                                        Objects.equals(onDiskKey, key),
+                                                        onDiskKey.getClass().getName());
+                                                log.error("----------------");
+                                            }
                                         },
                                         1);
                     } catch (InterruptedException ex) {
