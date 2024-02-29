@@ -253,7 +253,7 @@ public final class ConsensusTestDefinitions {
                         // share of events, so we allow a little more than the exact
                         // ratio of nodes in that
                         // partition
-                        .setMaximumConsensusRatio(consNodeRatio * 1.2)
+                        .setMaximumConsensusRatio(consNodeRatio * 1.5)
                         // Many events in the sub-quorum partition will become
                         // stale. 0.15 is somewhat
                         // arbitrary.

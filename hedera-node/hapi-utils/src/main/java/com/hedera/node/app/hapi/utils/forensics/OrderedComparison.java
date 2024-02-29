@@ -68,39 +68,70 @@ public class OrderedComparison {
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
         System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
-        List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        int missed = newSecondEntries.size() - secondEntries.size();
-        if (missed > 0) {
-            System.out.println(" ➡️  Missed " + missed + " entries");
-        } else if (missed < 0) {
-            System.out.println(" ➡️  Added " + (-missed) + " entries");
-            List<RecordStreamEntry> newFirstEntries = getNewSecondRecordStreamEntries(secondEntries, firstEntries);
-            return diff(newFirstEntries, secondEntries, recordDiffSummarizer);
-        }
-        return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
+        final var compareList = getCompareList(firstEntries, secondEntries);
+        return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
+    record CompareList(@NonNull List<RecordStreamEntry> firstList, @NonNull List<RecordStreamEntry> secondList) {}
+
     @NonNull
-    private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
+    private static CompareList getCompareList(
             List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
-        List<RecordStreamEntry> ret = new ArrayList<>();
-        if (secondEntries.isEmpty()) {
-            return ret;
-        }
-        RecordStreamEntry firstEntry;
-        RecordStreamEntry secondEntry;
-        int secondIndex = 0;
-        for (RecordStreamEntry entry : firstEntries) {
-            firstEntry = entry;
-            secondEntry = secondEntries.get(secondIndex);
-            if (secondEntry.consensusTime().equals(firstEntry.consensusTime())) {
-                ret.add(secondEntry);
-                secondIndex++;
-            } else {
-                ret.add(new RecordStreamEntry(null, null, firstEntry.consensusTime()));
+        CompareList ret;
+        final List<RecordStreamEntry> firstList = new ArrayList<>();
+        final List<RecordStreamEntry> secondList = new ArrayList<>();
+
+        if (secondEntries.isEmpty() || firstEntries.isEmpty()) {
+            ret = new CompareList(firstEntries, secondEntries);
+        } else {
+            int firstIdx = 0;
+            int secondIdx = 0;
+
+            while (firstIdx < firstEntries.size() && secondIdx < secondEntries.size()) {
+                if (firstEntries
+                        .get(firstIdx)
+                        .consensusTime()
+                        .equals(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
+                    secondList.add(secondEntries.get(secondIdx));
+                    firstIdx++;
+                    secondIdx++;
+                } else if (firstEntries
+                        .get(firstIdx)
+                        .consensusTime()
+                        .isBefore(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(firstIdx).consensusTime()));
+                    firstIdx++;
+                } else {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(secondIdx).consensusTime()));
+                    secondList.add(secondEntries.get(secondIdx));
+                    secondIdx++;
+                }
             }
+
+            if (firstIdx < firstEntries.size()) { // j == secondEntries.size()
+                for (int k = firstIdx; k < firstEntries.size(); k++) {
+                    firstList.add(firstEntries.get(k));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(k).consensusTime()));
+                }
+            }
+
+            if (secondIdx < secondEntries.size()) { // i == firstEntries.size()
+                for (int k = secondIdx; k < secondEntries.size(); k++) {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(k).consensusTime()));
+                    secondList.add(secondEntries.get(k));
+                }
+            }
+
+            ret = new CompareList(firstList, secondList);
         }
+
         return ret;
     }
 
@@ -128,16 +159,18 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             firstEntry,
                             null,
-                            "No record found at " + firstEntry.consensusTime() + " for transactionID : "
-                                    + firstEntry.txnRecord().getTransactionID()));
+                            "No modular record found at " + firstEntry.consensusTime() + " for transactionID : "
+                                    + firstEntry.txnRecord().getTransactionID() + " transBody : " + firstEntry.body()));
                     continue;
                 }
                 if (firstEntries.get(i).txnRecord() == null) {
                     diffs.add(new DifferingEntries(
                             null,
                             secondEntries.get(i),
-                            "No record found at " + secondEntries.get(i).consensusTime() + " for transactionID : "
-                                    + secondEntries.get(i).txnRecord().getTransactionID()));
+                            "Additional modular record found at "
+                                    + secondEntries.get(i).consensusTime() + " for transactionID : "
+                                    + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
+                                    + secondEntries.get(i).body()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
