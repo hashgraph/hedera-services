@@ -261,6 +261,8 @@ public class HandleWorkflow {
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
+                    System.out.println("OUTER CATCH");
+                    e.printStackTrace();
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -566,6 +568,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
