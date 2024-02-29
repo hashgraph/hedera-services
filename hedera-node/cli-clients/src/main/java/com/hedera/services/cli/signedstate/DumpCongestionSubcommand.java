@@ -68,8 +68,6 @@ public class DumpCongestionSubcommand {
             reportSize = writer.getSize();
         }
 
-        final var runningHashLeaf = state.getRunningHashLeaf();
-
         System.out.printf("=== congestion report is %d bytes%n", reportSize);
     }
 

@@ -21,10 +21,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
@@ -58,15 +60,15 @@ public class DumpBlockInfoSubcommand {
         final var networkContext = state.getNetworkContext();
         System.out.printf("=== block info ===%n");
 
-        final var blockInfo = BlockInfo.fromMerkleNetworkContext(networkContext);
+        final var runningHashLeaf = state.getRunningHashLeaf();
+        final var blockInfo =
+                BlockInfo.combineFromMerkleNetworkContextAndRunningHashLeaf(networkContext, runningHashLeaf);
 
         int reportSize;
         try (@NonNull final var writer = new Writer(blockInfoPath)) {
             reportOnBlockInfo(writer, blockInfo);
             reportSize = writer.getSize();
         }
-
-        final var runningHashLeaf = state.getRunningHashLeaf();
 
         System.out.printf("=== block info report is %d bytes%n", reportSize);
     }
@@ -78,14 +80,26 @@ public class DumpBlockInfoSubcommand {
             @NonNull String blockHashes,
             @Nullable RichInstant consTimeOfLastHandledTxn,
             boolean migrationRecordsStreamed,
-            @Nullable RichInstant firstConsTimeOfCurrentBlock) {
-        static BlockInfo fromMerkleNetworkContext(@NonNull final MerkleNetworkContext networkContext) {
+            @Nullable RichInstant firstConsTimeOfCurrentBlock,
+            long entityId,
+            @NonNull Hash runningHash,
+            @NonNull Hash nMinus1RunningHash,
+            @NonNull Hash nMinus2RunningHash,
+            @NonNull Hash nMinus3RunningHash) {
+        static BlockInfo combineFromMerkleNetworkContextAndRunningHashLeaf(
+                @NonNull final MerkleNetworkContext networkContext,
+                @NonNull RecordsRunningHashLeaf recordsRunningHashLeaf) {
             return new BlockInfo(
                     networkContext.getAlignmentBlockNo(),
                     networkContext.stringifiedBlockHashes(),
                     RichInstant.fromJava(networkContext.consensusTimeOfLastHandledTxn()),
                     networkContext.areMigrationRecordsStreamed(),
-                    RichInstant.fromJava(networkContext.firstConsTimeOfCurrentBlock()));
+                    RichInstant.fromJava(networkContext.firstConsTimeOfCurrentBlock()),
+                    networkContext.seqNo().current(),
+                    recordsRunningHashLeaf.getRunningHash().getHash(),
+                    recordsRunningHashLeaf.getNMinus1RunningHash().getHash(),
+                    recordsRunningHashLeaf.getNMinus2RunningHash().getHash(),
+                    recordsRunningHashLeaf.getNMinus3RunningHash().getHash());
         }
     }
 
@@ -126,7 +140,12 @@ public class DumpBlockInfoSubcommand {
                     "firstConsTimeOfCurrentBlock",
                     getFieldFormatter(
                             BlockInfo::firstConsTimeOfCurrentBlock,
-                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))));
+                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
+            Pair.of("entityId", getFieldFormatter(BlockInfo::entityId, Object::toString)),
+            Pair.of("runningHash", getFieldFormatter(BlockInfo::runningHash, Object::toString)),
+            Pair.of("nMinus1RunningHash", getFieldFormatter(BlockInfo::nMinus1RunningHash, Object::toString)),
+            Pair.of("nMinus2RunningHash", getFieldFormatter(BlockInfo::nMinus2RunningHash, Object::toString)),
+            Pair.of("nMinus3RunningHas", getFieldFormatter(BlockInfo::nMinus3RunningHash, Object::toString)));
 
     static <T> BiConsumer<FieldBuilder, BlockInfo> getFieldFormatter(
             @NonNull final Function<BlockInfo, T> fun, @NonNull final Function<T, String> formatter) {

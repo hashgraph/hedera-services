@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -47,6 +48,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -338,6 +340,13 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var runningHashLeaf = servicesState.runningHashLeaf();
         assertSignedStateComponentExists(runningHashLeaf, "runningHashLeaf");
         return runningHashLeaf;
+    }
+
+    @NonNull
+    public FCQueue<ExpirableTxnRecord> getPayerRecords() {
+        final var payerRecords = servicesState.payerRecords();
+        assertSignedStateComponentExists(payerRecords, "payerRecords");
+        return payerRecords.getRecords();
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
