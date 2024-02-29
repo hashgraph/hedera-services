@@ -70,9 +70,10 @@ public class FreezeUpgradeActions {
             @NonNull final WritableFreezeStore freezeStore,
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore) {
-        requireNonNull(adminServiceConfig);
-        requireNonNull(freezeStore);
-        requireNonNull(executor);
+        requireNonNull(adminServiceConfig, "Admin service config is required for freeze upgrade actions");
+        requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
+        requireNonNull(executor, "Executor is required for freeze upgrade actions");
+        requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
 
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;

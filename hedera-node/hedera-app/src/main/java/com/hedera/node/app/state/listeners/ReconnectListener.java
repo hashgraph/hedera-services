@@ -61,7 +61,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
     @Override
     public void notify(final ReconnectCompleteNotification notification) {
         log.info(
-                "Notification Received: Reconnect Finished. " + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
+                "ReconnectCompleteNotification Received: Reconnect Finished. " + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
                 notification.getConsensusTimestamp(),
                 notification.getRoundNumber(),
                 notification.getSequence());

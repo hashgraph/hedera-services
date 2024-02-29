@@ -18,7 +18,7 @@ package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.listeners.ReconnectListener;
-import com.hedera.node.app.state.listeners.StateWriteToDiskListener;
+import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -54,5 +54,5 @@ public interface HederaStateInjectionModule {
 
     @Binds
     @Singleton
-    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(StateWriteToDiskListener stateWriteToDiskListener);
+    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(WriteStateToDiskListener writeStateToDiskListener);
 }

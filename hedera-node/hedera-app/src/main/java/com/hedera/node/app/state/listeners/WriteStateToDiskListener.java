@@ -16,23 +16,30 @@
 
 package com.hedera.node.app.state.listeners;
 
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Listener that will be notified with {@link
@@ -40,18 +47,21 @@ import org.apache.logging.log4j.Logger;
  * written to disk. This writes {@code NOW_FROZEN_MARKER} to disk when upgrade is pending
  */
 @Singleton
-public class StateWriteToDiskListener implements StateWriteToDiskCompleteListener {
-    private static final Logger log = LogManager.getLogger(StateWriteToDiskListener.class);
+public class WriteStateToDiskListener implements StateWriteToDiskCompleteListener {
+    private static final Logger log = LogManager.getLogger(WriteStateToDiskListener.class);
 
-    private final WorkingStateAccessor stateAccessor;
+    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
 
     @Inject
-    public StateWriteToDiskListener(
-            @NonNull final WorkingStateAccessor stateAccessor,
+    public WriteStateToDiskListener(
+            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider) {
+        requireNonNull(stateAccessor);
+        requireNonNull(executor);
+        requireNonNull(configProvider);
         this.stateAccessor = stateAccessor;
         this.executor = executor;
         this.configProvider = configProvider;
@@ -61,19 +71,28 @@ public class StateWriteToDiskListener implements StateWriteToDiskCompleteListene
     public void notify(final StateWriteToDiskCompleteNotification notification) {
         if (notification.isFreezeState()) {
             log.info(
-                    "Notification Received: Freeze State Finished. "
+                    "StateWriteToDiskCompleteNotification Received : Freeze State Finished. "
                             + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
                     notification.getConsensusTimestamp(),
                     notification.getRoundNumber(),
                     notification.getSequence());
-            final var writableStoreFactory = new WritableStoreFactory(stateAccessor.getHederaState(), FreezeService.NAME);
-            final var upgradeActions = new FreezeUpgradeActions(
-                    configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class),
-                    writableStoreFactory.getStore(WritableFreezeStore.class),
-                    executor,
-                    writableStoreFactory.getStore(WritableUpgradeFileStore.class));
-            log.info("Externalizing freeze if upgrade is pending");
-            upgradeActions.externalizeFreezeIfUpgradePending();
+            try(final var wrappedState = stateAccessor.get()) {
+                final var writableStoreFactory = new WritableStoreFactory(new SavepointStackImpl(wrappedState.get()),
+                        FreezeService.NAME);
+                final var writableFreezeStore =  writableStoreFactory.getStore(WritableFreezeStore.class);
+                final var writableStoreFactoryFileService = new WritableStoreFactory(new SavepointStackImpl(wrappedState.get()),
+                        FileService.NAME);
+                final var writableUpgradeFileStore = writableStoreFactoryFileService.getStore(WritableUpgradeFileStore.class);
+                final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
+
+                final var upgradeActions = new FreezeUpgradeActions(
+                        networkAdminConfig,
+                        writableFreezeStore,
+                        executor,
+                        writableUpgradeFileStore);
+                log.info("Externalizing freeze if upgrade is pending");
+                upgradeActions.externalizeFreezeIfUpgradePending();
+            }
         }
     }
 }
