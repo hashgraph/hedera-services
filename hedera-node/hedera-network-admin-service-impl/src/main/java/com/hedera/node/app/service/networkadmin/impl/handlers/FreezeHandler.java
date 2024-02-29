@@ -48,9 +48,6 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -58,6 +55,8 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FREEZE}.
@@ -170,7 +169,7 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTime));
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
-                freezeStore.updateFileHash(null);
+                freezeStore.updateFileHash(Bytes.EMPTY);
                 log.info("Preparing freeze abort with file {}, hash null", updateFileID);
             }
             case TELEMETRY_UPGRADE -> {
