@@ -256,7 +256,8 @@ public class ConcurrentSuites {
             RecordsSuite::new,
             LogsSuite::new,
             Evm46ValidationSuite::new,
-            ContractMintHTSV2SecurityModelSuite::new
+            ContractMintHTSV2SecurityModelSuite::new,
+            AssociatePrecompileV2SecurityModelSuite::new
         };
     }
 }
