@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -48,7 +49,7 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-    private final BufferedOutputStream writer;
+    private final OutputStream writer;
     private final LineBasedFormat format;
     private static final int BUFFER_CAPACITY = 8192 * 4;
 
@@ -93,7 +94,7 @@ public class FileHandler extends AbstractSyncedHandler {
         final StringBuilder writer = new StringBuilder(4 * 1024);
         format.print(writer, event);
         try {
-            this.writer.write(writer.toString().getBytes());
+            this.writer.write(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to output stream", exception);
         }

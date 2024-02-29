@@ -27,7 +27,7 @@ import java.util.Objects;
 /**
  * An OutputStream that uses {@link ByteBuffer} before writing to an underlying {@link OutputStream}
  */
-public class BufferedOutputStream {
+public class BufferedOutputStream extends OutputStream {
     private final ByteBuffer buffer;
     private final OutputStream outputStream;
 
@@ -48,6 +48,7 @@ public class BufferedOutputStream {
         this.buffer = ByteBuffer.wrap(new byte[bufferCapacity]);
     }
 
+    @Override
     public synchronized void write(@NonNull final byte[] bytes, final int offset, final int length) throws IOException {
 
         if (length >= buffer.capacity()) {
@@ -72,6 +73,7 @@ public class BufferedOutputStream {
      * @param bytes information to write
      * @throws IOException in case there was an error writing to the underlying outputStream
      */
+    @Override
     public synchronized void write(@NonNull final byte[] bytes) throws IOException {
 
         if (bytes.length >= buffer.capacity()) {
@@ -89,6 +91,7 @@ public class BufferedOutputStream {
     /**
      *
      */
+    @Override
     public synchronized void write(final int b) throws IOException {
         if (buffer.capacity() >= 1) {
             buffer.put((byte) b);
@@ -102,6 +105,7 @@ public class BufferedOutputStream {
     /**
      * Calls {@code flush()} on the underlying output stream.
      */
+    @Override
     public synchronized void flush() throws IOException {
         flushBuffer(buffer);
         flushDestination();
@@ -138,6 +142,7 @@ public class BufferedOutputStream {
     /**
      * Closes and releases any system resources associated with this instance.
      */
+    @Override
     public void close() throws IOException {
         outputStream.close();
     }
