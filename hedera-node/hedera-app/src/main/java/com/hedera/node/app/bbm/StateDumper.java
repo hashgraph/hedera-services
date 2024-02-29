@@ -20,6 +20,7 @@ import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpModAccounts;
 import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpMonoAccounts;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
+import static com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils.dumpModContractBytecodes;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
@@ -40,16 +41,21 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -79,6 +85,7 @@ public class StateDumper {
     private static final String SEMANTIC_FILES = "files.txt";
     private static final String SEMANTIC_SCHEDULED_TRANSACTIONS = "scheduledTransactions.txt";
     private static final String SEMANTIC_ACCOUNTS = "accounts.txt";
+    private static final String SEMANTIC_CONTRACT_BYTECODES = "contractBytecodes.txt";
 
     public static void dumpMonoChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
@@ -91,6 +98,12 @@ public class StateDumper {
         dumpMonoScheduledTransactions(
                 Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), state.getChild(SCHEDULE_TXS), checkpoint);
         dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(ACCOUNTS), checkpoint);
+
+        ContractBytecodesDumpUtils.dumpMonoContractBytecodes(
+                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+                state.getChild(ACCOUNTS),
+                state.getChild(STORAGE),
+                checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -119,6 +132,10 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
+
+        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts = requireNonNull(state.getChild(
+                state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
+        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), contracts, checkpoint);
 
         final MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>> scheduledTransactions =
                 requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
