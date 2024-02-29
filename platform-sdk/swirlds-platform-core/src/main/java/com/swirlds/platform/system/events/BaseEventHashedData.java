@@ -31,6 +31,8 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -39,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -104,6 +107,15 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     private Instant timeCreated;
     /** the payload: an array of transactions */
     private ConsensusTransactionImpl[] transactions;
+
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES = Set.of(
+            StateSignatureTransaction.CLASS_ID,
+            SwirldTransaction.CLASS_ID,
+            0x4509c61070fdcc93L // DummySystemTransaction.CLASS_ID, for testing purposes TODO
+            );
 
     public BaseEventHashedData() {}
 
@@ -194,7 +206,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         Objects.requireNonNull(in, "The input stream must not be null");
         serializedVersion = version;
         if (version >= ClassVersion.SOFTWARE_VERSION) {
-            softwareVersion = in.readSerializable();
+            softwareVersion = in.readSerializable(); // TODO
         } else {
             softwareVersion = SoftwareVersion.NO_VERSION;
         }
@@ -227,7 +239,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         }
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
+        transactions =
+                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
     }
 
     @Override
