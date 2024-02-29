@@ -104,9 +104,7 @@ public class StakingRewardsHelper {
         // in previous step
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
         final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
-        // We do this for backward compatibility with mono-service
-        final var isCalledContract = modifiedAccount.smartContract();
-        return (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
+        return hasBalanceChange || hasStakeMetaChanges;
     }
 
     /**

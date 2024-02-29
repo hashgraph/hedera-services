@@ -615,6 +615,23 @@ public class HandleWorkflow {
         handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
     }
 
+    /**
+     * Returns a set of "extra" account ids that should be considered as eligible for
+     * staking rewards with the given transaction info and record builder. Needed for
+     * mono-service fidelity.
+     *
+     * <p>There are two cases.
+     * <ol>
+     *     <li>For a crypto transfer, any account explicitly given a zero amount
+     *     should be considered as eligible for staking rewards.</li>
+     *     <li>For a contract operation, any account that is a called contract should
+     *     be considered as eligible for staking rewards.</li>
+     * </ol>
+     *
+     * @param transactionInfo the transaction info
+     * @param recordBuilder the record builder
+     * @return the set of account ids that should be considered as eligible for staking rewards
+     */
     private Set<AccountID> explicitRewardReceivers(
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
