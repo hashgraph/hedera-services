@@ -57,7 +57,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,7 +89,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     /**
      * The ordered set of all schemas registered by the service
      */
-    private final Set<Schema> schemas = new TreeSet<>();
+    private final SortedSet<Schema> schemas = new TreeSet<>();
     /**
      * Stores system entities created during genesis until the node can build synthetic records
      */
@@ -337,7 +337,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 applicableSchemas.add(schema);
             }
         }
-        return applicableSchemas;
+        final List<Schema> registeredSchemas = schemas.isEmpty() ? List.of() : List.of(schemas.getLast());
+        return applicableSchemas.isEmpty() ? registeredSchemas : applicableSchemas;
     }
 
     /**

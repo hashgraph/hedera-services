@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
@@ -79,6 +80,9 @@ class FreezeUpgradeActionsTest {
     @LoggingSubject
     private FreezeUpgradeActions subject;
 
+    @Mock
+    private WritableUpgradeFileStore upgradeFileStore;
+
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
@@ -86,7 +90,7 @@ class FreezeUpgradeActionsTest {
 
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor);
+        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

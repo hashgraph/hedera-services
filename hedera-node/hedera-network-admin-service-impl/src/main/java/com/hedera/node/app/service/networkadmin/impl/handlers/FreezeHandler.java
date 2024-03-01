@@ -55,12 +55,15 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FREEZE}.
  */
 @Singleton
 public class FreezeHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(FreezeHandler.class);
     // length of the hash of the update file included in the FreezeTransactionBody
     // used for a quick sanity check that the file hash is not invalid
     public static final int UPDATE_FILE_HASH_LEN = 48;
@@ -143,13 +146,14 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions =
-                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
+                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
                 freezeStore.updateFileHash(freezeTxn.fileHash());
+                log.info("Preparing upgrade with file {}, hash {}", updateFileID, freezeTxn.fileHash());
                 try {
                     if (updateFileID != null
                             && updateFileID.fileNum()
@@ -165,7 +169,8 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTime));
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
-                freezeStore.updateFileHash(null);
+                freezeStore.updateFileHash(Bytes.EMPTY);
+                log.info("Preparing freeze abort with file {}, hash null", updateFileID);
             }
             case TELEMETRY_UPGRADE -> {
                 try {
