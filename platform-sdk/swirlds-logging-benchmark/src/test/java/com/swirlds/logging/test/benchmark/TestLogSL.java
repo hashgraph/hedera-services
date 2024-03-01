@@ -15,7 +15,7 @@
  *
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.test.benchmark;
 
 import static com.swirlds.logging.benchmark.LogFileUtlis.getLogStatementsFromLogFile;
 import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
@@ -23,6 +23,10 @@ import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.benchmark.ConfigureLog;
+import com.swirlds.logging.benchmark.LogLikeHell;
+import com.swirlds.logging.benchmark.LoggingHandlingType;
+import com.swirlds.logging.benchmark.LoggingImplementation;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
 import java.io.IOException;

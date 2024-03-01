@@ -15,7 +15,7 @@
  *
  */
 
-package com.swirlds.logging.util;
+package com.swirlds.logging.benchmark.util;
 
 public class
 BenchmarkConstants {

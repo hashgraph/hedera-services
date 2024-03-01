@@ -15,12 +15,17 @@
  *
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.test.benchmark;
 
 import static com.swirlds.logging.benchmark.LogFileUtlis.getLogStatementsFromLogFile;
 import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
 
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.benchmark.ConfigureLog4J;
+import com.swirlds.logging.benchmark.LogFileUtlis;
+import com.swirlds.logging.benchmark.LogLikeHellLog4J;
+import com.swirlds.logging.benchmark.LoggingHandlingType;
+import com.swirlds.logging.benchmark.LoggingImplementation;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

@@ -20,6 +20,7 @@ module com.swirlds.logging {
     exports com.swirlds.logging.api.internal;
     exports com.swirlds.logging.api.internal.event;
     exports com.swirlds.logging.api.internal.configuration;
+    exports com.swirlds.logging.external.benchmark to com.swirlds.logging.benchmark;
 
     requires transitive com.swirlds.config.api;
     requires transitive com.fasterxml.jackson.annotation;

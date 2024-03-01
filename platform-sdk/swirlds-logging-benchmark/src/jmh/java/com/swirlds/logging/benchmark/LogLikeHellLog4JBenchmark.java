@@ -5,31 +5,30 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.logging;
+package com.swirlds.logging.benchmark;
 
 import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_TYPE;
 import static com.swirlds.logging.benchmark.LoggingHandlingType.FILE_TYPE;
-import static com.swirlds.logging.util.BenchmarkConstants.FORK_COUNT;
-import static com.swirlds.logging.util.BenchmarkConstants.MEASUREMENT_ITERATIONS;
-import static com.swirlds.logging.util.BenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
-import static com.swirlds.logging.util.BenchmarkConstants.PARALLEL_THREAD_COUNT;
-import static com.swirlds.logging.util.BenchmarkConstants.WARMUP_ITERATIONS;
-import static com.swirlds.logging.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.FORK_COUNT;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_ITERATIONS;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.PARALLEL_THREAD_COUNT;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_ITERATIONS;
+import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.api.Logger;
-import com.swirlds.logging.benchmark.ConfigureLog;
-import com.swirlds.logging.benchmark.LogLikeHell;
 import java.util.Objects;
+import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -44,25 +43,24 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class LogLikeHellBenchmark {
+public class LogLikeHellLog4JBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
     Logger logger;
-
-    LogLikeHell logLikeHell;
+    LogLikeHellLog4J logLikeHell;
 
     @Setup(Level.Trial)
     public void init() throws Exception {
         if (Objects.equals(loggingType, FILE_TYPE)) {
-            logger = ConfigureLog.configureFileLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureFileLogging().getLogger("BenchmarkLogging4J");
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            logger = ConfigureLog.configureConsoleLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureConsoleLogging().getLogger("BenchmarkLogging4J");
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            logger = ConfigureLog.configureFileAndConsoleLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureFileAndConsoleLogging().getLogger("BenchmarkLogging4J");
         }
-        logLikeHell = new LogLikeHell(logger);
+        logLikeHell = new LogLikeHellLog4J(logger);
     }
 
     @Benchmark
