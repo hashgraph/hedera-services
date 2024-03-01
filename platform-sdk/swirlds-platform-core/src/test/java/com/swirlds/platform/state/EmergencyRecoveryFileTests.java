@@ -274,6 +274,7 @@ public class EmergencyRecoveryFileTests {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     private void writeFile(final Pair<String, ?>... values) {
         try (final BufferedWriter file =
                 new BufferedWriter(new FileWriter(tmpDir.resolve(FILENAME).toFile()))) {
@@ -288,6 +289,7 @@ public class EmergencyRecoveryFileTests {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     private void writeFileWithBootstrap(final Pair<String, ?>... values) {
         try (final BufferedWriter file =
                 new BufferedWriter(new FileWriter(tmpDir.resolve(FILENAME).toFile()))) {

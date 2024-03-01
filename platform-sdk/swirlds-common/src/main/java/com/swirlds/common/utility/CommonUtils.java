@@ -342,6 +342,7 @@ public class CommonUtils {
      * @return the list containing all elements in the supplied lists
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> List<T> joinLists(final List<T>... lists) {
         return Arrays.stream(lists).flatMap(Collection::stream).toList();
     }

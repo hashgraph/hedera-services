@@ -13,7 +13,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
     requires org.mockito;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 
     exports com.swirlds.platform.test.fixtures;
     exports com.swirlds.platform.test.fixtures.stream;

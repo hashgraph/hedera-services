@@ -55,7 +55,7 @@ public class GlobalContextTest {
         context.add("key-boolean", true);
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = GlobalContext.getContextMap();
         Assertions.assertEquals(6, contextMap.size());
         Assertions.assertEquals("value", contextMap.get("key-string"));
         Assertions.assertEquals("1", contextMap.get("key-int"));
@@ -76,7 +76,7 @@ public class GlobalContextTest {
         context.add("key", "c");
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = GlobalContext.getContextMap();
         Assertions.assertEquals(1, contextMap.size());
         Assertions.assertEquals("c", contextMap.get("key"));
     }
@@ -91,7 +91,7 @@ public class GlobalContextTest {
         context.remove("key");
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = GlobalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 
@@ -115,7 +115,7 @@ public class GlobalContextTest {
         context.clear();
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = GlobalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 
@@ -129,7 +129,7 @@ public class GlobalContextTest {
         Assertions.assertDoesNotThrow(() -> closeable.close());
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = GlobalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 }

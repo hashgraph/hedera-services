@@ -22,7 +22,6 @@ public abstract class TestQualifierTags {
      * Denotes a test that normally needs more than 100 ms to be executed
      * This tag will be removed, and instead all annotated tests are moved to a separate 'src/timeConsuming' source set.
      */
-    @Deprecated
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
 
     /**
@@ -31,6 +30,5 @@ public abstract class TestQualifierTags {
      * Tests in this category should be fixed to not being flaky, or moved to the 'hammer' category (that is also
      * running in isolation) if they fit that category.
      */
-    @Deprecated
     public static final String TIMING_SENSITIVE = "TIMING_SENSITIVE";
 }

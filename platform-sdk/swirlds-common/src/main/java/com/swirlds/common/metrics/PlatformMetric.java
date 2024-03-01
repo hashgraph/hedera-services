@@ -37,5 +37,6 @@ public interface PlatformMetric extends Metric {
      * @deprecated This method is only temporary and will be removed during the Metric overhaul.
      */
     @Nullable
+    @Deprecated(forRemoval = true)
     StatsBuffered getStatsBuffered();
 }

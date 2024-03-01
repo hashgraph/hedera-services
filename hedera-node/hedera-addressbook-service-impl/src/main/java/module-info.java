@@ -11,8 +11,8 @@ module com.hedera.node.app.service.addressbook.impl {
     requires com.hedera.node.config;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static transitive com.github.spotbugs.annotations;
+    requires static transitive java.compiler; // javax.annotation.processing.Generated
 
     provides com.hedera.node.app.service.addressbook.AddressBookService with
             AddressBookServiceImpl;

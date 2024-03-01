@@ -187,7 +187,7 @@ public class PttTransactionPoolTest {
         try {
             final PlatformTestingToolState state = new PlatformTestingToolState();
             state.setFcmFamily(fCMFamily);
-            handler.performOperation(
+            FCMTransactionHandler.performOperation(
                     trans,
                     state,
                     expectedFCMFamily,
@@ -245,7 +245,7 @@ public class PttTransactionPoolTest {
         try {
             final PlatformTestingToolState state = new PlatformTestingToolState();
             state.setFcmFamily(fCMFamily);
-            handler.performOperation(
+            FCMTransactionHandler.performOperation(
                     trans,
                     state,
                     expectedFCMFamily,

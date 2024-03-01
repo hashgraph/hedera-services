@@ -231,6 +231,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("synchronization")
     @Override
     public Long getNextNodeToHandle() {
         if (processingHandleQueue.isEmpty()) {
@@ -304,6 +305,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("synchronization")
     @Override
     public void registerResponseForNode(final Long node, final boolean learnerHasNode) {
         final ConcurrentNodeStatusTracker.Status status = learnerHasNode

@@ -294,8 +294,8 @@ class LegacyCsvWriterTest {
                                 ,,Counter,DoubleGauge,
                                 ,,1,2.0,
                                 ,,11,12.0,
-                                				
-                                				
+
+
                                 ,,0,0.0,
                                 """);
     }

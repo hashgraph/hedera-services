@@ -25,9 +25,6 @@ public final class GenerateClassId {
 
     private GenerateClassId() {}
 
-    /**
-     * {@inheritDoc}
-     */
     public static void main(final String[] args) {
         generateAndPrintClassId();
     }
@@ -38,7 +35,7 @@ public final class GenerateClassId {
     public static void generateAndPrintClassId() {
         System.out.printf(
                 """
-						
+
 						\tprivate static final long CLASS_ID = 0x%sL;
 
 						\tprivate static final class ClassVersion {
@@ -60,7 +57,7 @@ public final class GenerateClassId {
 						\tpublic int getVersion() {
 						\t\treturn ClassVersion.ORIGINAL;
 						\t}
-							""",
+						""",
                 Long.toHexString(new Random().nextLong()));
     }
 }

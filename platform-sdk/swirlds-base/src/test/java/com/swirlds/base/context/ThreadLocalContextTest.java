@@ -57,7 +57,7 @@ public class ThreadLocalContextTest {
         context.add("key-boolean", true);
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = ThreadLocalContext.getContextMap();
         Assertions.assertEquals(6, contextMap.size());
         Assertions.assertEquals("value", contextMap.get("key-string"));
         Assertions.assertEquals("1", contextMap.get("key-int"));
@@ -78,7 +78,7 @@ public class ThreadLocalContextTest {
         context.add("key", "c");
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = ThreadLocalContext.getContextMap();
         Assertions.assertEquals(1, contextMap.size());
         Assertions.assertEquals("c", contextMap.get("key"));
     }
@@ -93,7 +93,7 @@ public class ThreadLocalContextTest {
         context.remove("key");
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = ThreadLocalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 
@@ -117,7 +117,7 @@ public class ThreadLocalContextTest {
         context.clear();
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = ThreadLocalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 
@@ -131,7 +131,7 @@ public class ThreadLocalContextTest {
         Assertions.assertDoesNotThrow(() -> closeable.close());
 
         // then
-        final Map<String, String> contextMap = context.getContextMap();
+        final Map<String, String> contextMap = ThreadLocalContext.getContextMap();
         Assertions.assertEquals(0, contextMap.size());
     }
 
@@ -147,19 +147,19 @@ public class ThreadLocalContextTest {
         final Map<String, String> mapFromExecutor1 = executor1
                 .submit(() -> {
                     context.add("key", "a1");
-                    return context.getContextMap();
+                    return ThreadLocalContext.getContextMap();
                 })
                 .get();
 
         final Map<String, String> mapFromExecutor2 = executor2
                 .submit(() -> {
                     context.add("key", "a2");
-                    return context.getContextMap();
+                    return ThreadLocalContext.getContextMap();
                 })
                 .get();
         final Map<String, String> mapFromExecutor3 = executor3
                 .submit(() -> {
-                    return context.getContextMap();
+                    return ThreadLocalContext.getContextMap();
                 })
                 .get();
 

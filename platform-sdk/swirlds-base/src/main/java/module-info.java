@@ -33,5 +33,5 @@ module com.swirlds.base {
             com.swirlds.logging.test.fixtures,
             com.swirlds.metrics.api;
 
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

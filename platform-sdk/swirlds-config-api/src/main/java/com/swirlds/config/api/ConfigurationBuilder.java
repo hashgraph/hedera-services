@@ -139,6 +139,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
+    @SuppressWarnings("unchecked")
     ConfigurationBuilder withConfigDataTypes(@NonNull Class<? extends Record>... types) throws IllegalStateException;
 
     /**

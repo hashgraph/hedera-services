@@ -22,7 +22,7 @@ import org.openjdk.jmh.annotations.Setup;
 public class CryptoBenchMerkleDb extends CryptoBench {
 
     @Setup
-    public static void setupMerkleDb() throws Exception {
+    public void setupMerkleDb() throws Exception {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.merkledb");
     }
@@ -34,8 +34,8 @@ public class CryptoBenchMerkleDb extends CryptoBench {
     }
 
     public static void main(String[] args) throws Exception {
-        CryptoBenchMerkleDb.setupMerkleDb();
         final CryptoBenchMerkleDb bench = new CryptoBenchMerkleDb();
+        bench.setupMerkleDb();
         bench.setup();
         bench.beforeTest();
         bench.transferPrefetch();

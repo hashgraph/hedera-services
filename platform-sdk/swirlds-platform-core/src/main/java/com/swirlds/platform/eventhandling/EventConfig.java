@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Configuration for event handling inside the platform.
- * <p>
  *
  * @param maxEventQueueForCons              max events that can be put in the forCons queue (q2) in
  *                                          ConsensusRoundHandler (0 for infinity)

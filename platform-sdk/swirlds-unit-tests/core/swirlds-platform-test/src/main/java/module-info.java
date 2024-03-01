@@ -8,5 +8,5 @@ open module com.swirlds.platform.test {
     requires com.swirlds.config.extensions.test.fixtures;
     requires java.desktop;
     requires org.junit.jupiter.api;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

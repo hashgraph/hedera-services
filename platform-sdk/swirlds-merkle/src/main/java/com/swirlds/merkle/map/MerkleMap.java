@@ -850,9 +850,6 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
         return getInfo().getLabel();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public void setLabel(final String label) {
         getInfo().setLabel(label);
     }

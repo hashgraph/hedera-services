@@ -4,5 +4,5 @@ module com.swirlds.state.api {
     exports com.swirlds.state.spi.metrics;
 
     requires com.hedera.pbj.runtime;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

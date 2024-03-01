@@ -20,3 +20,11 @@ plugins {
 }
 
 group = "com.hedera.hashgraph"
+
+// TODO jjohannes: remove and fix issues in services code base
+tasks.withType<Javadoc>().configureEach {
+    options {
+        this as StandardJavadocDocletOptions
+        addStringOption("Xdoclint:-html,-syntax", "-quiet")
+    }
+}

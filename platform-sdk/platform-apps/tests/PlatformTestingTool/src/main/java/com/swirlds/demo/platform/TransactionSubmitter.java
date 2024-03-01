@@ -151,7 +151,7 @@ public class TransactionSubmitter {
         if (this.goal == SUBMIT_GOAL.BYTES_PER_SECOND_PER_NODE) {
             bytesPerSecondGoal = (long) value;
         } else if (this.goal == SUBMIT_GOAL.TRANS_PER_SECOND_PER_NODE) {
-            tranPerSecondGoal = (float) value;
+            tranPerSecondGoal = value;
         } else if (this.goal == SUBMIT_GOAL.EVENTS_PER_SECOND_WHOLE_NETWORK) {
             eventsPerSecondGoal = (long) value;
         } else if (this.goal == SUBMIT_GOAL.ROUNDS_PER_SECOND_WHOLE_NETWORK) {

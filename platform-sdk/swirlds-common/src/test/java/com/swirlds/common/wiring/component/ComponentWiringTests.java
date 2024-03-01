@@ -100,7 +100,7 @@ public class ComponentWiringTests {
 
         @Override
         public void triggerCorge() {
-            runningValue *= 1.5;
+            runningValue *= (long) 1.5;
         }
 
         public long getRunningValue() {
@@ -251,7 +251,7 @@ public class ComponentWiringTests {
                 triggerQux.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             } else {
-                expectedRunningValue *= 1.5;
+                expectedRunningValue *= (long) 1.5;
                 triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
@@ -321,7 +321,7 @@ public class ComponentWiringTests {
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
             } else {
-                expectedRunningValue *= 1.5;
+                expectedRunningValue *= (long) 1.5;
                 triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
@@ -393,7 +393,7 @@ public class ComponentWiringTests {
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
             } else {
-                expectedRunningValue *= 1.5;
+                expectedRunningValue *= (long) 1.5;
                 triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }

@@ -85,8 +85,7 @@ class FCMConfigTest {
     static FCMConfig readFCMConfig(final String jsonFileName) throws IOException {
         ObjectMapper objectMapper =
                 new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        SuperConfig superConfig =
-                objectMapper.readValue(new TestUtil().resolveConfigFile(jsonFileName), SuperConfig.class);
+        SuperConfig superConfig = objectMapper.readValue(TestUtil.resolveConfigFile(jsonFileName), SuperConfig.class);
         return superConfig.getFcmConfig();
     }
 }

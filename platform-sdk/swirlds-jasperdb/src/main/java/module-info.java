@@ -42,5 +42,5 @@ open module com.swirlds.merkledb {
     requires org.apache.logging.log4j;
     requires org.eclipse.collections.api;
     requires org.eclipse.collections.impl;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

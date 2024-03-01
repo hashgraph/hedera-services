@@ -22,28 +22,16 @@ import java.util.Arrays;
 @ConstructableIgnored
 public class ImmutableHash extends Hash {
 
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash() {}
 
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash(final byte[] value) {
         super(Arrays.copyOf(value, value.length), DigestType.SHA_384);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash(final byte[] value, final DigestType digestType) {
         super(Arrays.copyOf(value, value.length), digestType);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash(final Hash mutable) {
         super(mutable);
     }
