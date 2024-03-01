@@ -117,6 +117,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
             }
         } else {
+            final var op = syntheticTransfer.cryptoTransferOrThrow();
             for (final var fungibleTransfers : op.tokenTransfersOrThrow()) {
                 TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
                         requireNonNull(tokenId),
