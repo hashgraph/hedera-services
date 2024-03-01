@@ -88,10 +88,9 @@ public class DefaultConfiguration {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create()
-                        .withConverter(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse)
-                        .withSource(mappedSettingsConfigSource);
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .withConverter(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse)
+                .withSource(mappedSettingsConfigSource);
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {
