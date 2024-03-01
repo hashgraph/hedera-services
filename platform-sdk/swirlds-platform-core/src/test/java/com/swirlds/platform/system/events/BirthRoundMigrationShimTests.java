@@ -109,8 +109,88 @@ class BirthRoundMigrationShimTests {
     }
 
     @Test
-    void barelyNonAncientEventsTest() {}
+    void barelyNonAncientEventsTest() {
+        final Random random = getRandomPrintSeed();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final BasicSoftwareVersion firstVersionInBirthRoundMode = new BasicSoftwareVersion(random.nextInt(10, 100));
+        final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
+        final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
+
+        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+                platformContext,
+                firstVersionInBirthRoundMode,
+                lastRoundBeforeBirthRoundMode,
+                lowestJudgeGenerationBeforeBirthRoundMode);
+
+        // Any event with a software version less than firstVersionInBirthRoundMode and a generation greater than
+        // or equal to lowestJudgeGenerationBeforeBirthRoundMode should have its birth round set to
+        // lastRoundBeforeBirthRoundMode.
+
+        for (int i = 0; i < 100; i++) {
+            final long birthRound = random.nextLong(100, 1000);
+            final GossipEvent event = buildEvent(
+                    random,
+                    platformContext,
+                    new BasicSoftwareVersion(
+                            firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
+                    lowestJudgeGenerationBeforeBirthRoundMode + random.nextInt(0, 10),
+                    birthRound);
+
+            assertEquals(birthRound, event.getHashedData().getBirthRound());
+            final Hash originalHash = event.getHashedData().getHash();
+
+            assertSame(event, shim.migrateEvent(event));
+            assertEquals(lastRoundBeforeBirthRoundMode, event.getHashedData().getBirthRound());
+
+            // The hash of the event should not have changed
+            event.getHashedData().invalidateHash();
+            platformContext.getCryptography().digestSync(event.getHashedData());
+            assertEquals(originalHash, event.getHashedData().getHash());
+        }
+    }
 
     @Test
-    void unmodifiedEventsTest() {}
+    void unmodifiedEventsTest() {
+        final Random random = getRandomPrintSeed();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final BasicSoftwareVersion firstVersionInBirthRoundMode = new BasicSoftwareVersion(random.nextInt(10, 100));
+        final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
+        final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
+
+        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+                platformContext,
+                firstVersionInBirthRoundMode,
+                lastRoundBeforeBirthRoundMode,
+                lowestJudgeGenerationBeforeBirthRoundMode);
+
+        // Any event with a software greater than or equal to firstVersionInBirthRoundMode should not have its birth
+        // round modified.
+
+        for (int i = 0; i < 100; i++) {
+            final long birthRound = random.nextLong(100, 1000);
+            final GossipEvent event = buildEvent(
+                    random,
+                    platformContext,
+                    new BasicSoftwareVersion(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(0, 10)),
+                    lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
+                    birthRound);
+
+            assertEquals(birthRound, event.getHashedData().getBirthRound());
+            final Hash originalHash = event.getHashedData().getHash();
+
+            assertSame(event, shim.migrateEvent(event));
+            assertEquals(birthRound, event.getHashedData().getBirthRound());
+
+            // The hash of the event should not have changed
+            event.getHashedData().invalidateHash();
+            platformContext.getCryptography().digestSync(event.getHashedData());
+            assertEquals(originalHash, event.getHashedData().getHash());
+        }
+    }
 }
