@@ -34,6 +34,7 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
@@ -47,7 +48,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
+public class GetAllowanceCall extends AbstractHtsCall {
 
     private static final String HTS_PRECOMPILE_ADDRESS = "0x167";
     private final Address owner;
@@ -55,6 +56,8 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     private final AddressIdConverter addressIdConverter;
     private final boolean isERCCall;
     private final boolean isStaticCall;
+    @Nullable
+    private final Token token;
 
     @Inject
     public GetAllowanceCall(
@@ -66,8 +69,9 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             @NonNull final Address spender,
             final boolean isERCCall,
             final boolean isStaticCall) {
-        super(gasCalculator, enhancement, token);
+        super(gasCalculator, enhancement, true);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.token = token;
         this.owner = requireNonNull(owner);
         this.spender = requireNonNull(spender);
         this.isERCCall = isERCCall;
@@ -76,12 +80,8 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
 
     @Override
     public @NonNull PricedResult execute() {
-        var gasRequirement = gasCalculator.viewGasRequirement();
-        if (token == null) {
-            return failedViewResult(INVALID_TOKEN_ID, gasRequirement);
-        }
-
-        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+        final var gasRequirement = gasCalculator.viewGasRequirement();
+        if (token == null || token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             if (isStaticCall) {
                 return gasOnly(
                         FullResult.revertResult(
@@ -98,11 +98,10 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             }
         }
 
-        ContractID contractID =
-                asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        final var contractID = asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
-        if (isStaticCall && ownerAccount == null) {
+        if (ownerAccount == null) {
             var responseCode = INVALID_ALLOWANCE_OWNER_ID;
             enhancement
                     .systemOperations()
@@ -111,27 +110,11 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
                             responseCode);
             return gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
         } else {
-            return externalizeSuccessfulResult();
+            final var spenderId = addressIdConverter.convert(spender);
+            final var allowance = getAllowance(token, ownerAccount, spenderId);
+            final var output = prepareOutput(allowance);
+            return gasOnly(successResult(output, gasRequirement), SUCCESS, true);
         }
-    }
-
-    @NonNull
-    @Override
-    protected FullResult resultOfViewingToken(@NonNull final Token token) {
-        requireNonNull(token);
-        requireNonNull(owner);
-        requireNonNull(spender);
-        final var gasRequirement = gasCalculator.viewGasRequirement();
-        final var ownerID = addressIdConverter.convert(owner);
-        final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
-        final var spenderID = addressIdConverter.convert(spender);
-        if (!spenderID.hasAccountNum() && !isStaticCall) {
-            return FullResult.successResult(
-                    ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
-        }
-        final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
-        final var output = prepareOutput(allowance);
-        return successResult(output, gasRequirement);
     }
 
     @NonNull
