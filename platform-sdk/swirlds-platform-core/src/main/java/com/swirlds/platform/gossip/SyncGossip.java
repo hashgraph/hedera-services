@@ -493,14 +493,14 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     }
 
     /**
-     * {@inheritDoc}
+     * This method is called when the node has finished a reconnect
      */
     public void resetFallenBehind() {
         syncManager.resetFallenBehind();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if we have fallen behind.
      */
     public boolean hasFallenBehind() {
         return syncManager.hasFallenBehind();
