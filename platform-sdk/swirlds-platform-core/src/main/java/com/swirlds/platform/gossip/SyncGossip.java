@@ -24,7 +24,6 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -51,7 +50,6 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
@@ -187,9 +185,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
-        final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
 
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
 
