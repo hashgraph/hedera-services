@@ -18,7 +18,9 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -89,8 +91,10 @@ public class TransferWithCustomFees extends HapiSuite {
             transferErc721WithFixedHtsCustomFees(),
             transferApprovedErc20WithFixedHbarCustomFee(),
             transferApprovedErc20WithFixedHtsCustomFeeAsOwner(),
+            transferApprovedErc20WithFixedHtsCustomFeeAsSpender(),
             transferApprovedErc721WithFixedHbarCustomFees(),
             transferApprovedErc721WithFixedHtsCustomFeesAsOwner(),
+            transferApprovedErc721WithFixedHtsCustomFeeAsSpender(),
             transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
             transferErc20WithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
             transferWithFractionalCustomFee(),
@@ -229,17 +233,21 @@ public class TransferWithCustomFees extends HapiSuite {
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
                         tokenAssociate(spender, token),
-                        cryptoTransfer(moving(1000, token).between(tokenTreasury, tokenOwner)))
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
                 .when(
                         cryptoApproveAllowance()
-                                .addTokenAllowance(tokenOwner, token, spender, 1)
+                                .addTokenAllowance(tokenOwner, token, spender, 10L)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner),
-                        cryptoTransfer(movingWithAllowance(1, token).between(tokenOwner, tokenReceiver))
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 10L)),
+                        cryptoTransfer(movingWithAllowance(1L, token).between(tokenOwner, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(spender)
                                 .signedBy(spender))
                 .then(
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 9L)),
                         getAccountBalance(tokenOwner).hasTokenBalance(token, 999),
                         getAccountBalance(spender).hasTokenBalance(token, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 1),
@@ -266,22 +274,70 @@ public class TransferWithCustomFees extends HapiSuite {
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
                         tokenAssociate(spender, token),
-                        cryptoTransfer(moving(1000L, token).between(tokenTreasury, tokenOwner)),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)),
                         cryptoTransfer(moving(200L, feeDenom).between(spender, tokenOwner)))
                 .when(
                         cryptoApproveAllowance()
-                                .addTokenAllowance(tokenOwner, token, spender, 1)
+                                .addTokenAllowance(tokenOwner, token, spender, 10L)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner),
-                        cryptoTransfer(movingWithAllowance(1, token).between(tokenOwner, tokenReceiver))
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 10L)),
+                        cryptoTransfer(movingWithAllowance(1L, token).between(tokenOwner, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(spender)
                                 .signedBy(spender))
                 .then(
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 9L)),
                         getAccountBalance(tokenOwner)
                                 .hasTokenBalance(token, 999)
                                 .hasTokenBalance(feeDenom, 200L - htsFee),
                         getAccountBalance(spender).hasTokenBalance(token, 0).hasTokenBalance(feeDenom, 800L),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(token, 1),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee));
+    }
+
+    @HapiTest
+    public HapiSpec transferApprovedErc20WithFixedHtsCustomFeeAsSpender() {
+        return defaultHapiSpec("transferApprovedErc20WithFixedHtsCustomFeeAsSpender")
+                .given(
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(spender).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(tokenTotal),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenAssociate(spender, feeDenom),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(tokenTotal)
+                                .withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
+                        tokenAssociate(tokenReceiver, token),
+                        tokenAssociate(tokenOwner, token),
+                        tokenAssociate(spender, token),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoApproveAllowance()
+                                .addTokenAllowance(tokenOwner, token, spender, 10L)
+                                .fee(ONE_HUNDRED_HBARS)
+                                .signedBy(tokenOwner)
+                                .payingWith(tokenOwner),
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 10L)),
+                        cryptoTransfer(movingWithAllowance(1L, token).between(tokenOwner, tokenReceiver))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(spender)
+                                .signedBy(spender))
+                .then(
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 9L)),
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(token, 999)
+                                .hasTokenBalance(feeDenom, tokenTotal - htsFee),
+                        getAccountBalance(spender).hasTokenBalance(token, 0).hasTokenBalance(feeDenom, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 1),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee));
     }
@@ -364,6 +420,49 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .hasTokenBalance(token, 0)
                                 .hasTokenBalance(feeDenom, 200L - htsFee),
                         getAccountBalance(spender).hasTokenBalance(token, 0).hasTokenBalance(feeDenom, 800L),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(token, 1),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee));
+    }
+
+    @HapiTest
+    public HapiSpec transferApprovedErc721WithFixedHtsCustomFeeAsSpender() {
+        return defaultHapiSpec("transferApprovedErc721WithFixedHtsCustomFeeAsSpender")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(spender).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(tokenTotal),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenAssociate(spender, feeDenom),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
+                        mintToken(token, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        tokenAssociate(tokenReceiver, token),
+                        tokenAssociate(tokenOwner, token),
+                        tokenAssociate(spender, token),
+                        cryptoTransfer(movingUnique(token, 1L).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoApproveAllowance()
+                                .addNftAllowance(tokenOwner, token, spender, false, List.of(1L))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(tokenOwner),
+                        cryptoTransfer(movingUniqueWithAllowance(token, 1L).between(tokenOwner, tokenReceiver))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(spender)
+                                .signedBy(spender))
+                .then(
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(token, 0)
+                                .hasTokenBalance(feeDenom, tokenTotal - htsFee),
+                        getAccountBalance(spender).hasTokenBalance(token, 0).hasTokenBalance(feeDenom, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 1),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee));
     }
