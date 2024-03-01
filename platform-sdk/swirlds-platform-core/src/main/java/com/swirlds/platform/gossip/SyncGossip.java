@@ -50,6 +50,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
@@ -201,7 +202,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
 
-        final SocketFactory socketFactory = socketFactory(keysAndCerts, cryptoConfig, socketConfig);
+        final SocketFactory socketFactory = NetworkUtils.createSocketFactory(
+                selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
@@ -219,7 +221,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
                 threadManager,
-                address.getListenAddressIpv4(),
                 address.getListenPort(),
                 socketFactory,
                 inboundConnectionHandler::handle);
@@ -406,29 +407,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                                             syncMetrics,
                                             platformStatusManager)))))
                     .build());
-        }
-    }
-
-    private static SocketFactory socketFactory(
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final CryptoConfig cryptoConfig,
-            @NonNull final SocketConfig socketConfig) {
-        Objects.requireNonNull(keysAndCerts);
-        Objects.requireNonNull(cryptoConfig);
-        Objects.requireNonNull(socketConfig);
-
-        if (!socketConfig.useTLS()) {
-            return new TcpFactory(socketConfig);
-        }
-        try {
-            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
-        } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
-            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
 
