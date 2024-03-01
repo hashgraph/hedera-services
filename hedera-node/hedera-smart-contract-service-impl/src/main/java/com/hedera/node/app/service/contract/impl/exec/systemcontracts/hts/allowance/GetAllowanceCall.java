@@ -21,13 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
@@ -35,7 +32,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -56,6 +52,7 @@ public class GetAllowanceCall extends AbstractHtsCall {
     private final AddressIdConverter addressIdConverter;
     private final boolean isERCCall;
     private final boolean isStaticCall;
+
     @Nullable
     private final Token token;
 
@@ -98,17 +95,13 @@ public class GetAllowanceCall extends AbstractHtsCall {
             }
         }
 
-        final var contractID = asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
-        final var ownerID = addressIdConverter.convert(owner);
-        final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
+        final var ownerId = addressIdConverter.convert(owner);
+        final var ownerAccount = nativeOperations().getAccount(ownerId);
         if (ownerAccount == null) {
-            var responseCode = INVALID_ALLOWANCE_OWNER_ID;
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID),
-                            responseCode);
-            return gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
+            return gasOnly(
+                    FullResult.revertResult(INVALID_ALLOWANCE_OWNER_ID, gasRequirement),
+                    INVALID_ALLOWANCE_OWNER_ID,
+                    true);
         } else {
             final var spenderId = addressIdConverter.convert(spender);
             final var allowance = getAllowance(token, ownerAccount, spenderId);

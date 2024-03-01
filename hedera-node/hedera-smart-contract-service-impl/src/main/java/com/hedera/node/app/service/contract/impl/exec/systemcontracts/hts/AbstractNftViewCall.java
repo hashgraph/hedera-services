@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.ordinalRevertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
@@ -71,7 +71,7 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
         final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
         if (nft == null) {
             final var status = missingNftStatus();
-            return gasOnly(revertResult(status, gasCalculator.viewGasRequirement()), status, true);
+            return gasOnly(ordinalRevertResult(status, gasCalculator.viewGasRequirement()), status, true);
         } else {
             return resultOfViewingNft(token, nft);
         }

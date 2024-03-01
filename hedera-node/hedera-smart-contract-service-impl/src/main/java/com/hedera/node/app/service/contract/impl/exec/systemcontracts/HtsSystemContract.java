@@ -128,7 +128,8 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultFailedFor(
-                                            pricedResult.fullResult().gasRequirement(),
+                                            attempt.senderId(),
+                                            pricedResult.fullResult(),
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
                                     responseCode,
