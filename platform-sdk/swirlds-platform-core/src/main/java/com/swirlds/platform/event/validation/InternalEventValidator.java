@@ -18,7 +18,6 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
@@ -27,9 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -81,8 +78,6 @@ public class InternalEventValidator {
     private final LongAccumulator identicalParentsAccumulator;
     private final LongAccumulator invalidGenerationAccumulator;
     private final LongAccumulator invalidBirthRoundAccumulator;
-
-    private final AncientMode ancientMode;
 
     /**
      * Constructor
@@ -154,11 +149,6 @@ public class InternalEventValidator {
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidBirthRound")
                         .withDescription("Events with an invalid birth round")
                         .withUnit("events"));
-
-        this.ancientMode = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .getAncientMode();
     }
 
     /**
@@ -231,14 +221,6 @@ public class InternalEventValidator {
                 inconsistentSelfParentAccumulator.update(1);
                 return false;
             }
-            if (selfParent.getBirthRound() < ROUND_FIRST) {
-                inconsistentSelfParentLogger.error(
-                        EXCEPTION.getMarker(),
-                        "Event %s has self parent with birth round less than the ROUND_FIRST. self-parent birth round: %s"
-                                .formatted(event, selfParent.getBirthRound()));
-                inconsistentSelfParentAccumulator.update(1);
-                return false;
-            }
         }
 
         for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
@@ -246,14 +228,6 @@ public class InternalEventValidator {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with generation less than the FIRST_GENERATION. other-parent: %s"
-                                .formatted(event, otherParent));
-                inconsistentOtherParentAccumulator.update(1);
-                return false;
-            }
-            if (otherParent.getBirthRound() < ROUND_FIRST) {
-                inconsistentOtherParentLogger.error(
-                        EXCEPTION.getMarker(),
-                        "Event %s has other parent with birth round less than the ROUND_FIRST. other-parent: %s"
                                 .formatted(event, otherParent));
                 inconsistentOtherParentAccumulator.update(1);
                 return false;
@@ -322,15 +296,6 @@ public class InternalEventValidator {
      */
     private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
         final long eventBirthRound = event.getDescriptor().getBirthRound();
-
-        if (eventBirthRound < ROUND_FIRST) {
-            invalidBirthRoundLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has an invalid birth round. Event birth round: %s, the min birth round is: %s"
-                            .formatted(event, eventBirthRound, ROUND_FIRST));
-            invalidBirthRoundAccumulator.update(1);
-            return false;
-        }
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
         final EventDescriptor parent = event.getHashedData().getSelfParent();
