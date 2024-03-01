@@ -384,7 +384,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
-                .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                .withUnhandledTaskMetricEnabled(true)
                 .build()
                 .cast();
         final BindableInputWire<Integer, Void> channel = taskScheduler.buildInputWire("channel");
@@ -1847,30 +1847,26 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
-                .withMetricsBuilder(model.metricsBuilder()
-                        .withBusyFractionMetricsEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true))
+                .withBusyFractionMetricsEnabled(true)
+                .withUnhandledTaskMetricEnabled(true)
                 .build()
                 .cast();
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
-                .withMetricsBuilder(model.metricsBuilder()
-                        .withBusyFractionMetricsEnabled(true)
-                        .withUnhandledTaskMetricEnabled(false))
+                .withBusyFractionMetricsEnabled(true)
+                .withUnhandledTaskMetricEnabled(false)
                 .build()
                 .cast();
         final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
-                .withMetricsBuilder(model.metricsBuilder()
-                        .withBusyFractionMetricsEnabled(false)
-                        .withUnhandledTaskMetricEnabled(true))
+                .withBusyFractionMetricsEnabled(false)
+                .withUnhandledTaskMetricEnabled(true)
                 .build()
                 .cast();
         final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(type)
-                .withMetricsBuilder(model.metricsBuilder()
-                        .withBusyFractionMetricsEnabled(false)
-                        .withUnhandledTaskMetricEnabled(false))
+                .withBusyFractionMetricsEnabled(false)
+                .withUnhandledTaskMetricEnabled(false)
                 .build()
                 .cast();
 

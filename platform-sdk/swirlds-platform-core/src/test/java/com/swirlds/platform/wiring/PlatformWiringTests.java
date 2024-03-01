@@ -19,7 +19,6 @@ package com.swirlds.platform.wiring;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -59,7 +58,7 @@ class PlatformWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
+        final PlatformWiring wiring = new PlatformWiring(platformContext);
 
         wiring.bind(
                 mock(EventHasher.class),

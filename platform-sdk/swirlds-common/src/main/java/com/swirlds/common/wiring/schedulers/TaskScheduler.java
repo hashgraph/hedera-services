@@ -19,7 +19,6 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;

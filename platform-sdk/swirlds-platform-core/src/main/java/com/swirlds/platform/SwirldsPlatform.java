@@ -468,7 +468,7 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
-        platformWiring = components.add(new PlatformWiring(platformContext, time));
+        platformWiring = components.add(new PlatformWiring(platformContext));
 
         final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
 

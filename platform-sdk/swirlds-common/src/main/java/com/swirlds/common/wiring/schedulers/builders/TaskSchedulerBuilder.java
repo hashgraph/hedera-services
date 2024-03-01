@@ -18,8 +18,11 @@ package com.swirlds.common.wiring.schedulers.builders;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
+import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
@@ -56,7 +59,6 @@ public class TaskSchedulerBuilder<O> {
 
     private TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     private final String name;
-    private TaskSchedulerMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
     private boolean squelchingEnabled = false;
@@ -66,20 +68,29 @@ public class TaskSchedulerBuilder<O> {
     private ForkJoinPool pool;
     private UncaughtExceptionHandler uncaughtExceptionHandler;
 
+    private boolean unhandledTaskMetricEnabled = false;
+    private boolean busyFractionMetricEnabled = false;
+
     private Duration sleepDuration = Duration.ofNanos(100);
+
+    private final PlatformContext platformContext;
 
     /**
      * Constructor.
      *
-     * @param model       the wiring model
-     * @param name        the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only
-     *                    contain alphanumeric characters and underscores.
-     * @param defaultPool the default fork join pool, if none is provided then this pool will be used
+     * @param platformContext the platform context
+     * @param model           the wiring model
+     * @param name            the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only
+     *                        contain alphanumeric characters and underscores.
+     * @param defaultPool     the default fork join pool, if none is provided then this pool will be used
      */
     public TaskSchedulerBuilder(
+            @NonNull final PlatformContext platformContext,
             @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final ForkJoinPool defaultPool) {
+
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
@@ -96,12 +107,35 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
+     * Configure this task scheduler with values from settings.
+     *
+     * @param configuration the configuration
+     * @return this
+     */
+    public TaskSchedulerBuilder<O> configure(@NonNull final TaskSchedulerConfiguration configuration) {
+        if (configuration.type() != null) {
+            withType(configuration.type());
+        }
+        if (configuration.unhandledTaskCapacity() != null) {
+            withUnhandledTaskCapacity(configuration.unhandledTaskCapacity());
+        }
+        if (configuration.unhandledTaskMetricEnabled() != null) {
+            withUnhandledTaskMetricEnabled(configuration.unhandledTaskMetricEnabled());
+        }
+        if (configuration.busyFractionMetricEnabled() != null) {
+            withBusyFractionMetricsEnabled(configuration.busyFractionMetricEnabled());
+        }
+        return this;
+    }
+
+    /**
      * Set the type of task scheduler to build. Alters the semantics of the scheduler (i.e. this is not just an internal
      * implementation detail).
      *
      * @param type the type of task scheduler to build
      * @return this
      */
+    @NonNull
     public TaskSchedulerBuilder<O> withType(@NonNull final TaskSchedulerType type) {
         this.type = Objects.requireNonNull(type);
         return this;
@@ -204,14 +238,28 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
-     * Provide a builder for metrics. If none is provided then no metrics will be enabled.
+     * Set whether the unhandled task count metric should be enabled. Default false.
      *
-     * @param metricsBuilder the metrics builder
+     * @param enabled true if the unhandled task count metric should be enabled, false otherwise
      * @return this
      */
     @NonNull
-    public TaskSchedulerBuilder<O> withMetricsBuilder(@NonNull final TaskSchedulerMetricsBuilder metricsBuilder) {
-        this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
+    public TaskSchedulerBuilder<O> withUnhandledTaskMetricEnabled(final boolean enabled) {
+        this.unhandledTaskMetricEnabled = enabled;
+        return this;
+    }
+
+    /**
+     * Set whether the busy fraction metric should be enabled. Default false.
+     * <p>
+     * Note: this metric is currently only compatible with non-concurrent task scheduler implementations. At a future
+     * time this metric may be updated to work with concurrent scheduler implementations.
+     *
+     * @param enabled true if the busy fraction metric should be enabled, false otherwise
+     * @return this
+     */
+    public TaskSchedulerBuilder<O> withBusyFractionMetricsEnabled(final boolean enabled) {
+        this.busyFractionMetricEnabled = enabled;
         return this;
     }
 
@@ -305,8 +353,7 @@ public class TaskSchedulerBuilder<O> {
 
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
-        } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
-                || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
+        } else if (unhandledTaskMetricEnabled || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {
             innerCounter = null;
@@ -322,13 +369,42 @@ public class TaskSchedulerBuilder<O> {
      */
     @NonNull
     private FractionalTimer buildBusyTimer() {
-        if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
+        if (!busyFractionMetricEnabled) {
             return NoOpFractionalTimer.getInstance();
         }
         if (type == TaskSchedulerType.CONCURRENT) {
             throw new IllegalStateException("Busy fraction metric is not compatible with concurrent schedulers");
         }
-        return metricsBuilder.buildBusyTimer();
+        return new StandardFractionalTimer(platformContext.getTime());
+    }
+
+    /**
+     * Register all configured metrics.
+     *
+     * @param unhandledTaskCounter the counter that is used to track the number of scheduled tasks
+     */
+    private void registerMetrics(
+            @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
+
+        // TODO before merging check JRS metrics to make sure everything still works as expected
+
+        if (unhandledTaskMetricEnabled) {
+            Objects.requireNonNull(unhandledTaskCounter);
+
+            final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
+                            "platform", name + "_unhandled_task_count", Long.class, unhandledTaskCounter::getCount)
+                    .withDescription(
+                            "The number of scheduled tasks that have not been fully handled for the scheduler " + name);
+            platformContext.getMetrics().getOrCreate(config);
+        }
+
+        if (busyFractionMetricEnabled) {
+            busyFractionTimer.registerMetric(
+                    platformContext.getMetrics(),
+                    "platform",
+                    name + "_busy_fraction",
+                    "Fraction (out of 1.0) of time spent processing tasks for the task scheduler " + name);
+        }
     }
 
     /**
@@ -341,9 +417,7 @@ public class TaskSchedulerBuilder<O> {
         final Counters counters = buildCounters();
         final FractionalTimer busyFractionTimer = buildBusyTimer();
 
-        if (metricsBuilder != null) {
-            metricsBuilder.registerMetrics(name, counters.onRamp());
-        }
+        registerMetrics(counters.onRamp(), busyFractionTimer);
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 

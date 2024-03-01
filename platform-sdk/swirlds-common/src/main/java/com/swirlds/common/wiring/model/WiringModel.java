@@ -18,11 +18,9 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -38,16 +36,12 @@ public interface WiringModel extends Startable, Stoppable {
      * Build a new wiring model instance.
      *
      * @param platformContext the platform context
-     * @param time            provides wall clock time
      * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      * @return a new wiring model instance
      */
     @NonNull
-    static WiringModel create(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final ForkJoinPool defaultPool) {
-        return new StandardWiringModel(platformContext.getMetrics(), time, defaultPool);
+    static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
+        return new StandardWiringModel(platformContext, defaultPool);
     }
 
     /**
@@ -60,16 +54,6 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @NonNull
     <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name);
-
-    /**
-     * Get a new task scheduler metrics builder. Can be passed to
-     * {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to add metrics to the task
-     * scheduler.
-     *
-     * @return a new task scheduler metrics builder
-     */
-    @NonNull
-    TaskSchedulerMetricsBuilder metricsBuilder();
 
     /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,

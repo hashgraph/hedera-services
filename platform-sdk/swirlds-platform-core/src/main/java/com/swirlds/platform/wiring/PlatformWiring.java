@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.notification.NotificationEngine;
@@ -145,9 +144,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Constructor.
      *
      * @param platformContext the platform context
-     * @param time            provides wall clock time
      */
-    public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    public PlatformWiring(@NonNull final PlatformContext platformContext) {
 
         final PlatformSchedulersConfig schedulersConfig =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
@@ -158,7 +156,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
-        model = WiringModel.create(platformContext, time, defaultPool);
+        model = WiringModel.create(platformContext, defaultPool);
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
