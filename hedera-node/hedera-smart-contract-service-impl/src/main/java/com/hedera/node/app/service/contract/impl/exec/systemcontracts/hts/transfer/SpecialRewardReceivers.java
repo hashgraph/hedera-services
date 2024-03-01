@@ -21,7 +21,9 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -32,13 +34,15 @@ public class SpecialRewardReceivers {
     public static final SpecialRewardReceivers SPECIAL_REWARD_RECEIVERS = new SpecialRewardReceivers();
 
     /**
-     * Adds any special reward receivers to the given frame for the given
-     * {@link CryptoTransferTransactionBody}.
+     * Adds any special reward receivers to the given frame for the given {@link CryptoTransferTransactionBody}.
      *
      * @param frame the frame to add to
      * @param body the body to inspect
      */
-    public void addInFrame(@NonNull final MessageFrame frame, @NonNull final CryptoTransferTransactionBody body) {
+    public void addInFrame(
+            @NonNull final MessageFrame frame,
+            @NonNull final CryptoTransferTransactionBody body,
+            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         final var recordBuilder = recordBuilderFor(frame);
         body.transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(emptyList())
@@ -52,5 +56,7 @@ public class SpecialRewardReceivers {
                 recordBuilder.trackExplicitRewardSituation(transfer.receiverAccountIDOrThrow());
             });
         });
+        assessedCustomFees.forEach(
+                fee -> recordBuilder.trackExplicitRewardSituation(fee.feeCollectorAccountIdOrThrow()));
     }
 }

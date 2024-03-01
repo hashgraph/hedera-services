@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -75,7 +76,7 @@ class SpecialRewardReceiversTest {
                                         .build()))
                         .build())
                 .build();
-        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body);
+        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body, List.of());
 
         verify(recordBuilder).trackExplicitRewardSituation(A_NEW_ACCOUNT_ID);
         verify(recordBuilder).trackExplicitRewardSituation(B_NEW_ACCOUNT_ID);
@@ -88,7 +89,7 @@ class SpecialRewardReceiversTest {
                         .nftTransfers(new NftTransfer(A_NEW_ACCOUNT_ID, B_NEW_ACCOUNT_ID, 123L, true))
                         .build())
                 .build();
-        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body);
+        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body, List.of());
 
         verify(recordBuilder).trackExplicitRewardSituation(A_NEW_ACCOUNT_ID);
         verify(recordBuilder).trackExplicitRewardSituation(B_NEW_ACCOUNT_ID);
@@ -107,9 +108,20 @@ class SpecialRewardReceiversTest {
                                         .build()))
                         .build())
                 .build();
-        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body);
+        SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body, List.of());
 
         verify(recordBuilder).trackExplicitRewardSituation(A_NEW_ACCOUNT_ID);
         verify(recordBuilder).trackExplicitRewardSituation(B_NEW_ACCOUNT_ID);
+    }
+
+    @Test
+    void tracksFeeCollectionAccounts() {
+        SPECIAL_REWARD_RECEIVERS.addInFrame(
+                frame,
+                CryptoTransferTransactionBody.DEFAULT,
+                List.of(AssessedCustomFee.newBuilder()
+                        .feeCollectorAccountId(A_NEW_ACCOUNT_ID)
+                        .build()));
+        verify(recordBuilder).trackExplicitRewardSituation(A_NEW_ACCOUNT_ID);
     }
 }

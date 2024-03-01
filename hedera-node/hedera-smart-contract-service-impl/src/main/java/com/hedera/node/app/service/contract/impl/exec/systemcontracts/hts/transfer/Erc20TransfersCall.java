@@ -125,7 +125,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                         enhancement.nativeOperations().readableAccountStore(),
                         frame);
             }
-            specialRewardReceivers.addInFrame(frame, op);
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
