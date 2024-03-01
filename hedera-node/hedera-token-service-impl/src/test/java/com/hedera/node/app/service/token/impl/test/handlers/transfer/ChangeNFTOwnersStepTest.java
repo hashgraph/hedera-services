@@ -53,7 +53,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
@@ -128,7 +128,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         transferContext = new TransferContextImpl(handleContext);
 
         final var receiver = asAccount(tokenReceiver);
@@ -197,7 +197,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();

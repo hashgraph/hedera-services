@@ -314,7 +314,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
-        steps.add(new AssociateTokenRecipientsStep(op));
+        steps.add(new AssociateTokenRecipientsStep(op, topLevelPayer));
         // Step 2: Charge custom fees for token transfers
         final var customFeeStep = new CustomFeeAssessmentStep(op);
         // The below steps should be doe for both custom fee assessed transaction in addition to
@@ -322,7 +322,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
 
         for (final var txn : customFeeAssessedOps) {
-            steps.add(new AssociateTokenRecipientsStep(txn));
+            steps.add(new AssociateTokenRecipientsStep(txn, topLevelPayer));
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
             steps.add(assessHbarTransfers);

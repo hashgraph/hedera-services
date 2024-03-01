@@ -52,7 +52,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
@@ -85,7 +85,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         givenTxnWithAllowances();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
@@ -125,7 +125,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
@@ -155,7 +155,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
