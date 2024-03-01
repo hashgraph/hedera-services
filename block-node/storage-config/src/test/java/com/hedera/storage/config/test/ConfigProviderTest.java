@@ -16,10 +16,4 @@
 
 package com.hedera.storage.config.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-class ConfigProviderTest {
-
-}
+class ConfigProviderTest {}

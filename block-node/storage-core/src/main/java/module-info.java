@@ -15,12 +15,9 @@ module com.hedera.storage.core {
     requires transitive com.hedera.storage.state;
     requires transitive com.hedera.storage.config;
     requires transitive com.hedera.node.hapi;
-
     requires org.apache.logging.log4j;
     requires grpc.netty;
     requires grpc.stub;
-
     requires com.swirlds.config.extensions;
-
     requires static com.github.spotbugs.annotations;
 }

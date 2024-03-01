@@ -16,17 +16,17 @@
 
 package com.hedera.storage.core.test;
 
-//import static org.junit.jupiter.api.Assertions.assertNotNull;
+// import static org.junit.jupiter.api.Assertions.assertNotNull;
 //
-//import com.hedera.storage.core.BlockNodeServer;
-//import org.junit.jupiter.api.Test;
+// import com.hedera.storage.core.BlockNodeServer;
+// import org.junit.jupiter.api.Test;
 
 class BlockNodeTest {
 
-//    private final BlockNodeServer subject = new BlockNodeServer();
+    //    private final BlockNodeServer subject = new BlockNodeServer();
 
-//    @Test
+    //    @Test
     void expectBlockNodeNotNull() {
-//        assertNotNull(subject);
+        //        assertNotNull(subject);
     }
 }

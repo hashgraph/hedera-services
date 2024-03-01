@@ -29,10 +29,8 @@ public class ConfigProvider {
     public final Configuration configuration;
 
     public ConfigProvider() {
-        final var builder = ConfigurationBuilder.create()
-                .withConfigDataType(BlockNodeGrpcConfig.class);
+        final var builder = ConfigurationBuilder.create().withConfigDataType(BlockNodeGrpcConfig.class);
 
         this.configuration = builder.build();
     }
-
 }
