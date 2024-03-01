@@ -76,7 +76,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.services.cli;
+            com.hedera.node.services.cli,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.exports to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.records;

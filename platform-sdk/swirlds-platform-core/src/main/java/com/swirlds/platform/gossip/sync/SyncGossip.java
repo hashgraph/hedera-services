@@ -270,14 +270,6 @@ public class SyncGossip extends AbstractGossip {
      * {@inheritDoc}
      */
     @Override
-    protected boolean unidirectionalConnectionsEnabled() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void stop() {
         super.stop();
         gossipHalted.set(true);
