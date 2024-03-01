@@ -412,14 +412,15 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         t.complete();
                         curStackPath++;
                     }
-                    /*
-                       It may happen that curPath is actually in the same chunk as lastPathInCurStackChunk.
-                       In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which all
-                       existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
-                       processed only after the last leaf (in the loop to set null data for all tasks remaining in the map),
-                        despite these tasks being known to be clear.
-                    */
-                    if (curPath < lastPathInCurStackChunk) {
+
+                    //  It may happen that curPath is actually in the same chunk as stack[curRank].
+                    //  In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which all
+                    //  existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
+                    //  processed only after the last leaf (in the loop to set null data for all tasks remaining in the
+                    // map),
+                    //   despite these tasks being known to be clear.
+
+                    if (curPath > curStackPath && curPath < lastPathInCurStackChunk) {
                         stack[curRank] = curPath + 1;
                     } else {
                         stack[curRank] = INVALID_PATH;
