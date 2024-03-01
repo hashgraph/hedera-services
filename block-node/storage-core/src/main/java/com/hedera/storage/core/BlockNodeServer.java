@@ -1,5 +1,6 @@
 package com.hedera.storage.core;
-
+import com.hedera.storage.config.ConfigProvider;
+import com.hedera.storage.config.data.BlockNodeGrpcConfig;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -12,9 +13,12 @@ public class BlockNodeServer {
     private final int port;
     private final Server server;
 
-    public BlockNodeServer(ServerBuilder builder, int port) {
-        this.port = port;
-        this.server = builder
+    public BlockNodeServer() {
+        final var configProvider = new ConfigProvider();
+        final var blockNodeConfig = configProvider.configuration.getConfigData(BlockNodeGrpcConfig.class);
+
+        this.port = blockNodeConfig.port();
+        this.server = ServerBuilder.forPort(port)
                 .addService(new BlockNodeService())
                 .build();
     }
@@ -32,7 +36,8 @@ public class BlockNodeServer {
 
     public static void main(final String... args) {
         logger.info("BlockNode - Main");
-        BlockNodeServer server = new BlockNodeServer(ServerBuilder.forPort(50601), 50601);
+        BlockNodeServer server = new BlockNodeServer();
+
         try {
             server.start();
             server.blockUntilShutdown();
