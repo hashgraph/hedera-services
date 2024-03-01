@@ -46,9 +46,9 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String FILE_NAME_PROPERTY = "%s.file";
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
+    private static final int BUFFER_CAPACITY = 8192 * 8;
     private final OutputStream writer;
     private final LineBasedFormat format;
-    private static final int BUFFER_CAPACITY = 8192 * 4;
 
     /**
      * Creates a new file handler.

@@ -37,6 +37,7 @@ import java.io.OutputStream;
  */
 public class ConsoleHandler extends AbstractSyncedHandler {
 
+    private static final int BUFFER_CAPACITY = 8192;
     private final LineBasedFormat format;
     private final OutputStream outputStream;
 
@@ -49,13 +50,13 @@ public class ConsoleHandler extends AbstractSyncedHandler {
     public ConsoleHandler(
             @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered) {
         super(handlerName, configuration);
-        format = LineBasedFormat.createForHandler(handlerName, configuration);
-        this.outputStream = buffered ? new BufferedOutputStream(System.out, 1024) : System.out;
+        this.format = LineBasedFormat.createForHandler(handlerName, configuration);
+        this.outputStream = buffered ? new BufferedOutputStream(System.out, BUFFER_CAPACITY) : System.out;
     }
 
     /**
-     * Handles a log event by printing it to the console using the {@link LineBasedFormat}, followed by flushing the
-     * console output.
+     * Handles a log event by printing it to the console using the {@link LineBasedFormat}. May be buffered and not
+     * immediately flushed.
      *
      * @param event The log event to be printed.
      */
@@ -71,8 +72,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
     }
 
     /**
-     * Implementations can override this method to handle the stop and finalize of the handler. The method will be
-     * called synchronously to the handling of log events.
+     * {@inheritDoc}
      */
     @Override
     protected void handleStopAndFinalize() {
