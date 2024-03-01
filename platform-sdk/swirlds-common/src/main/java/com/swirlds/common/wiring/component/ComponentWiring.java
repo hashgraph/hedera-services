@@ -141,7 +141,15 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             return (InputWire<INPUT_TYPE>) inputWires.get(method);
         }
 
-        final BindableInputWire<INPUT_TYPE, OUTPUT_TYPE> inputWire = scheduler.buildInputWire(method.getName());
+        final String label;
+        final InputWireLabel inputWireLabel = method.getAnnotation(InputWireLabel.class);
+        if (inputWireLabel == null) {
+            label = method.getName();
+        } else {
+            label = inputWireLabel.value();
+        }
+
+        final BindableInputWire<INPUT_TYPE, OUTPUT_TYPE> inputWire = scheduler.buildInputWire(label);
         inputWires.put(method, (BindableInputWire<Object, Object>) inputWire);
 
         if (component == null) {

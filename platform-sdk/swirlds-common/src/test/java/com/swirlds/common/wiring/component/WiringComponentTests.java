@@ -37,6 +37,7 @@ public class WiringComponentTests {
     private interface FooBarBaz {
         Long handleFoo(@NonNull Integer foo);
 
+        @InputWireLabel("bar")
         Long handleBar(@NonNull Boolean bar);
 
         void handleBaz(@NonNull String baz);
@@ -91,13 +92,16 @@ public class WiringComponentTests {
         }
 
         final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        assertEquals("handleFoo", fooInput.getName());
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        assertEquals("bar", barInput.getName());
 
         if (bindLocation == 1) {
             fooBarBazWiring.bind(fooBarBazImpl);
         }
 
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+        assertEquals("handleBaz", bazInput.getName());
         final OutputWire<Long> output = fooBarBazWiring.getOutputWire();
 
         if (bindLocation == 2) {
