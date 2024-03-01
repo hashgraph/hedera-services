@@ -48,11 +48,11 @@ class ConnectionServerTest {
                 .when(serverSocket)
                 .accept();
         final SocketFactory socketFactory = mock(SocketFactory.class);
-        doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(any(), anyInt());
+        doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
         final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
 
         final ConnectionServer server =
-                new ConnectionServer(getStaticThreadManager(), null, 0, socketFactory, connectionHandler::set);
+                new ConnectionServer(getStaticThreadManager(), 0, socketFactory, connectionHandler::set);
 
         server.run();
         Assertions.assertSame(
