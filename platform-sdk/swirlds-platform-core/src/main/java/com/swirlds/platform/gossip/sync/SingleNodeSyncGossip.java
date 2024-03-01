@@ -96,14 +96,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected boolean unidirectionalConnectionsEnabled() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
