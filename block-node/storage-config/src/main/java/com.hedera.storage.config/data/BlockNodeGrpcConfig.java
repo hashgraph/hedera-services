@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.hedera.storage.config.data;
 
-import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;
@@ -32,8 +31,8 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("blockNodeGrpc")
 public record BlockNodeGrpcConfig(
-        @ConfigProperty(defaultValue = "50601") @Min(0) @Max(65535) @NodeProperty int port,
-        @ConfigProperty(defaultValue = "50602") @Min(0) @Max(65535) @NodeProperty int tlsPort) {
+        @ConfigProperty(defaultValue = "50601") @Min(0) @Max(65535) int port,
+        @ConfigProperty(defaultValue = "50602") @Min(0) @Max(65535) int tlsPort) {
 
     public BlockNodeGrpcConfig {
         if (port == tlsPort && port != 0) {

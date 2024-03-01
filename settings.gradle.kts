@@ -124,6 +124,7 @@ include(":storage-filesystem-local", "block-node/storage-filesystem-local")
 include(":storage-filesystem-s3", "block-node/storage-filesystem-s3")
 include(":storage-grpc-api", "block-node/storage-grpc-api")
 include(":storage-state", "block-node/storage-state")
+include(":storage-config", "block-node/storage-config")
 
 fun include(name: String, path: String) {
     include(name)

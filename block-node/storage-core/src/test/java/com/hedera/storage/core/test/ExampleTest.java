@@ -16,60 +16,51 @@
 
 package com.hedera.storage.core.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-import com.hedera.hapi.node.base.AccountID;
-//import com.hedera.storage.core.Example;
-import com.hedera.storage.core.spi.DummyCoreSpi;
-import com.hedera.storage.filesystem.api.DummyFileSystemApi;
-import com.hedera.storage.grpc.api.DummyGrpcApi;
-import org.junit.jupiter.api.Test;
+// import com.hedera.storage.core.Example;
 
 class ExampleTest {
 
-//    @Test
-//    void exampleNullCheck() {
-//        final Example example = null;
-//        assertNull(example);
-//    }
-//
-//    @Test
-//    void exampleSpiNullCheck() {
-//        final Example example = new Example() {
-//            @Override
-//            public AccountID accountIdFrom(byte[] bytes) {
-//                return null;
-//            }
-//
-//            @Override
-//            public DummyCoreSpi spi() {
-//                return null;
-//            }
-//
-//            @Override
-//            public DummyGrpcApi grpcApi() {
-//                return null;
-//            }
-//
-//            @Override
-//            public DummyFileSystemApi fileSystemApi() {
-//                return localFileSystem();
-//            }
-//        };
-//
-//        assertNotNull(example);
-//        assertNull(example.spi());
-//        assertNull(example.grpcApi());
-//        assertNotNull(example.fileSystemApi());
-//        assertNotNull(example.localFileSystem());
-//        assertNotNull(example.s3FileSystem());
-//        assertNotNull(example.newState());
-//
-//        assertNull(example.newState().applicationState());
-//        assertDoesNotThrow(example.fileSystemApi()::doSomething);
-//        assertDoesNotThrow(example.s3FileSystem()::doSomething);
-//        assertDoesNotThrow(example.localFileSystem()::doSomething);
-//    }
+    //    @Test
+    //    void exampleNullCheck() {
+    //        final Example example = null;
+    //        assertNull(example);
+    //    }
+    //
+    //    @Test
+    //    void exampleSpiNullCheck() {
+    //        final Example example = new Example() {
+    //            @Override
+    //            public AccountID accountIdFrom(byte[] bytes) {
+    //                return null;
+    //            }
+    //
+    //            @Override
+    //            public DummyCoreSpi spi() {
+    //                return null;
+    //            }
+    //
+    //            @Override
+    //            public DummyGrpcApi grpcApi() {
+    //                return null;
+    //            }
+    //
+    //            @Override
+    //            public DummyFileSystemApi fileSystemApi() {
+    //                return localFileSystem();
+    //            }
+    //        };
+    //
+    //        assertNotNull(example);
+    //        assertNull(example.spi());
+    //        assertNull(example.grpcApi());
+    //        assertNotNull(example.fileSystemApi());
+    //        assertNotNull(example.localFileSystem());
+    //        assertNotNull(example.s3FileSystem());
+    //        assertNotNull(example.newState());
+    //
+    //        assertNull(example.newState().applicationState());
+    //        assertDoesNotThrow(example.fileSystemApi()::doSomething);
+    //        assertDoesNotThrow(example.s3FileSystem()::doSomething);
+    //        assertDoesNotThrow(example.localFileSystem()::doSomething);
+    //    }
 }
