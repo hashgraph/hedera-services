@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -88,7 +89,9 @@ public class DefaultConfiguration {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create().withSource(mappedSettingsConfigSource);
+                ConfigurationBuilder.create()
+                        .withConverter(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse)
+                        .withSource(mappedSettingsConfigSource);
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {

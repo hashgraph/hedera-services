@@ -122,10 +122,7 @@ public record PlatformSchedulers(
                         .build()
                         .cast(),
                 model.schedulerBuilder("internalEventValidator")
-                        .withType(config.internalEventValidatorSchedulerType())
-                        .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
+                        .configure(config.internalEventValidator())
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")

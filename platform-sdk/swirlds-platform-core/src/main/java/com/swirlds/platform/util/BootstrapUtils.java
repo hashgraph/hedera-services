@@ -36,6 +36,7 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.StackTrace;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -163,6 +164,9 @@ public final class BootstrapUtils {
                 .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(ProtocolConfig.class);
+
+        // Load Converters
+        configurationBuilder.withConverter(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse);
     }
 
     /**

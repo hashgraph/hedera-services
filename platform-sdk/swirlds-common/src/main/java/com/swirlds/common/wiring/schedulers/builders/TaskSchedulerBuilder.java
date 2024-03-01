@@ -125,6 +125,12 @@ public class TaskSchedulerBuilder<O> {
         if (configuration.busyFractionMetricEnabled() != null) {
             withBusyFractionMetricsEnabled(configuration.busyFractionMetricEnabled());
         }
+        if (configuration.flushingEnabled() != null) {
+            withFlushingEnabled(configuration.flushingEnabled());
+        }
+        if (configuration.squelchingEnabled() != null) {
+            withSquelchingEnabled(configuration.squelchingEnabled());
+        }
         return this;
     }
 
