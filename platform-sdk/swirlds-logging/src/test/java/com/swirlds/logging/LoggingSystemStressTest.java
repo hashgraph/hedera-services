@@ -109,7 +109,7 @@ public class LoggingSystemStressTest {
         final String fileHandlerName = "file";
         final Configuration configuration = prepareConfiguration(logFile, fileHandlerName);
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final FileHandler handler = new FileHandler(fileHandlerName, configuration);
+        final FileHandler handler = new FileHandler(fileHandlerName, configuration, true);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
         loggingSystem.addHandler(handler);
         loggingSystem.addHandler(mirror);

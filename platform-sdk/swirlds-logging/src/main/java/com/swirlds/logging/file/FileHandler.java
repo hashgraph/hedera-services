@@ -47,7 +47,7 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String APPEND_PROPERTY = "%s.append";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
     private static final int BUFFER_CAPACITY = 8192 * 8;
-    private final OutputStream writer;
+    private final OutputStream outputStream;
     private final LineBasedFormat format;
 
     /**
@@ -55,8 +55,10 @@ public class FileHandler extends AbstractSyncedHandler {
      *
      * @param handlerName   the unique handler name
      * @param configuration the configuration
+     * @param buffered      if true a buffer is used in between the file writing
      */
-    public FileHandler(@NonNull final String handlerName, @NonNull final Configuration configuration)
+    public FileHandler(
+            @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered)
             throws IOException {
         super(handlerName, configuration);
 
@@ -73,8 +75,9 @@ public class FileHandler extends AbstractSyncedHandler {
                 throw new IOException("Log file exist and is not writable or is not append mode");
             }
             Files.createDirectories(filePath.getParent());
-            final OutputStream outputStream = new FileOutputStream(filePath.toFile(), append);
-            this.writer = new BufferedOutputStream(outputStream, BUFFER_CAPACITY);
+            final OutputStream fileOutputStream = new FileOutputStream(filePath.toFile(), append);
+            this.outputStream =
+                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
         } catch (IOException e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
@@ -90,7 +93,7 @@ public class FileHandler extends AbstractSyncedHandler {
         final StringBuilder writer = new StringBuilder(4 * 1024);
         format.print(writer, event);
         try {
-            this.writer.write(writer.toString().getBytes(StandardCharsets.UTF_8));
+            this.outputStream.write(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file output stream", exception);
         }
@@ -103,7 +106,7 @@ public class FileHandler extends AbstractSyncedHandler {
     protected void handleStopAndFinalize() {
         super.handleStopAndFinalize();
         try {
-            writer.flush();
+            outputStream.flush();
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
         }

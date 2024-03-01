@@ -19,11 +19,10 @@ package com.swirlds.logging.api.internal.format;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.TimeZone;
 
 public class DateFormatUtils {
 
@@ -38,10 +37,9 @@ public class DateFormatUtils {
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
 
-    private static final ConcurrentDateFormat DATE_FORMAT =
-            new ConcurrentDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US, TimeZone.getTimeZone("UTC"));
+    public static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
 
-    private static String getFiller(final int length) {
+    private static @NonNull String getFiller(final int length) {
         if (length == 0) {
             return "";
         } else if (length == 1) {
@@ -101,16 +99,15 @@ public class DateFormatUtils {
         }
     }
 
-    public static String timestampAsString(long timestamp) {
+    public static @NonNull String timestampAsString(long timestamp) {
         try {
             final StringBuilder sb = new StringBuilder(26);
             sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
-            // sb.append(DATE_FORMAT.format(timestamp));
             sb.append(getFiller(26 - sb.length()));
             return sb.toString();
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
-            return "BROKEN-TIMESTAMP          ";
+            return BROKEN_TIMESTAMP;
         }
     }
 }

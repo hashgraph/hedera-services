@@ -47,7 +47,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
          * The singleton instance of the logger.
          */
         private static final EmergencyLoggerImpl INSTANCE = new EmergencyLoggerImpl();
-
     }
 
     /**
@@ -64,7 +63,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      * The name of the system property that defines the level of the logger.
      */
     private static final String LEVEL_PROPERTY_NAME = "com.swirlds.logging.emergency.level";
-
 
     public static final Level DEFAULT_LEVEL = Level.DEBUG;
 
@@ -108,7 +106,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         logEventsAddLock = new ReentrantLock();
         logEventFactory = new SimpleLogEventFactory();
         handleLock = new ReentrantLock();
-
     }
 
     /**
