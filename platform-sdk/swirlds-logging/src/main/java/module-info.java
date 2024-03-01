@@ -33,7 +33,6 @@ module com.swirlds.logging {
     requires com.fasterxml.jackson.datatype.jsr310;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires org.apache.logging.log4j.core;
 
     uses LogHandlerFactory;
     uses LogProviderFactory;

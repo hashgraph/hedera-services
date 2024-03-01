@@ -28,7 +28,6 @@ jmhModuleInfo {
 
 testModuleInfo {
     requires("com.swirlds.logging.test.fixtures")
-    requires("org.assertj.core")
     requires("org.junit.jupiter.api")
 }
 
