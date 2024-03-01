@@ -23,10 +23,8 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.external.benchmark.BenchmarkFactory;
-import java.io.File;
-import java.nio.file.Path;
 
-public class ConfigureLog {
+public class ConfigureSwirldsLog {
 
     public static LoggingSystem configureFileLogging() {
         final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.FILE);
@@ -40,10 +38,6 @@ public class ConfigureLog {
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .build();
-        final File parentFolder = Path.of(logFile).getParent().toFile();
-        if (!parentFolder.exists()) {
-            parentFolder.mkdir();
-        }
         final LogHandler fileHandler = BenchmarkFactory.getFileHandlerFactory().create("file", configuration);
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(fileHandler);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,11 @@
 package com.swirlds.logging.util;
 
 import com.swirlds.logging.api.Logger;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -25,43 +30,53 @@ import java.util.stream.IntStream;
  */
 public final class LoggingTestUtils {
 
-    public static Throwable createThrowableWithCause() {
-        try {
-            throw createThrowable();
-        } catch (Throwable t) {
-            return new RuntimeException("test", t);
+    public static List<String> getLines(String path) throws IOException {
+        List<String> lines = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
         }
+        return lines;
     }
 
-    public static Throwable createThrowableWithDeepCause(int myDepth, int causeDepth) {
-        if (myDepth > 0) {
-            return createThrowableWithDeepCause(myDepth - 1, causeDepth);
+    public static List<String> linesToStatements(String logName, List<String> logLines) {
+        List<String> result = new ArrayList<>();
+        StringBuilder previousLine = new StringBuilder();
+
+        for (String line : logLines) {
+            if (line.contains(logName)) {
+                if (!previousLine.isEmpty()) {
+                    result.add(previousLine.toString());
+                    previousLine.setLength(0);
+                }
+                previousLine.append(line);
+            } else if (!line.isEmpty()) {
+                previousLine.append("\n").append(line);
+            }
         }
-        try {
-            throw createDeepThrowable(causeDepth);
-        } catch (Throwable t) {
-            return new RuntimeException("test", t);
+        if (!previousLine.isEmpty()) {
+            result.add(previousLine.toString());
         }
+
+        return result;
     }
 
-    public static Throwable createThrowableWithDeepCause(int depth) {
-        try {
-            throw createDeepThrowable(depth);
-        } catch (Throwable t) {
-            return new RuntimeException("test", t);
+    public static int countNewLines(List<String> strings) {
+        int count = 0;
+        for (String str : strings) {
+            for (int i = 0; i < str.length(); i++) {
+                if (str.charAt(i) == '\n') {
+                    count++;
+                }
+            }
         }
+        return count;
     }
 
-    public static Throwable createDeepThrowable(int depth) {
-        if (depth <= 0) {
-            return new RuntimeException("test");
-        }
-        return createDeepThrowable(depth - 1);
-    }
-
-    public static Throwable createThrowable() {
-        return new RuntimeException("test");
-    }
+    public static final int EXPECTED_STATEMENTS = 14 * 100;
 
     /**
      * Generates extensive log messages for testing and debugging purposes.

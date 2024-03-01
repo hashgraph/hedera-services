@@ -19,11 +19,11 @@ package com.swirlds.logging.benchmark;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 
-public class LogLikeHell implements Runnable {
+public class LogWithSwirlds implements Runnable {
 
     private final Logger logger;
 
-    public LogLikeHell(Logger logger) {
+    public LogWithSwirlds(Logger logger) {
         this.logger = logger;
     }
 
@@ -31,14 +31,14 @@ public class LogLikeHell implements Runnable {
     public void run() {
         logger.log(Level.INFO, "L0, Hello world!");
         logger.log(Level.INFO, "L1, A quick brown fox jumps over the lazy dog.");
-        logger.log(Level.INFO, "L2, Hello world!", LogLikeHellUtils.THROWABLE);
+        logger.log(Level.INFO, "L2, Hello world!", BenchmarkUtils.THROWABLE);
         logger.log(Level.INFO, "L3, Hello {}!", "placeholder");
         logger.withContext("key", "value").log(Level.INFO, "L4, Hello world!");
         logger.withMarker("marker").log(Level.INFO, "L5, Hello world!");
-        logger.withContext("user-id", LogLikeHellUtils.USER_1).log(Level.INFO, "L6, Hello world!");
-        logger.withContext("user-id", LogLikeHellUtils.USER_2)
+        logger.withContext("user-id", BenchmarkUtils.USER_1).log(Level.INFO, "L6, Hello world!");
+        logger.withContext("user-id", BenchmarkUtils.USER_2)
                 .log(Level.INFO, "L7, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        logger.withContext("user-id", LogLikeHellUtils.USER_3)
+        logger.withContext("user-id", BenchmarkUtils.USER_3)
                 .withContext("key", "value")
                 .log(Level.INFO, "L8, Hello world!");
         logger.withMarker("marker").log(Level.INFO, "L9, Hello world!");
@@ -47,6 +47,6 @@ public class LogLikeHell implements Runnable {
                 .withMarker("marker1")
                 .withMarker("marker2")
                 .log(Level.INFO, "L11, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        logger.log(Level.INFO, "L12, Hello world!", LogLikeHellUtils.DEEP_THROWABLE);
+        logger.log(Level.INFO, "L12, Hello world!", BenchmarkUtils.DEEP_THROWABLE);
     }
 }

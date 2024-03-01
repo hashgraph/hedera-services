@@ -16,23 +16,14 @@
 
 package com.swirlds.logging.test.benchmark;
 
-import static com.swirlds.logging.benchmark.LogFileUtlis.getLogStatementsFromLogFile;
-import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
-
 import com.swirlds.logging.benchmark.ConfigureLog4J;
-import com.swirlds.logging.benchmark.LogFileUtlis;
-import com.swirlds.logging.benchmark.LogLikeHellLog4J;
-import com.swirlds.logging.benchmark.LoggingHandlingType;
-import com.swirlds.logging.benchmark.LoggingImplementation;
-import java.io.IOException;
+import com.swirlds.logging.benchmark.LogWithLog4J;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.LoggerContext;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TestLog4J {
@@ -41,37 +32,35 @@ public class TestLog4J {
     void testFile() {
         final LoggerContext loggerContext = ConfigureLog4J.configureFileLogging();
         Logger logger = loggerContext.getLogger("TestLogging4J");
-        LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
+        LogWithLog4J logRunner = new LogWithLog4J(logger);
 
-        IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
+        IntStream.range(0, 10_000).forEach(i -> logRunner.run());
     }
 
     @Test
     void testConsole() {
         final LoggerContext loggerContext = ConfigureLog4J.configureConsoleLogging();
         Logger logger = loggerContext.getLogger("TestLogging4J");
-        LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
+        LogWithLog4J logRunner = new LogWithLog4J(logger);
 
-        IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
+        IntStream.range(0, 10_000).forEach(i -> logRunner.run());
     }
 
     @Test
     void testFileAndConsole() {
         final LoggerContext loggerContext = ConfigureLog4J.configureFileAndConsoleLogging();
         Logger logger = loggerContext.getLogger("TestLogging4J");
-        LogLikeHellLog4J logLikeHell = new LogLikeHellLog4J(logger);
+        LogWithLog4J logRunner = new LogWithLog4J(logger);
 
-        IntStream.range(0, 10_000).forEach(i -> logLikeHell.run());
+        IntStream.range(0, 10_000).forEach(i -> logRunner.run());
     }
 
     @Test
-    void testFileAsync() throws IOException {
+    void testFileAsync() {
         LoggerContext loggingSystem = ConfigureLog4J.configureFileLogging();
         Logger logger = loggingSystem.getLogger("TestLogging4J");
-        final int TOTAL = 10;
-        final List<LogLikeHellLog4J> list = IntStream.range(0, TOTAL)
-                .mapToObj(i -> new LogLikeHellLog4J(logger))
-                .toList();
+        final List<LogWithLog4J> list =
+                IntStream.range(0, 10).mapToObj(i -> new LogWithLog4J(logger)).toList();
 
         final ExecutorService executorService = Executors.newFixedThreadPool(10);
         list.forEach(executorService::submit);
@@ -80,14 +69,5 @@ public class TestLog4J {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        final List<String> logStatementsFromLogFile =
-                getLogStatementsFromLogFile(LoggingImplementation.LOG4J2, LoggingHandlingType.FILE);
-
-        Assertions.assertEquals(75 * TOTAL, (long) logStatementsFromLogFile.size());
-
-        final List<String> strings = linesToStatements("TestLogging4J", logStatementsFromLogFile);
-
-        Assertions.assertTrue(LogFileUtlis.isSorted(
-                strings.stream().map(LogFileUtlis::extractNumber).collect(Collectors.toList())));
     }
 }

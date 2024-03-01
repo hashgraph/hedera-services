@@ -26,8 +26,8 @@ import static com.swirlds.logging.benchmark.util.BenchmarkConstants.PARALLEL_THR
 import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.api.Logger;
 import java.util.Objects;
+import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -42,25 +42,24 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class LogLikeHellBenchmark {
+public class Log4JBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
     Logger logger;
-
-    LogLikeHell logLikeHell;
+    LogWithLog4J logRunner;
 
     @Setup(Level.Trial)
     public void init() throws Exception {
         if (Objects.equals(loggingType, FILE_TYPE)) {
-            logger = ConfigureLog.configureFileLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureFileLogging().getLogger("Log4JBenchmark");
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            logger = ConfigureLog.configureConsoleLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureConsoleLogging().getLogger("Log4JBenchmark");
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            logger = ConfigureLog.configureFileAndConsoleLogging().getLogger("BenchmarkLoggingSL");
+            logger = ConfigureLog4J.configureFileAndConsoleLogging().getLogger("Log4JBenchmark");
         }
-        logLikeHell = new LogLikeHell(logger);
+        logRunner = new LogWithLog4J(logger);
     }
 
     @Benchmark
@@ -69,7 +68,7 @@ public class LogLikeHellBenchmark {
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
     @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
-    public void runLogLikeHell() {
-        logLikeHell.run();
+    public void log4J() {
+        logRunner.run();
     }
 }

@@ -18,7 +18,7 @@ package com.swirlds.logging.benchmark;
 
 import java.util.UUID;
 
-public class LogLikeHellUtils {
+class BenchmarkUtils {
     public static final Throwable THROWABLE = createThrowable();
 
     public static final Throwable DEEP_THROWABLE = createThrowableWithDeepCause(20, 20);
@@ -27,28 +27,12 @@ public class LogLikeHellUtils {
     public static final String USER_2 = UUID.randomUUID().toString();
     public static final String USER_3 = UUID.randomUUID().toString();
 
-    public static Throwable createThrowableWithCause() {
-        try {
-            throw createThrowable();
-        } catch (Throwable t) {
-            return new RuntimeException("test", t);
-        }
-    }
-
     public static Throwable createThrowableWithDeepCause(int myDepth, int causeDepth) {
         if (myDepth > 0) {
             return createThrowableWithDeepCause(myDepth - 1, causeDepth);
         }
         try {
             throw createDeepThrowable(causeDepth);
-        } catch (Throwable t) {
-            return new RuntimeException("test", t);
-        }
-    }
-
-    public static Throwable createThrowableWithDeepCause(int depth) {
-        try {
-            throw createDeepThrowable(depth);
         } catch (Throwable t) {
             return new RuntimeException("test", t);
         }

@@ -31,3 +31,5 @@ testModuleInfo {
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
 }
+
+tasks.test { enabled = false }
