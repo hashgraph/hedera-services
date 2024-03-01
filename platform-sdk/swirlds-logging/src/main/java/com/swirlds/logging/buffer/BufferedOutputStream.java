@@ -82,8 +82,9 @@ public class BufferedOutputStream extends OutputStream {
     public synchronized void write(final int b) throws IOException {
         if (buffer.capacity() >= 1) {
             buffer.put((byte) b);
-            // if request length exceeds buffer capacity, flush the buffer and write the data directly
         } else {
+            // if request length exceeds buffer capacity,
+            // flush the buffer and write the data directly
             flush();
             outputStream.write(b);
         }

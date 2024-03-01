@@ -17,6 +17,7 @@
 package com.swirlds.logging.console;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
@@ -64,8 +65,8 @@ public class ConsoleHandler extends AbstractSyncedHandler {
         format.print(builder, event);
         try {
             outputStream.write(builder.toString().getBytes());
-        } catch (IOException e) {
-            //Should not happen
+        } catch (IOException exception) {//Should not happen
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to console", exception);
         }
     }
 
@@ -77,8 +78,8 @@ public class ConsoleHandler extends AbstractSyncedHandler {
     protected void handleStopAndFinalize() {
         try {
             outputStream.flush();
-        } catch (IOException e) {
-            //Should Not happen
+        } catch (IOException exception) { //Should Not happen
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
         }
     }
 }

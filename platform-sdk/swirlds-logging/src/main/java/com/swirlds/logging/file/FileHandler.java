@@ -96,7 +96,7 @@ public class FileHandler extends AbstractSyncedHandler {
         try {
             this.writer.write(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final Exception exception) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to output stream", exception);
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file output stream", exception);
         }
     }
 
