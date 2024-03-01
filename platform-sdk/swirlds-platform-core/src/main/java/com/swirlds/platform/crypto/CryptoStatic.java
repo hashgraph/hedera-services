@@ -581,7 +581,15 @@ public final class CryptoStatic {
         return keysAndCerts;
     }
 
-    public static KeyStore createPublicKeyStore(final List<PeerInfo> peers) throws KeyStoreException {
+    /**
+     * Create a trust store that contains the public keys of all the members in the peer list
+     *
+     * @param peers all the peers in the network
+     * @return a trust store containing the public keys of all the members
+     * @throws KeyStoreException if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
+     */
+    public static @NonNull KeyStore createPublicKeyStore(@NonNull final List<PeerInfo> peers) throws KeyStoreException {
+        Objects.requireNonNull(peers);
         final KeyStore store = CryptoStatic.createEmptyTrustStore();
         for (final PeerInfo peer : peers) {
             final String name = nameToAlias(peer.nodeName());

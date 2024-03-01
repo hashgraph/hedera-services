@@ -129,11 +129,22 @@ public final class NetworkUtils {
                 + formatException(e.getCause());
     }
 
-    public static SocketFactory createSocketFactory(
+    /**
+     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates.
+     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
+     *
+     * @param selfId         the ID of the node
+     * @param addressBook    the address book of the network
+     * @param keysAndCerts   the keys and certificates to use for the TLS connections
+     * @param configuration  the configuration of the network
+     * @return the created {@link SocketFactory}
+     */
+    public static @NonNull SocketFactory createSocketFactory(
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final Configuration configuration) {
+        Objects.requireNonNull(selfId);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(configuration);
@@ -148,7 +159,7 @@ public final class NetworkUtils {
             return new TlsFactory(
                     keysAndCerts.agrCert(),
                     keysAndCerts.agrKeyPair().getPrivate(),
-                    Utilities.getPeerInfos(addressBook, selfId),
+                    Utilities.createPeerInfoList(addressBook, selfId),
                     socketConfig,
                     cryptoConfig);
         } catch (final NoSuchAlgorithmException

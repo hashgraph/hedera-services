@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Supplier;
@@ -360,7 +361,18 @@ public final class Utilities {
         return false;
     }
 
-    public static List<PeerInfo> getPeerInfos(final AddressBook addressBook, final NodeId selfId) {
+    /**
+     * Create a list of PeerInfos from the address book. The list will contain information about all peers but not us.
+     *
+     * @param addressBook
+     * 		the address book to create the list from
+     * @param selfId
+     * 		our ID
+     * @return a list of PeerInfo
+     */
+    public static @NonNull List<PeerInfo> createPeerInfoList(@NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
         return StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(addressBook.iterator(), Spliterator.ORDERED), false)
                 .filter(address -> !address.getNodeId().equals(selfId))

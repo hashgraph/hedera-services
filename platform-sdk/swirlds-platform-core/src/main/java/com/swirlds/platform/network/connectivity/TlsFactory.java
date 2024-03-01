@@ -19,7 +19,6 @@ package com.swirlds.platform.network.connectivity;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +34,6 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.KeyManagerFactory;
@@ -55,26 +53,29 @@ public class TlsFactory implements SocketFactory {
     private final SSLSocketFactory sslSocketFactory;
 
     /**
-     * Construct this object to create and receive TLS connections. This is done using the trustStore
-     * whose reference was passed in as an argument. That trustStore must contain certs for all
-     * the members before calling this constructor. This method will then create the appropriate
-     * KeyManagerFactory, TrustManagerFactory, SSLContext, SSLServerSocketFactory, and SSLSocketFactory, so
-     * that it can later create the TLS sockets.
+     * Construct this object to create and receive TLS connections.
+     * @param agrCert the TLS certificate to use
+     * @param agrKey the private key corresponding to the public key in the certificate
+     * @param peers the list of peers to allow connections with
+     * @param socketConfig the configuration for the sockets
+     * @param cryptoConfig the configuration for the cryptography
      */
     public TlsFactory(
-            final Certificate agrCert,
-            final PrivateKey agrKey,
-            final List<PeerInfo> peers,
+            @NonNull final Certificate agrCert,
+            @NonNull final PrivateKey agrKey,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
                     CertificateException, IOException {
+        Objects.requireNonNull(agrCert);
+        Objects.requireNonNull(agrKey);
+        Objects.requireNonNull(peers);
+        this.socketConfig = Objects.requireNonNull(socketConfig);
         Objects.requireNonNull(cryptoConfig);
 
         //final KeyStore signingTrustStore = keysAndCerts.publicStores().sigTrustStore();
         final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
-
-        this.socketConfig = Objects.requireNonNull(socketConfig);
 
         final char[] password = cryptoConfig.keystorePassword().toCharArray();
         /* nondeterministic CSPRNG */
@@ -102,17 +103,18 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public ServerSocket createServerSocket(final int port) throws IOException {
+    public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
         final SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
         serverSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         serverSocket.setWantClientAuth(true);
         serverSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndBind(serverSocket, socketConfig, ALL_INTERFACES, port);
+        SocketFactory.configureAndBind(serverSocket, socketConfig, port);
         return serverSocket;
     }
 
     @Override
-    public Socket createClientSocket(final String hostname, final int port) throws IOException {
+    public @NonNull Socket createClientSocket( @NonNull final String hostname, final int port) throws IOException {
+        Objects.requireNonNull(hostname);
         final SSLSocket clientSocket = (SSLSocket) sslSocketFactory.createSocket();
         // ensure the connection is ALWAYS the exact cipher suite we've chosen
         clientSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
