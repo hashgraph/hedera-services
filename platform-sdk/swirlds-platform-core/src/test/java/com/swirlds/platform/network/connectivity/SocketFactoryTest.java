@@ -19,14 +19,11 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.system.address.AddressBook;
@@ -36,12 +33,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -152,12 +144,15 @@ class SocketFactoryTest {
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
         final Random random = new Random();
-        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize()).distinct().limit(2).boxed().toList();
+        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
+                .distinct()
+                .limit(2)
+                .boxed()
+                .toList();
         final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
         final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
-
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
@@ -172,5 +167,4 @@ class SocketFactoryTest {
         testSocketsBoth(new TcpFactory(NO_IP_TOS), new TcpFactory(NO_IP_TOS));
         testSocketsBoth(new TcpFactory(IP_TOS), new TcpFactory(IP_TOS));
     }
-
 }

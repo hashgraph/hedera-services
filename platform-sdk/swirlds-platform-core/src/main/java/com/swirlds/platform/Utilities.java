@@ -370,13 +370,18 @@ public final class Utilities {
      * 		our ID
      * @return a list of PeerInfo
      */
-    public static @NonNull List<PeerInfo> createPeerInfoList(@NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+    public static @NonNull List<PeerInfo> createPeerInfoList(
+            @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
         return StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(addressBook.iterator(), Spliterator.ORDERED), false)
                 .filter(address -> !address.getNodeId().equals(selfId))
-                .map(address -> new PeerInfo(address.getNodeId(), address.getSelfName(), address.getHostnameExternal(), address.getSigCert()))
+                .map(address -> new PeerInfo(
+                        address.getNodeId(),
+                        address.getSelfName(),
+                        address.getHostnameExternal(),
+                        address.getSigCert()))
                 .toList();
     }
 }

@@ -31,6 +31,7 @@ import java.util.Objects;
 public interface SocketFactory {
     /** The IPv4 address to listen all interface: [0.0.0.0]. */
     byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
+
     int IP_TOP_MIN = 0;
     int IP_TOP_MAX = 255;
 
@@ -51,9 +52,7 @@ public interface SocketFactory {
      * 		if the bind is unsuccessful
      */
     static void configureAndBind(
-            @NonNull final ServerSocket serverSocket,
-            @NonNull final SocketConfig socketConfig,
-            final int port)
+            @NonNull final ServerSocket serverSocket, @NonNull final SocketConfig socketConfig, final int port)
             throws IOException {
         Objects.requireNonNull(serverSocket);
         Objects.requireNonNull(socketConfig);
@@ -111,7 +110,8 @@ public interface SocketFactory {
      * @throws IOException
      * 		if the socket cannot be created
      */
-    @NonNull ServerSocket createServerSocket(final int port) throws IOException;
+    @NonNull
+    ServerSocket createServerSocket(final int port) throws IOException;
 
     /**
      * Create a new Socket, then connect to the given ip and port.
@@ -124,5 +124,6 @@ public interface SocketFactory {
      * @throws IOException
      * 		if the connection cannot be made
      */
-    @NonNull Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
+    @NonNull
+    Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
 }

@@ -149,7 +149,7 @@ public final class NetworkUtils {
         Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(configuration);
 
-        final CryptoConfig cryptoConfig =configuration.getConfigData(CryptoConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
         final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
 
         if (!socketConfig.useTLS()) {
@@ -163,11 +163,11 @@ public final class NetworkUtils {
                     socketConfig,
                     cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                       | UnrecoverableKeyException
-                       | KeyStoreException
-                       | KeyManagementException
-                       | CertificateException
-                       | IOException e) {
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }

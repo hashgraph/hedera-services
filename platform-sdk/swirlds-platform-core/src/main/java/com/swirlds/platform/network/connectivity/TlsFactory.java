@@ -74,7 +74,7 @@ public class TlsFactory implements SocketFactory {
         this.socketConfig = Objects.requireNonNull(socketConfig);
         Objects.requireNonNull(cryptoConfig);
 
-        //final KeyStore signingTrustStore = keysAndCerts.publicStores().sigTrustStore();
+        // final KeyStore signingTrustStore = keysAndCerts.publicStores().sigTrustStore();
         final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
 
         final char[] password = cryptoConfig.keystorePassword().toCharArray();
@@ -85,12 +85,12 @@ public class TlsFactory implements SocketFactory {
         // PKCS12 uses file extension .p12 or .pfx
         final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
         agrKeyStore.load(null, null); // initialize
-        agrKeyStore.setKeyEntry(
-                "key", agrKey, password, new Certificate[] {agrCert});
+        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
 
         // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
         // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
-        final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
+        final KeyManagerFactory keyManagerFactory =
+                KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
         keyManagerFactory.init(agrKeyStore, password);
         final TrustManagerFactory trustManagerFactory =
                 TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
@@ -113,7 +113,7 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public @NonNull Socket createClientSocket( @NonNull final String hostname, final int port) throws IOException {
+    public @NonNull Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException {
         Objects.requireNonNull(hostname);
         final SSLSocket clientSocket = (SSLSocket) sslSocketFactory.createSocket();
         // ensure the connection is ALWAYS the exact cipher suite we've chosen
