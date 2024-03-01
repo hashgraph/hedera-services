@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
@@ -59,7 +60,7 @@ class BirthRoundMigrationShimTests {
                         null),
                 new BaseEventUnhashedData());
 
-        platformContext.getCryptography().digestSync(event);
+        platformContext.getCryptography().digestSync(event.getHashedData());
 
         return event;
     }
@@ -92,14 +93,18 @@ class BirthRoundMigrationShimTests {
                     new BasicSoftwareVersion(
                             firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(1, 100),
-                    0);
+                    birthRound);
 
             assertEquals(birthRound, event.getHashedData().getBirthRound());
+            final Hash originalHash = event.getHashedData().getHash();
+
             assertSame(event, shim.migrateEvent(event));
             assertEquals(ROUND_FIRST, event.getHashedData().getBirthRound());
 
             // The hash of the event should not have changed
-            // TODO continue here
+            event.getHashedData().invalidateHash();
+            platformContext.getCryptography().digestSync(event.getHashedData());
+            assertEquals(originalHash, event.getHashedData().getHash());
         }
     }
 

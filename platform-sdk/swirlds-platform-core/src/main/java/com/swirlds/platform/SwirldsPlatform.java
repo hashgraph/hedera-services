@@ -837,6 +837,7 @@ public class SwirldsPlatform implements Platform {
         final PlatformState platformState = state.getPlatformState();
 
         return new BirthRoundMigrationShim(
+                platformContext,
                 platformState.getFirstVersionInBirthRoundMode(),
                 platformState.getLastRoundBeforeBirthRoundMode(),
                 platformState.getLowestJudgeGenerationBeforeBirthRoundMode());
