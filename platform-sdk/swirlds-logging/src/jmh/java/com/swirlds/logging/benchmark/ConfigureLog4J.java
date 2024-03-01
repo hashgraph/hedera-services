@@ -5,13 +5,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.swirlds.logging.benchmark;
@@ -43,7 +44,7 @@ public class ConfigureLog4J {
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
         builder.setConfigurationName("consoleLoggingConfig");
-        builder.add(createConsoleAppender(CONSOLE_APPENDER_NAME, builder));
+        builder.add(createConsoleAppender(builder));
         builder.add(builder.newRootLogger(Level.DEBUG).add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
         return create(builder);
     }
@@ -54,7 +55,7 @@ public class ConfigureLog4J {
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.DEBUG);
         builder.setConfigurationName("fileLoggingConfig");
-        builder.add(createFileAppender(FILE_APPENDER_NAME, builder, logFile));
+        builder.add(createFileAppender(builder, logFile));
         builder.add(builder.newRootLogger(Level.DEBUG).add(builder.newAppenderRef(FILE_APPENDER_NAME)));
         return create(builder);
     }
@@ -66,8 +67,8 @@ public class ConfigureLog4J {
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
         builder.setConfigurationName("fileAndConsoleLoggingConfig");
-        builder.add(createFileAppender(FILE_APPENDER_NAME, builder, logFile));
-        builder.add(createConsoleAppender(CONSOLE_APPENDER_NAME, builder));
+        builder.add(createFileAppender(builder, logFile));
+        builder.add(createConsoleAppender(builder));
         builder.add(builder.newRootLogger(Level.DEBUG)
                 .add(builder.newAppenderRef(FILE_APPENDER_NAME))
                 .add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
@@ -78,24 +79,23 @@ public class ConfigureLog4J {
         Configuration configuration = builder.build();
         org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
         LogManager.getFactory().removeContext(context);
-        // context.reconfigure(configuration);
         return Configurator.initialize(configuration);
     }
 
     private static AppenderComponentBuilder createConsoleAppender(
-            final String name, final ConfigurationBuilder<BuiltConfiguration> builder) {
+            final ConfigurationBuilder<BuiltConfiguration> builder) {
         final LayoutComponentBuilder layoutComponentBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(name, "CONSOLE")
+        return builder.newAppender(ConfigureLog4J.CONSOLE_APPENDER_NAME, "CONSOLE")
                 .addAttribute("target", ConsoleAppender.Target.SYSTEM_OUT)
                 .add(layoutComponentBuilder);
     }
 
     private static AppenderComponentBuilder createFileAppender(
-            final String name, final ConfigurationBuilder<BuiltConfiguration> builder, final String path) {
+            final ConfigurationBuilder<BuiltConfiguration> builder, final String path) {
         LayoutComponentBuilder layoutBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(name, "File")
+        return builder.newAppender(ConfigureLog4J.FILE_APPENDER_NAME, "File")
                 .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
