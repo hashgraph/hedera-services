@@ -19,6 +19,8 @@ package com.swirlds.platform.system.events;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -31,7 +33,19 @@ import org.apache.logging.log4j.Logger;
  */
 public class BirthRoundMigrationShim {
 
-    // TODO add some metrics why not
+    private static final SpeedometerMetric.Config SHIM_ANCIENT_EVENTS = new SpeedometerMetric.Config(
+                    "platform", "shimAncientEvents")
+            .withDescription("Events that the BirthRoundMigrationShim gave an ancient birth round override")
+            .withUnit("hz");
+
+    private final SpeedometerMetric shimAncientEvents;
+
+    private static final SpeedometerMetric.Config SHIM_BARELY_NON_ANCIENT_EVENTS = new SpeedometerMetric.Config(
+                    "platform", "shimBarelyNonAncientEvents")
+            .withDescription("Events that the BirthRoundMigrationShim gave a barely non-ancient birth round override")
+            .withUnit("hz");
+
+    private final SpeedometerMetric shimBarelyNonAncientEvents;
 
     private static final Logger logger = LogManager.getLogger(BirthRoundMigrationShim.class);
 
@@ -55,6 +69,7 @@ public class BirthRoundMigrationShim {
     /**
      * Constructs a new BirthRoundMigrationShim.
      *
+     * @param platformContext                           the platform context
      * @param firstVersionInBirthRoundMode              the first software version where the birth round mode is
      *                                                  enabled
      * @param lastRoundBeforeBirthRoundMode             the last round before the birth round mode was enabled
@@ -62,6 +77,7 @@ public class BirthRoundMigrationShim {
      *                                                  enabled
      */
     public BirthRoundMigrationShim(
+            @NonNull final PlatformContext platformContext,
             final SoftwareVersion firstVersionInBirthRoundMode,
             final long lastRoundBeforeBirthRoundMode,
             final long lowestJudgeGenerationBeforeBirthRoundMode) {
@@ -77,6 +93,9 @@ public class BirthRoundMigrationShim {
         this.firstVersionInBirthRoundMode = firstVersionInBirthRoundMode;
         this.lastRoundBeforeBirthRoundMode = lastRoundBeforeBirthRoundMode;
         this.lowestJudgeGenerationBeforeBirthRoundMode = lowestJudgeGenerationBeforeBirthRoundMode;
+
+        shimAncientEvents = platformContext.getMetrics().getOrCreate(SHIM_ANCIENT_EVENTS);
+        shimBarelyNonAncientEvents = platformContext.getMetrics().getOrCreate(SHIM_BARELY_NON_ANCIENT_EVENTS);
     }
 
     /**
@@ -95,10 +114,12 @@ public class BirthRoundMigrationShim {
                 // Any event with a generation greater than or equal to the lowest pre-migration judge generation
                 // is given a birth round that will be non-ancient at migration time.
                 event.getHashedData().setBirthRoundOverride(lastRoundBeforeBirthRoundMode);
+                shimBarelyNonAncientEvents.cycle();
             } else {
                 // All other pre-migration events are given a birth round that will
                 // cause them to be immediately ancient.
                 event.getHashedData().setBirthRoundOverride(ROUND_FIRST);
+                shimAncientEvents.cycle();
             }
         }
 

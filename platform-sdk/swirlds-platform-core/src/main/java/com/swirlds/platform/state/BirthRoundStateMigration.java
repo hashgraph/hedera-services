@@ -53,6 +53,11 @@ public final class BirthRoundStateMigration {
             @NonNull final SoftwareVersion appVersion) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
+            if (initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode() != null) {
+                throw new IllegalStateException(
+                        "Cannot revert to generation mode after birth round migration has been completed.");
+            }
+
             logger.info(
                     STARTUP.getMarker(), "Birth round state migration is not yet needed, still in generation mode.");
             return;
