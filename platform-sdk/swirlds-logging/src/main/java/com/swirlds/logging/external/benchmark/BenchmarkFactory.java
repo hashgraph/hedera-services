@@ -21,6 +21,9 @@ import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import com.swirlds.logging.console.ConsoleHandlerFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 
+/**
+ * Class that exposes the factories, so they can be used in the benchmarking module
+ */
 public class BenchmarkFactory {
     private static final FileHandlerFactory FILE_FACTORY = new FileHandlerFactory();
     private static final ConsoleHandlerFactory CONSOLE_FACTORY = new ConsoleHandlerFactory();
