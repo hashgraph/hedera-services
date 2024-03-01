@@ -77,6 +77,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -120,6 +121,17 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 new TokenUriTranslator(),
                 new OwnerOfTranslator(),
                 new DecimalsTranslator());
+    }
+
+    @Test
+    void decodePackedRedirect() {
+        final var hexedInput =
+                "618dc65e00000000000000000000000000000000003ddc0b6352211e000000000000000000000000000000000000000000000000000000000000271f";
+        var input = Bytes.fromHexString(hexedInput);
+        final var tokenAddress = Address.wrap(input.slice(4, 20));
+        System.out.println("tokenAddress " + tokenAddress);
+        input = input.slice(24);
+        System.out.println(CommonUtils.hex(input.toArrayUnsafe()));
     }
 
     @Test

@@ -78,7 +78,7 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     public @NonNull PricedResult execute() {
         var gasRequirement = gasCalculator.viewGasRequirement();
         if (token == null) {
-            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasRequirement);
+            return failedViewResult(INVALID_TOKEN_ID, gasRequirement);
         }
 
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
