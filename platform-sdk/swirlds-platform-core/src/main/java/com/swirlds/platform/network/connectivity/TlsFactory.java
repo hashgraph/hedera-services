@@ -65,7 +65,6 @@ public class TlsFactory implements SocketFactory {
             final Certificate agrCert,
             final PrivateKey agrKey,
             final List<PeerInfo> peers,
-            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
@@ -103,12 +102,12 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public ServerSocket createServerSocket(final byte[] ipAddress, final int port) throws IOException {
+    public ServerSocket createServerSocket(final int port) throws IOException {
         final SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
         serverSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         serverSocket.setWantClientAuth(true);
         serverSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndBind(serverSocket, socketConfig, ipAddress, port);
+        SocketFactory.configureAndBind(serverSocket, socketConfig, ALL_INTERFACES, port);
         return serverSocket;
     }
 
