@@ -364,7 +364,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             }
         }
         final List<Schema> registeredSchemas = schemas.isEmpty() ? List.of() : List.of(schemas.getLast());
-        return applicableSchemas.isEmpty() ?  registeredSchemas : applicableSchemas;
+        return applicableSchemas.isEmpty() ? registeredSchemas : applicableSchemas;
     }
 
     /**
