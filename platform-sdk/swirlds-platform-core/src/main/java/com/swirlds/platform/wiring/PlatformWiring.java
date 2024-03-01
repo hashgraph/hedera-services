@@ -240,7 +240,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
 
         latestCompleteStateNotifierWiring =
-                LatestCompleteStateNotifierWiring.create(schedulers.latestCompleteStateScheduler());
+                LatestCompleteStateNotifierWiring.create(schedulers.latestCompleteStateNotificationScheduler());
 
         wire();
     }
@@ -374,11 +374,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateSignerWiring
                 .stateSignature()
-                .solderTo("transactionPool", "state signature transaction", transactionPool::submitSystemTransaction);
+                .solderTo("transactionPool", "state signature transactions", transactionPool::submitSystemTransaction);
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
-                .solderTo("latestCompleteStateNexus", "complete state", latestCompleteStateNexus::setStateIfNewer);
+                .solderTo("latestCompleteStateNexus", "complete states", latestCompleteStateNexus::setStateIfNewer);
 
         issDetectorWiring
                 .issNotificationOutput()
