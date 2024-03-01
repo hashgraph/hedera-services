@@ -168,7 +168,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      * @param systemContractGasCalculator the gas calculator to use
      * @param enhancement the enhancement to use
      * @param payerId the payer of the transaction
-     * @param selector
+     * @param selector the selector of the call
      * @return the gas requirement for the transaction to be dispatched
      */
     public static long transferGasRequirement(
@@ -263,17 +263,17 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     private void maybeEmitErcLogsFor(
             @NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
         if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
-            final var fungibleTransfers = op.tokenTransfersOrThrow().get(0);
+            final var fungibleTransfers = op.tokenTransfersOrThrow().getFirst();
             logSuccessfulFungibleTransfer(
                     fungibleTransfers.tokenOrThrow(),
                     fungibleTransfers.transfersOrThrow(),
                     readableAccountStore(),
                     frame);
         } else if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector(), selector)) {
-            final var nftTransfers = op.tokenTransfersOrThrow().get(0);
+            final var nftTransfers = op.tokenTransfersOrThrow().getFirst();
             logSuccessfulNftTransfer(
                     nftTransfers.tokenOrThrow(),
-                    nftTransfers.nftTransfersOrThrow().get(0),
+                    nftTransfers.nftTransfersOrThrow().getFirst(),
                     readableAccountStore(),
                     frame);
         }
