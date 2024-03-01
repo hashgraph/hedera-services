@@ -63,7 +63,7 @@ public class FileHandler extends AbstractSyncedHandler {
             throws IOException {
         super(handlerName, configuration);
 
-        format = LineBasedFormat.createForHandler(handlerName, configuration);
+        this.format = LineBasedFormat.createForHandler(handlerName, configuration);
 
         final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
         final Path filePath = Objects.requireNonNullElse(
@@ -73,7 +73,7 @@ public class FileHandler extends AbstractSyncedHandler {
                 configuration.getValue(APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, null), true);
         try {
             if (Files.exists(filePath) && !(append && Files.isWritable(filePath))) {
-                throw new IOException("log file exist and is not writable or is not append mode");
+                throw new IOException("Log file exist and is not writable or is not append mode");
             }
             Files.createDirectories(filePath.getParent());
             final OutputStream outputStream = new FileOutputStream(filePath.toFile(), append);
@@ -101,7 +101,7 @@ public class FileHandler extends AbstractSyncedHandler {
     }
 
     /**
-     * Stops the handler and no further elements are processed
+     * Stops the handler and no further events are processed
      */
     @Override
     protected void handleStopAndFinalize() {
@@ -110,92 +110,6 @@ public class FileHandler extends AbstractSyncedHandler {
             writer.flush();
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
-        }
-    }
-
-
-    /**
-     * A Writer that uses a ByteBuffer before writing to an OutputStream
-     */
-    private static class WriterWithBuffer implements Closeable {
-
-        private static final int BUFFER_CAPACITY = 8192 * 4;
-        private final ByteBuffer buffer;
-        private final OutputStream writer;
-
-        public WriterWithBuffer(@NonNull OutputStream stream) {
-            this.writer = stream;
-            this.buffer = ByteBuffer.wrap(new byte[BUFFER_CAPACITY]);
-        }
-
-
-        public synchronized void write(
-                final byte[] bytes, final int length) {
-
-            if (length >= buffer.capacity()) {
-                // if request length exceeds buffer capacity, flush the buffer and write the data directly
-                flush();
-                writeToDestination(bytes, 0, length);
-            } else {
-                if (length > buffer.remaining()) {
-                    flush();
-                }
-                buffer.put(bytes);
-            }
-        }
-
-        /**
-         * Writes the specified section of the specified byte array to the stream.
-         *
-         * @param bytes  the array containing data
-         * @param offset from where to write
-         * @param length how many bytes to write
-         */
-        private void writeToDestination(final byte[] bytes, final int offset, final int length) {
-            if (writer != null) {
-                try {
-                    writer.write(bytes, offset, length);
-                } catch (final IOException ex) {
-                    throw new RuntimeException("Error writing to stream " + "getName()", ex);
-                }
-            }
-        }
-
-        /**
-         * Calls {@code flush()} on the underlying output stream.
-         */
-        public synchronized void flush() {
-            flushBuffer(buffer);
-            flushDestination();
-        }
-
-        private void flushDestination() {
-            if (writer != null) {
-                try {
-                    writer.flush();
-                } catch (final IOException ex) {
-                    throw new RuntimeException("Error flushing stream " + "getName()", ex);
-                }
-            }
-        }
-
-
-        private void flushBuffer(final ByteBuffer buf) {
-            ((Buffer) buf).flip();
-            try {
-                if (buf.remaining() > 0) {
-                    writeToDestination(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
-                }
-            } finally {
-                buf.clear();
-            }
-        }
-
-        /**
-         * Closes and releases any system resources associated with this instance.
-         */
-        @Override
-        public void close() {
         }
     }
 }
