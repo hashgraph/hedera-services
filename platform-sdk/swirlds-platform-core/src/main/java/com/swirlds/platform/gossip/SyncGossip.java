@@ -60,8 +60,6 @@ import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.connectivity.TcpFactory;
-import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -78,19 +76,12 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.PlatformConstructionException;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -202,8 +193,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
 
-        final SocketFactory socketFactory = NetworkUtils.createSocketFactory(
-                selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
+        final SocketFactory socketFactory =
+                NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
@@ -220,10 +211,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager,
-                address.getListenPort(),
-                socketFactory,
-                inboundConnectionHandler::handle);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
