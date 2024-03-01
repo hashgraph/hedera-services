@@ -101,6 +101,7 @@ public class BufferedOutputStream extends OutputStream {
      */
     @Override
     public void close() throws IOException {
+        flush();
         outputStream.close();
     }
 
