@@ -29,7 +29,6 @@ import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,14 +38,14 @@ public class BlockInfoDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BlockInfoAndRunningHashes>>> fieldFormattersForBlockInfo = List.of(
+    static List<Pair<String, BiConsumer<FieldBuilder, BlockInfoAndRunningHashes>>> fieldFormatters = List.of(
             Pair.of("lastBlockNumber", getFieldFormatter(BlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
-            Pair.of("blockHashes", getFieldFormatter(BlockInfoAndRunningHashes::blockHashes, Objects::toString)),
+            Pair.of("blockHashes", getFieldFormatter(BlockInfoAndRunningHashes::blockHashes, Object::toString)),
             Pair.of(
                     "consTimeOfLastHandledTxn",
                     getFieldFormatter(
                             BlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
-                            getNullableFormatter(ThingsToStrings::toStringOfTimestamp))),
+                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "migrationRecordsStreamed",
                     getFieldFormatter(BlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
@@ -54,24 +53,12 @@ public class BlockInfoDumpUtils {
                     "firstConsTimeOfCurrentBlock",
                     getFieldFormatter(
                             BlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
-                            getNullableFormatter(ThingsToStrings::toStringOfTimestamp))),
-            Pair.of(
-                    "runningHash",
-                    getFieldFormatter(BlockInfoAndRunningHashes::runningHash, Objects::toString)),
-            Pair.of(
-                    "nMinus1RunningHash",
-                    getFieldFormatter(BlockInfoAndRunningHashes::nMinus1RunningHash, Objects::toString)),
-            Pair.of(
-                    "nMinus2RunningHash",
-                    getFieldFormatter(BlockInfoAndRunningHashes::nMinus2RunningHash, Objects::toString)),
-            Pair.of(
-                    "nMinus3RunningHash",
-                    getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, Objects::toString)),
-            Pair.of(
-                    "entityNum",
-                    getFieldFormatter(BlockInfoAndRunningHashes::entityId, Objects::toString)
-            )
-    );
+                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
+            Pair.of("entityId", getFieldFormatter(BlockInfoAndRunningHashes::entityId, Object::toString)),
+            Pair.of("runningHash", getFieldFormatter(BlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus1RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus2RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus3RunningHas", getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
     // spotless:on
 
     public static void dumpModBlockInfo(
@@ -114,7 +101,7 @@ public class BlockInfoDumpUtils {
 
     @NonNull
     private static String formatHeaderForBlockInfo() {
-        return fieldFormattersForBlockInfo.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
+        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
     }
 
     @NonNull
@@ -134,9 +121,7 @@ public class BlockInfoDumpUtils {
     private static void formatBlockInfo(
             @NonNull final Writer writer, @NonNull final BlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
-        fieldFormattersForBlockInfo.stream()
-                .map(Pair::right)
-                .forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
         writer.writeln(fb);
     }
 

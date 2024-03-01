@@ -18,99 +18,110 @@ package com.hedera.node.app.bbm.singleton;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Objects;
+import java.time.Instant;
 
 record BlockInfoAndRunningHashes(
         long lastBlockNumber,
-        @Nullable Timestamp firstConsTimeOfLastBlock,
-        @NonNull Bytes blockHashes,
-        @Nullable Timestamp consTimeOfLastHandledTxn,
+        @NonNull String blockHashes,
+        @Nullable RichInstant consTimeOfLastHandledTxn,
         boolean migrationRecordsStreamed,
-        @Nullable Timestamp firstConsTimeOfCurrentBlock,
+        @Nullable RichInstant firstConsTimeOfCurrentBlock,
         long entityId,
-        @NonNull Bytes runningHash,
-        @NonNull Bytes nMinus1RunningHash,
-        @NonNull Bytes nMinus2RunningHash,
-        @NonNull Bytes nMinus3RunningHash) {
+        @Nullable Hash runningHash,
+        @Nullable Hash nMinus1RunningHash,
+        @Nullable Hash nMinus2RunningHash,
+        @Nullable Hash nMinus3RunningHash) {
 
     public static BlockInfoAndRunningHashes combineFromMono(
             @NonNull final MerkleNetworkContext merkleNetworkContext,
             @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf) {
         requireNonNull(merkleNetworkContext);
         requireNonNull(recordsRunningHashLeaf);
-
-        // build block info
-        final var blockInfoBuilder = new BlockInfo.Builder()
-                .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
-                .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
-        if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
-            blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
-                    .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
-                    .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
-                    .build());
-        }
-        if (merkleNetworkContext.consensusTimeOfLastHandledTxn() != null) {
-            final var lastHandledTxn = merkleNetworkContext.consensusTimeOfLastHandledTxn();
-            blockInfoBuilder.consTimeOfLastHandledTxn(Timestamp.newBuilder()
-                    .seconds(lastHandledTxn.getEpochSecond())
-                    .nanos(lastHandledTxn.getNano())
-                    .build());
-        }
-        blockInfoBuilder.migrationRecordsStreamed(merkleNetworkContext.areMigrationRecordsStreamed());
-
-        // build running hashes
-        var runningHashesBuilder = new RunningHashes.Builder()
-                .runningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getRunningHash().getHash().getValue()))
-                .nMinus1RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus1RunningHash().getHash().getValue()))
-                .nMinus2RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus2RunningHash().getHash().getValue()))
-                .nMinus3RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getValue()));
-
-        var entityId = merkleNetworkContext.seqNo().current();
-
-        return combineFromMod(blockInfoBuilder.build(), runningHashesBuilder.build(), entityId);
+        return new BlockInfoAndRunningHashes(
+                merkleNetworkContext.getAlignmentBlockNo(),
+                merkleNetworkContext.stringifiedBlockHashes(),
+                RichInstant.fromJava(merkleNetworkContext.consensusTimeOfLastHandledTxn()),
+                merkleNetworkContext.areMigrationRecordsStreamed(),
+                RichInstant.fromJava(merkleNetworkContext.firstConsTimeOfCurrentBlock()),
+                merkleNetworkContext.seqNo().current(),
+                recordsRunningHashLeaf.getRunningHash().getHash(),
+                recordsRunningHashLeaf.getNMinus1RunningHash().getHash(),
+                recordsRunningHashLeaf.getNMinus2RunningHash().getHash(),
+                recordsRunningHashLeaf.getNMinus3RunningHash().getHash());
     }
 
     public static BlockInfoAndRunningHashes combineFromMod(
             @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes, final long entityId) {
+
+        // convert all TimeStamps fields from blockInfo to RichInstant
+        var consTimeOfLastHandledTxn = blockInfo.consTimeOfLastHandledTxn() == null
+                ? RichInstant.fromJava(Instant.EPOCH)
+                : new RichInstant(
+                        blockInfo.consTimeOfLastHandledTxn().seconds(),
+                        blockInfo.consTimeOfLastHandledTxn().nanos());
+        var firstConsTimeOfCurrentBlock = blockInfo.firstConsTimeOfCurrentBlock() == null
+                ? RichInstant.fromJava(Instant.EPOCH)
+                : new RichInstant(
+                        blockInfo.firstConsTimeOfCurrentBlock().seconds(),
+                        blockInfo.firstConsTimeOfCurrentBlock().nanos());
+
+        var runningHash = Bytes.EMPTY.equals(runningHashes.runningHash())
+                ? null
+                : new Hash(runningHashes.runningHash().toByteArray());
+        var nMinus1RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus1RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus1RunningHash().toByteArray());
+        var nMinus2RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus2RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus2RunningHash().toByteArray());
+        var nMinus3RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus3RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus3RunningHash().toByteArray());
+
         return new BlockInfoAndRunningHashes(
                 blockInfo.lastBlockNumber(),
-                blockInfo.firstConsTimeOfLastBlock(),
-                blockInfo.blockHashes(),
-                Objects.requireNonNull(blockInfo.consTimeOfLastHandledTxn(), "consTimeOfLastHandledTxn"),
+                stringifiedBlockHashes(blockInfo),
+                consTimeOfLastHandledTxn,
                 blockInfo.migrationRecordsStreamed(),
-                blockInfo.firstConsTimeOfCurrentBlock(),
+                firstConsTimeOfCurrentBlock,
                 entityId,
-                runningHashes.runningHash(),
-                runningHashes.nMinus1RunningHash(),
-                runningHashes.nMinus2RunningHash(),
-                runningHashes.nMinus3RunningHash());
+                runningHash,
+                nMinus1RunningHash,
+                nMinus2RunningHash,
+                nMinus3RunningHash);
     }
 
-    private static Bytes getBlockHashes(FCQueue<BytesElement> queue) {
-        ByteArrayOutputStream collector = new ByteArrayOutputStream();
-        try {
-            for (BytesElement element : queue) {
-                collector.write(element.getData());
-            }
-            return Bytes.wrap(collector.toByteArray());
-        } catch (IOException ioException) {
-            return Bytes.EMPTY;
+    // generate same string format for hashes, as MerkelNetworkContext.stringifiedBlockHashes() for mod
+    static String stringifiedBlockHashes(BlockInfo blockInfo) {
+        final var jsonSb = new StringBuilder("[");
+        final var blockNo = blockInfo.lastBlockNumber();
+        final var blockHashes = blockInfo.blockHashes();
+        final var availableBlocksCount = blockHashes.length() / BlockRecordInfoUtils.HASH_SIZE;
+        final var firstAvailable = blockNo - availableBlocksCount;
+
+        for (int i = 0; i < availableBlocksCount; i++) {
+            final var nextBlockNo = firstAvailable + i;
+            final var blockHash =
+                    blockHashes.toByteArray(i * BlockRecordInfoUtils.HASH_SIZE, BlockRecordInfoUtils.HASH_SIZE);
+            jsonSb.append("{\"num\": ")
+                    .append(nextBlockNo + 1)
+                    .append(", ")
+                    .append("\"hash\": \"")
+                    .append(CommonUtils.hex(blockHash))
+                    .append("\"}")
+                    .append(i < availableBlocksCount ? ", " : "");
         }
+        return jsonSb.append("]").toString();
     }
 }
