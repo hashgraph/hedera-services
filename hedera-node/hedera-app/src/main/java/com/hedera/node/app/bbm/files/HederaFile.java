@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /** Holds the content and the metadata for a single data file in the store */
 @SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
 // not using this with equals
-record HederaFile(
+public record HederaFile(
         @NonNull FileStore fileStore,
         @NonNull Integer fileId,
         @NonNull byte[] contents,

@@ -100,10 +100,9 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
-import com.swirlds.platform.gossip.Gossip;
-import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
+import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -215,7 +214,7 @@ public class SwirldsPlatform implements Platform {
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
      */
-    private final long initialMinimumGenerationNonAncient;
+    private final long initialAncientThreshold;
 
     /**
      * The latest round to have reached consensus in the initial state
@@ -269,7 +268,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * Responsible for transmitting and receiving events from the network.
      */
-    private final Gossip gossip;
+    private final SyncGossip gossip;
 
     /**
      * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
@@ -720,7 +719,7 @@ public class SwirldsPlatform implements Platform {
                     }
                 };
 
-        gossip = GossipFactory.buildGossip(
+        gossip = new SyncGossip(
                 platformContext,
                 threadManager,
                 time,
@@ -741,7 +740,7 @@ public class SwirldsPlatform implements Platform {
                 this::loadReconnectState,
                 this::clearAllPipelines,
                 intakeEventCounter,
-                () -> emergencyState.getState("emergency reconnect"));
+                () -> emergencyState.getState("emergency reconnect")) {};
 
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -750,11 +749,10 @@ public class SwirldsPlatform implements Platform {
                 ancientMode));
 
         if (startedFromGenesis) {
-            initialMinimumGenerationNonAncient = 0;
+            initialAncientThreshold = 0;
             startingRound = 0;
         } else {
-            initialMinimumGenerationNonAncient =
-                    initialState.getState().getPlatformState().getMinimumGenerationNonAncient();
+            initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
             latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
@@ -770,8 +768,8 @@ public class SwirldsPlatform implements Platform {
             // the non-expired event window will continue to expand until it reaches its full size.
             platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
                     initialState.getRound(),
-                    initialMinimumGenerationNonAncient,
-                    initialMinimumGenerationNonAncient,
+                    initialAncientThreshold,
+                    initialAncientThreshold,
                     AncientMode.getAncientMode(platformContext)));
             platformWiring.getIssDetectorWiring().overridingState().put(initialState.reserve("initialize issDetector"));
 
@@ -894,13 +892,11 @@ public class SwirldsPlatform implements Platform {
         // FUTURE WORK: this needs to be updated for birth round compatibility.
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 signedState.getRound(),
-                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
-                signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
+                signedState.getState().getPlatformState().getAncientThreshold(),
+                signedState.getState().getPlatformState().getAncientThreshold(),
                 ancientMode);
 
         shadowGraph.startWithEventWindow(eventWindow);
-
-        gossip.loadFromSignedState(signedState);
     }
 
     /**
@@ -963,8 +959,8 @@ public class SwirldsPlatform implements Platform {
 
             platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
                     signedState.getRound(),
-                    signedState.getMinRoundGeneration(),
-                    signedState.getMinRoundGeneration(),
+                    signedState.getState().getPlatformState().getAncientThreshold(),
+                    signedState.getState().getPlatformState().getAncientThreshold(),
                     ancientMode));
 
             platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
@@ -1055,12 +1051,12 @@ public class SwirldsPlatform implements Platform {
         // minimum generation non-ancient is reversed to a smaller value, so we skip it
         if (!emergencyRecoveryNeeded) {
             final IOIterator<GossipEvent> iterator =
-                    initialPcesFiles.getEventIterator(initialMinimumGenerationNonAncient, startingRound);
+                    initialPcesFiles.getEventIterator(initialAncientThreshold, startingRound);
 
             logger.info(
                     STARTUP.getMarker(),
                     "replaying preconsensus event stream starting at generation {}",
-                    initialMinimumGenerationNonAncient);
+                    initialAncientThreshold);
 
             platformWiring.getPcesReplayerIteratorInput().inject(iterator);
         }

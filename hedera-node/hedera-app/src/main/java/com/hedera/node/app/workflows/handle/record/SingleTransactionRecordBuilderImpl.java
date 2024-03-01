@@ -765,6 +765,11 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
+    public @NonNull List<AssessedCustomFee> getAssessedCustomFees() {
+        return assessedCustomFees;
+    }
+
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 

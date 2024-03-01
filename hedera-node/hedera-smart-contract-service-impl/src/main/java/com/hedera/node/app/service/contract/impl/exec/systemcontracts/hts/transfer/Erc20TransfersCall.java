@@ -117,7 +117,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
             }
         } else {
-            final var op = syntheticTransfer.cryptoTransferOrThrow();
             for (final var fungibleTransfers : op.tokenTransfersOrThrow()) {
                 TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
                         requireNonNull(tokenId),
@@ -125,7 +124,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                         enhancement.nativeOperations().readableAccountStore(),
                         frame);
             }
-            specialRewardReceivers.addInFrame(frame, op);
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);

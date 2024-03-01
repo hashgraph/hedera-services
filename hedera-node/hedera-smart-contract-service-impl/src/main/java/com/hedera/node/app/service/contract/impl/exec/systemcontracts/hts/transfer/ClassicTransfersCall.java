@@ -156,7 +156,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(op, frame);
-            specialRewardReceivers.addInFrame(frame, op);
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
         } else {
             recordBuilder.status(callStatusStandardizer.codeForFailure(recordBuilder.status(), frame, op));
         }
