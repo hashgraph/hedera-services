@@ -177,8 +177,6 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
         final Long classId;
         if (readClassId) {
             classId = readLong();
-
-            // TODO test this
             if (permissibleClassIds != null && !permissibleClassIds.contains(classId)) {
                 throw new IOException("Class ID " + classId + " is not in the set of permissible class IDs");
             }
